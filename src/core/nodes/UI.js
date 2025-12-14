@@ -16,7 +16,7 @@ import {
   isJustifyContent,
   JustifyContent,
 } from '../extras/yoga.js'
-import CustomShaderMaterial from '../libs/three-custom-shader-material.js'
+import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
 import { clamp } from '../utils.js'
 

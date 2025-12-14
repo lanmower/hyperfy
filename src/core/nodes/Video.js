@@ -1,5 +1,5 @@
 import { isBoolean, isNumber, isString } from 'lodash-es'
-import CustomShaderMaterial from '../libs/three-custom-shader-material.js'
+import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
