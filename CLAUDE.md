@@ -1,7 +1,13 @@
-# HyperSDK Status - 2025-11-11 ✅ FULLY WORKING - ALL ISSUES FIXED
+# HyperSDK Status - 2025-12-14 ✅ WEBSOCKET FIXED - SDK FULLY OPERATIONAL
 
 ## Current Status
-HyperSDK is **100% FUNCTIONAL** with all issues completely resolved. SDK core tested and verified. Hyperfy codebase fixed with 108 files updated for ESM compatibility.
+HyperSDK is **FULLY OPERATIONAL**. Critical WebSocket connectivity fix applied. SDK core tested and verified. All dependencies configured correctly.
+
+## Critical WebSocket Fix (2025-12-14)
+✅ **Root Cause Identified**: Static file handler with `prefix: '/'` registered before WebSocket endpoint
+✅ **Solution**: Moved `@fastify/ws` plugin and `worldNetwork` handler registration BEFORE static route handlers
+✅ **Impact**: SDK clients can now successfully connect via WebSocket (previously received 404 errors)
+✅ **Verification**: Tested WebSocket connections - multiple connections successfully established
 
 ## Complete Solution (2025-11-11)
 ✅ **hypersdk package.json**: Replaced rollup-plugin-terser with @rollup/plugin-terser

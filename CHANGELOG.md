@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+- **CRITICAL**: server: Fixed WebSocket 404 errors by registering @fastify/ws before static routes. Static file handler was catching /ws requests before WebSocket endpoint could process them. SDK clients can now successfully connect.
 - hypersdk: Fixed import paths from ../../hyperfy/ to ../../ to match directory structure
 - hypersdk: Replaced deprecated rollup-plugin-terser with @rollup/plugin-terser
 - hypersdk: Added missing dependencies (glob, uuid, three, form-data, fs-extra)
