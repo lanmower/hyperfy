@@ -52,6 +52,13 @@ const fastify = Fastify({ logger: { level: 'error' } })
 
 fastify.register(cors)
 fastify.register(compress)
+fastify.register(multipart, {
+  limits: {
+    fileSize: 200 * 1024 * 1024, // 200MB
+  },
+})
+fastify.register(ws)
+fastify.register(worldNetwork)
 fastify.get('/', async (req, reply) => {
   const title = world.settings.title || 'World'
   const desc = world.settings.desc || ''
@@ -85,13 +92,6 @@ fastify.register(statics, {
     res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString()) // older browsers
   },
 })
-fastify.register(multipart, {
-  limits: {
-    fileSize: 200 * 1024 * 1024, // 200MB
-  },
-})
-fastify.register(ws)
-fastify.register(worldNetwork)
 
 const publicEnvs = {}
 for (const key in process.env) {
@@ -285,6 +285,7 @@ try {
 
 async function worldNetwork(fastify) {
   fastify.get('/ws', { websocket: true }, (ws, req) => {
+    console.log('[WS] Connection received')
     world.network.onConnection(ws, req.query)
   })
 }
