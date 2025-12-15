@@ -1,8 +1,8 @@
 import { imageFits as fits } from '../utils/NodeConstants.js'
-import { isBoolean, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const pivots = [
   'top-left',
@@ -29,10 +29,64 @@ const defaults = {
   receiveShadow: false,
 }
 
+const propertySchema = {
+  src: {
+    default: defaults.src,
+    validate: (v) => v !== null && typeof v !== 'string' ? '[image] src not null or string' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  width: {
+    default: defaults.width,
+    validate: (v) => v !== null && typeof v !== 'number' ? '[image] width not null or number' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  height: {
+    default: defaults.height,
+    validate: (v) => v !== null && typeof v !== 'number' ? '[image] height not null or number' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  fit: {
+    default: defaults.fit,
+    validate: (v) => !fits.includes(v) ? '[image] fit invalid' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  color: {
+    default: defaults.color,
+    validate: (v) => v !== null && typeof v !== 'string' ? '[image] color not null or string' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  pivot: {
+    default: defaults.pivot,
+    validate: (v) => !pivots.includes(v) ? '[image] pivot invalid' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  lit: {
+    default: defaults.lit,
+    validate: (v) => typeof v !== 'boolean' ? '[image] lit not a boolean' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  doubleside: {
+    default: defaults.doubleside,
+    validate: (v) => typeof v !== 'boolean' ? '[image] doubleside not a boolean' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  castShadow: {
+    default: defaults.castShadow,
+    validate: (v) => typeof v !== 'boolean' ? '[image] castShadow not a boolean' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  receiveShadow: {
+    default: defaults.receiveShadow,
+    validate: (v) => typeof v !== 'boolean' ? '[image] receiveShadow not a boolean' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+}
+
 export class Image extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'image'
+    defineProps(this, propertySchema, defaults)
 
     this.src = data.src
     this.width = data.width
@@ -50,16 +104,9 @@ export class Image extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._src = source._src
-    this._width = source._width
-    this._height = source._height
-    this._fit = source._fit
-    this._color = source._color
-    this._pivot = source._pivot
-    this._lit = source._lit
-    this._doubleside = source._doubleside
-    this._castShadow = source._castShadow
-    this._receiveShadow = source._receiveShadow
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
   }
 
@@ -248,146 +295,6 @@ export class Image extends Node {
     }
   }
 
-  get src() {
-    return this._src
-  }
-
-  set src(value = defaults.src) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[image] src not null or string')
-    }
-    if (this._src === value) return
-    this._src = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get width() {
-    return this._width
-  }
-
-  set width(value = defaults.width) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[image] width not null or number')
-    }
-    if (this._width === value) return
-    this._width = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[image] height not null or number')
-    }
-    if (this._height === value) return
-    this._height = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get fit() {
-    return this._fit
-  }
-
-  set fit(value = defaults.fit) {
-    if (!isFit(value)) {
-      throw new Error('[image] fit invalid')
-    }
-    if (this._fit === value) return
-    this._fit = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get color() {
-    return this._color
-  }
-
-  set color(value = defaults.color) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[image] color not null or string')
-    }
-    if (this._color === value) return
-    this._color = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get pivot() {
-    return this._pivot
-  }
-
-  set pivot(value = defaults.pivot) {
-    if (!isPivot(value)) {
-      throw new Error('[image] pivot invalid')
-    }
-    if (this._pivot === value) return
-    this._pivot = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get lit() {
-    return this._lit
-  }
-
-  set lit(value = defaults.lit) {
-    if (!isBoolean(value)) {
-      throw new Error('[image] lit not a boolean')
-    }
-    if (this._lit === value) return
-    this._lit = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get doubleside() {
-    return this._doubleside
-  }
-
-  set doubleside(value = defaults.doubleside) {
-    if (!isBoolean(value)) {
-      throw new Error('[image] doubleside not a boolean')
-    }
-    if (this._doubleside === value) return
-    this._doubleside = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get castShadow() {
-    return this._castShadow
-  }
-
-  set castShadow(value = defaults.castShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[image] castShadow not a boolean')
-    }
-    if (this._castShadow === value) return
-    this._castShadow = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get receiveShadow() {
-    return this._receiveShadow
-  }
-
-  set receiveShadow(value = defaults.receiveShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[image] receiveShadow not a boolean')
-    }
-    if (this._receiveShadow === value) return
-    this._receiveShadow = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
   getProxy() {
     if (!this.proxy) {
       const self = this
@@ -458,14 +365,6 @@ export class Image extends Node {
     }
     return this.proxy
   }
-}
-
-function isFit(value) {
-  return fits.includes(value)
-}
-
-function isPivot(value) {
-  return pivots.includes(value)
 }
 
 function applyPivot(geometry, width, height, pivot) {
