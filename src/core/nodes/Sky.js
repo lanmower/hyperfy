@@ -1,34 +1,89 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
+import { defineProps } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 
 // NOTE: actual defaults bubble up to ClientEnvironment.js
-const defaults = {
-  bg: null,
-  hdr: null,
-  rotationY: null,
-  sunDirection: null,
-  sunIntensity: null,
-  sunColor: null,
-  fogNear: null,
-  fogFar: null,
-  fogColor: null,
+const propertySchema = {
+  bg: {
+    default: null,
+    validate: v => v !== null && !isString(v) ? '[sky] bg not a string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  hdr: {
+    default: null,
+    validate: v => v !== null && !isString(v) ? '[sky] hdr not a string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  rotationY: {
+    default: null,
+    validate: v => v !== null && !isNumber(v) ? '[sky] rotationY not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  sunDirection: {
+    default: null,
+    validate: v => v !== null && !v?.isVector3 ? '[sky] sunDirection not a Vector3' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  sunIntensity: {
+    default: null,
+    validate: v => v !== null && !isNumber(v) ? '[sky] sunIntensity not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  sunColor: {
+    default: null,
+    validate: v => v !== null && !isString(v) ? '[sky] sunColor not a string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  fogNear: {
+    default: null,
+    validate: v => v !== null && !isNumber(v) ? '[sky] fogNear not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  fogFar: {
+    default: null,
+    validate: v => v !== null && !isNumber(v) ? '[sky] fogFar not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  fogColor: {
+    default: null,
+    validate: v => v !== null && !isString(v) ? '[sky] fogColor not a string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
 }
 
 export class Sky extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'sky'
-
-    this.bg = data.bg
-    this.hdr = data.hdr
-    this.rotationY = data.rotationY
-    this.sunDirection = data.sunDirection
-    this.sunIntensity = data.sunIntensity
-    this.sunColor = data.sunColor
-    this.fogNear = data.fogNear
-    this.fogFar = data.fogFar
-    this.fogColor = data.fogColor
+    defineProps(this, propertySchema, data)
   }
 
   mount() {
@@ -49,142 +104,10 @@ export class Sky extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._bg = source._bg
-    this._hdr = source._hdr
-    this._rotationY = source._rotationY
-    this._sunDirection = source._sunDirection
-    this._sunIntensity = source._sunIntensity
-    this._sunColor = source._sunColor
-    this._fogNear = source._fogNear
-    this._fogFar = source._fogFar
-    this._fogColor = source._fogColor
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
-  }
-
-  get bg() {
-    return this._bg
-  }
-
-  set bg(value = defaults.bg) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[sky] bg not a string')
-    }
-    if (this._bg === value) return
-    this._bg = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get hdr() {
-    return this._hdr
-  }
-
-  set hdr(value = defaults.hdr) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[sky] hdr not a string')
-    }
-    if (this._hdr === value) return
-    this._hdr = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get rotationY() {
-    return this._rotationY
-  }
-
-  set rotationY(value = defaults.rotationY) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[sky] rotationY not a number')
-    }
-    if (this._rotationY === value) return
-    this._rotationY = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get sunDirection() {
-    return this._sunDirection
-  }
-
-  set sunDirection(value = defaults.sunDirection) {
-    if (value !== null && !value?.isVector3) {
-      throw new Error('[sky] sunDirection not a Vector3')
-    }
-    if (this._sunDirection === value) return
-    this._sunDirection = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get sunIntensity() {
-    return this._sunIntensity
-  }
-
-  set sunIntensity(value = defaults.sunIntensity) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[sky] sunIntensity not a number')
-    }
-    if (this._sunIntensity === value) return
-    this._sunIntensity = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get sunColor() {
-    return this._sunColor
-  }
-
-  set sunColor(value = defaults.sunColor) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[sky] sunColor not a string')
-    }
-    if (this._sunColor === value) return
-    this._sunColor = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get fogNear() {
-    return this._fogNear
-  }
-
-  set fogNear(value = defaults.fogNear) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[sky] fogNear not a number')
-    }
-    if (this._fogNear === value) return
-    this._fogNear = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get fogFar() {
-    return this._fogFar
-  }
-
-  set fogFar(value = defaults.fogFar) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[sky] fogFar not a number')
-    }
-    if (this._fogFar === value) return
-    this._fogFar = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get fogColor() {
-    return this._fogColor
-  }
-
-  set fogColor(value = defaults.fogColor) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[sky] fogColor not a string')
-    }
-    if (this._fogColor === value) return
-    this._fogColor = value
-    this.needsRebuild = true
-    this.setDirty()
   }
 
   getProxy() {
