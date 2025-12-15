@@ -19,6 +19,7 @@ import {
   isFlexWrap,
 } from '../extras/yoga.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
+import { defineProps } from '../utils/defineProperty.js'
 
 const defaults = {
   display: 'flex',
@@ -46,34 +47,211 @@ const defaults = {
   flexShrink: 1,
 }
 
+const propertySchema = {
+  display: {
+    default: defaults.display,
+    validate: v => !isDisplay(v) ? `[uiview] display invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setDisplay(Display[this._display])
+      this.ui?.redraw()
+    },
+  },
+  width: {
+    default: defaults.width,
+    validate: v => v !== null && !isNumber(v) ? '[uiview] width not a number' : null,
+    onSet() {
+      this.yogaNode?.setWidth(this._width === null ? undefined : this._width * this.ui._res)
+      this.ui?.redraw()
+    },
+  },
+  height: {
+    default: defaults.height,
+    validate: v => v !== null && !isNumber(v) ? '[uiview] height not a number' : null,
+    onSet() {
+      this.yogaNode?.setHeight(this._height === null ? undefined : this._height * this.ui._res)
+      this.ui?.redraw()
+    },
+  },
+  absolute: {
+    default: defaults.absolute,
+    validate: v => !isBoolean(v) ? '[uiview] absolute not a boolean' : null,
+    onSet() {
+      this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE)
+      this.ui?.redraw()
+    },
+  },
+  top: {
+    default: defaults.top,
+    validate: v => v !== null && !isNumber(v) ? '[uiview] top must be a number or null' : null,
+    onSet() {
+      this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined)
+      this.ui?.redraw()
+    },
+  },
+  right: {
+    default: defaults.right,
+    validate: v => v !== null && !isNumber(v) ? '[uiview] right must be a number or null' : null,
+    onSet() {
+      this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined)
+      this.ui?.redraw()
+    },
+  },
+  bottom: {
+    default: defaults.bottom,
+    validate: v => v !== null && !isNumber(v) ? '[uiview] bottom must be a number or null' : null,
+    onSet() {
+      this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined)
+      this.ui?.redraw()
+    },
+  },
+  left: {
+    default: defaults.left,
+    validate: v => v !== null && !isNumber(v) ? '[uiview] left must be a number or null' : null,
+    onSet() {
+      this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined)
+      this.ui?.redraw()
+    },
+  },
+  backgroundColor: {
+    default: defaults.backgroundColor,
+    validate: v => v !== null && !isString(v) ? '[uiview] backgroundColor not a string' : null,
+    onSet() {
+      this.ui?.redraw()
+    },
+  },
+  borderWidth: {
+    default: defaults.borderWidth,
+    validate: v => !isNumber(v) ? '[uiview] borderWidth not a number' : null,
+    onSet() {
+      this.ui?.redraw()
+    },
+  },
+  borderColor: {
+    default: defaults.borderColor,
+    validate: v => v !== null && !isString(v) ? '[uiview] borderColor not a string' : null,
+    onSet() {
+      this.ui?.redraw()
+    },
+  },
+  borderRadius: {
+    default: defaults.borderRadius,
+    validate: v => !isNumber(v) ? '[uiview] borderRadius not a number' : null,
+    onSet() {
+      this.ui?.redraw()
+    },
+  },
+  margin: {
+    default: defaults.margin,
+    validate: v => !isEdge(v) ? '[uiview] margin not a number or array of numbers' : null,
+    onSet() {
+      if (isArray(this._margin)) {
+        const [top, right, bottom, left] = this._margin
+        this.yogaNode?.setMargin(Yoga.EDGE_TOP, top * this.ui._res)
+        this.yogaNode?.setMargin(Yoga.EDGE_RIGHT, right * this.ui._res)
+        this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
+        this.yogaNode?.setMargin(Yoga.EDGE_LEFT, left * this.ui._res)
+      } else {
+        this.yogaNode?.setMargin(Yoga.EDGE_ALL, this._margin * this.ui._res)
+      }
+      this.ui?.redraw()
+    },
+  },
+  padding: {
+    default: defaults.padding,
+    validate: v => !isEdge(v) ? '[uiview] padding not a number or array of numbers' : null,
+    onSet() {
+      if (isArray(this._padding)) {
+        const [top, right, bottom, left] = this._padding
+        this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this.ui._res)
+        this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this.ui._res)
+        this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
+        this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this.ui._res)
+      } else {
+        this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this.ui._res)
+      }
+      this.ui?.redraw()
+    },
+  },
+  flexDirection: {
+    default: defaults.flexDirection,
+    validate: v => !isFlexDirection(v) ? `[uiview] flexDirection invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection])
+      this.ui?.redraw()
+    },
+  },
+  justifyContent: {
+    default: defaults.justifyContent,
+    validate: v => !isJustifyContent(v) ? `[uiview] justifyContent invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent])
+      this.ui?.redraw()
+    },
+  },
+  alignItems: {
+    default: defaults.alignItems,
+    validate: v => !isAlignItem(v) ? `[uiview] alignItems invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setAlignItems(AlignItems[this._alignItems])
+      this.ui?.redraw()
+    },
+  },
+  alignContent: {
+    default: defaults.alignContent,
+    validate: v => !isAlignContent(v) ? `[uiview] alignContent invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setAlignContent(AlignContent[this._alignContent])
+      this.ui?.redraw()
+    },
+  },
+  flexWrap: {
+    default: defaults.flexWrap,
+    validate: v => !isFlexWrap(v) ? `[uiview] flexWrap invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap])
+      this.ui?.redraw()
+    },
+  },
+  gap: {
+    default: defaults.gap,
+    validate: v => !isNumber(v) ? '[uiview] gap not a number' : null,
+    onSet() {
+      this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this.ui._res)
+      this.ui?.redraw()
+    },
+  },
+  flexBasis: {
+    default: defaults.flexBasis,
+    validate: v => !isNumber(v) && !isString(v) ? '[uiview] flexBasis invalid' : null,
+    onSet() {
+      this.yogaNode?.setFlexBasis(this._flexBasis)
+      this.ui?.redraw()
+    },
+  },
+  flexGrow: {
+    default: defaults.flexGrow,
+    validate: v => !isNumber(v) ? '[uiview] flexGrow not a number' : null,
+    onSet() {
+      this.yogaNode?.setFlexGrow(this._flexGrow)
+      this.ui?.redraw()
+    },
+  },
+  flexShrink: {
+    default: defaults.flexShrink,
+    validate: v => !isNumber(v) ? '[uiview] flexShrink not a number' : null,
+    onSet() {
+      this.yogaNode?.setFlexShrink(this._flexShrink)
+      this.ui?.redraw()
+    },
+  },
+}
+
 export class UIView extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'uiview'
 
-    this.display = data.display
-    this.width = data.width
-    this.height = data.height
-    this.absolute = data.absolute
-    this.top = data.top
-    this.right = data.right
-    this.bottom = data.bottom
-    this.left = data.left
-    this.backgroundColor = data.backgroundColor
-    this.borderWidth = data.borderWidth
-    this.borderColor = data.borderColor
-    this.borderRadius = data.borderRadius
-    this.margin = data.margin
-    this.padding = data.padding
-    this.flexDirection = data.flexDirection
-    this.justifyContent = data.justifyContent
-    this.alignItems = data.alignItems
-    this.alignContent = data.alignContent
-    this.flexWrap = data.flexWrap
-    this.gap = data.gap
-    this.flexBasis = data.flexBasis
-    this.flexGrow = data.flexGrow
-    this.flexShrink = data.flexShrink
+    defineProps(this, propertySchema, data)
   }
 
   draw(ctx, offsetLeft, offsetTop) {
@@ -174,368 +352,10 @@ export class UIView extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._display = source._display
-    this._width = source._width
-    this._height = source._height
-    this._absolute = source._absolute
-    this._top = source._top
-    this._right = source._right
-    this._bottom = source._bottom
-    this._left = source._left
-    this._backgroundColor = source._backgroundColor
-    this._borderWidth = source._borderWidth
-    this._borderColor = source._borderColor
-    this._borderRadius = source._borderRadius
-    this._margin = source._margin
-    this._padding = source._padding
-    this._flexDirection = source._flexDirection
-    this._justifyContent = source._justifyContent
-    this._alignItems = source._alignItems
-    this._alignContent = source._alignContent
-    this._flexBasis = source._flexBasis
-    this._flexGrow = source._flexGrow
-    this._flexShrink = source._flexShrink
-    this._flexWrap = source._flexWrap
-    this._gap = source._gap
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
-  }
-
-  get display() {
-    return this._display
-  }
-
-  set display(value = defaults.display) {
-    if (!isDisplay(value)) {
-      throw new Error(`[uiview] display invalid: ${value}`)
-    }
-    if (this._display === value) return
-    this._display = value
-    this.yogaNode?.setDisplay(Display[this._display])
-    this.ui?.redraw()
-  }
-
-  get width() {
-    return this._width
-  }
-
-  set width(value = defaults.width) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error(`[uiview] width not a number`)
-    }
-    if (this._width === value) return
-    this._width = value
-    this.yogaNode?.setWidth(this._width === null ? undefined : this._width * this.ui._res)
-    this.ui?.redraw()
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error(`[uiview] height not a number`)
-    }
-    if (this._height === value) return
-    this._height = value
-    this.yogaNode?.setHeight(this._height === null ? undefined : this._height * this.ui._res)
-    this.ui?.redraw()
-  }
-
-  get absolute() {
-    return this._absolute
-  }
-
-  set absolute(value = defaults.absolute) {
-    if (!isBoolean(value)) {
-      throw new Error(`[uiview] absolute not a boolean`)
-    }
-    if (this._absolute === value) return
-    this._absolute = value
-    this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE.ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE)
-    this.ui?.redraw()
-  }
-
-  get top() {
-    return this._top
-  }
-
-  set top(value = defaults.top) {
-    const isNum = isNumber(value)
-    if (value !== null && !isNum) {
-      throw new Error(`[uiview] top must be a number or null`)
-    }
-    if (this._top === value) return
-    this._top = value
-    this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNum ? this._top * this.ui._res : undefined)
-    this.ui?.redraw()
-  }
-
-  get right() {
-    return this._right
-  }
-
-  set right(value = defaults.right) {
-    const isNum = isNumber(value)
-    if (value !== null && !isNum) {
-      throw new Error(`[uiview] right must be a number or null`)
-    }
-    if (this._right === value) return
-    this._right = value
-    this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNum ? this._right * this.ui._res : undefined)
-    this.ui?.redraw()
-  }
-
-  get bottom() {
-    return this._bottom
-  }
-
-  set bottom(value = defaults.bottom) {
-    const isNum = isNumber(value)
-    if (value !== null && !isNum) {
-      throw new Error(`[uiview] bottom must be a number or null`)
-    }
-    if (this._bottom === value) return
-    this._bottom = value
-    this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNum ? this._bottom * this.ui._res : undefined)
-    this.ui?.redraw()
-  }
-
-  get left() {
-    return this._left
-  }
-
-  set left(value = defaults.left) {
-    const isNum = isNumber(value)
-    if (value !== null && !isNum) {
-      throw new Error(`[uiview] left must be a number or null`)
-    }
-    if (this._left === value) return
-    this._left = value
-    this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNum ? this._left * this.ui._res : undefined)
-    this.ui?.redraw()
-  }
-
-  get backgroundColor() {
-    return this._backgroundColor
-  }
-
-  set backgroundColor(value = defaults.backgroundColor) {
-    if (value !== null && !isString(value)) {
-      throw new Error(`[uiview] backgroundColor not a string`)
-    }
-    if (this._backgroundColor === value) return
-    this._backgroundColor = value
-    this.ui?.redraw()
-  }
-
-  get borderWidth() {
-    return this._borderWidth
-  }
-
-  set borderWidth(value = defaults.borderWidth) {
-    if (!isNumber(value)) {
-      throw new Error(`[uiview] borderWidth not a number`)
-    }
-    if (this._borderWidth === value) return
-    this._borderWidth = value
-    this.ui?.redraw()
-  }
-
-  get borderColor() {
-    return this._borderColor
-  }
-
-  set borderColor(value = defaults.borderColor) {
-    if (value !== null && !isString(value)) {
-      throw new Error(`[uiview] borderColor not a string`)
-    }
-    if (this._borderColor === value) return
-    this._borderColor = value
-    this.ui?.redraw()
-  }
-
-  get borderRadius() {
-    return this._borderRadius
-  }
-
-  set borderRadius(value = defaults.borderRadius) {
-    if (!isNumber(value)) {
-      throw new Error(`[uiview] borderRadius not a number`)
-    }
-    if (this._borderRadius === value) return
-    this._borderRadius = value
-    this.ui?.redraw()
-  }
-
-  get margin() {
-    return this._margin
-  }
-
-  set margin(value = defaults.margin) {
-    if (!isEdge(value)) {
-      throw new Error(`[uiview] margin not a number or array of numbers`)
-    }
-    if (this._margin === value) return
-    this._margin = value
-    if (isArray(this._margin)) {
-      const [top, right, bottom, left] = this._margin
-      this.yogaNode?.setMargin(Yoga.EDGE_TOP, top * this.ui._res)
-      this.yogaNode?.setMargin(Yoga.EDGE_RIGHT, right * this.ui._res)
-      this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-      this.yogaNode?.setMargin(Yoga.EDGE_LEFT, left * this.ui._res)
-    } else {
-      this.yogaNode?.setMargin(Yoga.EDGE_ALL, this._margin * this.ui._res)
-    }
-    this.ui?.redraw()
-  }
-
-  get padding() {
-    return this._padding
-  }
-
-  set padding(value = defaults.padding) {
-    if (!isEdge(value)) {
-      throw new Error(`[uiview] padding not a number or array of numbers`)
-    }
-    if (this._padding === value) return
-    this._padding = value
-    if (isArray(this._padding)) {
-      const [top, right, bottom, left] = this._padding
-      this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this.ui._res)
-      this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this.ui._res)
-      this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-      this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this.ui._res)
-    } else {
-      this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this.ui._res)
-    }
-    this.ui?.redraw()
-  }
-
-  get flexDirection() {
-    return this._flexDirection
-  }
-
-  set flexDirection(value = defaults.flexDirection) {
-    if (!isFlexDirection(value)) {
-      throw new Error(`[uiview] flexDirection invalid: ${value}`)
-    }
-    if (this._flexDirection === value) return
-    this._flexDirection = value
-    this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection])
-    this.ui?.redraw()
-  }
-
-  get justifyContent() {
-    return this._justifyContent
-  }
-
-  set justifyContent(value = defaults.justifyContent) {
-    if (!isJustifyContent(value)) {
-      throw new Error(`[uiview] justifyContent invalid: ${value}`)
-    }
-    if (this._justifyContent === value) return
-    this._justifyContent = value
-    this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent])
-    this.ui?.redraw()
-  }
-
-  get alignItems() {
-    return this._alignItems
-  }
-
-  set alignItems(value = defaults.alignItems) {
-    if (!isAlignItem(value)) {
-      throw new Error(`[uiview] alignItems invalid: ${value}`)
-    }
-    if (this._alignItems === value) return
-    this._alignItems = value
-    this.yogaNode?.setAlignItems(AlignItems[this._alignItems])
-    this.ui?.redraw()
-  }
-
-  get alignContent() {
-    return this._alignContent
-  }
-
-  set alignContent(value = defaults.alignContent) {
-    if (!isAlignContent(value)) {
-      throw new Error(`[uiview] alignContent invalid: ${value}`)
-    }
-    if (this._alignContent === value) return
-    this._alignContent = value
-    this.yogaNode?.setAlignContent(AlignContent[this._alignContent])
-    this.ui?.redraw()
-  }
-
-  get flexWrap() {
-    return this.flexWrap
-  }
-
-  set flexWrap(value = defaults.flexWrap) {
-    if (!isFlexWrap(value)) {
-      throw new Error(`[uiview] flexWrap invalid: ${value}`)
-    }
-    if (this._flexWrap === value) return
-    this._flexWrap = value
-    this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap])
-    this.ui?.redraw()
-  }
-
-  get gap() {
-    return this._gap
-  }
-
-  set gap(value = defaults.gap) {
-    if (!isNumber(value)) {
-      throw new Error(`[uiview] gap not a number`)
-    }
-    if (this._gap === value) return
-    this._gap = value
-    this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this.ui._res)
-    this.ui?.redraw()
-  }
-
-  get flexBasis() {
-    return this._flexBasis
-  }
-
-  set flexBasis(value = defaults.flexBasis) {
-    if (!isNumber(value) && !isString(value)) {
-      throw new Error(`[uiview] flexBasis invalid`)
-    }
-    if (this._flexBasis === value) return
-    this._flexBasis = value
-    this.yogaNode?.setFlexBasis(this._flexBasis)
-    this.ui?.redraw()
-  }
-
-  get flexGrow() {
-    return this._flexGrow
-  }
-
-  set flexGrow(value = defaults.flexGrow) {
-    if (!isNumber(value)) {
-      throw new Error(`[uiview] flexGrow not a number`)
-    }
-    if (this._flexGrow === value) return
-    this._flexGrow = value
-    this.yogaNode?.setFlexGrow(this._flexGrow)
-    this.ui?.redraw()
-  }
-
-  get flexShrink() {
-    return this._flexShrink
-  }
-
-  set flexShrink(value = defaults.flexShrink) {
-    if (!isNumber(value)) {
-      throw new Error(`[uiview] flexShrink not a number`)
-    }
-    if (this._flexShrink === value) return
-    this._flexShrink = value
-    this.yogaNode?.setFlexShrink(this._flexShrink)
-    this.ui?.redraw()
   }
 
   getProxy() {
