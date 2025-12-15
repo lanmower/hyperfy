@@ -41,7 +41,7 @@ const propertySchema = {
   },
   tag: {
     default: defaults.tag,
-    validate: (value) => (value === null || typeof value === 'string') ? null : 'must be string or null',
+    validate: validators.stringOrNull,
   },
   onContactStart: {
     default: defaults.onContactStart,

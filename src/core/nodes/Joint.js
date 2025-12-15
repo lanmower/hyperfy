@@ -25,18 +25,17 @@ const defaults = {
 }
 
 const rebuild = function() { this.needsRebuild = true; this.setDirty() }
-const numberOrNull = (value) => (value === null || typeof value === 'number') ? null : 'must be number or null'
 
 const propertySchema = {
   type: { default: defaults.type, validate: validators.enum(types), onSet: rebuild },
   breakForce: { default: defaults.breakForce, validate: validators.number, onSet: rebuild },
   breakTorque: { default: defaults.breakTorque, validate: validators.number, onSet: rebuild },
-  limitY: { default: defaults.limitY, validate: numberOrNull, onSet: rebuild },
-  limitZ: { default: defaults.limitZ, validate: numberOrNull, onSet: rebuild },
-  limitMin: { default: defaults.limitMin, validate: numberOrNull, onSet: rebuild },
-  limitMax: { default: defaults.limitMax, validate: numberOrNull, onSet: rebuild },
-  limitStiffness: { default: defaults.limitStiffness, validate: numberOrNull, onSet: rebuild },
-  limitDamping: { default: defaults.limitDamping, validate: numberOrNull, onSet: rebuild },
+  limitY: { default: defaults.limitY, validate: validators.numberOrNull, onSet: rebuild },
+  limitZ: { default: defaults.limitZ, validate: validators.numberOrNull, onSet: rebuild },
+  limitMin: { default: defaults.limitMin, validate: validators.numberOrNull, onSet: rebuild },
+  limitMax: { default: defaults.limitMax, validate: validators.numberOrNull, onSet: rebuild },
+  limitStiffness: { default: defaults.limitStiffness, validate: validators.numberOrNull, onSet: rebuild },
+  limitDamping: { default: defaults.limitDamping, validate: validators.numberOrNull, onSet: rebuild },
   collide: { default: defaults.collide, validate: validators.boolean, onSet: rebuild },
 }
 

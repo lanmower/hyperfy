@@ -25,7 +25,7 @@ const defaults = {
 const propertySchema = {
   src: {
     default: defaults.src,
-    validate: (value) => (!isString(value) && value !== null) ? 'must be string or null' : null,
+    validate: validators.stringOrNull,
     onSet() { this.needsRebuild = true; this.setDirty() },
   },
   volume: {

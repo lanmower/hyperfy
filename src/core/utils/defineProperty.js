@@ -46,4 +46,7 @@ export const validators = {
   array: (value) => (Array.isArray(value)) ? null : 'must be array',
   enum: (allowed) => (value) => (allowed.includes(value)) ? null : `must be one of: ${allowed.join(', ')}`,
   func: (value) => (typeof value === 'function') ? null : 'must be function',
+  stringOrNull: (value) => (value === null || typeof value === 'string') ? null : 'must be string or null',
+  numberOrNull: (value) => (value === null || typeof value === 'number') ? null : 'must be number or null',
+  functionOrNull: (value) => (value === null || typeof value === 'function') ? null : 'must be function or null',
 }
