@@ -20,52 +20,52 @@ const defaults = {
 const propertySchema = {
   src: {
     default: defaults.src,
-    validate: (v) => v !== null && typeof v !== 'string' ? '[image] src not null or string' : null,
+    validate: validators.stringOrNull,
     onSet: onSetRebuild(),
   },
   width: {
     default: defaults.width,
-    validate: (v) => v !== null && typeof v !== 'number' ? '[image] width not null or number' : null,
+    validate: validators.numberOrNull,
     onSet: onSetRebuild(),
   },
   height: {
     default: defaults.height,
-    validate: (v) => v !== null && typeof v !== 'number' ? '[image] height not null or number' : null,
+    validate: validators.numberOrNull,
     onSet: onSetRebuild(),
   },
   fit: {
     default: defaults.fit,
-    validate: (v) => !fits.includes(v) ? '[image] fit invalid' : null,
+    validate: validators.enum(fits),
     onSet: onSetRebuild(),
   },
   color: {
     default: defaults.color,
-    validate: (v) => v !== null && typeof v !== 'string' ? '[image] color not null or string' : null,
+    validate: validators.stringOrNull,
     onSet: onSetRebuild(),
   },
   pivot: {
     default: defaults.pivot,
-    validate: (v) => !pivots.includes(v) ? '[image] pivot invalid' : null,
+    validate: validators.enum(pivots),
     onSet: onSetRebuild(),
   },
   lit: {
     default: defaults.lit,
-    validate: (v) => typeof v !== 'boolean' ? '[image] lit not a boolean' : null,
+    validate: validators.boolean,
     onSet: onSetRebuild(),
   },
   doubleside: {
     default: defaults.doubleside,
-    validate: (v) => typeof v !== 'boolean' ? '[image] doubleside not a boolean' : null,
+    validate: validators.boolean,
     onSet: onSetRebuild(),
   },
   castShadow: {
     default: defaults.castShadow,
-    validate: (v) => typeof v !== 'boolean' ? '[image] castShadow not a boolean' : null,
+    validate: validators.boolean,
     onSet: onSetRebuild(),
   },
   receiveShadow: {
     default: defaults.receiveShadow,
-    validate: (v) => typeof v !== 'boolean' ? '[image] receiveShadow not a boolean' : null,
+    validate: validators.boolean,
     onSet: onSetRebuild(),
   },
 }

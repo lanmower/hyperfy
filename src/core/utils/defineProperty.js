@@ -66,4 +66,6 @@ export const validators = {
   stringOrNull: (value) => (value === null || typeof value === 'string') ? null : 'must be string or null',
   numberOrNull: (value) => (value === null || typeof value === 'number') ? null : 'must be number or null',
   functionOrNull: (value) => (value === null || typeof value === 'function') ? null : 'must be function or null',
+  stringOrNumber: (value) => (typeof value === 'string' || typeof value === 'number') ? null : 'must be string or number',
+  stringOrNumberOrNull: (value) => (value === null || typeof value === 'string' || typeof value === 'number') ? null : 'must be string, number, or null',
 }
