@@ -5,6 +5,7 @@ import { DEG2RAD } from './general.js'
 import { getTrianglesFromGeometry } from './getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from './getTextureBytesFromMaterial.js'
 import { Emotes } from './playerEmotes.js'
+import { Modes } from '../constants/AnimationModes.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -38,17 +39,6 @@ const UpAxis = {
   NEG_X: new THREE.Vector3(-1, 0, 0),
   NEG_Y: new THREE.Vector3(0, -1, 0),
   NEG_Z: new THREE.Vector3(0, 0, -1),
-}
-
-// TODO: de-dup PlayerLocal.js has a copy
-const Modes = {
-  IDLE: 0,
-  WALK: 1,
-  RUN: 2,
-  JUMP: 3,
-  FALL: 4,
-  FLY: 5,
-  TALK: 6,
 }
 
 export function createVRMFactory(glb, setupMaterial) {

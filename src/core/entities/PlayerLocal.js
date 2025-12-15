@@ -10,6 +10,7 @@ import { Emotes } from '../extras/playerEmotes.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { isBoolean, isNumber } from 'lodash-es'
 import { hasRank, Ranks } from '../extras/ranks.js'
+import { Modes } from '../constants/AnimationModes.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
@@ -41,17 +42,7 @@ const m2 = new THREE.Matrix4()
 const m3 = new THREE.Matrix4()
 
 const gazeTiltAngle = 10 * DEG2RAD
-const gazeTiltAxis = new THREE.Vector3(1, 0, 0) // X-axis for pitch
-
-const Modes = {
-  IDLE: 0,
-  WALK: 1,
-  RUN: 2,
-  JUMP: 3,
-  FALL: 4,
-  FLY: 5,
-  TALK: 6,
-}
+const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
 
 export class PlayerLocal extends BaseEntity {
   constructor(world, data, local) {
