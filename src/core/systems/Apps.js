@@ -1,5 +1,5 @@
 import moment from 'moment'
-import { isArray, isEqual, isFunction, isNumber } from 'lodash-es'
+import { isArray, isFunction, isNumber } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { System } from './System.js'
