@@ -5,6 +5,18 @@ export class WorldPersistence {
     this.db = db
   }
 
+  async upsert(table, whereClause, data) {
+    const exists = await this.db(table).where(whereClause).first()
+    if (exists) {
+      await this.db(table).where(whereClause).update(data)
+    } else {
+      const insertData = Object.assign({}, Object.fromEntries(
+        Object.entries(whereClause).map(([k, v]) => [k, v])
+      ), data)
+      await this.db(table).insert(insertData)
+    }
+  }
+
   async loadSpawn() {
     const row = await this.db('config').where('key', 'spawn').first()
     return row?.value || '{ "position": [0, 0, 0], "quaternion": [0, 0, 0, 1] }'
@@ -67,12 +79,7 @@ export class WorldPersistence {
   }
 
   async saveUser(userId, data) {
-    const exists = await this.loadUser(userId)
-    if (exists) {
-      await this.db('users').where('id', userId).update(data)
-    } else {
-      await this.db('users').insert({ id: userId, ...data })
-    }
+    await this.upsert('users', { id: userId }, data)
   }
 
   async updateUserRank(userId, rank) {
@@ -89,11 +96,6 @@ export class WorldPersistence {
   }
 
   async setConfig(key, value) {
-    const exists = await this.db('config').where('key', key).first()
-    if (exists) {
-      await this.db('config').where('key', key).update({ value })
-    } else {
-      await this.db('config').insert({ key, value })
-    }
+    await this.upsert('config', { key }, { value })
   }
 }
