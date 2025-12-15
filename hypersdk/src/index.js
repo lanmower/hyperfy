@@ -20,6 +20,8 @@ import { StateManager } from '../../../src/core/state/StateManager.js'
 import { CommandRegistry } from '../../../src/core/cli/CommandRegistry.js'
 import { DataModel } from '../../../src/core/models/DataModel.js'
 import { PluginSystem } from '../../../src/core/plugin/PluginSystem.js'
+import { AppValidator } from '../../../src/core/validators/AppValidator.js'
+import * as AppBlueprintSchema from '../../../src/core/schemas/AppBlueprint.schema.js'
 
 export {
   HyperfyClient,
@@ -45,7 +47,9 @@ export {
   StateManager,
   CommandRegistry,
   DataModel,
-  PluginSystem
+  PluginSystem,
+  AppValidator,
+  AppBlueprintSchema
 }
 
 export { HyperfyClient as default }

@@ -1,6 +1,8 @@
 import { isEqual, merge } from 'lodash-es'
 import { System } from './System.js'
 import { ErrorPatterns } from '../utils/errorPatterns.js'
+import { AppValidator } from '../validators/AppValidator.js'
+import { normalizeBlueprint } from '../schemas/AppBlueprint.schema.js'
 
 export class Blueprints extends System {
   constructor(world) {
@@ -17,11 +19,17 @@ export class Blueprints extends System {
   }
 
   async add(data, local) {
-    this.items.set(data.id, data)
+    const validation = AppValidator.validateBlueprint(data)
+    if (!validation.valid) {
+      console.warn(`Blueprint validation warning for ${data.id}:`, validation.error)
+    }
+
+    const normalized = normalizeBlueprint(data)
+    this.items.set(normalized.id, normalized)
+
     if (local) {
-      // Monitor for immediate errors and include them in the response
-      const response = await this.executeWithErrorMonitoring(data.id, async () => {
-        return { ...data, success: true }
+      const response = await this.executeWithErrorMonitoring(normalized.id, async () => {
+        return { ...normalized, success: true }
       })
       this.world.network.send('blueprintAdded', response)
     }
