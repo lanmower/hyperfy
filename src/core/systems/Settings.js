@@ -1,88 +1,76 @@
-import { isBoolean } from 'lodash-es'
 import { System } from './System.js'
 import { Ranks } from '../extras/ranks.js'
+
+const DEFAULT_CONFIG = {
+  title: null,
+  desc: null,
+  image: null,
+  avatar: null,
+  customAvatars: false,
+  voice: 'spatial',
+  rank: Ranks.VISITOR,
+  playerLimit: 0,
+  ao: true,
+  hasAdminCode: false
+}
 
 export class Settings extends System {
   constructor(world) {
     super(world)
-
-    this.title = null
-    this.desc = null
-    this.image = null
-    this.avatar = null
-    this.customAvatars = null
-    this.voice = null
-    this.rank = null
-    this.playerLimit = null
-    this.ao = null
-
+    this.config = { ...DEFAULT_CONFIG }
     this.changes = null
   }
 
-  setHasAdminCode(value) {
-    this.hasAdminCode = value
+  get(key) { return this.config[key] }
+
+  set(key, value, broadcast) {
+    if (this.config[key] === value) return
+    const prev = this.config[key]
+    this.config[key] = value
+    if (!this.changes) this.changes = {}
+    this.changes[key] = { prev, value }
+    if (broadcast) this.world.network.send('settingsModified', { key, value })
   }
 
-  get effectiveRank() {
-    return this.hasAdminCode ? this.rank : Ranks.ADMIN
-  }
+  setHasAdminCode(value) { this.config.hasAdminCode = value }
+
+  get effectiveRank() { return this.config.hasAdminCode ? this.config.rank : Ranks.ADMIN }
 
   deserialize(data) {
-    this.title = data.title
-    this.desc = data.desc
-    this.image = data.image
-    this.avatar = data.avatar
-    this.customAvatars = data.customAvatars
-    this.voice = data.voice
-    this.rank = data.rank
-    this.playerLimit = data.playerLimit
-    this.ao = data.ao
-    this.emit('change', {
-      title: { value: this.title },
-      desc: { value: this.desc },
-      image: { value: this.image },
-      avatar: { value: this.avatar },
-      customAvatars: { value: this.customAvatars },
-      voice: { value: this.voice },
-      rank: { value: this.rank },
-      playerLimit: { value: this.playerLimit },
-      ao: { value: this.ao },
-    })
+    this.config = { ...this.config, ...data }
+    const changeMap = {}
+    for (const [key, value] of Object.entries(data)) changeMap[key] = { value }
+    this.emit('change', changeMap)
   }
 
-  serialize() {
-    return {
-      desc: this.desc,
-      title: this.title,
-      image: this.image,
-      avatar: this.avatar,
-      customAvatars: this.customAvatars,
-      voice: this.voice,
-      rank: this.rank,
-      playerLimit: this.playerLimit,
-      ao: this.ao,
-    }
-  }
+  serialize() { return { ...this.config } }
 
   preFixedUpdate() {
     if (!this.changes) return
-    this.emit('change', this.changes)
+    const changeMap = {}
+    for (const [key, value] of Object.entries(this.changes)) changeMap[key] = { value: value.value }
+    this.emit('change', changeMap)
     this.changes = null
   }
 
-  modify(key, value) {
-    if (this[key] === value) return
-    const prev = this[key]
-    this[key] = value
-    if (!this.changes) this.changes = {}
-    if (!this.changes[key]) this.changes[key] = { prev, value: null }
-    this.changes[key].value = value
-  }
-
-  set(key, value, broadcast) {
-    this.modify(key, value)
-    if (broadcast) {
-      this.world.network.send('settingsModified', { key, value })
-    }
-  }
+  get title() { return this.config.title }
+  set title(v) { this.set('title', v) }
+  get desc() { return this.config.desc }
+  set desc(v) { this.set('desc', v) }
+  get image() { return this.config.image }
+  set image(v) { this.set('image', v) }
+  get avatar() { return this.config.avatar }
+  set avatar(v) { this.set('avatar', v) }
+  get customAvatars() { return this.config.customAvatars }
+  set customAvatars(v) { this.set('customAvatars', v) }
+  get voice() { return this.config.voice }
+  set voice(v) { this.set('voice', v) }
+  get rank() { return this.config.rank }
+  set rank(v) { this.set('rank', v) }
+  get playerLimit() { return this.config.playerLimit }
+  set playerLimit(v) { this.set('playerLimit', v) }
+  get ao() { return this.config.ao }
+  set ao(v) { this.set('ao', v) }
+  get hasAdminCode() { return this.config.hasAdminCode }
+  set hasAdminCode(v) { this.config.hasAdminCode = v }
 }
