@@ -2,7 +2,7 @@ import { collisionLayers as layers, geometryTypes as types } from '../utils/Node
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, onSetRebuildIf } from '../utils/defineProperty.js'
 
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
@@ -23,61 +23,63 @@ const defaults = {
   restitution: 0,
 }
 
+const rebuildIfShape = onSetRebuildIf(function() { return !!this.shape })
+
 const propertySchema = {
   type: {
     default: defaults.type,
     validate: validators.enum(types),
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   width: {
     default: defaults.width,
     validate: validators.number,
-    onSet() { if (this.shape && this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }),
   },
   height: {
     default: defaults.height,
     validate: validators.number,
-    onSet() { if (this.shape && this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }),
   },
   depth: {
     default: defaults.depth,
     validate: validators.number,
-    onSet() { if (this.shape && this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }),
   },
   radius: {
     default: defaults.radius,
     validate: validators.number,
-    onSet() { if (this.shape && this._type === 'sphere') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'sphere' }),
   },
   convex: {
     default: defaults.convex,
     validate: validators.boolean,
-    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+    onSet: rebuildIfShape,
   },
   trigger: {
     default: defaults.trigger,
     validate: validators.boolean,
-    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+    onSet: rebuildIfShape,
   },
   layer: {
     default: defaults.layer,
     validate: validators.enum(layers),
-    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+    onSet: rebuildIfShape,
   },
   staticFriction: {
     default: defaults.staticFriction,
     validate: validators.number,
-    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+    onSet: rebuildIfShape,
   },
   dynamicFriction: {
     default: defaults.dynamicFriction,
     validate: validators.number,
-    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+    onSet: rebuildIfShape,
   },
   restitution: {
     default: defaults.restitution,
     validate: validators.number,
-    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+    onSet: rebuildIfShape,
   },
 }
 

@@ -4,7 +4,7 @@ import { every, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
 import { audioGroups as groups, distanceModels } from '../utils/NodeConstants.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild } from '../utils/defineProperty.js'
 
 const defaults = {
   src: null,
@@ -26,7 +26,7 @@ const propertySchema = {
   src: {
     default: defaults.src,
     validate: validators.stringOrNull,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   volume: {
     default: defaults.volume,
@@ -36,17 +36,17 @@ const propertySchema = {
   loop: {
     default: defaults.loop,
     validate: validators.boolean,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   group: {
     default: defaults.group,
     validate: validators.enum(groups),
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   spatial: {
     default: defaults.spatial,
     validate: validators.boolean,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   distanceModel: {
     default: defaults.distanceModel,

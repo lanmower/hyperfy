@@ -38,6 +38,23 @@ export function defineProps(target, schema, defaults = {}, data = {}) {
   }
 }
 
+// Common onSet handlers
+export function onSetRebuild() {
+  return function() {
+    this.needsRebuild = true
+    this.setDirty()
+  }
+}
+
+export function onSetRebuildIf(condition) {
+  return function() {
+    if (condition.call(this)) {
+      this.needsRebuild = true
+      this.setDirty()
+    }
+  }
+}
+
 // Validator factories
 export const validators = {
   string: (value) => (!value || typeof value === 'string') ? null : 'must be string',

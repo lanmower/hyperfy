@@ -2,7 +2,7 @@ import { imageFits as fits, pivots } from '../utils/NodeConstants.js'
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild } from '../utils/defineProperty.js'
 
 const defaults = {
   src: null,
@@ -21,52 +21,52 @@ const propertySchema = {
   src: {
     default: defaults.src,
     validate: (v) => v !== null && typeof v !== 'string' ? '[image] src not null or string' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   width: {
     default: defaults.width,
     validate: (v) => v !== null && typeof v !== 'number' ? '[image] width not null or number' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   height: {
     default: defaults.height,
     validate: (v) => v !== null && typeof v !== 'number' ? '[image] height not null or number' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   fit: {
     default: defaults.fit,
     validate: (v) => !fits.includes(v) ? '[image] fit invalid' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   color: {
     default: defaults.color,
     validate: (v) => v !== null && typeof v !== 'string' ? '[image] color not null or string' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   pivot: {
     default: defaults.pivot,
     validate: (v) => !pivots.includes(v) ? '[image] pivot invalid' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   lit: {
     default: defaults.lit,
     validate: (v) => typeof v !== 'boolean' ? '[image] lit not a boolean' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   doubleside: {
     default: defaults.doubleside,
     validate: (v) => typeof v !== 'boolean' ? '[image] doubleside not a boolean' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   castShadow: {
     default: defaults.castShadow,
     validate: (v) => typeof v !== 'boolean' ? '[image] castShadow not a boolean' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   receiveShadow: {
     default: defaults.receiveShadow,
     validate: (v) => typeof v !== 'boolean' ? '[image] receiveShadow not a boolean' : null,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
 }
 

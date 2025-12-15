@@ -4,7 +4,7 @@ import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, onSetRebuildIf } from '../utils/defineProperty.js'
 import { geometryTypes as types } from '../utils/NodeConstants.js'
 
 const defaults = {
@@ -25,32 +25,32 @@ const propertySchema = {
   type: {
     default: defaults.type,
     validate: validators.enum(types),
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   width: {
     default: defaults.width,
     validate: validators.number,
-    onSet() { if (this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this._type === 'box' }),
   },
   height: {
     default: defaults.height,
     validate: validators.number,
-    onSet() { if (this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this._type === 'box' }),
   },
   depth: {
     default: defaults.depth,
     validate: validators.number,
-    onSet() { if (this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this._type === 'box' }),
   },
   radius: {
     default: defaults.radius,
     validate: validators.number,
-    onSet() { if (this._type === 'sphere') { this.needsRebuild = true; this.setDirty() } },
+    onSet: onSetRebuildIf(function() { return this._type === 'sphere' }),
   },
   linked: {
     default: defaults.linked,
     validate: validators.boolean,
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   castShadow: {
     default: defaults.castShadow,
