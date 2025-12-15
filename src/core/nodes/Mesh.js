@@ -5,6 +5,7 @@ import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
+import { geometryTypes as types } from '../utils/NodeConstants.js'
 
 const defaults = {
   type: 'box',
@@ -23,7 +24,7 @@ const defaults = {
 const propertySchema = {
   type: {
     default: defaults.type,
-    validate: (value) => !types.includes(value) ? `invalid type: ${value}` : null,
+    validate: validators.enum(types),
     onSet() { this.needsRebuild = true; this.setDirty() },
   },
   width: {
@@ -67,8 +68,6 @@ const propertySchema = {
     onSet() { if (this.mesh) this.mesh.visible = this._visible },
   },
 }
-
-const types = ['box', 'sphere', 'geometry']
 
 let boxes = {}
 const getBox = (width, height, depth) => {

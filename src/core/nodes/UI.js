@@ -21,6 +21,7 @@ import { borderRoundRect } from '../extras/borderRoundRect.js'
 import { clamp } from '../utils.js'
 import { defineProps } from '../utils/defineProperty.js'
 import { v, q, m, e } from '../utils/TempVectors.js'
+import { pivots } from '../utils/NodeConstants.js'
 
 const FORWARD = new THREE.Vector3(0, 0, 1)
 
@@ -31,17 +32,6 @@ const isBrowser = typeof window !== 'undefined'
 
 const spaces = ['world', 'screen']
 const billboards = ['none', 'full', 'y']
-const pivots = [
-  'top-left',
-  'top-center',
-  'top-right',
-  'center-left',
-  'center',
-  'center-right',
-  'bottom-left',
-  'bottom-center',
-  'bottom-right',
-]
 
 const defaults = {
   space: 'world',

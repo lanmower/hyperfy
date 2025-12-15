@@ -40,7 +40,7 @@ const propertySchema = {
   },
   group: {
     default: defaults.group,
-    validate: (value) => !groups.includes(value) ? 'invalid group' : null,
+    validate: validators.enum(groups),
     onSet() { this.needsRebuild = true; this.setDirty() },
   },
   spatial: {
@@ -50,7 +50,7 @@ const propertySchema = {
   },
   distanceModel: {
     default: defaults.distanceModel,
-    validate: (value) => !distanceModels.includes(value) ? 'invalid distanceModel' : null,
+    validate: validators.enum(distanceModels),
     onSet() { if (this.pannerNode) this.pannerNode.distanceModel = this._distanceModel },
   },
   refDistance: {

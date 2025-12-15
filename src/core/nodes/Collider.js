@@ -1,4 +1,4 @@
-import { collisionLayers as layers } from '../utils/NodeConstants.js'
+import { collisionLayers as layers, geometryTypes as types } from '../utils/NodeConstants.js'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
@@ -26,7 +26,7 @@ const defaults = {
 const propertySchema = {
   type: {
     default: defaults.type,
-    validate: (value) => !types.includes(value) ? `invalid type: ${value}` : null,
+    validate: validators.enum(types),
     onSet() { this.needsRebuild = true; this.setDirty() },
   },
   width: {
@@ -61,7 +61,7 @@ const propertySchema = {
   },
   layer: {
     default: defaults.layer,
-    validate: (value) => !layers.includes(value) ? `invalid layer: ${value}` : null,
+    validate: validators.enum(layers),
     onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
   },
   staticFriction: {
@@ -80,8 +80,6 @@ const propertySchema = {
     onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
   },
 }
-
-const types = ['box', 'sphere', 'geometry']
 
 export class Collider extends Node {
   constructor(data = {}) {

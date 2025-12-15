@@ -36,7 +36,7 @@ const propertySchema = {
   },
   layer: {
     default: defaults.layer,
-    validate: (value) => !layers.includes(value) ? `invalid layer: ${value}` : null,
+    validate: validators.enum(layers),
     onSet() { this.needsRebuild = true; this.setDirty() },
   },
   tag: {

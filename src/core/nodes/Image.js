@@ -1,20 +1,8 @@
-import { imageFits as fits } from '../utils/NodeConstants.js'
+import { imageFits as fits, pivots } from '../utils/NodeConstants.js'
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
-
-const pivots = [
-  'top-left',
-  'top-center',
-  'top-right',
-  'center-left',
-  'center',
-  'center-right',
-  'bottom-left',
-  'bottom-center',
-  'bottom-right',
-]
 
 const defaults = {
   src: null,

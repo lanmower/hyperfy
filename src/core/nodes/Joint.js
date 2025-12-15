@@ -7,6 +7,7 @@ import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
 import { q } from '../utils/TempVectors.js'
+import { jointTypes as types } from '../utils/NodeConstants.js'
 
 const defaults = {
   type: 'fixed',
@@ -22,8 +23,6 @@ const defaults = {
   limitDamping: null,
   collide: false,
 }
-
-const types = ['fixed', 'socket', 'hinge', 'distance']
 
 const rebuild = function() { this.needsRebuild = true; this.setDirty() }
 const numberOrNull = (value) => (value === null || typeof value === 'number') ? null : 'must be number or null'

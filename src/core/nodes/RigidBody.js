@@ -3,10 +3,9 @@ import * as THREE from '../extras/three.js'
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
+import { bodyTypes as types } from '../utils/NodeConstants.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
-
-const types = ['static', 'kinematic', 'dynamic']
 
 const defaults = {
   type: 'static',
@@ -23,7 +22,7 @@ const defaults = {
 const propertySchema = {
   type: {
     default: defaults.type,
-    validate: (v) => !types.includes(v) ? `[rigidbody] type invalid: ${v}` : null,
+    validate: validators.enum(types),
     onSet() { this.needsRebuild = true; this.setDirty() },
   },
   mass: {
