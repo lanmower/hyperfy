@@ -19,6 +19,7 @@ import {
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
 import { clamp } from '../utils.js'
+import { defineProps } from '../utils/defineProperty.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -81,37 +82,194 @@ const defaults = {
   gap: 0,
 }
 
+const propertySchema = {
+  space: {
+    default: defaults.space,
+    validate: v => !isSpace(v) ? '[ui] space not valid' : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  width: {
+    default: defaults.width,
+    validate: v => !isNumber(v) ? '[ui] width not a number' : null,
+    onSet() {
+      this.yogaNode?.setWidth(this._width * this._res)
+      this.rebuild()
+    },
+  },
+  height: {
+    default: defaults.height,
+    validate: v => !isNumber(v) ? '[ui] height not a number' : null,
+    onSet() {
+      this.yogaNode?.setHeight(this._height * this._res)
+      this.rebuild()
+    },
+  },
+  size: {
+    default: defaults.size,
+    validate: v => !isNumber(v) ? '[ui] size not a number' : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  res: {
+    default: defaults.res,
+    validate: v => !isNumber(v) ? '[ui] res not a number' : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  lit: {
+    default: defaults.lit,
+    validate: v => !isBoolean(v) ? '[ui] lit not a boolean' : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  doubleside: {
+    default: defaults.doubleside,
+    validate: v => !isBoolean(v) ? '[ui] doubleside not a boolean' : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  billboard: {
+    default: defaults.billboard,
+    validate: v => !isBillboard(v) ? `[ui] billboard invalid: ${v}` : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  pivot: {
+    default: defaults.pivot,
+    validate: v => !isPivot(v) ? `[ui] pivot invalid: ${v}` : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  scaler: {
+    default: defaults.scaler,
+    validate: v => v !== null && !isScaler(v) ? '[ui] scaler invalid' : null,
+    onSet() {
+      this.rebuild()
+    },
+  },
+  pointerEvents: {
+    default: defaults.pointerEvents,
+    validate: v => !isBoolean(v) ? '[ui] pointerEvents not a boolean' : null,
+    onSet() {
+      this.redraw()
+    },
+  },
+  transparent: {
+    default: defaults.transparent,
+    validate: v => !isBoolean(v) ? '[ui] transparent not a boolean' : null,
+    onSet() {
+      this.redraw()
+    },
+  },
+  backgroundColor: {
+    default: defaults.backgroundColor,
+    validate: v => v !== null && !isString(v) ? '[ui] backgroundColor not a string' : null,
+    onSet() {
+      this.redraw()
+    },
+  },
+  borderWidth: {
+    default: defaults.borderWidth,
+    validate: v => !isNumber(v) ? '[ui] borderWidth not a number' : null,
+    onSet() {
+      this.redraw()
+    },
+  },
+  borderColor: {
+    default: defaults.borderColor,
+    validate: v => v !== null && !isString(v) ? '[ui] borderColor not a string' : null,
+    onSet() {
+      this.redraw()
+    },
+  },
+  borderRadius: {
+    default: defaults.borderRadius,
+    validate: v => !isNumber(v) ? '[ui] borderRadius not a number' : null,
+    onSet() {
+      this.redraw()
+    },
+  },
+  padding: {
+    default: defaults.padding,
+    validate: v => !isEdge(v) ? '[ui] padding not a number or array of numbers' : null,
+    onSet() {
+      if (isArray(this._padding)) {
+        const [top, right, bottom, left] = this._padding
+        this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this._res)
+        this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this._res)
+        this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this._res)
+        this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this._res)
+      } else {
+        this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this._res)
+      }
+      this.redraw()
+    },
+  },
+  flexDirection: {
+    default: defaults.flexDirection,
+    validate: v => !isFlexDirection(v) ? `[ui] flexDirection invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection])
+      this.redraw()
+    },
+  },
+  justifyContent: {
+    default: defaults.justifyContent,
+    validate: v => !isJustifyContent(v) ? `[ui] justifyContent invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent])
+      this.redraw()
+    },
+  },
+  alignItems: {
+    default: defaults.alignItems,
+    validate: v => !isAlignItem(v) ? `[ui] alignItems invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setAlignItems(AlignItems[this._alignItems])
+      this.redraw()
+    },
+  },
+  alignContent: {
+    default: defaults.alignContent,
+    validate: v => !isAlignContent(v) ? `[ui] alignContent invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setAlignContent(AlignContent[this._alignContent])
+      this.redraw()
+    },
+  },
+  flexWrap: {
+    default: defaults.flexWrap,
+    validate: v => !isFlexWrap(v) ? `[uiview] flexWrap invalid: ${v}` : null,
+    onSet() {
+      this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap])
+      this.redraw()
+    },
+  },
+  gap: {
+    default: defaults.gap,
+    validate: v => !isNumber(v) ? '[uiview] gap not a number' : null,
+    onSet() {
+      this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this._res)
+      this.redraw()
+    },
+  },
+}
+
 export class UI extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'ui'
 
-    this.space = data.space
-    this.width = data.width
-    this.height = data.height
-    this.size = data.size
-    this.res = data.res
-
-    this.lit = data.lit
-    this.doubleside = data.doubleside
-    this.billboard = data.billboard
-    this.pivot = data.pivot
+    defineProps(this, propertySchema, data)
     this._offset = new THREE.Vector3().fromArray(data.offset || defaults.offset)
-    this.scaler = data.scaler
-    this.pointerEvents = data.pointerEvents
-
-    this.transparent = data.transparent
-    this.backgroundColor = data.backgroundColor
-    this.borderWidth = data.borderWidth
-    this.borderColor = data.borderColor
-    this.borderRadius = data.borderRadius
-    this.padding = data.padding
-    this.flexDirection = data.flexDirection
-    this.justifyContent = data.justifyContent
-    this.alignItems = data.alignItems
-    this.alignContent = data.alignContent
-    this.flexWrap = data.flexWrap
-    this.gap = data.gap
 
     this.ui = this
 
@@ -398,32 +556,10 @@ export class UI extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._space = source._space
-    this._width = source._width
-    this._height = source._height
-    this._size = source._size
-    this._res = source._res
-
-    this._lit = source._lit
-    this._doubleside = source._doubleside
-    this._billboard = source._billboard
-    this._pivot = source._pivot
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     this._offset = source._offset
-    this._scaler = source._scaler
-    this._pointerEvents = source._pointerEvents
-
-    this._transparent = source._transparent
-    this._backgroundColor = source._backgroundColor
-    this._borderWidth = source._borderWidth
-    this._borderColor = source._borderColor
-    this._borderRadius = source._borderRadius
-    this._padding = source._padding
-    this._flexDirection = source._flexDirection
-    this._justifyContent = source._justifyContent
-    this._alignItems = source._alignItems
-    this._alignContent = source._alignContent
-    this._flexWrap = source._flexWrap
-    this._gap = source._gap
     return this
   }
 
@@ -478,125 +614,6 @@ export class UI extends Node {
     return material
   }
 
-  get space() {
-    return this._space
-  }
-
-  set space(value = defaults.space) {
-    if (!isSpace(value)) {
-      throw new Error('[ui] space not valid')
-    }
-    if (this._space === value) return
-    this._space = value
-    this.rebuild()
-  }
-
-  get width() {
-    return this._width
-  }
-
-  set width(value = defaults.width) {
-    if (!isNumber(value)) {
-      throw new Error('[ui] width not a number')
-    }
-    if (this._width === value) return
-    this._width = value
-    this.yogaNode?.setWidth(this._width * this._res)
-    this.rebuild()
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (!isNumber(value)) {
-      throw new Error('[ui] height not a number')
-    }
-    if (this._height === value) return
-    this._height = value
-    this.yogaNode?.setHeight(this._height * this._res)
-    this.rebuild()
-  }
-
-  get size() {
-    return this._size
-  }
-
-  set size(value = defaults.size) {
-    if (!isNumber(value)) {
-      throw new Error('[ui] size not a number')
-    }
-    if (this._size === value) return
-    this._size = value
-    this.rebuild()
-  }
-
-  get res() {
-    return this._res
-  }
-
-  set res(value = defaults.res) {
-    if (!isNumber(value)) {
-      throw new Error('[ui] res not a number')
-    }
-    if (this._res === value) return
-    this._res = value
-    this.rebuild()
-  }
-
-  get lit() {
-    return this._lit
-  }
-
-  set lit(value = defaults.lit) {
-    if (!isBoolean(value)) {
-      throw new Error('[ui] lit not a boolean')
-    }
-    if (this._lit === value) return
-    this._lit = value
-    this.rebuild()
-  }
-
-  get doubleside() {
-    return this._doubleside
-  }
-
-  set doubleside(value = defaults.doubleside) {
-    if (!isBoolean(value)) {
-      throw new Error('[ui] doubleside not a boolean')
-    }
-    if (this._doubleside === value) return
-    this._doubleside = value
-    this.rebuild()
-  }
-
-  get billboard() {
-    return this._billboard
-  }
-
-  set billboard(value = defaults.billboard) {
-    if (!isBillboard(value)) {
-      throw new Error(`[ui] billboard invalid: ${value}`)
-    }
-    if (this._billboard === value) return
-    this._billboard = value
-    this.rebuild()
-  }
-
-  get pivot() {
-    return this._pivot
-  }
-
-  set pivot(value = defaults.pivot) {
-    if (!isPivot(value)) {
-      throw new Error(`[ui] pivot invalid: ${value}`)
-    }
-    if (this._pivot === value) return
-    this._pivot = value
-    this.rebuild()
-  }
-
   get offset() {
     return this._offset
   }
@@ -607,202 +624,6 @@ export class UI extends Node {
     }
     this._offset.copy(value)
     this.rebuild()
-  }
-
-  get scaler() {
-    return this._scaler
-  }
-
-  set scaler(value = defaults.scaler) {
-    if (value !== null && !isScaler(value)) {
-      throw new Error('[ui] scaler invalid')
-    }
-    this._scaler = value
-    this.rebuild()
-  }
-
-  get pointerEvents() {
-    return this._pointerEvents
-  }
-
-  set pointerEvents(value = defaults.pointerEvents) {
-    if (!isBoolean(value)) {
-      throw new Error('[ui] pointerEvents not a boolean')
-    }
-    if (this._pointerEvents === value) return
-    this._pointerEvents = value
-    this.redraw()
-  }
-
-  get transparent() {
-    return this._transparent
-  }
-
-  set transparent(value = defaults.transparent) {
-    if (!isBoolean(value)) {
-      throw new Error('[ui] transparent not a boolean')
-    }
-    if (this._transparent === value) return
-    this._transparent = value
-    this.redraw()
-  }
-
-  get backgroundColor() {
-    return this._backgroundColor
-  }
-
-  set backgroundColor(value = defaults.backgroundColor) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[ui] backgroundColor not a string')
-    }
-    if (this._backgroundColor === value) return
-    this._backgroundColor = value
-    this.redraw()
-  }
-
-  get borderWidth() {
-    return this._borderWidth
-  }
-
-  set borderWidth(value = defaults.borderWidth) {
-    if (!isNumber(value)) {
-      throw new Error('[ui] borderWidth not a number')
-    }
-    if (this._borderWidth === value) return
-    this._borderWidth = value
-    this.redraw()
-  }
-
-  get borderColor() {
-    return this._borderColor
-  }
-
-  set borderColor(value = defaults.borderColor) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[ui] borderColor not a string')
-    }
-    if (this._borderColor === value) return
-    this._borderColor = value
-    this.redraw()
-  }
-
-  get borderRadius() {
-    return this._borderRadius
-  }
-
-  set borderRadius(value = defaults.borderRadius) {
-    if (!isNumber(value)) {
-      throw new Error('[ui] borderRadius not a number')
-    }
-    if (this._borderRadius === value) return
-    this._borderRadius = value
-    this.redraw()
-  }
-
-  get padding() {
-    return this._padding
-  }
-
-  set padding(value = defaults.padding) {
-    if (!isEdge(value)) {
-      throw new Error(`[ui] padding not a number or array of numbers`)
-    }
-    if (this._padding === value) return
-    this._padding = value
-    if (isArray(this._padding)) {
-      const [top, right, bottom, left] = this._padding
-      this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this._res)
-      this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this._res)
-      this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this._res)
-      this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this._res)
-    } else {
-      this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this._res)
-    }
-    this.redraw()
-  }
-
-  get flexDirection() {
-    return this._flexDirection
-  }
-
-  set flexDirection(value = defaults.flexDirection) {
-    if (!isFlexDirection(value)) {
-      throw new Error(`[ui] flexDirection invalid: ${value}`)
-    }
-    if (this._flexDirection === value) return
-    this._flexDirection = value
-    this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection])
-    this.redraw()
-  }
-
-  get justifyContent() {
-    return this._justifyContent
-  }
-
-  set justifyContent(value = defaults.justifyContent) {
-    if (!isJustifyContent(value)) {
-      throw new Error(`[ui] justifyContent invalid: ${value}`)
-    }
-    if (this._justifyContent === value) return
-    this._justifyContent = value
-    this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent])
-    this.redraw()
-  }
-
-  get alignItems() {
-    return this._alignItems
-  }
-
-  set alignItems(value = defaults.alignItems) {
-    if (!isAlignItem(value)) {
-      throw new Error(`[ui] alignItems invalid: ${value}`)
-    }
-    if (this._alignItems === value) return
-    this._alignItems = value
-    this.yogaNode?.setAlignItems(AlignItems[this._alignItems])
-    this.redraw()
-  }
-
-  get alignContent() {
-    return this._alignContent
-  }
-
-  set alignContent(value = defaults.alignContent) {
-    if (!isAlignContent(value)) {
-      throw new Error(`[ui] alignContent invalid: ${value}`)
-    }
-    if (this._alignContent === value) return
-    this._alignContent = value
-    this.yogaNode?.setAlignContent(AlignContent[this._alignContent])
-    this.redraw()
-  }
-
-  get flexWrap() {
-    return this.flexWrap
-  }
-
-  set flexWrap(value = defaults.flexWrap) {
-    if (!isFlexWrap(value)) {
-      throw new Error(`[uiview] flexWrap invalid: ${value}`)
-    }
-    if (this._flexWrap === value) return
-    this._flexWrap = value
-    this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap])
-    this.redraw()
-  }
-
-  get gap() {
-    return this._gap
-  }
-
-  set gap(value = defaults.gap) {
-    if (!isNumber(value)) {
-      throw new Error(`[uiview] gap not a number`)
-    }
-    if (this._gap === value) return
-    this._gap = value
-    this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this._res)
-    this.redraw()
   }
 
   getProxy() {
