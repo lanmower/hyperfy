@@ -1,9 +1,9 @@
 import * as THREE from '../extras/three.js'
 
 import { System } from './System.js'
+import { v } from '../utils/TempVectors.js'
 
 const up = new THREE.Vector3(0, 1, 0)
-const v1 = new THREE.Vector3()
 
 export class ClientAudio extends System {
   constructor(world) {
@@ -99,7 +99,7 @@ export class ClientAudio extends System {
 
   lateUpdate(delta) {
     const target = this.world.rig
-    const dir = v1.set(0, 0, -1).applyQuaternion(target.quaternion)
+    const dir = v[0].set(0, 0, -1).applyQuaternion(target.quaternion)
     if (this.listener.positionX) {
       // https://github.com/mrdoob/three.js/blob/master/src/audio/AudioListener.js
       // code path for Chrome (see three#14393)

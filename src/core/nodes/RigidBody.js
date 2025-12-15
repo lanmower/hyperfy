@@ -2,13 +2,8 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
+import { v, q, m } from '../utils/TempVectors.js'
 
-const _v1 = new THREE.Vector3()
-const _v2 = new THREE.Vector3()
-const _q1 = new THREE.Quaternion()
-const _m1 = new THREE.Matrix4()
-const _m2 = new THREE.Matrix4()
-const _m3 = new THREE.Matrix4()
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 
 const types = ['static', 'kinematic', 'dynamic']
@@ -64,10 +59,10 @@ export class RigidBody extends Node {
   mount() {
     this.needsRebuild = false
     if (this.ctx.moving) return // physics ignored when moving apps around
-    this.matrixWorld.decompose(_v1, _q1, _v2)
+    this.matrixWorld.decompose(v[0], q[0], v[1])
     this.transform = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-    _v1.toPxTransform(this.transform)
-    _q1.toPxTransform(this.transform)
+    v[0].toPxTransform(this.transform)
+    q[0].toPxTransform(this.transform)
     if (this._type === 'static') {
       this.actor = this.ctx.world.physics.physics.createRigidStatic(this.transform)
     } else if (this._type === 'kinematic') {
@@ -131,12 +126,12 @@ export class RigidBody extends Node {
 
   onInterpolate = (position, quaternion) => {
     if (this.parent) {
-      _m1.compose(position, quaternion, _defaultScale)
-      _m2.copy(this.parent.matrixWorld).invert()
-      _m3.multiplyMatrices(_m2, _m1)
-      _m3.decompose(this.position, this.quaternion, _v1)
-      // this.matrix.copy(_m3)
-      // this.matrixWorld.copy(_m1)
+      m[0].compose(position, quaternion, _defaultScale)
+      m[1].copy(this.parent.matrixWorld).invert()
+      m[2].multiplyMatrices(m[1], m[0])
+      m[2].decompose(this.position, this.quaternion, v[0])
+      // this.matrix.copy(m[2])
+      // this.matrixWorld.copy(m[0])
     } else {
       this.position.copy(position)
       this.quaternion.copy(quaternion)
@@ -311,7 +306,7 @@ export class RigidBody extends Node {
 
   addForce(force, mode) {
     if (!force?.isVector3) throw new Error('[rigidbody] addForce force must be Vector3')
-    if (!force.toPxExtVec3) force = _v1.copy(force)
+    if (!force.toPxExtVec3) force = v[0].copy(force)
     mode = getForceMode(mode)
     this.actor?.addForce(force.toPxVec3(), mode, true)
   }
@@ -322,8 +317,8 @@ export class RigidBody extends Node {
     if (!this.actor) return
     if (!this._pv1) this._pv1 = new PHYSX.PxVec3()
     if (!this._pv2) this._pv2 = new PHYSX.PxVec3()
-    if (!force.toPxExtVec3) force = _v1.copy(force)
-    if (!pos.toPxExtVec3) pos = _v2.copy(pos)
+    if (!force.toPxExtVec3) force = v[0].copy(force)
+    if (!pos.toPxExtVec3) pos = v[1].copy(pos)
     mode = getForceMode(mode)
     PHYSX.PxRigidBodyExt.prototype.addForceAtPos(
       this.actor,
@@ -340,8 +335,8 @@ export class RigidBody extends Node {
     if (!this.actor) return
     if (!this._pv1) this._pv1 = new PHYSX.PxVec3()
     if (!this._pv2) this._pv2 = new PHYSX.PxVec3()
-    if (!force.toPxExtVec3) force = _v1.copy(force)
-    if (!pos.toPxExtVec3) pos = _v2.copy(pos)
+    if (!force.toPxExtVec3) force = v[0].copy(force)
+    if (!pos.toPxExtVec3) pos = v[1].copy(pos)
     mode = getForceMode(mode)
     PHYSX.PxRigidBodyExt.prototype.addForceAtLocalPos(
       this.actor,
@@ -354,7 +349,7 @@ export class RigidBody extends Node {
 
   addTorque(torque, mode) {
     if (!torque?.isVector3) throw new Error('[rigidbody] addForce torque must be Vector3')
-    if (!torque.toPxVec3) torque = _v1.copy(torque)
+    if (!torque.toPxVec3) torque = v[0].copy(torque)
     mode = getForceMode(mode)
     this.actor?.addTorque(torque.toPxVec3(), mode, true)
   }

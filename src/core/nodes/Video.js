@@ -4,10 +4,7 @@ import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
 import { uuid } from '../utils.js'
-
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
+import { v, q } from '../utils/TempVectors.js'
 
 const groups = ['music', 'sfx']
 const distanceModels = ['linear', 'inverse', 'exponential']
@@ -420,9 +417,9 @@ export class Video extends Node {
 
   updatePannerPosition() {
     const audio = this.ctx.world.audio
-    const pos = v1.setFromMatrixPosition(this.matrixWorld)
-    const qua = q1.setFromRotationMatrix(this.matrixWorld)
-    const dir = v2.set(0, 0, -1).applyQuaternion(qua)
+    const pos = v[0].setFromMatrixPosition(this.matrixWorld)
+    const qua = q[0].setFromRotationMatrix(this.matrixWorld)
+    const dir = v[1].set(0, 0, -1).applyQuaternion(qua)
     if (this.panner.positionX) {
       const endTime = audio.ctx.currentTime + audio.lastDelta
       this.panner.positionX.linearRampToValueAtTime(pos.x, endTime)

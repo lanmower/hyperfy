@@ -4,9 +4,7 @@ import { isBoolean, isNumber } from 'lodash-es'
 import { Node, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
-
-const _v1 = new THREE.Vector3()
-const _v2 = new THREE.Vector3()
+import { v } from '../utils/TempVectors.js'
 
 const defaults = {
   type: 'box',
