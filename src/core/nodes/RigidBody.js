@@ -2,7 +2,7 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild } from '../utils/defineProperty.js'
 import { bodyTypes as types } from '../utils/NodeConstants.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
@@ -23,7 +23,7 @@ const propertySchema = {
   type: {
     default: defaults.type,
     validate: validators.enum(types),
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   mass: {
     default: defaults.mass,
@@ -32,29 +32,21 @@ const propertySchema = {
       if (v < 0) return '[rigidbody] mass cannot be less than zero'
       return null
     },
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    onSet: onSetRebuild(),
   },
   linearDamping: {
     default: defaults.linearDamping,
-    validate: (v) => {
-      if (typeof v !== 'number') return '[rigidbody] linearDamping not a number'
-      if (v < 0) return '[rigidbody] linearDamping cannot be less than zero'
-      return null
-    },
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    validate: validators.numberMin(0),
+    onSet: onSetRebuild(),
   },
   angularDamping: {
     default: defaults.angularDamping,
-    validate: (v) => {
-      if (typeof v !== 'number') return '[rigidbody] angularDamping not a number'
-      if (v < 0) return '[rigidbody] angularDamping cannot be less than zero'
-      return null
-    },
-    onSet() { this.needsRebuild = true; this.setDirty() },
+    validate: validators.numberMin(0),
+    onSet: onSetRebuild(),
   },
   tag: {
     default: defaults.tag,
-    validate: (v) => v !== null && typeof v !== 'string' && typeof v !== 'number' ? '[rigidbody] tag not a string' : null,
+    validate: validators.stringOrNumberOrNull,
     onSet(value) {
       if (typeof value === 'number') {
         this._tag = value + ''
@@ -63,19 +55,19 @@ const propertySchema = {
   },
   onContactStart: {
     default: defaults.onContactStart,
-    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onContactStart not a function' : null,
+    validate: validators.functionOrNull,
   },
   onContactEnd: {
     default: defaults.onContactEnd,
-    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onContactEnd not a function' : null,
+    validate: validators.functionOrNull,
   },
   onTriggerEnter: {
     default: defaults.onTriggerEnter,
-    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onTriggerEnter not a function' : null,
+    validate: validators.functionOrNull,
   },
   onTriggerLeave: {
     default: defaults.onTriggerLeave,
-    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onTriggerLeave not a function' : null,
+    validate: validators.functionOrNull,
   },
 }
 
