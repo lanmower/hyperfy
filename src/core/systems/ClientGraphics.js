@@ -56,7 +56,7 @@ export class ClientGraphics extends System {
     this.renderer = getRenderer()
     this.renderer.setSize(this.width, this.height)
     this.renderer.setClearColor(0xffffff, 0)
-    this.renderer.setPixelRatio(this.world.prefs.dpr)
+    this.renderer.setPixelRatio(this.world.prefs.state.get('dpr'))
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.NoToneMapping
@@ -67,30 +67,18 @@ export class ClientGraphics extends System {
     this.renderer.xr.setFoveation(1)
     this.maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy()
     THREE.Texture.DEFAULT_ANISOTROPY = this.maxAnisotropy
-    this.usePostprocessing = this.world.prefs.postprocessing
+    this.usePostprocessing = this.world.prefs.state.get('postprocessing')
     const context = this.renderer.getContext()
     const maxMultisampling = context.getParameter(context.MAX_SAMPLES)
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: THREE.HalfFloatType,
-      // multisampling: Math.min(8, maxMultisampling),
     })
     this.renderPass = new RenderPass(this.world.stage.scene, this.world.camera)
     this.composer.addPass(this.renderPass)
     this.aoPass = new N8AOPostPass(this.world.stage.scene, this.world.camera, this.width, this.height)
-    this.aoPass.enabled = this.world.settings.ao && this.world.prefs.ao
-    // we can't use this as it traverses the scene, but half our objects are in the octree
+    this.aoPass.enabled = this.world.settings.get('ao') && this.world.prefs.state.get('ao')
     this.aoPass.autoDetectTransparency = false
-    // full res is pretty expensive
     this.aoPass.configuration.halfRes = true
-    // look 1:
-    // this.aoPass.configuration.aoRadius = 0.2
-    // this.aoPass.configuration.distanceFalloff = 1
-    // this.aoPass.configuration.intensity = 2
-    // look 2:
-    // this.aoPass.configuration.aoRadius = 0.5
-    // this.aoPass.configuration.distanceFalloff = 1
-    // this.aoPass.configuration.intensity = 2
-    // look 3:
     this.aoPass.configuration.screenSpaceRadius = true
     this.aoPass.configuration.aoRadius = 32
     this.aoPass.configuration.distanceFalloff = 1
@@ -104,31 +92,26 @@ export class ClientGraphics extends System {
       intensity: 0.5,
       radius: 0.8,
     })
-    this.bloomEnabled = this.world.prefs.bloom
-    this.smaa = new SMAAEffect({
-      preset: SMAAPreset.ULTRA,
-    })
-    this.tonemapping = new ToneMappingEffect({
-      mode: ToneMappingMode.ACES_FILMIC,
-    })
+    this.bloomEnabled = this.world.prefs.state.get('bloom')
+    this.smaa = new SMAAEffect({ preset: SMAAPreset.ULTRA })
+    this.tonemapping = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
     this.effectPass = new EffectPass(this.world.camera)
     this.updatePostProcessingEffects()
     this.composer.addPass(this.effectPass)
-    this.world.prefs.on('change', this.onPrefsChange)
     this.resizer = new ResizeObserver(() => {
       this.resize(this.viewport.offsetWidth, this.viewport.offsetHeight)
     })
     this.viewport.appendChild(this.renderer.domElement)
     this.resizer.observe(this.viewport)
-
     this.xrWidth = null
     this.xrHeight = null
     this.xrDimensionsNeeded = false
   }
 
   start() {
-    this.world.on('xrSession', this.onXRSession)
-    this.world.settings.on('change', this.onSettingsChange)
+    this.world.events.on('prefChanged', this.onPrefChanged)
+    this.world.events.on('xrSession', this.onXRSession)
+    this.world.events.on('settingChanged', this.onSettingChanged)
   }
 
   resize(width, height) {
@@ -139,7 +122,7 @@ export class ClientGraphics extends System {
     this.world.camera.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height)
     this.composer.setSize(this.width, this.height)
-    this.emit('resize')
+    this.world.events.emit('graphicsResize', { width, height })
     this.render()
   }
 
@@ -166,24 +149,17 @@ export class ClientGraphics extends System {
     this.worldToScreenFactor = (Math.tan(fovRadians / 2) * 2) / rendererHeight
   }
 
-  onPrefsChange = changes => {
-    // pixel ratio
-    if (changes.dpr) {
-      this.renderer.setPixelRatio(changes.dpr.value)
+  onPrefChanged = ({ key, value }) => {
+    if (key === 'dpr') {
+      this.renderer.setPixelRatio(value)
       this.resize(this.width, this.height)
-    }
-    // postprocessing
-    if (changes.postprocessing) {
-      this.usePostprocessing = changes.postprocessing.value
-    }
-    // bloom
-    if (changes.bloom) {
-      this.bloomEnabled = changes.bloom.value
+    } else if (key === 'postprocessing') {
+      this.usePostprocessing = value
+    } else if (key === 'bloom') {
+      this.bloomEnabled = value
       this.updatePostProcessingEffects()
-    }
-    // ao
-    if (changes.ao) {
-      this.aoPass.enabled = changes.ao.value && this.world.settings.ao
+    } else if (key === 'ao') {
+      this.aoPass.enabled = value && this.world.settings.get('ao')
     }
   }
 
@@ -230,10 +206,9 @@ export class ClientGraphics extends System {
     }
   }
 
-  onSettingsChange = changes => {
-    if (changes.ao) {
-      this.aoPass.enabled = changes.ao.value && this.world.prefs.ao
-      console.log(this.aoPass.enabled)
+  onSettingChanged = ({ key, value }) => {
+    if (key === 'ao') {
+      this.aoPass.enabled = value && this.world.prefs.state.get('ao')
     }
   }
 
