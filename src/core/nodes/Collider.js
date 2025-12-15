@@ -2,7 +2,7 @@ import { collisionLayers as layers, geometryTypes as types } from '../utils/Node
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, validators, onSetRebuild, onSetRebuildIf } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
 
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
@@ -211,95 +211,17 @@ export class Collider extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get type() {
-          return self.type
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          setSize: this.setSize,
+          setMaterial: this.setMaterial,
+          requestRebuild: this.requestRebuild,
         },
-        set type(value) {
-          self.type = value
-        },
-        get width() {
-          return self.width
-        },
-        set width(value) {
-          self.width = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get depth() {
-          return self.depth
-        },
-        set depth(value) {
-          self.depth = value
-        },
-        setSize(width, height, depth) {
-          self.setSize(width, height, depth)
-        },
-        get radius() {
-          return self.radius
-        },
-        set radius(value) {
-          self.radius = value
-        },
-        get geometry() {
-          return self.geometry
-        },
-        set geometry(value) {
-          self.geometry = value
-        },
-        get convex() {
-          return self.convex
-        },
-        set convex(value) {
-          self.convex = value
-        },
-        get trigger() {
-          return self.trigger
-        },
-        set trigger(value) {
-          self.trigger = value
-        },
-        get layer() {
-          return self.layer
-        },
-        set layer(value) {
-          if (value === 'player') {
-            throw new Error('[collider] layer invalid: player')
-          }
-          self.layer = value
-        },
-        get staticFriction() {
-          return self.staticFriction
-        },
-        set staticFriction(value) {
-          self.staticFriction = value
-        },
-        get dynamicFriction() {
-          return self.dynamicFriction
-        },
-        set dynamicFriction(value) {
-          self.dynamicFriction = value
-        },
-        get restitution() {
-          return self.restitution
-        },
-        set restitution(value) {
-          self.restitution = value
-        },
-        setMaterial(staticFriction, dynamicFriction, restitution) {
-          self.setMaterial(staticFriction, dynamicFriction, restitution)
-        },
-        requestRebuild() {
-          self.requestRebuild()
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+        {
+          geometry: { get: function() { return this.geometry }, set: function(v) { this.geometry = v } },
+          layer: { get: function() { return this.layer }, set: function(v) { if (v === 'player') throw new Error('[collider] layer invalid: player'); this.layer = v } },
+        }
+      )
     }
     return this.proxy
   }

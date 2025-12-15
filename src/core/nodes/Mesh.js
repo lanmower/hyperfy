@@ -4,7 +4,7 @@ import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
-import { defineProps, validators, onSetRebuild, onSetRebuildIf } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
 import { geometryTypes as types } from '../utils/NodeConstants.js'
 
 const defaults = {
@@ -207,86 +207,13 @@ export class Mesh extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get type() {
-          return self.type
-        },
-        set type(value) {
-          self.type = value
-        },
-        get width() {
-          return self.width
-        },
-        set width(value) {
-          self.width = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get depth() {
-          return self.depth
-        },
-        set depth(value) {
-          self.depth = value
-        },
-        setSize(width, height, depth) {
-          self.setSize(width, height, depth)
-        },
-        get radius() {
-          return self.radius
-        },
-        set radius(value) {
-          self.radius = value
-        },
-        get geometry() {
-          return self.geometry
-        },
-        set geometry(value) {
-          self.geometry = value
-        },
-        get material() {
-          return self.material
-        },
-        set material(value) {
-          throw new Error('[mesh] set material not supported')
-          // if (!value) throw new Error('[mesh] material cannot be unset')
-          // self.ctx.world._allowMaterial = true
-          // self.material = value._ref
-          // self.ctx.world._allowMaterial = false
-          // self.needsRebuild = true
-          // self.setDirty()
-        },
-        get linked() {
-          return self.linked
-        },
-        set linked(value) {
-          self.linked = value
-        },
-        get castShadow() {
-          return self.castShadow
-        },
-        set castShadow(value) {
-          self.castShadow = value
-        },
-        get receiveShadow() {
-          return self.receiveShadow
-        },
-        set receiveShadow(value) {
-          self.receiveShadow = value
-        },
-        get visible() {
-          return self.visible
-        },
-        set visible(value) {
-          self.visible = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        { setSize: this.setSize },
+        {
+          geometry: { get: function() { return this.geometry }, set: function(v) { this.geometry = v } },
+          material: { get: function() { return this.material }, set: function() { throw new Error('[mesh] set material not supported') } },
+        }
+      )
     }
     return this.proxy
   }
