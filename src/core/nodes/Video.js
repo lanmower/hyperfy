@@ -7,6 +7,7 @@ import { getRef, Node, secureRef } from './Node.js'
 import { uuid } from '../utils.js'
 import { v, q } from '../utils/TempVectors.js'
 import { audioGroups as groups, distanceModels } from '../utils/AudioConstants.js'
+import { defineProps } from '../utils/defineProperty.js'
 const pivots = [
   'top-left',
   'top-center',
@@ -53,45 +54,232 @@ const defaults = {
   coneOuterGain: 0,
 }
 
+const propertySchema = {
+  screenId: {
+    default: defaults.screenId,
+    validate: v => v !== null && !isString(v) ? '[video] screenId not null or string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  src: {
+    default: defaults.src,
+    validate: v => v !== null && !isString(v) ? '[video] src not null or string' : null,
+    onSet() {
+      this._loading = true
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  linked: {
+    default: defaults.linked,
+    validate: v => !isBoolean(v) && !isString(v) ? '[video] linked not boolean or string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  loop: {
+    default: defaults.loop,
+    validate: v => !isBoolean(v) ? '[video] loop not boolean' : null,
+    onSet(value) {
+      if (this.instance) {
+        this.instance.loop = value
+      }
+    },
+  },
+  visible: {
+    default: defaults.visible,
+    validate: v => !isBoolean(v) ? '[video] visible not a boolean' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  color: {
+    default: defaults.color,
+    validate: v => v !== null && !isString(v) ? '[video] color not null or string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  lit: {
+    default: defaults.lit,
+    validate: v => !isBoolean(v) ? '[video] lit not boolean' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  doubleside: {
+    default: defaults.doubleside,
+    validate: v => !isBoolean(v) ? '[video] doubleside not boolean' : null,
+    onSet(value) {
+      if (this.mesh) {
+        this.mesh.material.side = value ? THREE.DoubleSide : THREE.FrontSide
+        this.mesh.material.needsUpdate = true
+      }
+    },
+  },
+  castShadow: {
+    default: defaults.castShadow,
+    validate: v => !isBoolean(v) ? '[video] castShadow not boolean' : null,
+    onSet(value) {
+      if (this.mesh) {
+        this.mesh.castShadow = value
+      }
+    },
+  },
+  receiveShadow: {
+    default: defaults.receiveShadow,
+    validate: v => !isBoolean(v) ? '[video] receiveShadow not boolean' : null,
+    onSet(value) {
+      if (this.mesh) {
+        this.mesh.receiveShadow = value
+      }
+    },
+  },
+  aspect: {
+    default: defaults.aspect,
+    validate: v => !isNumber(v) ? '[video] aspect not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  fit: {
+    default: defaults.fit,
+    validate: v => !isFit(v) ? '[video] fit invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  width: {
+    default: defaults.width,
+    validate: v => v !== null && !isNumber(v) ? '[video] width not null or number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  height: {
+    default: defaults.height,
+    validate: v => v !== null && !isNumber(v) ? '[video] height not null or number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  pivot: {
+    default: defaults.pivot,
+    validate: v => !isPivot(v) ? '[video] pivot invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  volume: {
+    default: defaults.volume,
+    validate: v => !isNumber(v) ? '[video] volume not number' : null,
+    onSet(value) {
+      if (this.gain) {
+        this.gain.gain.value = value
+      }
+    },
+  },
+  group: {
+    default: defaults.group,
+    validate: v => !isGroup(v) ? '[video] group not valid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  spatial: {
+    default: defaults.spatial,
+    validate: v => !isBoolean(v) ? '[video] spatial not boolean' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  distanceModel: {
+    default: defaults.distanceModel,
+    validate: v => !isDistanceModel(v) ? '[audio] distanceModel not valid' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.distanceModel = value
+      }
+    },
+  },
+  refDistance: {
+    default: defaults.refDistance,
+    validate: v => !isNumber(v) ? '[audio] refDistance not a number' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.refDistance = value
+      }
+    },
+  },
+  maxDistance: {
+    default: defaults.maxDistance,
+    validate: v => !isNumber(v) ? '[audio] maxDistance not a number' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.maxDistance = value
+      }
+    },
+  },
+  rolloffFactor: {
+    default: defaults.rolloffFactor,
+    validate: v => !isNumber(v) ? '[audio] rolloffFactor not a number' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.rolloffFactor = value
+      }
+    },
+  },
+  coneInnerAngle: {
+    default: defaults.coneInnerAngle,
+    validate: v => !isNumber(v) ? '[audio] coneInnerAngle not a number' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.coneInnerAngle = value
+      }
+    },
+  },
+  coneOuterAngle: {
+    default: defaults.coneOuterAngle,
+    validate: v => !isNumber(v) ? '[audio] coneOuterAngle not a number' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.coneOuterAngle = value
+      }
+    },
+  },
+  coneOuterGain: {
+    default: defaults.coneOuterGain,
+    validate: v => !isNumber(v) ? '[audio] coneOuterGain not a number' : null,
+    onSet(value) {
+      if (this.pannerNode) {
+        this.pannerNode.coneOuterGain = value
+      }
+    },
+  },
+}
+
 export class Video extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'video'
 
-    this.screenId = data.screenId
-    this.src = data.src
-    this.linked = data.linked
-    this.loop = data.loop
-
-    this.visible = data.visible
-    this.color = data.color
-    this.lit = data.lit
-    this.doubleside = data.doubleside
-    this.castShadow = data.castShadow
-    this.receiveShadow = data.receiveShadow
-
-    this.aspect = data.aspect
-    this.fit = data.fit
-
-    this.width = data.width
-    this.height = data.height
-    this.pivot = data.pivot
-
-    this.geometry = data.geometry
-
-    this.volume = data.volume
-    this.group = data.group
-    this.spatial = data.spatial
-    this.distanceModel = data.distanceModel
-    this.refDistance = data.refDistance
-    this.maxDistance = data.maxDistance
-    this.rolloffFactor = data.rolloffFactor
-    this.coneInnerAngle = data.coneInnerAngle
-    this.coneOuterAngle = data.coneOuterAngle
-    this.coneOuterGain = data.coneOuterGain
+    defineProps(this, propertySchema, data)
+    this._geometry = getRef(data.geometry)
 
     this.n = 0
-
     this._loading = true
   }
 
@@ -434,257 +622,11 @@ export class Video extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._screenId = source._screenId
-    this._src = source._src
-    this._linked = source._linked
-    this._loop = source._loop
-
-    this._visible = source._visible
-    this._color = source._color
-    this._lit = source._lit
-    this._doubleside = source._doubleside
-    this._castShadow = source._castShadow
-    this._receiveShadow = source._receiveShadow
-
-    this._aspect = source._aspect
-    this._fit = source._fit
-
-    this._width = source._width
-    this._height = source._height
-    this._pivot = source._pivot
-
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     this._geometry = source._geometry
-
-    this._volume = source._volume
-    this._spatial = source._spatial
-    this._group = source._group
-    this._spatial = source._spatial
-    this._distanceModel = source._distanceModel
-    this._refDistance = source._refDistance
-    this._maxDistance = source._maxDistance
-    this._rolloffFactor = source._rolloffFactor
-    this._coneInnerAngle = source._coneInnerAngle
-    this._coneOuterAngle = source._coneOuterAngle
-    this._coneOuterGain = source._coneOuterGain
-
-    // this._color = source._color
     return this
-  }
-
-  get screenId() {
-    return this._screenId
-  }
-
-  set screenId(value = defaults.screenId) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[video] screenId not null or string')
-    }
-    if (this._screenId === value) return
-    this._screenId = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get src() {
-    return this._src
-  }
-
-  set src(value = defaults.src) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[video] src not null or string')
-    }
-    if (this._src === value) return
-    this._src = value
-    this._loading = true
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get linked() {
-    return this._linked
-  }
-
-  set linked(value = defaults.linked) {
-    if (!isBoolean(value) && !isString(value)) {
-      throw new Error('[video] linked not boolean or string')
-    }
-    if (this._linked === value) return
-    this._linked = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get loop() {
-    return this._loop
-  }
-
-  set loop(value = defaults.loop) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] loop not boolean')
-    }
-    if (this._loop === value) return
-    this._loop = value
-    if (this.instance) {
-      this.instance.loop = value
-    }
-  }
-
-  get visible() {
-    return this._visible
-  }
-
-  set visible(value = defaults.visible) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] visible not a boolean')
-    }
-    if (this._visible === value) return
-    this._visible = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get color() {
-    return this._color
-  }
-
-  set color(value = defaults.color) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[video] color not null or string')
-    }
-    if (this._color === value) return
-    this._color = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get lit() {
-    return this._lit
-  }
-
-  set lit(value = defaults.lit) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] lit not boolean')
-    }
-    if (this._lit === value) return
-    this._lit = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get doubleside() {
-    return this._doubleside
-  }
-
-  set doubleside(value = defaults.doubleside) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] doubleside not boolean')
-    }
-    if (this._doubleside === value) return
-    this._doubleside = value
-    if (this.mesh) {
-      this.mesh.material.side = value ? THREE.DoubleSide : THREE.FrontSide
-      this.mesh.material.needsUpdate = true
-    }
-  }
-
-  get castShadow() {
-    return this._castShadow
-  }
-
-  set castShadow(value = defaults.castShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] castShadow not boolean')
-    }
-    if (this._castShadow === value) return
-    this._castShadow = value
-    if (this.mesh) {
-      this.mesh.castShadow = value
-    }
-  }
-
-  get receiveShadow() {
-    return this._receiveShadow
-  }
-
-  set receiveShadow(value = defaults.receiveShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] receiveShadow not boolean')
-    }
-    if (this._receiveShadow === value) return
-    this._receiveShadow = value
-    if (this.mesh) {
-      this.mesh.receiveShadow = value
-    }
-  }
-
-  get aspect() {
-    return this._aspect
-  }
-
-  set aspect(value = defaults.aspect) {
-    if (!isNumber(value)) {
-      throw new Error('[video] aspect not a number')
-    }
-    if (this._aspect === value) return
-    this._aspect = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get fit() {
-    return this._fit
-  }
-
-  set fit(value = defaults.fit) {
-    if (!isFit(value)) {
-      throw new Error('[video] fit invalid')
-    }
-    if (this._fit === value) return
-    this._fit = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get width() {
-    return this._width
-  }
-
-  set width(value = defaults.width) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[video] width not null or number')
-    }
-    if (this._width === value) return
-    this._width = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[video] height not null or number')
-    }
-    if (this._height === value) return
-    this._height = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get pivot() {
-    return this._pivot
-  }
-
-  set pivot(value = defaults.pivot) {
-    if (!isPivot(value)) {
-      throw new Error('[video] pivot invalid')
-    }
-    if (this._pivot === value) return
-    this._pivot = value
-    this.needsRebuild = true
-    this.setDirty()
   }
 
   get geometry() {
@@ -695,146 +637,6 @@ export class Video extends Node {
     this._geometry = getRef(value)
     this.needsRebuild = true
     this.setDirty()
-  }
-
-  get volume() {
-    return this._volume
-  }
-
-  set volume(value = defaults.volume) {
-    if (!isNumber(value)) {
-      throw new Error('[video] volume not number')
-    }
-    if (this._volume === value) return
-    this._volume = value
-    if (this.gain) {
-      this.gain.gain.value = value
-    }
-  }
-
-  get group() {
-    return this._group
-  }
-
-  set group(value = defaults.group) {
-    if (!isGroup(value)) {
-      throw new Error('[video] group not valid')
-    }
-    this._group = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get spatial() {
-    return this._spatial
-  }
-
-  set spatial(value = defaults.spatial) {
-    if (!isBoolean(value)) {
-      throw new Error('[video] spatial not boolean')
-    }
-    if (this._spatial === value) return
-    this._spatial = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get distanceModel() {
-    return this._distanceModel
-  }
-
-  set distanceModel(value = defaults.distanceModel) {
-    if (!isDistanceModel(value)) {
-      throw new Error('[audio] distanceModel not valid')
-    }
-    this._distanceModel = value
-    if (this.pannerNode) {
-      this.pannerNode.distanceModel = this._distanceModel
-    }
-  }
-
-  get refDistance() {
-    return this._refDistance
-  }
-
-  set refDistance(value = defaults.refDistance) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] refDistance not a number')
-    }
-    this._refDistance = value
-    if (this.pannerNode) {
-      this.pannerNode.refDistance = this._refDistance
-    }
-  }
-
-  get maxDistance() {
-    return this._maxDistance
-  }
-
-  set maxDistance(value = defaults.maxDistance) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] maxDistance not a number')
-    }
-    this._maxDistance = value
-    if (this.pannerNode) {
-      this.pannerNode.maxDistance = this._maxDistance
-    }
-  }
-
-  get rolloffFactor() {
-    return this._rolloffFactor
-  }
-
-  set rolloffFactor(value = defaults.rolloffFactor) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] rolloffFactor not a number')
-    }
-    this._rolloffFactor = value
-    if (this.pannerNode) {
-      this.pannerNode.rolloffFactor = this._rolloffFactor
-    }
-  }
-
-  get coneInnerAngle() {
-    return this._coneInnerAngle
-  }
-
-  set coneInnerAngle(value = defaults.coneInnerAngle) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] coneInnerAngle not a number')
-    }
-    this._coneInnerAngle = value
-    if (this.pannerNode) {
-      this.pannerNode.coneInnerAngle = this._coneInnerAngle
-    }
-  }
-
-  get coneOuterAngle() {
-    return this._coneOuterAngle
-  }
-
-  set coneOuterAngle(value = defaults.coneOuterAngle) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] coneOuterAngle not a number')
-    }
-    this._coneOuterAngle = value
-    if (this.pannerNode) {
-      this.pannerNode.coneOuterAngle = this._coneOuterAngle
-    }
-  }
-
-  get coneOuterGain() {
-    return this._coneOuterGain
-  }
-
-  set coneOuterGain(value = defaults.coneOuterGain) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] coneOuterGain not a number')
-    }
-    this._coneOuterGain = value
-    if (this.pannerNode) {
-      this.pannerNode.coneOuterGain = this._coneOuterGain
-    }
   }
 
   get loading() {
