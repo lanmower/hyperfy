@@ -1,9 +1,10 @@
 import * as THREE from '../extras/three.js'
-import { every, isBoolean, isNumber, isString } from 'lodash-es'
+import { every, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
 import { audioGroups as groups, distanceModels } from '../utils/AudioConstants.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const defaults = {
   src: null,
@@ -21,10 +22,74 @@ const defaults = {
   coneOuterGain: 0,
 }
 
+const propertySchema = {
+  src: {
+    default: defaults.src,
+    validate: (value) => (!isString(value) && value !== null) ? 'must be string or null' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  volume: {
+    default: defaults.volume,
+    validate: validators.number,
+    onSet() { if (this.gainNode) this.gainNode.gain.value = this._volume },
+  },
+  loop: {
+    default: defaults.loop,
+    validate: validators.boolean,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  group: {
+    default: defaults.group,
+    validate: (value) => !groups.includes(value) ? 'invalid group' : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  spatial: {
+    default: defaults.spatial,
+    validate: validators.boolean,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  distanceModel: {
+    default: defaults.distanceModel,
+    validate: (value) => !distanceModels.includes(value) ? 'invalid distanceModel' : null,
+    onSet() { if (this.pannerNode) this.pannerNode.distanceModel = this._distanceModel },
+  },
+  refDistance: {
+    default: defaults.refDistance,
+    validate: validators.number,
+    onSet() { if (this.pannerNode) this.pannerNode.refDistance = this._refDistance },
+  },
+  maxDistance: {
+    default: defaults.maxDistance,
+    validate: validators.number,
+    onSet() { if (this.pannerNode) this.pannerNode.maxDistance = this._maxDistance },
+  },
+  rolloffFactor: {
+    default: defaults.rolloffFactor,
+    validate: validators.number,
+    onSet() { if (this.pannerNode) this.pannerNode.rolloffFactor = this._rolloffFactor },
+  },
+  coneInnerAngle: {
+    default: defaults.coneInnerAngle,
+    validate: validators.number,
+    onSet() { if (this.pannerNode) this.pannerNode.coneInnerAngle = this._coneInnerAngle },
+  },
+  coneOuterAngle: {
+    default: defaults.coneOuterAngle,
+    validate: validators.number,
+    onSet() { if (this.pannerNode) this.pannerNode.coneOuterAngle = this._coneOuterAngle },
+  },
+  coneOuterGain: {
+    default: defaults.coneOuterGain,
+    validate: validators.number,
+    onSet() { if (this.pannerNode) this.pannerNode.coneOuterGain = this._coneOuterGain },
+  },
+}
+
 export class Audio extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'audio'
+    defineProps(this, propertySchema, defaults)
 
     this.src = data.src
     this.volume = data.volume
@@ -93,183 +158,10 @@ export class Audio extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._src = source._src
-    this._volume = source._volume
-    this._loop = source._loop
-    this._group = source._group
-    this._spatial = source._spatial
-    this._distanceModel = source._distanceModel
-    this._refDistance = source._refDistance
-    this._maxDistance = source._maxDistance
-    this._rolloffFactor = source._rolloffFactor
-    this._coneInnerAngle = source._coneInnerAngle
-    this._coneOuterAngle = source._coneOuterAngle
-    this._coneOuterGain = source._coneOuterGain
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
-  }
-
-  get src() {
-    return this._src
-  }
-
-  set src(value = defaults.src) {
-    if (!isString(value) && value !== null) {
-      throw new Error('[audio] src not a string')
-    }
-    this._src = value || null
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get volume() {
-    return this._volume
-  }
-
-  set volume(value = defaults.volume) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] volume not a number')
-    }
-    this._volume = value
-    if (this.gainNode) {
-      this.gainNode.gain.value = this._volume
-    }
-  }
-
-  get loop() {
-    return this._loop
-  }
-
-  set loop(value = defaults.loop) {
-    if (!isBoolean(value)) {
-      throw new Error('[audio] loop not a boolean')
-    }
-    this._loop = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get group() {
-    return this._group
-  }
-
-  set group(value = defaults.group) {
-    if (!isGroup(value)) {
-      throw new Error('[audio] group not valid')
-    }
-    this._group = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get spatial() {
-    return this._spatial
-  }
-
-  set spatial(value = defaults.spatial) {
-    if (!isBoolean(value)) {
-      throw new Error('[audio] spatial not a boolean')
-    }
-    this._spatial = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get distanceModel() {
-    return this._distanceModel
-  }
-
-  set distanceModel(value = defaults.distanceModel) {
-    if (!isDistanceModel(value)) {
-      throw new Error('[audio] distanceModel not valid')
-    }
-    this._distanceModel = value
-    if (this.pannerNode) {
-      this.pannerNode.distanceModel = this._distanceModel
-    }
-  }
-
-  get refDistance() {
-    return this._refDistance
-  }
-
-  set refDistance(value = defaults.refDistance) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] refDistance not a number')
-    }
-    this._refDistance = value
-    if (this.pannerNode) {
-      this.pannerNode.refDistance = this._refDistance
-    }
-  }
-
-  get maxDistance() {
-    return this._maxDistance
-  }
-
-  set maxDistance(value = defaults.maxDistance) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] maxDistance not a number')
-    }
-    this._maxDistance = value
-    if (this.pannerNode) {
-      this.pannerNode.maxDistance = this._maxDistance
-    }
-  }
-
-  get rolloffFactor() {
-    return this._rolloffFactor
-  }
-
-  set rolloffFactor(value = defaults.rolloffFactor) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] rolloffFactor not a number')
-    }
-    this._rolloffFactor = value
-    if (this.pannerNode) {
-      this.pannerNode.rolloffFactor = this._rolloffFactor
-    }
-  }
-
-  get coneInnerAngle() {
-    return this._coneInnerAngle
-  }
-
-  set coneInnerAngle(value = defaults.coneInnerAngle) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] coneInnerAngle not a number')
-    }
-    this._coneInnerAngle = value
-    if (this.pannerNode) {
-      this.pannerNode.coneInnerAngle = this._coneInnerAngle
-    }
-  }
-
-  get coneOuterAngle() {
-    return this._coneOuterAngle
-  }
-
-  set coneOuterAngle(value = defaults.coneOuterAngle) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] coneOuterAngle not a number')
-    }
-    this._coneOuterAngle = value
-    if (this.pannerNode) {
-      this.pannerNode.coneOuterAngle = this._coneOuterAngle
-    }
-  }
-
-  get coneOuterGain() {
-    return this._coneOuterGain
-  }
-
-  set coneOuterGain(value = defaults.coneOuterGain) {
-    if (!isNumber(value)) {
-      throw new Error('[audio] coneOuterGain not a number')
-    }
-    this._coneOuterGain = value
-    if (this.pannerNode) {
-      this.pannerNode.coneOuterGain = this._coneOuterGain
-    }
   }
 
   get currentTime() {
