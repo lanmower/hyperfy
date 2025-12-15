@@ -610,9 +610,7 @@ export class Video extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
+    this.copyProperties(source, propertySchema)
     this._geometry = source._geometry
     return this
   }
