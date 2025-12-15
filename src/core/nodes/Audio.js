@@ -4,7 +4,7 @@ import { every, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
 import { audioGroups as groups, distanceModels } from '../utils/NodeConstants.js'
-import { defineProps, validators, onSetRebuild } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, createPropertyProxy } from '../utils/defineProperty.js'
 
 const defaults = {
   src: null,
@@ -266,96 +266,13 @@ export class Audio extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get src() {
-          return self.src
-        },
-        set src(value) {
-          self.src = value
-        },
-        get volume() {
-          return self.volume
-        },
-        set volume(value) {
-          self.volume = value
-        },
-        get loop() {
-          return self.loop
-        },
-        set loop(value) {
-          self.loop = value
-        },
-        get group() {
-          return self.group
-        },
-        set group(value) {
-          self.group = value
-        },
-        get spatial() {
-          return self.spatial
-        },
-        set spatial(value) {
-          self.spatial = value
-        },
-        get distanceModel() {
-          return self.distanceModel
-        },
-        set distanceModel(value) {
-          self.distanceModel = value
-        },
-        get refDistance() {
-          return self.refDistance
-        },
-        set refDistance(value) {
-          self.refDistance = value
-        },
-        get maxDistance() {
-          return self.maxDistance
-        },
-        set maxDistance(value) {
-          self.maxDistance = value
-        },
-        get rolloffFactor() {
-          return self.rolloffFactor
-        },
-        set rolloffFactor(value) {
-          self.rolloffFactor = value
-        },
-        get coneInnerAngle() {
-          return self.coneInnerAngle
-        },
-        set coneInnerAngle(value) {
-          self.coneInnerAngle = value
-        },
-        get coneOuterAngle() {
-          return self.coneOuterAngle
-        },
-        set coneOuterAngle(value) {
-          self.coneOuterAngle = value
-        },
-        get coneOuterGain() {
-          return self.coneOuterGain
-        },
-        set coneOuterGain(value) {
-          self.coneOuterGain = value
-        },
-        play(restartIfPlaying) {
-          self.play(restartIfPlaying)
-        },
-        pause() {
-          self.pause()
-        },
-        stop() {
-          self.stop()
-        },
-        setPlaybackRate(rate) {
-          self.setPlaybackRate(rate)
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(), {
+        play: this.play,
+        pause: this.pause,
+        stop: this.stop,
+        setPlaybackRate: this.setPlaybackRate,
+      })
     }
     return this.proxy
   }

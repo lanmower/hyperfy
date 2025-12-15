@@ -2,7 +2,7 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
-import { defineProps, validators, onSetRebuild } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, createPropertyProxy } from '../utils/defineProperty.js'
 import { bodyTypes as types } from '../utils/NodeConstants.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
@@ -346,110 +346,27 @@ export class RigidBody extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get type() {
-          return self.type
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          addForce: this.addForce,
+          addForceAtPos: this.addForceAtPos,
+          addForceAtLocalPos: this.addForceAtLocalPos,
+          addTorque: this.addTorque,
+          getPosition: this.getPosition,
+          setPosition: this.setPosition,
+          getQuaternion: this.getQuaternion,
+          setQuaternion: this.setQuaternion,
+          getLinearVelocity: this.getLinearVelocity,
+          setLinearVelocity: this.setLinearVelocity,
+          getAngularVelocity: this.getAngularVelocity,
+          setAngularVelocity: this.setAngularVelocity,
+          getVelocityAtPos: this.getVelocityAtPos,
+          getLocalVelocityAtLocalPos: this.getLocalVelocityAtLocalPos,
+          setCenterOfMass: this.setCenterOfMass,
+          setKinematicTarget: this.setKinematicTarget,
         },
-        set type(value) {
-          self.type = value
-        },
-        get mass() {
-          return self.mass
-        },
-        set mass(value) {
-          self.mass = value
-        },
-        set linearDamping(value) {
-          self.linearDamping = value
-        },
-        set angularDamping(value) {
-          self.angularDamping = value
-        },
-        get tag() {
-          return self.tag
-        },
-        set tag(value) {
-          self.tag = value
-        },
-        get onContactStart() {
-          return self.onContactStart
-        },
-        set onContactStart(value) {
-          self.onContactStart = value
-        },
-        get onContactEnd() {
-          return self.onContactEnd
-        },
-        set onContactEnd(value) {
-          self.onContactEnd = value
-        },
-        get onTriggerEnter() {
-          return self.onTriggerEnter
-        },
-        set onTriggerEnter(value) {
-          self.onTriggerEnter = value
-        },
-        get onTriggerLeave() {
-          return self.onTriggerLeave
-        },
-        set onTriggerLeave(value) {
-          self.onTriggerLeave = value
-        },
-        get sleeping() {
-          return self.sleeping
-        },
-        addForce(force, mode) {
-          self.addForce(force, mode)
-        },
-        addForceAtPos(force, pos) {
-          self.addForceAtPos(force, pos)
-        },
-        addForceAtLocalPos(force, pos) {
-          self.addForceAtLocalPos(force, pos)
-        },
-        addTorque(torque, mode) {
-          self.addTorque(torque, mode)
-        },
-        getPosition(vec3) {
-          return self.getPosition(vec3)
-        },
-        setPosition(vec3) {
-          self.setPosition(vec3)
-        },
-        getQuaternion(quat) {
-          return self.getQuaternion(quat)
-        },
-        setQuaternion(quat) {
-          self.setQuaternion(quat)
-        },
-        getLinearVelocity(vec3) {
-          return self.getLinearVelocity(vec3)
-        },
-        setLinearVelocity(vec3) {
-          self.setLinearVelocity(vec3)
-        },
-        getAngularVelocity(vec3) {
-          self.getAngularVelocity(vec3)
-        },
-        setAngularVelocity(vec3) {
-          self.setAngularVelocity(vec3)
-        },
-        getVelocityAtPos(pos, vec3) {
-          return self.getVelocityAtPos(pos, vec3)
-        },
-        getLocalVelocityAtLocalPos(pos, vec3) {
-          return self.getLocalVelocityAtLocalPos(pos, vec3)
-        },
-        setCenterOfMass(pos) {
-          self.setCenterOfMass(pos)
-        },
-        setKinematicTarget(position, quaternion) {
-          self.setKinematicTarget(position, quaternion)
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+        { sleeping: function() { return this.sleeping } }
+      )
     }
     return this.proxy
   }

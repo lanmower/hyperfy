@@ -55,6 +55,43 @@ export function onSetRebuildIf(condition) {
   }
 }
 
+// Proxy generator for schema-based properties
+export function createPropertyProxy(instance, propertySchema, superProxy, customMethods = {}, customGetters = {}) {
+  const self = instance
+  const proxy = {}
+
+  // Create getter/setter pairs for all schema properties
+  for (const key in propertySchema) {
+    Object.defineProperty(proxy, key, {
+      get() {
+        return self[key]
+      },
+      set(value) {
+        self[key] = value
+      },
+      enumerable: true,
+      configurable: true,
+    })
+  }
+
+  // Add custom read-only getters
+  for (const [name, getter] of Object.entries(customGetters)) {
+    Object.defineProperty(proxy, name, {
+      get: getter.bind(self),
+      enumerable: true,
+      configurable: true,
+    })
+  }
+
+  // Add custom methods
+  for (const [name, method] of Object.entries(customMethods)) {
+    proxy[name] = method.bind(self)
+  }
+
+  // Inherit Node properties from superProxy
+  return Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(superProxy))
+}
+
 // Validator factories
 export const validators = {
   string: (value) => (!value || typeof value === 'string') ? null : 'must be string',
@@ -68,4 +105,5 @@ export const validators = {
   functionOrNull: (value) => (value === null || typeof value === 'function') ? null : 'must be function or null',
   stringOrNumber: (value) => (typeof value === 'string' || typeof value === 'number') ? null : 'must be string or number',
   stringOrNumberOrNull: (value) => (value === null || typeof value === 'string' || typeof value === 'number') ? null : 'must be string, number, or null',
+  numberMin: (min) => (value) => (typeof value === 'number' && value >= min) ? null : `must be number >= ${min}`,
 }

@@ -2,7 +2,7 @@ import { imageFits as fits, pivots } from '../utils/NodeConstants.js'
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
-import { defineProps, validators, onSetRebuild } from '../utils/defineProperty.js'
+import { defineProps, validators, onSetRebuild, createPropertyProxy } from '../utils/defineProperty.js'
 
 const defaults = {
   src: null,
@@ -266,71 +266,7 @@ export class Image extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get src() {
-          return self.src
-        },
-        set src(value) {
-          self.src = value
-        },
-        get width() {
-          return self.width
-        },
-        set width(value) {
-          self.width = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get fit() {
-          return self.fit
-        },
-        set fit(value) {
-          self.fit = value
-        },
-        get color() {
-          return self.color
-        },
-        set color(value) {
-          self.color = value
-        },
-        get pivot() {
-          return self.pivot
-        },
-        set pivot(value) {
-          self.pivot = value
-        },
-        get lit() {
-          return self.lit
-        },
-        set lit(value) {
-          self.lit = value
-        },
-        get doubleside() {
-          return self.doubleside
-        },
-        set doubleside(value) {
-          self.doubleside = value
-        },
-        get castShadow() {
-          return self.castShadow
-        },
-        set castShadow(value) {
-          self.castShadow = value
-        },
-        get receiveShadow() {
-          return self.receiveShadow
-        },
-        set receiveShadow(value) {
-          self.receiveShadow = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
     }
     return this.proxy
   }
