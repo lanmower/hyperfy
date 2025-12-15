@@ -879,22 +879,10 @@ export class Video extends Node {
         get playing() {
           return self.playing
         },
-        get isPlaying() {
-          // deprecated (use .playing)
-          return self.playing
-        },
         get time() {
           return self.time
         },
         set time(value) {
-          self.time = value
-        },
-        get currentTime() {
-          // deprecated (use .time)
-          return self.time
-        },
-        set currentTime(value) {
-          // deprecated (use .time)
           self.time = value
         },
         get material() {

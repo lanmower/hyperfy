@@ -231,8 +231,7 @@ export class ServerNetwork extends System {
           type: 'player',
           position: this.spawn.position.slice(),
           quaternion: this.spawn.quaternion.slice(),
-          owner: socket.id, // deprecated, same as userId
-          userId: user.id, // deprecated, same as userId
+          userId: socket.id,
           name: name || user.name,
           health: HEALTH_MAX,
           avatar: user.avatar || this.world.settings.avatar?.url || 'asset://avatar.vrm',

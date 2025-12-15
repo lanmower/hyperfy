@@ -362,15 +362,6 @@ export class Audio extends Node {
         set coneOuterGain(value) {
           self.coneOuterGain = value
         },
-        get currentTime() {
-          return self.currentTime
-        },
-        set currentTime(value) {
-          self.currentTime = value
-        },
-        get isPlaying() {
-          return self.isPlaying
-        },
         play(restartIfPlaying) {
           self.play(restartIfPlaying)
         },

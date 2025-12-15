@@ -55,7 +55,7 @@ export class Entities extends System {
     // Proceed with entity creation only if validation passed
     let Entity
     if (data.type === 'player') {
-      Entity = Types[data.owner === this.world.network.id ? 'playerLocal' : 'playerRemote']
+      Entity = Types[data.userId === this.world.network.id ? 'playerLocal' : 'playerRemote']
     } else {
       Entity = Types[data.type]
     }
@@ -67,11 +67,11 @@ export class Entities extends System {
       // but on the server, enter events is delayed for players entering until after their snapshot is sent
       // that way they can actually respond correctly to follow-through events.
       // see ServerNetwork.js -> onConnection
-      if (this.world.network.isClient && data.owner !== this.world.network.id) {
+      if (this.world.network.isClient && data.userId !== this.world.network.id) {
         this.world.events.emit('enter', { playerId: entity.data.id })
       }
     }
-    if (data.owner === this.world.network.id) {
+    if (data.userId === this.world.network.id) {
       this.player = entity
       this.world.events.emit('player', entity)
     }

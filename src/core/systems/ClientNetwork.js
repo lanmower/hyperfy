@@ -121,7 +121,7 @@ export class ClientNetwork extends System {
     }
     // preload local player avatar
     for (const item of data.entities) {
-      if (item.type === 'player' && item.owner === this.id) {
+      if (item.type === 'player' && item.userId === this.id) {
         const url = item.sessionAvatar || item.avatar
         this.world.loader.preload('avatar', url)
       }

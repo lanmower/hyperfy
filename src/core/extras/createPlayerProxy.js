@@ -13,13 +13,10 @@ export function createPlayerProxy(entity, player) {
   let voiceMod
   return {
     get networkId() {
-      return player.data.owner
+      return player.data.userId
     },
     get id() {
       return player.data.id
-    },
-    get userId() {
-      return player.data.userId
     },
     get local() {
       return player.data.id === world.network.id
@@ -55,15 +52,15 @@ export function createPlayerProxy(entity, player) {
       return !!player.destroyed
     },
     teleport(position, rotationY) {
-      if (player.data.owner === world.network.id) {
+      if (player.data.userId === world.network.id) {
         // if player is local we can set directly
         world.network.enqueue('onPlayerTeleport', { position: position.toArray(), rotationY })
       } else if (world.network.isClient) {
         // if we're a client we need to notify server
-        world.network.send('playerTeleport', { networkId: player.data.owner, position: position.toArray(), rotationY })
+        world.network.send('playerTeleport', { networkId: player.data.userId, position: position.toArray(), rotationY })
       } else {
         // if we're the server we need to notify the player
-        world.network.sendTo(player.data.owner, 'playerTeleport', { position: position.toArray(), rotationY })
+        world.network.sendTo(player.data.userId, 'playerTeleport', { position: position.toArray(), rotationY })
       }
     },
     getBoneTransform(boneName) {
@@ -71,15 +68,15 @@ export function createPlayerProxy(entity, player) {
     },
     setSessionAvatar(url) {
       const avatar = url
-      if (player.data.owner === world.network.id) {
+      if (player.data.userId === world.network.id) {
         // if player is local we can set directly
         world.network.enqueue('onPlayerSessionAvatar', { avatar })
       } else if (world.network.isClient) {
         // if we're a client we need to notify server
-        world.network.send('playerSessionAvatar', { networkId: player.data.owner, avatar })
+        world.network.send('playerSessionAvatar', { networkId: player.data.userId, avatar })
       } else {
         // if we're the server we need to notify the player
-        world.network.sendTo(player.data.owner, 'playerSessionAvatar', { avatar })
+        world.network.sendTo(player.data.userId, 'playerSessionAvatar', { avatar })
       }
     },
     damage(amount) {
@@ -144,22 +141,22 @@ export function createPlayerProxy(entity, player) {
     push(force) {
       force = force.toArray()
       // player.applyForce(force)
-      if (player.data.owner === world.network.id) {
+      if (player.data.userId === world.network.id) {
         // if player is local we can set directly
         player.push(force)
       } else if (world.network.isClient) {
         // if we're a client we need to notify server
-        world.network.send('playerPush', { networkId: player.data.owner, force })
+        world.network.send('playerPush', { networkId: player.data.userId, force })
       } else {
         // if we're the server we need to notify the player
-        world.network.sendTo(player.data.owner, 'playerPush', { force })
+        world.network.sendTo(player.data.userId, 'playerPush', { force })
       }
     },
     screenshare(targetId) {
       if (!targetId) {
         return console.error(`screenshare has invalid targetId: ${targetId}`)
       }
-      if (player.data.owner !== world.network.id) {
+      if (player.data.userId !== world.network.id) {
         return console.error('screenshare can only be called on local player')
       }
       world.livekit.setScreenShareTarget(targetId)
