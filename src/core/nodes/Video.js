@@ -6,7 +6,7 @@ import * as THREE from '../extras/three.js'
 import { getRef, Node, secureRef } from './Node.js'
 import { uuid } from '../utils.js'
 import { v, q } from '../utils/TempVectors.js'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 
 const defaults = {
   screenId: null,
@@ -697,204 +697,22 @@ export class Video extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get screenId() {
-          return self.screenId
-        },
-        set screenId(value) {
-          self.screenId = value
-        },
-        get src() {
-          return self.src
-        },
-        set src(value) {
-          self.src = value
-        },
-        get linked() {
-          return self.linked
-        },
-        set linked(value) {
-          self.linked = value
-        },
-        get loop() {
-          return self.loop
-        },
-        set loop(value) {
-          self.loop = value
-        },
-        get visible() {
-          return self.visible
-        },
-        set visible(value) {
-          self.visible = value
-        },
-        get color() {
-          return self.color
-        },
-        set color(value) {
-          self.color = value
-        },
-        get lit() {
-          return self.lit
-        },
-        set lit(value) {
-          self.lit = value
-        },
-        get doubleside() {
-          return self.doubleside
-        },
-        set doubleside(value) {
-          self.doubleside = value
-        },
-        get castShadow() {
-          return self.castShadow
-        },
-        set castShadow(value) {
-          self.castShadow = value
-        },
-        get receiveShadow() {
-          return self.receiveShadow
-        },
-        set receiveShadow(value) {
-          self.receiveShadow = value
-        },
-        get aspect() {
-          return self.aspect
-        },
-        set aspect(value) {
-          self.aspect = value
-        },
-        get fit() {
-          return self.fit
-        },
-        set fit(value) {
-          self.fit = value
-        },
-        get width() {
-          return self.width
-        },
-        set width(value) {
-          self.width = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get pivot() {
-          return self.pivot
-        },
-        set pivot(value) {
-          self.pivot = value
-        },
-        get geometry() {
-          return self.geometry
-        },
-        set geometry(value) {
-          self.geometry = value
-        },
-        get volume() {
-          return self.volume
-        },
-        set volume(value) {
-          self.volume = value
-        },
-        get group() {
-          return self.group
-        },
-        set group(value) {
-          self.group = value
-        },
-        get spatial() {
-          return self.spatial
-        },
-        set spatial(value) {
-          self.spatial = value
-        },
-        get distanceModel() {
-          return self.distanceModel
-        },
-        set distanceModel(value) {
-          self.distanceModel = value
-        },
-        get refDistance() {
-          return self.refDistance
-        },
-        set refDistance(value) {
-          self.refDistance = value
-        },
-        get maxDistance() {
-          return self.maxDistance
-        },
-        set maxDistance(value) {
-          self.maxDistance = value
-        },
-        get rolloffFactor() {
-          return self.rolloffFactor
-        },
-        set rolloffFactor(value) {
-          self.rolloffFactor = value
-        },
-        get coneInnerAngle() {
-          return self.coneInnerAngle
-        },
-        set coneInnerAngle(value) {
-          self.coneInnerAngle = value
-        },
-        get coneOuterAngle() {
-          return self.coneOuterAngle
-        },
-        set coneOuterAngle(value) {
-          self.coneOuterAngle = value
-        },
-        get coneOuterGain() {
-          return self.coneOuterGain
-        },
-        set coneOuterGain(value) {
-          self.coneOuterGain = value
-        },
-        get loading() {
-          return self.loading
-        },
-        get duration() {
-          return self.duration
-        },
-        get playing() {
-          return self.playing
-        },
-        get time() {
-          return self.time
-        },
-        set time(value) {
-          self.time = value
-        },
-        get material() {
-          return self.material
-        },
-        set material(value) {
-          self.material = value
-        },
-        get onLoad() {
-          return self.onLoad
-        },
-        set onLoad(value) {
-          self.onLoad = value
-        },
-        play(restartIfPlaying) {
-          self.play(restartIfPlaying)
-        },
-        pause() {
-          self.pause()
-        },
-        stop() {
-          self.stop()
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          play: this.play,
+          pause: this.pause,
+          stop: this.stop,
+        },
+        {
+          loading: function() { return this.loading },
+          duration: function() { return this.duration },
+          playing: function() { return this.playing },
+          time: { get: function() { return this.time }, set: function(v) { this.time = v } },
+          material: { get: function() { return this.material }, set: function(v) { this.material = v } },
+          onLoad: { get: function() { return this.onLoad }, set: function(v) { this.onLoad = v } },
+        }
+      )
     }
     return this.proxy
   }

@@ -56,7 +56,7 @@ export function onSetRebuildIf(condition) {
 }
 
 // Proxy generator for schema-based properties
-export function createPropertyProxy(instance, propertySchema, superProxy, customMethods = {}, customGetters = {}) {
+export function createPropertyProxy(instance, propertySchema, superProxy, customMethods = {}, customProperties = {}) {
   const self = instance
   const proxy = {}
 
@@ -74,13 +74,25 @@ export function createPropertyProxy(instance, propertySchema, superProxy, custom
     })
   }
 
-  // Add custom read-only getters
-  for (const [name, getter] of Object.entries(customGetters)) {
-    Object.defineProperty(proxy, name, {
-      get: getter.bind(self),
-      enumerable: true,
-      configurable: true,
-    })
+  // Add custom properties (getters/setters)
+  // Format: { propName: { get: fn, set: fn } } or { propName: fn } for read-only
+  for (const [name, prop] of Object.entries(customProperties)) {
+    if (typeof prop === 'function') {
+      // Read-only getter
+      Object.defineProperty(proxy, name, {
+        get: prop.bind(self),
+        enumerable: true,
+        configurable: true,
+      })
+    } else {
+      // Custom getter/setter pair
+      Object.defineProperty(proxy, name, {
+        get: prop.get ? prop.get.bind(self) : undefined,
+        set: prop.set ? prop.set.bind(self) : undefined,
+        enumerable: true,
+        configurable: true,
+      })
+    }
   }
 
   // Add custom methods
