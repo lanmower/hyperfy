@@ -2,6 +2,7 @@ import * as THREE from '../extras/three.js'
 import { every, isArray, isBoolean, isFunction, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
+import { defineProps } from '../utils/defineProperty.js'
 
 const shapeTypes = ['point', 'sphere', 'hemisphere', 'cone', 'box', 'circle', 'rectangle']
 const spaces = ['local', 'world']
@@ -44,7 +45,7 @@ const defaults = {
   loop: true,                         // start again after duration ends
   max: 1000,                          // maximum number of particles before oldest start being used
   timescale: 1,                       // override to increase/decrease emitter time scale
-  
+
   // initial values (see start format)
   life: '5',                          // particle lifetime
   speed: '1',                         // particle start speed
@@ -71,11 +72,277 @@ const defaults = {
   rateOverDistance: 0,
   sizeOverLife: null,                 // see lifetime format above for this and the following...
   rotateOverLife: null,
-  colorOverLife: null,            
-  alphaOverLife: null, 
+  colorOverLife: null,
+  alphaOverLife: null,
   emissiveOverLife: null,
 
   onEnd: null,
+}
+
+const propertySchema = {
+  emitting: {
+    default: defaults.emitting,
+    validate: v => !isBoolean(v) ? '[particles] emitting not a boolean' : null,
+    onSet(value) {
+      this.emitter?.setEmitting(value)
+    },
+  },
+  shape: {
+    default: defaults.shape,
+    validate: v => !isShape(v) ? '[particles] shape invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  direction: {
+    default: defaults.direction,
+    validate: v => !isNumber(v) ? '[particles] direction not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  rate: {
+    default: defaults.rate,
+    validate: v => !isNumber(v) ? '[particles] rate not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  bursts: {
+    default: defaults.bursts,
+    validate: v => !isBursts(v) ? '[particles] bursts invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  duration: {
+    default: defaults.duration,
+    validate: v => !isNumber(v) ? '[particles] duration not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  loop: {
+    default: defaults.loop,
+    validate: v => !isBoolean(v) ? '[particles] loop not a boolean' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  max: {
+    default: defaults.max,
+    validate: v => !isNumber(v) ? '[particles] max not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  timescale: {
+    default: defaults.timescale,
+    validate: v => !isNumber(v) ? '[particles] timescale not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  life: {
+    default: defaults.life,
+    validate: v => !isStartNumeric(v) ? '[particles] life invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  speed: {
+    default: defaults.speed,
+    validate: v => !isStartNumeric(v) ? '[particles] speed invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  size: {
+    default: defaults.size,
+    validate: v => !isStartNumeric(v) ? '[particles] size invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  rotate: {
+    default: defaults.rotate,
+    validate: v => !isStartNumeric(v) ? '[particles] rotate invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  color: {
+    default: defaults.color,
+    validate: v => !isStartColor(v) ? '[particles] color invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  alpha: {
+    default: defaults.alpha,
+    validate: v => !isStartNumeric(v) ? '[particles] alpha invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  emissive: {
+    default: defaults.emissive,
+    validate: v => !isStartNumeric(v) ? '[particles] emissive invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  image: {
+    default: defaults.image,
+    validate: v => !isString(v) ? '[particles] image not a string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  spritesheet: {
+    default: defaults.spritesheet,
+    validate: v => v !== null && !isSpritesheet(v) ? '[particles] spritesheet invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  blending: {
+    default: defaults.blending,
+    validate: v => !isBlending(v) ? '[particles] blending invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  lit: {
+    default: defaults.lit,
+    validate: v => !isBoolean(v) ? '[particles] lit not a boolean' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  billboard: {
+    default: defaults.billboard,
+    validate: v => !isBillboard(v) ? '[particles] billboard invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  space: {
+    default: defaults.space,
+    validate: v => v !== null && !isSpace(v) ? '[particles] space invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  force: {
+    default: defaults.force,
+    validate: v => v !== null && !v.isVector3 ? '[particles] force not a Vector3' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  velocityLinear: {
+    default: defaults.velocityLinear,
+    validate: v => v !== null && !v.isVector3 ? '[particles] velocityLinear not a Vector3' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  velocityOrbital: {
+    default: defaults.velocityOrbital,
+    validate: v => v !== null && !v.isVector3 ? '[particles] velocityOrbital not a Vector3' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  velocityRadial: {
+    default: defaults.velocityRadial,
+    validate: v => v !== null && !isNumber(v) ? '[particles] velocityRadial not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  rateOverDistance: {
+    default: defaults.rateOverDistance,
+    validate: v => !isNumber(v) ? '[particles] rateOverDistance not a number' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  sizeOverLife: {
+    default: defaults.sizeOverLife,
+    validate: v => v !== null && !isString(v) ? '[particles] sizeOverLife invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  rotateOverLife: {
+    default: defaults.rotateOverLife,
+    validate: v => v !== null && !isString(v) ? '[particles] rotateOverLife invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  colorOverLife: {
+    default: defaults.colorOverLife,
+    validate: v => v !== null && !isString(v) ? '[particles] colorOverLife invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  alphaOverLife: {
+    default: defaults.alphaOverLife,
+    validate: v => v !== null && !isString(v) ? '[particles] alphaOverLife invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  emissiveOverLife: {
+    default: defaults.emissiveOverLife,
+    validate: v => v !== null && !isString(v) ? '[particles] emissiveOverLife invalid' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  onEnd: {
+    default: defaults.onEnd,
+    validate: () => null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
 }
 
 export class Particles extends Node {
@@ -83,44 +350,7 @@ export class Particles extends Node {
     super(data)
     this.name = 'particles'
 
-    this.emitting = data.emitting
-    this.shape = data.shape
-    this.direction = data.direction
-    this.rate = data.rate
-    this.bursts = data.bursts
-    this.duration = data.duration
-    this.loop = data.loop
-    this.max = data.max
-    this.timescale = data.timescale
-
-    this.life = data.life
-    this.speed = data.speed
-    this.size = data.size
-    this.rotate = data.rotate
-    this.color = data.color
-    this.alpha = data.alpha
-    this.emissive = data.emissive
-
-    this.image = data.image
-    this.spritesheet = data.spritesheet
-    this.blending = data.blending
-    this.lit = data.lit
-    this.billboard = data.billboard
-    this.space = data.space
-
-    this.force = data.force
-    this.velocityLinear = data.velocityLinear
-    this.velocityOrbital = data.velocityOrbital
-    this.velocityRadial = data.velocityRadial
-
-    this.rateOverDistance = data.rateOverDistance
-    this.sizeOverLife = data.sizeOverLife
-    this.rotateOverLife = data.rotateOverLife
-    this.colorOverLife = data.colorOverLife
-    this.alphaOverLife = data.alphaOverLife
-    this.emissiveOverLife = data.emissiveOverLife
-
-    this.onEnd = data.onEnd
+    defineProps(this, propertySchema, data)
   }
 
   mount() {
@@ -146,46 +376,9 @@ export class Particles extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-
-    this._emitting = source._emitting
-    this._shape = source._shape
-    this._direction = source._direction
-    this._rate = source._rate
-    this._bursts = source._bursts
-    this._duration = source._duration
-    this._loop = source._loop
-    this._max = source._max
-    this._timescale = source._timescale
-
-    this._life = source._life
-    this._speed = source._speed
-    this._size = source._size
-    this._rotate = source._rotate
-    this._color = source._color
-    this._alpha = source._alpha
-    this._emissive = source._emissive
-
-    this._image = source._image
-    this._spritesheet = source._spritesheet
-    this._blending = source._blending
-    this._lit = source._lit
-    this._billboard = source._billboard
-    this._space = source._space
-
-    this._force = source._force
-    this._velocityLinear = source._velocityLinear
-    this._velocityOrbital = source._velocityOrbital
-    this._velocityRadial = source._velocityRadial
-
-    this._rateOverDistance = source._rateOverDistance
-    this._sizeOverLife = source._sizeOverLife
-    this._rotateOverLife = source._rotateOverLife
-    this._colorOverLife = source._colorOverLife
-    this._alphaOverLife = source._alphaOverLife
-    this._emissiveOverLife = source._emissiveOverLife
-
-    this._onEnd = source._onEnd
-
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
   }
 
@@ -229,432 +422,6 @@ export class Particles extends Node {
       emissiveOverLife: this._emissiveOverLife,
     }
     return config
-  }
-
-  get emitting() {
-    return this._emitting
-  }
-
-  set emitting(value = defaults.emitting) {
-    if (!isBoolean(value)) {
-      throw new Error('[particles] emitting not a boolean')
-    }
-    if (this._emitting === value) return
-    this._emitting = value
-    this.emitter?.setEmitting(value)
-  }
-
-  get shape() {
-    return this._shape
-  }
-
-  set shape(value = defaults.shape) {
-    if (!isShape(value)) {
-      throw new Error('[particles] shape invalid')
-    }
-    this._shape = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get direction() {
-    return this._direction
-  }
-
-  set direction(value = defaults.direction) {
-    if (!isNumber(value)) {
-      throw new Error('[particles] direction not a number')
-    }
-    this._direction = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get rate() {
-    return this._rate
-  }
-
-  set rate(value = defaults.rate) {
-    if (!isNumber(value)) {
-      throw new Error('[particles] rate not a number')
-    }
-    this._rate = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get bursts() {
-    return this._bursts
-  }
-
-  set bursts(value = defaults.bursts) {
-    if (!isBursts(value)) {
-      throw new Error('[particles] bursts invalid')
-    }
-    this._bursts = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get duration() {
-    return this._duration
-  }
-
-  set duration(value = defaults.duration) {
-    if (!isNumber(value)) {
-      throw new Error('[particles] duration not a number')
-    }
-    this._duration = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get loop() {
-    return this._loop
-  }
-
-  set loop(value = defaults.loop) {
-    if (!isBoolean(value)) {
-      throw new Error('[particles] loop not a boolean')
-    }
-    this._loop = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get max() {
-    return this._max
-  }
-
-  set max(value = defaults.max) {
-    if (!isNumber(value)) {
-      throw new Error('[particles] max not a number')
-    }
-    this._max = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get timescale() {
-    return this._timescale
-  }
-
-  set timescale(value = defaults.timescale) {
-    if (!isNumber(value)) {
-      throw new Error('[particles] timescale not a number')
-    }
-    this._timescale = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get life() {
-    return this._life
-  }
-
-  set life(value = defaults.life) {
-    if (!isStartNumeric(value)) {
-      throw new Error('[particles] life invalid')
-    }
-    this._life = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get speed() {
-    return this._speed
-  }
-
-  set speed(value = defaults.speed) {
-    if (!isStartNumeric(value)) {
-      throw new Error('[particles] speed invalid')
-    }
-    this._speed = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get size() {
-    return this._size
-  }
-
-  set size(value = defaults.size) {
-    if (!isStartNumeric(value)) {
-      throw new Error('[particles] size invalid')
-    }
-    this._size = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get rotate() {
-    return this._rotate
-  }
-
-  set rotate(value = defaults.rotate) {
-    if (!isStartNumeric(value)) {
-      throw new Error('[particles] rotate invalid')
-    }
-    this._rotate = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get color() {
-    return this._color
-  }
-
-  set color(value = defaults.color) {
-    if (!isStartColor(value)) {
-      throw new Error('[particles] color invalid')
-    }
-    this._color = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get alpha() {
-    return this._alpha
-  }
-
-  set alpha(value = defaults.alpha) {
-    if (!isStartNumeric(value)) {
-      throw new Error('[particles] alpha invalid')
-    }
-    this._alpha = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get emissive() {
-    return this._emissive
-  }
-
-  set emissive(value = defaults.emissive) {
-    if (!isStartNumeric(value)) {
-      throw new Error('[particles] emissive invalid')
-    }
-    this._emissive = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get image() {
-    return this._image
-  }
-
-  set image(value = defaults.image) {
-    if (!isString(value)) {
-      throw new Error('[particles] image not a string')
-    }
-    this._image = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get spritesheet() {
-    return this._spritesheet
-  }
-
-  set spritesheet(value = defaults.spritesheet) {
-    if (value !== null && !isSpritesheet(value)) {
-      throw new Error('[particles] spritesheet invalid')
-    }
-    this._spritesheet = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get blending() {
-    return this._blending
-  }
-
-  set blending(value = defaults.blending) {
-    if (!isBlending(value)) {
-      throw new Error('[particles] blending invalid')
-    }
-    this._blending = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get lit() {
-    return this._lit
-  }
-
-  set lit(value = defaults.lit) {
-    if (!isBoolean(value)) {
-      throw new Error('[particles] lit not a boolean')
-    }
-    this._lit = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get billboard() {
-    return this._billboard
-  }
-
-  set billboard(value = defaults.billboard) {
-    if (!isBillboard(value)) {
-      throw new Error('[particles] billboard invalid')
-    }
-    this._billboard = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get space() {
-    return this._space
-  }
-
-  set space(value = defaults.space) {
-    if (value !== null && !isSpace(value)) {
-      throw new Error('[particles] space invalid')
-    }
-    this._space = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get force() {
-    return this._force
-  }
-
-  set force(value = defaults.force) {
-    if (value !== null && !value.isVector3) {
-      throw new Error('[particles] force not a Vector3')
-    }
-    this._force = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get velocityLinear() {
-    return this._velocityLinear
-  }
-
-  set velocityLinear(value = defaults.velocityLinear) {
-    if (value !== null && !value.isVector3) {
-      throw new Error('[particles] velocityLinear not a Vector3')
-    }
-    this._velocityLinear = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get velocityOrbital() {
-    return this._velocityOrbital
-  }
-
-  set velocityOrbital(value = defaults.velocityOrbital) {
-    if (value !== null && !value.isVector3) {
-      throw new Error('[particles] velocityOrbital not a Vector3')
-    }
-    this._velocityOrbital = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get velocityRadial() {
-    return this._velocityRadial
-  }
-
-  set velocityRadial(value = defaults.velocityRadial) {
-    if (value !== null && !isNumber(value)) {
-      throw new Error('[particles] velocityRadial not a number')
-    }
-    this._velocityRadial = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get rateOverDistance() {
-    return this._rateOverDistance
-  }
-
-  set rateOverDistance(value = defaults.rateOverDistance) {
-    if (!isNumber(value)) {
-      throw new Error('[particles] rateOverDistance not a number')
-    }
-    this._rateOverDistance = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get sizeOverLife() {
-    return this._sizeOverLife
-  }
-
-  set sizeOverLife(value = defaults.sizeOverLife) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[particles] sizeOverLife invalid')
-    }
-    this._sizeOverLife = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get rotateOverLife() {
-    return this._rotateOverLife
-  }
-
-  set rotateOverLife(value = defaults.rotateOverLife) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[particles] rotateOverLife invalid')
-    }
-    this._rotateOverLife = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get colorOverLife() {
-    return this._colorOverLife
-  }
-
-  set colorOverLife(value = defaults.colorOverLife) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[particles] colorOverLife invalid')
-    }
-    this._colorOverLife = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get alphaOverLife() {
-    return this._alphaOverLife
-  }
-
-  set alphaOverLife(value = defaults.alphaOverLife) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[particles] alphaOverLife invalid')
-    }
-    this._alphaOverLife = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get emissiveOverLife() {
-    return this._emissiveOverLife
-  }
-
-  set emissiveOverLife(value = defaults.emissiveOverLife) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[particles] emissiveOverLife invalid')
-    }
-    this._emissiveOverLife = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get onEnd() {
-    return this._onEnd
-  }
-
-  set onEnd(value = defaults.onEnd) {
-    this._onEnd = value
-    this.needsRebuild = true
-    this.setDirty()
   }
 
   getProxy() {
