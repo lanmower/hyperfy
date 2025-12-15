@@ -374,14 +374,6 @@ export class Particles extends Node {
     this.emitter = null
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
-    return this
-  }
-
   getConfig() {
     const config = {
       emitting: this._emitting,

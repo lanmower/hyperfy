@@ -319,14 +319,6 @@ export class UIText extends Node {
     }
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
-    return this
-  }
-
   get value() {
     return this._value
   }

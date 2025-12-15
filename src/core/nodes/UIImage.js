@@ -269,14 +269,6 @@ export class UIImage extends Node {
     }
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
-    return this
-  }
-
   async loadImage(src) {
     if (!this.ctx?.world) return
     const url = this.ctx.world.resolveURL(src)

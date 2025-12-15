@@ -102,14 +102,6 @@ export class Sky extends Node {
     this.handle?.destroy()
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
-    return this
-  }
-
   getProxy() {
     var self = this
     if (!this.proxy) {
