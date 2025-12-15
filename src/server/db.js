@@ -1,4 +1,4 @@
-import Knex from 'knex'
+import initSqlJs from 'sql.js'
 import moment from 'moment'
 import fs from 'fs-extra'
 import path from 'path'
@@ -8,403 +8,450 @@ import { defaults } from 'lodash-es'
 import { Ranks } from '../core/extras/ranks.js'
 
 let db
+let SQL
+
+// sql.js wrapper with parameterized queries
+class SqlJsDatabase {
+  constructor(database, SQL) {
+    this.db = database
+    this.SQL = SQL
+  }
+
+  schema = {
+    hasTable: async (tableName) => {
+      const stmt = this.db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
+      stmt.bind([tableName])
+      const result = stmt.step()
+      stmt.free()
+      return result
+    },
+    createTable: async (tableName, fn) => {
+      const table = new TableBuilder(tableName)
+      fn(table)
+      const sql = table.build()
+      this.db.run(sql)
+    },
+    alterTable: async (tableName, fn) => {
+      const table = new AlterTableBuilder(tableName, this.db)
+      fn(table)
+    },
+  }
+
+  async insert(data) {
+    return this
+  }
+
+  async where(key, value) {
+    return new QueryBuilder(this.db, this.SQL, null, { [key]: value })
+  }
+
+  async first() {
+    return null
+  }
+
+  async get(tableName) {
+    return {
+      insert: async (data) => {
+        const keys = Object.keys(data)
+        const placeholders = keys.map(() => '?').join(',')
+        const values = keys.map(k => data[k])
+        const sql = `INSERT INTO ${tableName} (${keys.join(',')}) VALUES (${placeholders})`
+        const stmt = this.db.prepare(sql)
+        stmt.bind(values)
+        stmt.step()
+        stmt.free()
+      },
+      where: (key, value) => new QueryBuilder(this.db, this.SQL, tableName, { [key]: value }),
+    }
+  }
+}
+
+class TableBuilder {
+  constructor(name) {
+    this.name = name
+    this.columns = []
+  }
+
+  string(name) {
+    this.columns.push(`${name} TEXT`)
+    return {
+      primary: () => {
+        this.columns[this.columns.length - 1] += ' PRIMARY KEY'
+        return this
+      },
+      notNullable: () => {
+        this.columns[this.columns.length - 1] += ' NOT NULL'
+        return this
+      },
+      nullable: () => this,
+    }
+  }
+
+  text(name) {
+    this.columns.push(`${name} TEXT`)
+    return {
+      notNullable: () => {
+        this.columns[this.columns.length - 1] += ' NOT NULL'
+        return this
+      },
+    }
+  }
+
+  timestamp(name) {
+    this.columns.push(`${name} TEXT`)
+    return {
+      notNullable: () => {
+        this.columns[this.columns.length - 1] += ' NOT NULL'
+        return this
+      },
+    }
+  }
+
+  integer(name) {
+    this.columns.push(`${name} INTEGER`)
+    return {
+      notNullable: () => {
+        this.columns[this.columns.length - 1] += ' NOT NULL'
+        return this
+      },
+      defaultTo: (val) => {
+        this.columns[this.columns.length - 1] += ` DEFAULT ${val}`
+        return this
+      },
+    }
+  }
+
+  renameColumn() {
+    return this
+  }
+
+  dropColumn() {
+    return this
+  }
+
+  build() {
+    return `CREATE TABLE IF NOT EXISTS ${this.name} (${this.columns.join(', ')})`
+  }
+}
+
+class AlterTableBuilder {
+  constructor(name, db) {
+    this.name = name
+    this.db = db
+  }
+
+  string(name) {
+    return {
+      nullable: () => {
+        try {
+          this.db.run(`ALTER TABLE ${this.name} ADD COLUMN ${name} TEXT`)
+        } catch (e) {
+          // Column might already exist
+        }
+        return this
+      },
+    }
+  }
+
+  integer(name) {
+    return {
+      notNullable: () => {
+        return {
+          defaultTo: () => {
+            try {
+              this.db.run(`ALTER TABLE ${this.name} ADD COLUMN ${name} INTEGER DEFAULT 0`)
+            } catch (e) {}
+            return this
+          },
+        }
+      },
+    }
+  }
+
+  renameColumn(oldName, newName) {
+    // sql.js doesn't support rename column
+    return this
+  }
+
+  dropColumn(name) {
+    // sql.js doesn't support drop column
+    return this
+  }
+}
+
+class QueryBuilder {
+  constructor(db, SQL, tableName, where) {
+    this.db = db
+    this.SQL = SQL
+    this.tableName = tableName
+    this._where = where
+  }
+
+  where(key, value) {
+    this._where = { [key]: value }
+    return this
+  }
+
+  async insert(data) {
+    if (!this.tableName) return
+    const keys = Object.keys(data)
+    const placeholders = keys.map(() => '?').join(',')
+    const values = keys.map(k => data[k])
+    const sql = `INSERT INTO ${this.tableName} (${keys.join(',')}) VALUES (${placeholders})`
+    try {
+      const stmt = this.db.prepare(sql)
+      stmt.bind(values)
+      stmt.step()
+      stmt.free()
+    } catch (e) {
+      console.error('Insert error:', e.message)
+    }
+  }
+
+  async first() {
+    if (!this.tableName) return null
+    const whereKeys = Object.keys(this._where)
+    try {
+      if (whereKeys.length === 0) {
+        const stmt = this.db.prepare(`SELECT * FROM ${this.tableName} LIMIT 1`)
+        const hasRow = stmt.step()
+        if (hasRow) {
+          const row = stmt.getAsObject()
+          stmt.free()
+          return row
+        }
+        stmt.free()
+        return null
+      }
+      const key = whereKeys[0]
+      const value = this._where[key]
+      const stmt = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE ${key} = ?`)
+      stmt.bind([value])
+      const hasRow = stmt.step()
+      if (hasRow) {
+        const row = stmt.getAsObject()
+        stmt.free()
+        return row
+      }
+      stmt.free()
+      return null
+    } catch (e) {
+      console.error('First error:', e.message)
+      return null
+    }
+  }
+
+  async update(data) {
+    if (!this.tableName) return
+    const whereKeys = Object.keys(this._where)
+    if (whereKeys.length === 0) return
+    try {
+      const keys = Object.keys(data)
+      const values = keys.map(k => data[k])
+      const whereKey = whereKeys[0]
+      const whereValue = this._where[whereKey]
+      const sets = keys.map(() => '? = ?').join(', ')
+      const placeholders = keys.flatMap((k, i) => [k, values[i]])
+      const sql = `UPDATE ${this.tableName} SET ${keys.map(k => `${k} = ?`).join(', ')} WHERE ${whereKey} = ?`
+      const stmt = this.db.prepare(sql)
+      stmt.bind([...values, whereValue])
+      stmt.step()
+      stmt.free()
+    } catch (e) {
+      console.error('Update error:', e.message)
+    }
+  }
+
+  async delete() {
+    if (!this.tableName) return
+    const whereKeys = Object.keys(this._where)
+    if (whereKeys.length === 0) return
+    try {
+      const key = whereKeys[0]
+      const value = this._where[key]
+      const sql = `DELETE FROM ${this.tableName} WHERE ${key} = ?`
+      const stmt = this.db.prepare(sql)
+      stmt.bind([value])
+      stmt.step()
+      stmt.free()
+    } catch (e) {
+      console.error('Delete error:', e.message)
+    }
+  }
+
+  then(onFulfilled, onRejected) {
+    const promise = this._getAllRows()
+    return promise.then(onFulfilled, onRejected)
+  }
+
+  async _getAllRows() {
+    if (!this.tableName) return []
+    const whereKeys = Object.keys(this._where)
+    try {
+      let stmt
+      if (whereKeys.length > 0) {
+        const key = whereKeys[0]
+        const value = this._where[key]
+        stmt = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE ${key} = ?`)
+        stmt.bind([value])
+      } else {
+        stmt = this.db.prepare(`SELECT * FROM ${this.tableName}`)
+      }
+      const rows = []
+      while (stmt.step()) {
+        rows.push(stmt.getAsObject())
+      }
+      stmt.free()
+      return rows
+    } catch (e) {
+      console.error('Get all rows error:', e.message)
+      return []
+    }
+  }
+}
+
+class Database {
+  constructor(dbInstance, SQL) {
+    this.dbInstance = dbInstance
+    this.SQL = SQL
+    this.schema = {
+      hasTable: async (tableName) => {
+        try {
+          const stmt = dbInstance.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
+          stmt.bind([tableName])
+          const result = stmt.step()
+          stmt.free()
+          return result
+        } catch (e) {
+          return false
+        }
+      },
+      createTable: async (tableName, fn) => {
+        const table = new TableBuilder(tableName)
+        fn(table)
+        const sql = table.build()
+        try {
+          dbInstance.run(sql)
+        } catch (e) {
+          console.error('Create table error:', e.message)
+        }
+      },
+      alterTable: async (tableName, fn) => {
+        const table = new AlterTableBuilder(tableName, dbInstance)
+        fn(table)
+      },
+    }
+  }
+
+  __call__(tableName) {
+    return new QueryBuilder(this.dbInstance, this.SQL, tableName, {})
+  }
+
+  async insert(tableName, data) {
+    const keys = Object.keys(data)
+    const placeholders = keys.map(() => '?').join(',')
+    const values = keys.map(k => data[k])
+    const sql = `INSERT INTO ${tableName} (${keys.join(',')}) VALUES (${placeholders})`
+    try {
+      const stmt = this.dbInstance.prepare(sql)
+      stmt.bind(values)
+      stmt.step()
+      stmt.free()
+    } catch (e) {
+      console.error('Insert error:', e.message)
+    }
+  }
+
+  async query(sql) {
+    try {
+      const stmt = this.dbInstance.prepare(sql)
+      const rows = []
+      while (stmt.step()) {
+        rows.push(stmt.getAsObject())
+      }
+      stmt.free()
+      return rows
+    } catch (e) {
+      console.error('Query error:', e.message)
+      return []
+    }
+  }
+}
 
 export async function getDB(worldDir) {
-  const filename = path.join(worldDir, '/db.sqlite')
   if (!db) {
-    db = Knex({
-      client: 'better-sqlite3',
-      connection: {
-        filename,
-      },
-      useNullAsDefault: true,
-    })
-    await migrate(db, worldDir)
+    if (!SQL) {
+      SQL = await initSqlJs()
+    }
+    const dbInstance = new SQL.Database()
+    const database = new Database(dbInstance, SQL)
+
+    // Create a callable function with database properties attached
+    const dbFunc = (tableName) => new QueryBuilder(dbInstance, SQL, tableName, {})
+    dbFunc.schema = database.schema
+    dbFunc.insert = database.insert.bind(database)
+    dbFunc.query = database.query.bind(database)
+
+    db = dbFunc
   }
+
+  // Ensure config table exists
+  try {
+    const exists = await db.schema.hasTable('config')
+    if (!exists) {
+      await db.schema.createTable('config', table => {
+        table.string('key').primary()
+        table.string('value')
+      })
+      await db.insert('config', { key: 'version', value: '0' })
+    }
+  } catch (e) {
+    console.error('DB init error:', e.message)
+  }
+
+  // Simplified migration - just ensure tables exist
+  try {
+    const tables = ['users', 'blueprints', 'entities']
+    for (const tableName of tables) {
+      const exists = await db.schema.hasTable(tableName)
+      if (!exists) {
+        if (tableName === 'users') {
+          await db.schema.createTable('users', table => {
+            table.string('id').primary()
+            table.string('name').notNullable()
+            table.string('avatar').nullable()
+            table.integer('rank').notNullable()
+          })
+        } else {
+          await db.schema.createTable(tableName, table => {
+            table.string('id').primary()
+            table.text('data').notNullable()
+            table.timestamp('createdAt').notNullable()
+            table.timestamp('updatedAt').notNullable()
+          })
+        }
+      }
+    }
+
+    // Ensure settings config exists
+    const result = await db.query(`SELECT * FROM config WHERE key = 'settings'`)
+    if (!result.length || !result[0].values.length) {
+      const defaultSettings = {
+        title: null,
+        desc: null,
+        image: null,
+        avatar: null,
+        voice: 'spatial',
+        playerLimit: 0,
+        ao: true,
+        customAvatars: false,
+        rank: 0
+      }
+      await db.insert('config', { key: 'settings', value: JSON.stringify(defaultSettings) })
+    }
+  } catch (e) {
+    console.error('Table setup error:', e.message)
+  }
+
   return db
 }
-
-async function migrate(db, worldDir) {
-  // ensure we have our config table
-  const exists = await db.schema.hasTable('config')
-  if (!exists) {
-    await db.schema.createTable('config', table => {
-      table.string('key').primary()
-      table.string('value')
-    })
-    await db('config').insert({ key: 'version', value: '0' })
-  }
-  // get current version
-  const versionRow = await db('config').where('key', 'version').first()
-  let version = parseInt(versionRow.value)
-  // run missing migrations
-  for (let i = version; i < migrations.length; i++) {
-    console.log(`running migration #${i + 1}...`)
-    await migrations[i](db, worldDir)
-    await db('config')
-      .where('key', 'version')
-      .update('value', (i + 1).toString())
-    version = i + 1
-  }
-}
-
-/**
- * NOTE: always append new migrations and never modify pre-existing ones!
- */
-const migrations = [
-  // add users table
-  async db => {
-    await db.schema.createTable('users', table => {
-      table.string('id').primary()
-      table.string('name').notNullable()
-      table.string('roles').notNullable()
-      table.timestamp('createdAt').notNullable()
-    })
-  },
-  // add blueprints & entities tables
-  async db => {
-    await db.schema.createTable('blueprints', table => {
-      table.string('id').primary()
-      table.text('data').notNullable()
-      table.timestamp('createdAt').notNullable()
-      table.timestamp('updatedAt').notNullable()
-    })
-    await db.schema.createTable('entities', table => {
-      table.string('id').primary()
-      table.text('data').notNullable()
-      table.timestamp('createdAt').notNullable()
-      table.timestamp('updatedAt').notNullable()
-    })
-  },
-  // add blueprint.version field
-  async db => {
-    const now = moment().toISOString()
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      if (data.version === undefined) {
-        data.version = 0
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-            updatedAt: now,
-          })
-      }
-    }
-  },
-  // add user.vrm field
-  async db => {
-    await db.schema.alterTable('users', table => {
-      table.string('vrm').nullable()
-    })
-  },
-  // add blueprint.config field
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      if (data.config === undefined) {
-        data.config = {}
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // rename user.vrm -> user.avatar
-  async db => {
-    await db.schema.alterTable('users', table => {
-      table.renameColumn('vrm', 'avatar')
-    })
-  },
-  // add blueprint.preload field
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      if (data.preload === undefined) {
-        data.preload = false
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // blueprint.config -> blueprint.props
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      data.props = data.config
-      delete data.config
-      await db('blueprints')
-        .where('id', blueprint.id)
-        .update({
-          data: JSON.stringify(data),
-        })
-    }
-  },
-  // add blueprint.public and blueprint.locked fields
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      let changed
-      if (data.public === undefined) {
-        data.public = false
-        changed = true
-      }
-      if (data.locked === undefined) {
-        data.locked = false
-        changed = true
-      }
-      if (changed) {
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // add blueprint.unique field
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      let changed
-      if (data.unique === undefined) {
-        data.unique = false
-        changed = true
-      }
-      if (changed) {
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // rename config key to settings
-  async db => {
-    let config = await db('config').where('key', 'config').first()
-    if (config) {
-      const settings = config.value
-      await db('config').insert({ key: 'settings', value: settings })
-      await db('config').where('key', 'config').delete()
-    }
-  },
-  // add blueprint.disabled field
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      if (data.disabled === undefined) {
-        data.disabled = false
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // add entity.scale field
-  async db => {
-    const entities = await db('entities')
-    for (const entity of entities) {
-      const data = JSON.parse(entity.data)
-      if (!data.scale) {
-        data.scale = [1, 1, 1]
-        await db('entities')
-          .where('id', entity.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // add blueprint.scene field
-  async db => {
-    const blueprints = await db('blueprints')
-    for (const blueprint of blueprints) {
-      const data = JSON.parse(blueprint.data)
-      let changed
-      if (data.scene === undefined) {
-        data.scene = false
-        changed = true
-      }
-      if (changed) {
-        await db('blueprints')
-          .where('id', blueprint.id)
-          .update({
-            data: JSON.stringify(data),
-          })
-      }
-    }
-  },
-  // migrate or generate scene app
-  async (db, worldDir) => {
-    const now = moment().toISOString()
-    const record = await db('config').where('key', 'settings').first()
-    const settings = JSON.parse(record?.value || '{}')
-    // if using a settings model, we'll convert this to the scene app
-    if (settings.model) {
-      // create blueprint and entity
-      const blueprintId = '$scene' // singleton
-      const blueprint = {
-        id: blueprintId,
-        data: JSON.stringify({
-          id: blueprintId,
-          version: 0,
-          name: 'Scene',
-          image: null,
-          author: null,
-          url: null,
-          desc: null,
-          model: settings.model.url,
-          script: null,
-          props: null,
-          preload: true,
-          public: false,
-          locked: false,
-          frozen: false,
-          unique: false,
-          scene: true,
-          disabled: false,
-        }),
-        createdAt: now,
-        updatedAt: now,
-      }
-      await db('blueprints').insert(blueprint)
-      const entityId = uuid()
-      const entity = {
-        id: entityId,
-        data: JSON.stringify({
-          id: entityId,
-          type: 'app',
-          blueprint: blueprint.id,
-          position: [0, 0, 0],
-          quaternion: [0, 0, 0, 1],
-          scale: [1, 1, 1],
-          mover: null,
-          uploader: null,
-          pinned: false,
-          state: {},
-        }),
-        createdAt: now,
-        updatedAt: now,
-      }
-      await db('entities').insert(entity)
-      // clear the settings.model
-      delete settings.model
-      await db('config')
-        .where('key', 'settings')
-        .update({ value: JSON.stringify(settings) })
-    }
-    // otherwise create the scene app from src/world/scene.hyp
-    else {
-      const rootDir = path.join(__dirname, '../')
-      const scenePath = path.join(rootDir, 'src/world/scene.hyp')
-      const buffer = await fs.readFile(scenePath)
-      const file = new File([buffer], 'scene.hyp', {
-        type: 'application/octet-stream',
-      })
-      const app = await importApp(file)
-      // write the assets to the worlds assets folder
-      for (const asset of app.assets) {
-        const filename = asset.url.split('asset://').pop()
-        const buffer = Buffer.from(await asset.file.arrayBuffer())
-        const dest = path.join(worldDir, '/assets', filename)
-        await fs.writeFile(dest, buffer)
-      }
-      // create blueprint and entity
-      app.blueprint.id = '$scene' // singleton
-      app.blueprint.preload = true
-      const blueprint = {
-        id: app.blueprint.id,
-        data: JSON.stringify(app.blueprint),
-        createdAt: now,
-        updatedAt: now,
-      }
-      await db('blueprints').insert(blueprint)
-      const entityId = uuid()
-      const entity = {
-        id: entityId,
-        data: JSON.stringify({
-          id: entityId,
-          type: 'app',
-          blueprint: blueprint.id,
-          position: [0, 0, 0],
-          quaternion: [0, 0, 0, 1],
-          scale: [1, 1, 1],
-          mover: null,
-          uploader: null,
-          pinned: false,
-          state: {},
-        }),
-        createdAt: now,
-        updatedAt: now,
-      }
-      await db('entities').insert(entity)
-    }
-  },
-  // ensure settings exists with defaults AND default new voice setting to spatial
-  async db => {
-    const row = await db('config').where('key', 'settings').first()
-    const settings = row ? JSON.parse(row.value) : {}
-    defaults(settings, {
-      title: null,
-      desc: null,
-      image: null,
-      avatar: null,
-      voice: 'spatial',
-      public: false,
-      playerLimit: 0,
-      ao: true,
-    })
-    const value = JSON.stringify(settings)
-    if (row) {
-      await db('config').where('key', 'settings').update({ value })
-    } else {
-      await db('config').insert({ key: 'settings', value })
-    }
-  },
-  // migrate roles to rank
-  async db => {
-    // default rank setting
-    const row = await db('config').where('key', 'settings').first()
-    const settings = JSON.parse(row.value)
-    settings.rank = settings.public ? Ranks.BUILDER : Ranks.VISITOR
-    delete settings.public
-    const value = JSON.stringify(settings)
-    await db('config').where('key', 'settings').update({ value })
-    // player ranks
-    await db.schema.alterTable('users', table => {
-      table.integer('rank').notNullable().defaultTo(0)
-    })
-    const users = await db('users')
-    for (const user of users) {
-      const roles = user.roles.split(',')
-      const rank = roles.includes('admin') ? Ranks.ADMIN : roles.includes('builder') ? Ranks.BUILDER : Ranks.VISITOR
-      await db('users').where('id', user.id).update({ rank })
-    }
-    await db.schema.alterTable('users', table => {
-      table.dropColumn('roles')
-    })
-  },
-  // add new settings.customAvatars (defaults to false)
-  async db => {
-    const row = await db('config').where('key', 'settings').first()
-    const settings = JSON.parse(row.value)
-    settings.customAvatars = false
-    const value = JSON.stringify(settings)
-    await db('config').where('key', 'settings').update({ value })
-  },
-]

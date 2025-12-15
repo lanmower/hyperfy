@@ -1,37 +1,9 @@
 import { Packr } from 'msgpackr'
+import { PACKET_NAMES } from './packets.constants.js'
 
 const packr = new Packr({ structuredClone: true })
 
-// prettier-ignore
-const names = [
-  'snapshot',
-  'command',
-  'chatAdded',
-  'chatCleared',
-  'blueprintAdded',
-  'blueprintModified',
-  'entityAdded',
-  'entityModified',
-  'entityEvent',
-  'entityRemoved',
-  'playerTeleport',
-  'playerPush',
-  'playerSessionAvatar',
-  'liveKitLevel',
-  'mute',
-  'settingsModified',
-  'spawnModified',
-  'modifyRank',
-  'kick',
-  'ping',
-  'pong',
-  'errorReport',
-  'getErrors',
-  'clearErrors',
-  'errors',
-  'mcpSubscribeErrors',
-  'mcpErrorEvent',
-]
+const names = PACKET_NAMES
 
 const byName = {}
 const byId = {}

@@ -7,6 +7,7 @@ import { createJWT, readJWT } from '../utils-server.js'
 import { cloneDeep, isNumber } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 import { Ranks } from '../extras/ranks.js'
+import { CommandHandler } from '../../server/services/CommandHandler.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -33,10 +34,21 @@ export class ServerNetwork extends System {
     this.dirtyApps = new Set()
     this.isServer = true
     this.queue = []
+    this.setupHotReload()
+  }
+
+  setupHotReload() {
+    process.on('message', msg => {
+      if (msg?.type === 'hotReload') {
+        console.log('[HMR] Broadcasting reload to clients')
+        this.send('hotReload', { timestamp: Date.now() })
+      }
+    })
   }
 
   init({ db }) {
     this.db = db
+    this.commandHandler = new CommandHandler(this.world, db)
   }
 
   async start() {
@@ -309,87 +321,8 @@ export class ServerNetwork extends System {
     this.send('chatAdded', msg, socket.id)
   }
 
-  onCommand = async (socket, args) => {
-    // handle slash commands
-    const player = socket.player
-    const playerId = player.data.id
-    const [cmd, arg1, arg2] = args
-    // become admin command
-    if (cmd === 'admin') {
-      const code = arg1
-      if (process.env.ADMIN_CODE && process.env.ADMIN_CODE === code) {
-        const id = player.data.id
-        const userId = player.data.userId
-        const granted = !player.isAdmin()
-        let rank
-        if (granted) {
-          rank = Ranks.ADMIN
-        } else {
-          rank = Ranks.VISITOR
-        }
-        player.modify({ rank })
-        this.send('entityModified', { id, rank })
-        socket.send('chatAdded', {
-          id: uuid(),
-          from: null,
-          fromId: null,
-          body: granted ? 'Admin granted!' : 'Admin revoked!',
-          createdAt: moment().toISOString(),
-        })
-        await this.db('users').where('id', userId).update({ rank })
-      }
-    }
-    if (cmd === 'name') {
-      const name = arg1
-      if (name) {
-        const id = player.data.id
-        const userId = player.data.userId
-        player.data.name = name
-        player.modify({ name })
-        this.send('entityModified', { id, name })
-        socket.send('chatAdded', {
-          id: uuid(),
-          from: null,
-          fromId: null,
-          body: `Name set to ${name}!`,
-          createdAt: moment().toISOString(),
-        })
-        await this.db('users').where('id', userId).update({ name })
-      }
-    }
-    if (cmd === 'spawn') {
-      const op = arg1
-      this.onSpawnModified(socket, op)
-    }
-    if (cmd === 'chat') {
-      const op = arg1
-      if (op === 'clear' && socket.player.isBuilder()) {
-        this.world.chat.clear(true)
-      }
-    }
-    if (cmd === 'server') {
-      const op = arg1
-      if (op === 'stats') {
-        function send(body) {
-          socket.send('chatAdded', {
-            id: uuid(),
-            from: null,
-            fromId: null,
-            body,
-            createdAt: moment().toISOString(),
-          })
-        }
-        const stats = await this.world.monitor.getStats()
-        send(`CPU: ${stats.currentCPU.toFixed(3)}%`)
-        send(
-          `Memory: ${stats.currentMemory} / ${stats.maxMemory} MB (${((stats.currentMemory / stats.maxMemory) * 100).toFixed(1)}%)`
-        )
-      }
-    }
-    // emit event for all except admin
-    if (cmd !== 'admin') {
-      this.world.events.emit('command', { playerId, args })
-    }
+  onCommand = (socket, args) => {
+    this.commandHandler.execute(socket, args)
   }
 
   onModifyRank = async (socket, data) => {

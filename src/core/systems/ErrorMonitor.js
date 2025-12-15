@@ -1,24 +1,19 @@
 import { System } from './System.js'
+import { ErrorPatterns } from '../utils/errorPatterns.js'
+import { Serialization } from '../utils/serialization.js'
 
-/**
- * Error Monitor System
- */
 export class ErrorMonitor extends System {
   constructor(world) {
     super(world)
     this.isClient = !world.isServer
     this.isServer = world.isServer
     this.errors = []
-    this.maxErrors = 500 // Keep last 500 errors
+    this.maxErrors = 500
     this.listeners = new Set()
-    this.originalConsole = {}
     this.errorId = 0
 
-    // Initialize error capture - only use global handlers due to SES restrictions
     this.interceptGlobalErrors()
-
-    // Set up periodic cleanup
-    setInterval(() => this.cleanup(), 60000) // Every minute
+    setInterval(() => this.cleanup(), 60000)
   }
 
   init(options = {}) {
@@ -106,45 +101,11 @@ export class ErrorMonitor extends System {
   }
 
   serializeArgs(args) {
-    try {
-      return Array.from(args).map(arg => {
-        if (typeof arg === 'object' && arg !== null) {
-          if (arg instanceof Error) {
-            return {
-              __error: true,
-              name: arg.name,
-              message: arg.message,
-              stack: arg.stack
-            }
-          }
-          // Try to serialize object, fallback to string representation
-          try {
-            return JSON.parse(JSON.stringify(arg))
-          } catch {
-            return String(arg)
-          }
-        }
-        return arg
-      })
-    } catch {
-      return ['[Serialization Error]']
-    }
+    return Serialization.serializeArgs(args)
   }
 
   cleanStack(stack) {
-    if (!stack) return null
-
-    return stack
-      .split('\n')
-      .filter(line => {
-        // Remove noise from stack traces
-        return !line.includes('node_modules') && 
-               !line.includes('webpack') &&
-               !line.includes('<anonymous>') &&
-               line.trim().length > 0
-      })
-      .slice(0, 10) // Limit stack depth
-      .join('\n')
+    return Serialization.cleanStack(stack)
   }
 
   getStackTrace() {
@@ -203,32 +164,17 @@ export class ErrorMonitor extends System {
   }
 
   isCriticalError(type, args) {
-    const criticalPatterns = [
-      /gltfloader/i,
-      /syntax.*error/i,
-      /unexpected.*token/i,
-      /failed.*to.*load/i,
-      /network.*error/i,
-      /script.*crashed/i,
-      /three\.js/i,
-      /webgl/i,
-      /blueprint.*not.*found/i,
-      /app\.blueprint\.missing/i
-    ]
-
-    // Handle case where args might not be an array
     let message = ''
     if (Array.isArray(args)) {
-      message = args.join(' ').toLowerCase()
+      message = args.join(' ')
     } else if (args && typeof args === 'string') {
-      message = args.toLowerCase()
+      message = args
     } else if (args && typeof args === 'object') {
-      message = JSON.stringify(args).toLowerCase()
+      message = JSON.stringify(args)
     } else {
-      message = String(args || '').toLowerCase()
+      message = String(args || '')
     }
-
-    return criticalPatterns.some(pattern => pattern.test(message))
+    return ErrorPatterns.isCritical(type, message)
   }
 
   sendErrorToServer(errorEntry) {
@@ -282,8 +228,7 @@ export class ErrorMonitor extends System {
       try {
         callback(event, data)
       } catch (err) {
-        // Don't let listener errors crash the error monitor
-        this.originalConsole.error('ErrorMonitor listener error:', err)
+        console.error('ErrorMonitor listener error:', err)
       }
     })
   }
@@ -358,12 +303,6 @@ export class ErrorMonitor extends System {
     )
   }
 
-  // Restore original console methods
-  restore() {
-    Object.keys(this.originalConsole).forEach(method => {
-      console[method] = this.originalConsole[method]
-    })
-  }
 
   onErrorReport = (socket, errorData) => {
     if (!this.isServer) return
@@ -413,7 +352,6 @@ export class ErrorMonitor extends System {
   }
 
   destroy() {
-    this.restore()
     this.listeners.clear()
     this.errors = []
   }

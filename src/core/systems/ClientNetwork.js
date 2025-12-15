@@ -215,6 +215,11 @@ export class ClientNetwork extends System {
     this.world.emit('kick', code)
   }
 
+  onHotReload = data => {
+    console.log('[HMR] Reloading...')
+    location.reload()
+  }
+
   onErrors = (data) => {
     // Received error data from server
     this.world.emit('errors', data)

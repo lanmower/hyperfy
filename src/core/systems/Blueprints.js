@@ -1,13 +1,7 @@
 import { isEqual, merge } from 'lodash-es'
 import { System } from './System.js'
+import { ErrorPatterns } from '../utils/errorPatterns.js'
 
-/**
- * Blueprints System
- *
- * - Runs on both the server and client.
- * - A central registry for app blueprints
- *
- */
 export class Blueprints extends System {
   constructor(world) {
     super(world)
@@ -35,67 +29,15 @@ export class Blueprints extends System {
 
   
   isBlueprintRelatedError(error, blueprintId) {
-    // Always capture errors during blueprint operations - they could be part of error chains
-    // that originate from various sources like script execution, model loading, or async operations
-    
-    // Check for explicit blueprint-related error types
-    const explicitBlueprintErrors = [
-      'app.script.load',
-      'app.model.load', 
-      'app.script.compile',
-      'app.script.runtime',
-      'blueprint.validation',
-      'gltfloader.error',
-      'console.error',
-      'console.warn'
-    ];
-    
-    if (explicitBlueprintErrors.includes(error.type)) {
-      return true;
+    if (ErrorPatterns.EXPLICIT_ERRORS.includes(error.type)) {
+      return true
     }
-    
-    // Check error message content for blueprint-related patterns
-    const errorMessage = error.args ? error.args.join(' ').toLowerCase() : '';
-    const stack = error.stack ? error.stack.toLowerCase() : '';
-    
-    // Comprehensive pattern matching for all possible error sources
-    const errorPatterns = [
-      'gltfloader',
-      'syntaxerror', 
-      'unexpected token',
-      'json.parse',
-      'failed to load',
-      'failed to parse',
-      'referenceerror',
-      'typeerror',
-      'cannot read',
-      'is not defined',
-      'is not a function',
-      'model.load',
-      'script.load',
-      'asset loading',
-      'three.js',
-      'webgl',
-      'shader',
-      'texture',
-      'geometry',
-      'material',
-      blueprintId // Always include blueprint ID matches
-    ];
-    
-    // Check both error message and stack trace
-    const hasErrorPattern = errorPatterns.some(pattern => 
-      errorMessage.includes(pattern) || stack.includes(pattern)
-    );
-    
-    if (hasErrorPattern) {
-      return true;
+    const errorMessage = error.args ? error.args.join(' ') : ''
+    const stack = error.stack || ''
+    if (ErrorPatterns.matchesPatterns(errorMessage, blueprintId) || ErrorPatterns.matchesPatterns(stack, blueprintId)) {
+      return true
     }
-    
-    // For any errors that occur during blueprint operations, assume they could be related
-    // This ensures we capture error chains that might originate from blueprint changes
-    // but manifest as different error types
-    return true; // Capture ALL errors during blueprint operations to catch error chains
+    return true
   }
 
   async executeWithErrorMonitoring(blueprintId, operation) {
