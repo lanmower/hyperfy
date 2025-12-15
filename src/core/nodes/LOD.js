@@ -2,6 +2,7 @@ import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node } from './Node.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const v0 = new THREE.Vector3()
 const v1 = new THREE.Vector3()
@@ -11,13 +12,18 @@ const defaults = {
   scaleAware: true,
 }
 
+const propertySchema = {
+  scaleAware: { default: defaults.scaleAware, validate: validators.boolean },
+}
+
 export class LOD extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'lod'
 
-    this.scaleAware = data.scaleAware
+    defineProps(this, propertySchema, defaults)
 
+    this.scaleAware = data.scaleAware
     this.lods = [] // [...{ node, maxDistance }]
   }
 
@@ -67,7 +73,9 @@ export class LOD extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._scaleAware = source._scaleAware
+    for (const key in propertySchema) {
+      this[key] = source[key]
+    }
     this.lods = source.lods.map(lod => {
       const node = this.children.find(node => node.id === lod.node.id)
       node.active = false
@@ -78,18 +86,6 @@ export class LOD extends Node {
       }
     })
     return this
-  }
-
-  get scaleAware() {
-    return this._scaleAware
-  }
-
-  set scaleAware(value = defaults.scaleAware) {
-    if (!isBoolean(value)) {
-      throw new Error('[lod] scaleAware not a boolean')
-    }
-    if (this._scaleAware === value) return
-    this._scaleAware = value
   }
 
   getProxy() {
