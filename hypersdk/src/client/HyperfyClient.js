@@ -45,7 +45,16 @@ export class HyperfyClient extends EventEmitter {
     this.apiUrl = null
     this.maxUploadSize = null
 
+    this.setupErrorHandlerNetworking()
     this.setupEventListeners()
+  }
+
+  setupErrorHandlerNetworking() {
+    this.errorHandler.setNetworkSender((errorEvent) => {
+      if (this.wsManager?.ws?.readyState === 1) {
+        this.wsManager.send('errorEvent', errorEvent)
+      }
+    })
   }
 
   buildWebSocketUrl() {

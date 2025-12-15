@@ -429,6 +429,30 @@ export class ServerNetwork extends System {
     socket.send('pong', time)
   }
 
+  onErrorEvent = (socket, errorEvent) => {
+    if (this.world.errorMonitor) {
+      this.world.errorMonitor.receiveClientError({
+        error: errorEvent,
+        realTime: true,
+        clientId: socket.id,
+        playerId: socket.player?.data?.id,
+        playerName: socket.player?.data?.name
+      })
+    }
+
+    this.sockets.forEach(mcpSocket => {
+      if (mcpSocket.mcpErrorSubscription?.active) {
+        mcpSocket.send('mcpErrorEvent', {
+          error: errorEvent,
+          realTime: true,
+          clientId: socket.id,
+          playerId: socket.player?.data?.id,
+          playerName: socket.player?.data?.name
+        })
+      }
+    })
+  }
+
   onErrorReport = (socket, data) => {
     // Process error through ErrorMonitor first
     if (this.world.errorMonitor) {
@@ -440,7 +464,7 @@ export class ServerNetwork extends System {
         playerName: socket.player?.data?.name
       })
     }
-    
+
     // Immediately relay client errors to connected MCP servers
     this.sockets.forEach(mcpSocket => {
       if (mcpSocket.mcpErrorSubscription?.active) {

@@ -2,6 +2,8 @@ import { System } from './System.js'
 import { ErrorPatterns } from '../utils/errorPatterns.js'
 import { Serialization } from '../utils/serialization.js'
 import { StateManager } from '../state/StateManager.js'
+import { ErrorEventBus } from '../utils/ErrorEventBus.js'
+import { createErrorEvent, deserializeErrorEvent, ErrorLevels, ErrorSources } from '../schemas/ErrorEvent.schema.js'
 
 export class ErrorMonitor extends System {
   constructor(world) {
@@ -10,7 +12,9 @@ export class ErrorMonitor extends System {
     this.isServer = world.isServer
     this.state = new StateManager({ errors: [], errorId: 0 })
     this.maxErrors = 500
+    this.errorBus = new ErrorEventBus()
 
+    this.setupErrorBusForwarding()
     this.interceptGlobalErrors()
     setInterval(() => this.cleanup(), 60000)
   }
@@ -21,6 +25,44 @@ export class ErrorMonitor extends System {
     this.debugMode = options.debugMode === true
   }
 
+  setupErrorBusForwarding() {
+    this.errorBus.register((event, isDuplicate) => {
+      this.forwardErrorEvent(event, isDuplicate)
+    })
+  }
+
+  forwardErrorEvent(event, isDuplicate) {
+    const errorEntry = {
+      id: event.id,
+      timestamp: new Date(event.timestamp).toISOString(),
+      type: event.category,
+      side: event.source === ErrorSources.SDK ? 'client' : event.source,
+      args: { message: event.message, context: event.context },
+      stack: event.stack,
+      context: event.context,
+      networkId: this.world.network?.id,
+      playerId: this.world.entities?.player?.data?.id,
+      level: event.level,
+      count: event.count
+    }
+
+    const errors = this.state.get('errors')
+    const updated = [...errors, errorEntry]
+    if (updated.length > this.maxErrors) updated.shift()
+    this.state.set('errors', updated)
+
+    this.world.events.emit('errorCaptured', errorEntry)
+
+    if (event.level === ErrorLevels.ERROR && !isDuplicate) {
+      if (this.isClient && this.world.network) {
+        this.sendErrorToServer(errorEntry)
+      }
+
+      if (this.enableRealTimeStreaming && this.mcpEndpoint) {
+        this.streamToMCP(errorEntry)
+      }
+    }
+  }
 
   interceptGlobalErrors() {
     if (this.isClient && typeof window !== 'undefined') {
@@ -62,39 +104,30 @@ export class ErrorMonitor extends System {
   }
 
   captureError(type, args, stack) {
+    const error = {
+      message: this.extractMessage(args),
+      stack: this.cleanStack(stack)
+    }
+
+    const context = {
+      category: type,
+      source: this.isClient ? ErrorSources.CLIENT : ErrorSources.SERVER,
+      ...this.getContext()
+    }
+
+    const level = this.isCriticalError(type, args) ? ErrorLevels.ERROR : ErrorLevels.WARN
+
+    this.errorBus.emit(error, context, level)
+
     const errorId = this.state.get('errorId') + 1
     this.state.set('errorId', errorId)
+  }
 
-    const errorEntry = {
-      id: errorId,
-      timestamp: new Date().toISOString(),
-      type,
-      side: this.isClient ? 'client' : 'server',
-      args: this.serializeArgs(args),
-      stack: this.cleanStack(stack),
-      context: this.getContext(),
-      networkId: this.world.network?.id,
-      playerId: this.world.entities?.player?.data?.id
-    }
-
-    const errors = this.state.get('errors')
-    const updated = [...errors, errorEntry]
-    if (updated.length > this.maxErrors) updated.shift()
-    this.state.set('errors', updated)
-
-    this.world.events.emit('errorCaptured', errorEntry)
-
-    if (this.isClient && this.world.network) {
-      this.sendErrorToServer(errorEntry)
-    }
-
-    if (this.enableRealTimeStreaming && this.mcpEndpoint) {
-      this.streamToMCP(errorEntry)
-    }
-
-    if (this.isCriticalError(type, args)) {
-      this.handleCriticalError(errorEntry)
-    }
+  extractMessage(args) {
+    if (typeof args === 'string') return args
+    if (args?.message) return String(args.message)
+    if (Array.isArray(args)) return args.join(' ')
+    return JSON.stringify(args)
   }
 
   serializeArgs(args) {
@@ -248,9 +281,11 @@ export class ErrorMonitor extends System {
   }
 
   getStats() {
+    const busStats = this.errorBus.getStats()
+    const errors = this.state.get('errors')
+
     const now = Date.now()
     const hourAgo = now - (60 * 60 * 1000)
-    const errors = this.state.get('errors')
     const recent = errors.filter(error =>
       new Date(error.timestamp).getTime() >= hourAgo
     )
@@ -266,7 +301,8 @@ export class ErrorMonitor extends System {
       critical: recent.filter(error =>
         this.isCriticalError(error.type, error.args)
       ).length,
-      byType
+      byType,
+      unified: busStats
     }
   }
 
@@ -283,45 +319,61 @@ export class ErrorMonitor extends System {
   onErrorReport = (socket, errorData) => {
     if (!this.isServer) return
 
-    const error = {
-      ...errorData.error,
-      timestamp: new Date().toISOString(),
-      side: 'client-reported',
-      socketId: socket.id,
-      realTime: errorData.realTime || false
-    }
+    try {
+      const errorEvent = deserializeErrorEvent(errorData.error || errorData)
+      errorEvent.source = ErrorSources.CLIENT
+      errorEvent.metadata = {
+        ...errorEvent.metadata,
+        socketId: socket.id,
+        realTime: errorData.realTime || false
+      }
 
-    const errors = this.state.get('errors')
-    const updated = [...errors, error]
-    if (updated.length > this.maxErrors) updated.shift()
-    this.state.set('errors', updated)
+      this.errorBus.emit(
+        { message: errorEvent.message, stack: errorEvent.stack },
+        {
+          ...errorEvent.context,
+          category: errorEvent.category,
+          source: errorEvent.source,
+          metadata: errorEvent.metadata
+        },
+        errorEvent.level
+      )
 
-    this.world.events.emit('errorCaptured', error)
-
-    if (this.isCriticalError(error.type, error.args) || errorData.critical) {
-      this.world.events.emit('criticalError', error)
+      if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
+        this.world.events.emit('criticalError', errorEvent)
+      }
+    } catch (err) {
+      console.error('Failed to process client error report:', err)
     }
   }
 
   receiveClientError = (errorData) => {
     if (!this.isServer) return
 
-    const error = {
-      ...errorData.error || errorData,
-      timestamp: new Date().toISOString(),
-      side: 'client-reported',
-      realTime: errorData.realTime || false
-    }
+    try {
+      const errorEvent = deserializeErrorEvent(errorData.error || errorData)
+      errorEvent.source = ErrorSources.CLIENT
+      errorEvent.metadata = {
+        ...errorEvent.metadata,
+        realTime: errorData.realTime || false
+      }
 
-    const errors = this.state.get('errors')
-    const updated = [...errors, error]
-    if (updated.length > this.maxErrors) updated.shift()
-    this.state.set('errors', updated)
+      this.errorBus.emit(
+        { message: errorEvent.message, stack: errorEvent.stack },
+        {
+          ...errorEvent.context,
+          category: errorEvent.category,
+          source: errorEvent.source,
+          metadata: errorEvent.metadata
+        },
+        errorEvent.level
+      )
 
-    this.world.events.emit('errorCaptured', error)
-
-    if (this.isCriticalError(error.type, error.args) || errorData.critical) {
-      this.world.events.emit('criticalError', error)
+      if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
+        this.world.events.emit('criticalError', errorEvent)
+      }
+    } catch (err) {
+      console.error('Failed to process client error:', err)
     }
   }
 

@@ -23,6 +23,7 @@ export const PacketTypes = {
   PING: 'ping',
   PONG: 'pong',
   ERROR_REPORT: 'errorReport',
+  ERROR_EVENT: 'errorEvent',
   GET_ERRORS: 'getErrors',
   CLEAR_ERRORS: 'clearErrors',
   ERRORS: 'errors',

@@ -1,3 +1,5 @@
+import { createErrorEvent, serializeErrorEvent, ErrorLevels, ErrorSources } from '../../../src/core/schemas/ErrorEvent.schema.js'
+
 export class ErrorHandler {
   constructor(options = {}) {
     this.maxErrors = options.maxErrors || 100
@@ -13,17 +15,29 @@ export class ErrorHandler {
 
     this.errorCounts = new Map()
     this.warningCounts = new Map()
+
+    this.networkSender = null
+  }
+
+  setNetworkSender(sender) {
+    this.networkSender = sender
   }
 
   // Error handling
   handleError(error, context = {}) {
+    const level = this.severityToLevel(this.determineSeverity(error, context))
+    const errorEvent = createErrorEvent(error, {
+      ...context,
+      source: ErrorSources.SDK
+    }, level)
+
     const errorData = {
-      id: this.generateId(),
-      timestamp: Date.now(),
-      message: error.message || error.toString(),
-      stack: error.stack,
+      id: errorEvent.id,
+      timestamp: errorEvent.timestamp,
+      message: errorEvent.message,
+      stack: errorEvent.stack,
       name: error.name || 'Error',
-      context: { ...context },
+      context: errorEvent.context,
       count: 1,
       severity: this.determineSeverity(error, context)
     }
@@ -47,6 +61,11 @@ export class ErrorHandler {
     // Log if enabled
     if (this.enableLogging) {
       this.logError(errorData)
+    }
+
+    // Send to server if network available
+    if (this.networkSender) {
+      this.sendErrorToServer(errorEvent)
     }
 
     // Trigger callbacks
@@ -367,6 +386,25 @@ export class ErrorHandler {
     if (error.name === 'NetworkError' || error.message.includes('WebSocket')) return 'high'
     if (error.name === 'ValidationError') return 'medium'
     return 'low'
+  }
+
+  severityToLevel(severity) {
+    switch (severity) {
+      case 'critical': return ErrorLevels.ERROR
+      case 'high': return ErrorLevels.ERROR
+      case 'medium': return ErrorLevels.WARN
+      case 'low': return ErrorLevels.INFO
+      default: return ErrorLevels.ERROR
+    }
+  }
+
+  sendErrorToServer(errorEvent) {
+    try {
+      const serialized = serializeErrorEvent(errorEvent)
+      this.networkSender(serialized)
+    } catch (err) {
+      // Silently fail to avoid error loops
+    }
   }
 
   shouldLog(level) {
