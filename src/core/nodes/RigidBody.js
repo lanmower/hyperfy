@@ -1,8 +1,8 @@
 import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
-import { isFunction, isNumber, isString } from 'lodash-es'
 import { v, q, m } from '../utils/TempVectors.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 
@@ -11,13 +11,73 @@ const types = ['static', 'kinematic', 'dynamic']
 const defaults = {
   type: 'static',
   mass: 1,
-  linearDamping: 0, // physx default
-  angularDamping: 0.05, // phyx default
+  linearDamping: 0,
+  angularDamping: 0.05,
   tag: null,
   onContactStart: null,
   onContactEnd: null,
   onTriggerEnter: null,
   onTriggerLeave: null,
+}
+
+const propertySchema = {
+  type: {
+    default: defaults.type,
+    validate: (v) => !types.includes(v) ? `[rigidbody] type invalid: ${v}` : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  mass: {
+    default: defaults.mass,
+    validate: (v) => {
+      if (typeof v !== 'number') return '[rigidbody] mass not a number'
+      if (v < 0) return '[rigidbody] mass cannot be less than zero'
+      return null
+    },
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  linearDamping: {
+    default: defaults.linearDamping,
+    validate: (v) => {
+      if (typeof v !== 'number') return '[rigidbody] linearDamping not a number'
+      if (v < 0) return '[rigidbody] linearDamping cannot be less than zero'
+      return null
+    },
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  angularDamping: {
+    default: defaults.angularDamping,
+    validate: (v) => {
+      if (typeof v !== 'number') return '[rigidbody] angularDamping not a number'
+      if (v < 0) return '[rigidbody] angularDamping cannot be less than zero'
+      return null
+    },
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  tag: {
+    default: defaults.tag,
+    validate: (v) => v !== null && typeof v !== 'string' && typeof v !== 'number' ? '[rigidbody] tag not a string' : null,
+    onSet(value) {
+      if (typeof value === 'number') {
+        this._tag = value + ''
+      }
+    },
+  },
+  onContactStart: {
+    default: defaults.onContactStart,
+    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onContactStart not a function' : null,
+  },
+  onContactEnd: {
+    default: defaults.onContactEnd,
+    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onContactEnd not a function' : null,
+  },
+  onTriggerEnter: {
+    default: defaults.onTriggerEnter,
+    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onTriggerEnter not a function' : null,
+  },
+  onTriggerLeave: {
+    default: defaults.onTriggerLeave,
+    validate: (v) => v !== null && typeof v !== 'function' ? '[rigidbody] onTriggerLeave not a function' : null,
+  },
 }
 
 let forceModes
@@ -37,6 +97,7 @@ export class RigidBody extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'rigidbody'
+    defineProps(this, propertySchema, defaults)
 
     this.shapes = new Set()
 
@@ -169,134 +230,10 @@ export class RigidBody extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._type = source._type
-    this._mass = source._mass
-    this._tag = source._tag
-    this._onContactStart = source._onContactStart
-    this._onContactEnd = source._onContactEnd
-    this._onTriggerEnter = source._onTriggerEnter
-    this._onTriggerLeave = source._onTriggerLeave
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
-  }
-
-  get type() {
-    return this._type
-  }
-
-  set type(value = defaults.type) {
-    if (!isType(value)) {
-      throw new Error(`[rigidbody] type invalid: ${value}`)
-    }
-    if (this._type === value) return
-    this._type = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get mass() {
-    return this._mass
-  }
-
-  set mass(value = defaults.mass) {
-    if (!isNumber(value)) {
-      throw new Error('[rigidbody] mass not a number')
-    }
-    if (value < 0) {
-      throw new Error('[rigidbody] mass cannot be less than zero')
-    }
-    this._mass = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get linearDamping() {
-    return this._linearDamping
-  }
-
-  set linearDamping(value = defaults.linearDamping) {
-    if (!isNumber(value)) {
-      throw new Error('[rigidbody] linearDamping not a number')
-    }
-    if (value < 0) {
-      throw new Error('[rigidbody] linearDamping cannot be less than zero')
-    }
-    this._linearDamping = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get angularDamping() {
-    return this._angularDamping
-  }
-
-  set angularDamping(value = defaults.angularDamping) {
-    if (!isNumber(value)) {
-      throw new Error('[rigidbody] angularDamping not a number')
-    }
-    if (value < 0) {
-      throw new Error('[rigidbody] angularDamping cannot be less than zero')
-    }
-    this._angularDamping = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get tag() {
-    return this._tag
-  }
-
-  set tag(value = defaults.tag) {
-    if (isNumber(value)) {
-      value = value + ''
-    }
-    if (value !== null && !isString(value)) {
-      throw new Error('[rigidbody] tag not a string')
-    }
-    this._tag = value
-  }
-
-  get onContactStart() {
-    return this._onContactStart
-  }
-
-  set onContactStart(value = defaults.onContactStart) {
-    if (value !== null && !isFunction(value)) {
-      throw new Error('[rigidbody] onContactStart not a function')
-    }
-    this._onContactStart = value
-  }
-
-  get onContactEnd() {
-    return this._onContactEnd
-  }
-
-  set onContactEnd(value = defaults.onContactEnd) {
-    if (value !== null && !isFunction(value)) {
-      throw new Error('[rigidbody] onContactEnd not a function')
-    }
-    this._onContactEnd = value
-  }
-
-  get onTriggerEnter() {
-    return this._onTriggerEnter
-  }
-
-  set onTriggerEnter(value = defaults.onTriggerEnter) {
-    if (value !== null && !isFunction(value)) {
-      throw new Error('[rigidbody] onTriggerEnter not a function')
-    }
-    this._onTriggerEnter = value
-  }
-
-  get onTriggerLeave() {
-    return this._onTriggerLeave
-  }
-
-  set onTriggerLeave(value = defaults.onTriggerLeave) {
-    if (value !== null && !isFunction(value)) {
-      throw new Error('[rigidbody] onTriggerLeave not a function')
-    }
-    this._onTriggerLeave = value
   }
 
   get sleeping() {
@@ -543,8 +480,4 @@ export class RigidBody extends Node {
     }
     return this.proxy
   }
-}
-
-function isType(value) {
-  return types.includes(value)
 }
