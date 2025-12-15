@@ -30,9 +30,6 @@ export function createPlayerProxy(entity, player) {
     get builder() {
       return player.isBuilder()
     },
-    get isAdmin() {
-      return player.isAdmin() // deprecated, use .admin
-    },
     get name() {
       return player.data.name
     },

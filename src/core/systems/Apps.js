@@ -6,7 +6,6 @@ import { System } from './System.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
-import { warn } from '../extras/warn.js'
 
 const isBrowser = typeof window !== 'undefined'
 
@@ -99,7 +98,6 @@ export class Apps extends System {
         if (internalEvents.includes(name)) {
           return console.error(`apps cannot emit internal events (${name})`)
         }
-        warn('world.emit() is deprecated, use app.emit() instead')
         world.events.emit(name, data)
       },
       getTime(entity) {
@@ -258,10 +256,6 @@ export class Apps extends System {
       props(entity) {
         return entity.blueprint.props
       },
-      config(entity) {
-        // deprecated. will be removed
-        return entity.blueprint.props
-      },
       keepActive(entity) {
         return entity.keepActive
       },
@@ -322,14 +316,11 @@ export class Apps extends System {
         })
         return entity.control
       },
-      configure(entity, fnOrArray) {
-        if (isArray(fnOrArray)) {
-          entity.fields = fnOrArray
-        } else if (isFunction(fnOrArray)) {
-          entity.fields = fnOrArray() // deprecated
-        }
-        if (!isArray(entity.fields)) {
+      configure(entity, fields) {
+        if (!isArray(fields)) {
           entity.fields = []
+        } else {
+          entity.fields = fields
         }
         const props = entity.blueprint.props
         for (const field of entity.fields) {
