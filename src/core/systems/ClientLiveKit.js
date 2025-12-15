@@ -29,18 +29,18 @@ export class ClientLiveKit extends System {
   }
 
   start() {
-    this.defaultLevel = this.world.settings.voice
+    this.defaultLevel = this.world.settings.get('voice')
     this.status.level = this.defaultLevel
-    this.world.settings.on('change', this.onSettingsChange)
+    this.world.events.on('settingChanged', this.onSettingChanged)
   }
 
-  onSettingsChange = changes => {
-    if (changes.voice) {
-      this.defaultLevel = changes.voice.value
+  onSettingChanged = ({ key, value }) => {
+    if (key === 'voice') {
+      this.defaultLevel = value
       const myLevel = this.levels[this.world.network.id] || this.defaultLevel
       if (this.status.level !== myLevel) {
         this.status.level = myLevel
-        this.emit('status', this.status)
+        this.world.events.emit('livekitStatusChanged', this.status)
       }
       this.voices.forEach(voice => {
         const level = this.levels[voice.player.data.id] || this.defaultLevel
@@ -72,13 +72,13 @@ export class ClientLiveKit extends System {
     this.room.on(RoomEvent.TrackUnsubscribed, this.onTrackUnsubscribed)
     this.room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, speaking => {
       const player = this.world.entities.player
-      this.world.livekit.emit('speaking', { playerId: player.data.id, speaking })
+      this.world.events.emit('playerSpeaking', { playerId: player.data.id, speaking })
       player.setSpeaking(speaking)
     })
     this.world.audio.ready(async () => {
       await this.room.connect(opts.wsUrl, opts.token)
       this.status.connected = true
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     })
   }
 
@@ -92,10 +92,10 @@ export class ClientLiveKit extends System {
     }
     const voice = this.voices.get(playerId)
     voice?.setMuted(muted)
-    this.emit('muted', { playerId, muted })
+    this.world.events.emit('playerMuted', { playerId, muted })
     if (playerId === this.world.network.id) {
       this.status.muted = muted
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
   }
 
@@ -109,12 +109,12 @@ export class ClientLiveKit extends System {
     if (playerId === this.world.network.id) {
       if (this.status.level !== level) {
         this.status.level = level
-        this.emit('status', this.status)
+        this.world.events.emit('livekitStatusChanged', this.status)
       }
       return
     }
     const voice = this.voices.get(playerId)
-    voice?.setLevel(level) // disabled, spatial, global
+    voice?.setLevel(level)
   }
 
   lateUpdate(delta) {
@@ -144,18 +144,16 @@ export class ClientLiveKit extends System {
   }
 
   onTrackMuted = track => {
-    // console.log('onTrackMuted', track)
     if (track.isLocal && track.source === 'microphone') {
       this.status.mic = false
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
   }
 
   onTrackUnmuted = track => {
-    // console.log('onTrackUnmuted', track)
     if (track.isLocal && track.source === 'microphone') {
       this.status.mic = true
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
   }
 
@@ -163,10 +161,9 @@ export class ClientLiveKit extends System {
     const world = this.world
     const track = publication.track
     const playerId = this.world.network.id
-    // console.log('onLocalTrackPublished', publication)
     if (publication.source === 'microphone') {
       this.status.mic = true
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
     if (publication.source === 'screen_share') {
       const metadata = JSON.parse(this.room.localParticipant.metadata || '{}')
@@ -174,22 +171,21 @@ export class ClientLiveKit extends System {
       this.status.screenshare = targetId
       const screen = createPlayerScreen({ world, playerId, targetId, track, publication })
       this.addScreen(screen)
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
   }
 
   onLocalTrackUnpublished = publication => {
     const playerId = this.world.network.id
-    // console.log('onLocalTrackUnpublished', pub)
     if (publication.source === 'microphone') {
       this.status.mic = false
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
     if (publication.source === 'screen_share') {
       const screen = this.screens.find(s => s.playerId === playerId)
       this.removeScreen(screen)
       this.status.screenshare = null
-      this.emit('status', this.status)
+      this.world.events.emit('livekitStatusChanged', this.status)
     }
   }
 
