@@ -5,6 +5,7 @@ import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const _q1 = new THREE.Quaternion()
 const _q2 = new THREE.Quaternion()
@@ -26,12 +27,27 @@ const defaults = {
 
 const types = ['fixed', 'socket', 'hinge', 'distance']
 
+const rebuild = function() { this.needsRebuild = true; this.setDirty() }
+const numberOrNull = (value) => (value === null || typeof value === 'number') ? null : 'must be number or null'
+
+const propertySchema = {
+  type: { default: defaults.type, validate: validators.enum(types), onSet: rebuild },
+  breakForce: { default: defaults.breakForce, validate: validators.number, onSet: rebuild },
+  breakTorque: { default: defaults.breakTorque, validate: validators.number, onSet: rebuild },
+  limitY: { default: defaults.limitY, validate: numberOrNull, onSet: rebuild },
+  limitZ: { default: defaults.limitZ, validate: numberOrNull, onSet: rebuild },
+  limitMin: { default: defaults.limitMin, validate: numberOrNull, onSet: rebuild },
+  limitMax: { default: defaults.limitMax, validate: numberOrNull, onSet: rebuild },
+  limitStiffness: { default: defaults.limitStiffness, validate: numberOrNull, onSet: rebuild },
+  limitDamping: { default: defaults.limitDamping, validate: numberOrNull, onSet: rebuild },
+  collide: { default: defaults.collide, validate: validators.boolean, onSet: rebuild },
+}
+
 export class Joint extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'joint'
 
-    this.type = data.type || defaults.type
     this.body0 = null
     this.offset0 = new THREE.Vector3(0, 0, 0)
     this.quaternion0 = new THREE.Quaternion(0, 0, 0, 1)
@@ -42,16 +58,20 @@ export class Joint extends Node {
     this.quaternion1 = new THREE.Quaternion(0, 0, 0, 1)
     this.rotation1 = new THREE.Euler(0, 0, 0, 'YXZ')
     bindRotations(this.quaternion1, this.rotation1)
-    this.breakForce = isNumber(data.breakForce) ? data.breakForce : defaults.breakForce
-    this.breakTorque = isNumber(data.breakTorque) ? data.breakTorque : defaults.breakTorque
     this.axis = new THREE.Vector3(0, 1, 0)
-    this.limitY = isNumber(data.limitY) ? data.limitY : defaults.limitY
-    this.limitZ = isNumber(data.limitZ) ? data.limitZ : defaults.limitZ
-    this.limitMin = isNumber(data.limitMin) ? data.limitMin : defaults.limitMin
-    this.limitMax = isNumber(data.limitMax) ? data.limitMax : defaults.limitMax
-    this.limitStiffness = isNumber(data.limitStiffness) ? data.limitStiffness : defaults.limitStiffness
-    this.limitDamping = isNumber(data.limitDamping) ? data.limitDamping : defaults.limitDamping
-    this.collide = isBoolean(data.collide) ? data.collide : defaults.collide
+
+    defineProps(this, propertySchema, defaults)
+
+    this.type = data.type
+    this.breakForce = data.breakForce
+    this.breakTorque = data.breakTorque
+    this.limitY = data.limitY
+    this.limitZ = data.limitZ
+    this.limitMin = data.limitMin
+    this.limitMax = data.limitMax
+    this.limitStiffness = data.limitStiffness
+    this.limitDamping = data.limitDamping
+    this.collide = data.collide
 
     this.frame0 = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
     this.frame1 = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
@@ -170,23 +190,16 @@ export class Joint extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this.type = source.type
+    for (const key in propertySchema) {
+      this[key] = source[key]
+    }
     this.body0 = source.body0
     this.offset0.copy(source.offset0)
     this.quaternion0.copy(source.quaternion0)
     this.body1 = source.body1
     this.offset1.copy(source.offset1)
     this.quaternion1.copy(source.quaternion1)
-    this.breakForce = source.breakForce
-    this.breakTorque = source.breakTorque
     this.axis.copy(source.axis)
-    this.limitY = source.limitY
-    this.limitZ = source.limitZ
-    this.limitMin = source.limitMin
-    this.limitMax = source.limitMax
-    this.limitStiffness = source.limitStiffness
-    this.limitDamping = source.limitDamping
-    this.collide = source.collide
     return this
   }
 
@@ -198,14 +211,10 @@ export class Joint extends Node {
           return self.type
         },
         set type(value) {
-          if (self.value === value) return
-          if (!types.includes(value)) throw new Error('[joint] invalid type:', value)
           self.type = value
-          self.needsRebuild = true
-          self.setDirty()
         },
         get body0() {
-          return self.body0.getProxy()
+          return self.body0?.getProxy()
         },
         set body0(value) {
           if (value) {
@@ -228,7 +237,7 @@ export class Joint extends Node {
           return self.rotation0
         },
         get body1() {
-          return self.body1.getProxy()
+          return self.body1?.getProxy()
         },
         set body1(value) {
           if (value) {
@@ -250,80 +259,62 @@ export class Joint extends Node {
         get rotation1() {
           return self.rotation1
         },
+        get axis() {
+          return self.axis
+        },
         get breakForce() {
           return self.breakForce
         },
         set breakForce(value) {
-          self.breakForce = isNumber(value) ? value : defaults.breakForce
-          self.needsRebuild = true
-          self.setDirty()
+          self.breakForce = value
         },
         get breakTorque() {
           return self.breakTorque
         },
         set breakTorque(value) {
-          self.breakTorque = isNumber(value) ? value : defaults.breakTorque
-          self.needsRebuild = true
-          self.setDirty()
+          self.breakTorque = value
         },
         get limitY() {
           return self.limitY
         },
         set limitY(value) {
           self.limitY = value
-          self.needsRebuild = true
-          self.setDirty()
-        },
-        get axis() {
-          return self.axis
         },
         get limitZ() {
           return self.limitZ
         },
         set limitZ(value) {
           self.limitZ = value
-          self.needsRebuild = true
-          self.setDirty()
         },
         get limitMin() {
           return self.limitMin
         },
         set limitMin(value) {
           self.limitMin = value
-          self.needsRebuild = true
-          self.setDirty()
         },
         get limitMax() {
           return self.limitMax
         },
         set limitMax(value) {
           self.limitMax = value
-          self.needsRebuild = true
-          self.setDirty()
         },
         get limitStiffness() {
           return self.limitStiffness
         },
         set limitStiffness(value) {
           self.limitStiffness = value
-          self.needsRebuild = true
-          self.setDirty()
         },
         get limitDamping() {
           return self.limitDamping
         },
         set limitDamping(value) {
           self.limitDamping = value
-          self.needsRebuild = true
-          self.setDirty()
         },
         get collide() {
           return self.collide
         },
         set collide(value) {
           self.collide = value
-          self.needsRebuild = true
-          self.setDirty()
         },
       }
       proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
