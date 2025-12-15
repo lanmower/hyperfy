@@ -1,12 +1,12 @@
 import { collisionLayers as layers } from '../utils/NodeConstants.js'
 import * as THREE from '../extras/three.js'
-import { isNumber, isBoolean, isString, isFunction } from 'lodash-es'
+import { isString } from 'lodash-es'
 
 import { DEG2RAD } from '../extras/general.js'
 
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
-
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const defaults = {
   radius: 0.4,
@@ -18,10 +18,46 @@ const defaults = {
   onContactEnd: null,
 }
 
+const propertySchema = {
+  radius: {
+    default: defaults.radius,
+    validate: validators.number,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  height: {
+    default: defaults.height,
+    validate: validators.number,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  visible: {
+    default: defaults.visible,
+    validate: validators.boolean,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  layer: {
+    default: defaults.layer,
+    validate: (value) => !layers.includes(value) ? `invalid layer: ${value}` : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  tag: {
+    default: defaults.tag,
+    validate: (value) => (value === null || typeof value === 'string') ? null : 'must be string or null',
+  },
+  onContactStart: {
+    default: defaults.onContactStart,
+    validate: validators.func,
+  },
+  onContactEnd: {
+    default: defaults.onContactEnd,
+    validate: validators.func,
+  },
+}
+
 export class Controller extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'controller'
+    defineProps(this, propertySchema, defaults)
 
     this.radius = data.radius
     this.height = data.height
@@ -129,105 +165,10 @@ export class Controller extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._radius = source._radius
-    this._height = source._height
-    this._visible = source._visible
-    this._layer = source._layer
-    this._tag = source._tag
-    this._onContactStart = source._onContactStart
-    this._onContactEnd = source._onContactEnd
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
-  }
-
-  get radius() {
-    return this._radius
-  }
-
-  set radius(value = defaults.radius) {
-    if (!isNumber(value)) {
-      throw new Error('[controller] radius not a number')
-    }
-    this._radius = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (!isNumber(value)) {
-      throw new Error('[controller] height not a number')
-    }
-    this._height = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get visible() {
-    return this._visible
-  }
-
-  set visible(value = defaults.visible) {
-    if (!isBoolean(value)) {
-      throw new Error('[controller] visible not a boolean')
-    }
-    this._visible = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get layer() {
-    return this._layer
-  }
-
-  set layer(value = defaults.layer) {
-    if (!isLayer(value)) {
-      throw new Error(`[controller] invalid layer: ${value}`)
-    }
-    this._layer = value
-    if (this.controller) {
-      // TODO: we could just update the PxFilterData tbh
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get tag() {
-    return this._tag
-  }
-
-  set tag(value = defaults.tag) {
-    if (isNumber(value)) {
-      value = value + ''
-    }
-    if (value !== null && !isString(value)) {
-      throw new Error('[controller] tag not a string')
-    }
-    this._tag = value
-  }
-
-  get onContactStart() {
-    return this._onContactStart
-  }
-
-  set onContactStart(value = defaults.onContactStart) {
-    if (value !== null && !isFunction(value)) {
-      throw new Error('[controller] onContactStart not a function')
-    }
-    this._onContactStart = value
-  }
-
-  get onContactEnd() {
-    return this._onContactEnd
-  }
-
-  set onContactEnd(value = defaults.onContactEnd) {
-    if (value !== null && !isFunction(value)) {
-      throw new Error('[controller] onContactEnd not a function')
-    }
-    this._onContactEnd = value
   }
 
   get isGrounded() {
