@@ -65,7 +65,7 @@ export class ClientActions extends System {
       if (distance > this.current.node._distance) {
         this.current.node = null
         this.current.distance = Infinity
-        this.emit('change', false)
+        this.world.events.emit('actionChanged', false)
         this.action.stop()
       } else {
         this.current.distance = distance
@@ -92,7 +92,7 @@ export class ClientActions extends System {
     }
     if (didChange) {
       this.action.start(this.current.node)
-      this.emit('change', true)
+      this.world.events.emit('actionChanged', true)
     }
     this.action.update(delta)
   }
