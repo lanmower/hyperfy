@@ -1,23 +1,41 @@
 import { isBoolean, isString } from 'lodash-es'
+import { defineProps } from '../utils/defineProperty.js'
 import { Node } from './Node.js'
 import * as THREE from 'three'
 
-const defaults = {
-  src: null,
-  emote: null,
-  visible: true,
-  onLoad: null,
+const propertySchema = {
+  src: {
+    default: null,
+    validate: v => v !== null && !isString(v) ? '[avatar] src not a string' : null,
+    onSet() {
+      this.needsRebuild = true
+      this.setDirty()
+    },
+  },
+  emote: {
+    default: null,
+    validate: v => v !== null && !isString(v) ? '[avatar] emote not a string' : null,
+    onSet(value) {
+      this.instance?.setEmote(value)
+    },
+  },
+  visible: {
+    default: true,
+    validate: v => !isBoolean(v) ? '[avatar] visible not a boolean' : null,
+    onSet(value) {
+      this.instance?.setVisible(value)
+    },
+  },
+  onLoad: {
+    default: null,
+  },
 }
 
 export class Avatar extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'avatar'
-
-    this.src = data.src
-    this.emote = data.emote
-    this.visible = data.visible
-    this.onLoad = data.onLoad
+    defineProps(this, propertySchema, data)
 
     this.factory = data.factory
     this.hooks = data.hooks
@@ -73,54 +91,6 @@ export class Avatar extends Node {
     this.factory?.applyStats(stats)
   }
 
-  get src() {
-    return this._src
-  }
-
-  set src(value = defaults.src) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[avatar] src not a string')
-    }
-    if (this._src === value) return
-    this._src = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get emote() {
-    return this._emote
-  }
-
-  set emote(value = defaults.emote) {
-    if (value !== null && !isString(value)) {
-      throw new Error('[avatar] emote not a string')
-    }
-    if (this._emote === value) return
-    this._emote = value
-    this.instance?.setEmote(value)
-  }
-
-  get visible() {
-    return this._visible
-  }
-
-  set visible(value = defaults.visible) {
-    if (!isBoolean(value)) {
-      throw new Error('[avatar] visible not a boolean')
-    }
-    if (this._visible === value) return
-    this._visible = value
-    this.instance?.setVisible(value)
-  }
-
-  get onLoad() {
-    return this._onLoad
-  }
-
-  set onLoad(value) {
-    this._onLoad = value
-  }
-
   getHeight() {
     return this.instance?.height || null
   }
@@ -157,11 +127,9 @@ export class Avatar extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._src = source._src
-    this._emote = source._emote
-    this._visible = source._visible
-    this._onLoad = source._onLoad
-
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     this.factory = source.factory
     this.hooks = source.hooks
     return this
