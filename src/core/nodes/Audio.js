@@ -3,7 +3,7 @@ import { every, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
-import { audioGroups as groups, distanceModels } from '../utils/AudioConstants.js'
+import { audioGroups as groups, distanceModels } from '../utils/NodeConstants.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
 
 const defaults = {
