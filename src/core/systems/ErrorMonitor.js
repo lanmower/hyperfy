@@ -15,6 +15,7 @@ export class ErrorMonitor extends System {
     this.state = new StateManager({ errors: [], errorId: 0 })
     this.maxErrors = 500
     this.errorBus = new ErrorEventBus()
+    this.listeners = new Set()
 
     this.setupErrorBusForwarding()
     this.interceptGlobalErrors()
@@ -54,6 +55,14 @@ export class ErrorMonitor extends System {
     this.state.set('errors', updated)
 
     this.world.events.emit('errorCaptured', errorEntry)
+
+    for (const listener of this.listeners) {
+      try {
+        listener('error', errorEntry)
+      } catch (err) {
+        console.error('Error in listener:', err)
+      }
+    }
 
     if (event.level === ErrorLevels.ERROR && !isDuplicate) {
       if (this.isClient && this.world.network) {
@@ -447,8 +456,21 @@ export class ErrorMonitor extends System {
     }
   }
 
+  addListener(listener) {
+    if (typeof listener !== 'function') {
+      throw new Error('Listener must be a function')
+    }
+    this.listeners.add(listener)
+    return () => this.removeListener(listener)
+  }
+
+  removeListener(listener) {
+    this.listeners.delete(listener)
+  }
+
   destroy() {
     this.state.set('errors', [])
+    this.listeners.clear()
     super.destroy()
   }
 }

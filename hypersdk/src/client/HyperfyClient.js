@@ -50,9 +50,9 @@ export class HyperfyClient extends EventEmitter {
   }
 
   setupErrorHandlerNetworking() {
-    this.errorHandler.setNetworkSender((errorEvent) => {
+    this.errorHandler.setNetworkSender((packetName, errorEvent) => {
       if (this.wsManager?.ws?.readyState === 1) {
-        this.wsManager.send('errorEvent', errorEvent)
+        this.wsManager.send(packetName, errorEvent)
       }
     })
   }
