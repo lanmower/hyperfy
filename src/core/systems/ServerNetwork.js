@@ -13,6 +13,7 @@ import { FileStorage } from '../../server/services/FileStorage.js'
 import { FileUploader } from '../../server/services/FileUploader.js'
 import { NetworkProtocol } from '../network/NetworkProtocol.js'
 import { serializeForNetwork } from '../schemas/ChatMessage.schema.js'
+import { errorObserver } from '../../server/services/ErrorObserver.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -437,13 +438,21 @@ export class ServerNetwork extends System {
   }
 
   onErrorEvent = (socket, errorEvent) => {
+    const metadata = {
+      realTime: true,
+      clientId: socket.id,
+      userId: socket.player?.data?.id,
+      userName: socket.player?.data?.name,
+      clientIP: socket.ws?.remoteAddress || 'unknown',
+      timestamp: Date.now()
+    }
+
+    errorObserver.recordClientError(socket.id, errorEvent, metadata)
+
     if (this.world.errorMonitor) {
       this.world.errorMonitor.receiveClientError({
         error: errorEvent,
-        realTime: true,
-        clientId: socket.id,
-        playerId: socket.player?.data?.id,
-        playerName: socket.player?.data?.name
+        ...metadata
       })
     }
 
@@ -451,36 +460,36 @@ export class ServerNetwork extends System {
       if (mcpSocket.mcpErrorSubscription?.active) {
         mcpSocket.send('mcpErrorEvent', {
           error: errorEvent,
-          realTime: true,
-          clientId: socket.id,
-          playerId: socket.player?.data?.id,
-          playerName: socket.player?.data?.name
+          ...metadata
         })
       }
     })
   }
 
   onErrorReport = (socket, data) => {
-    // Process error through ErrorMonitor first
+    const metadata = {
+      realTime: data.realTime || false,
+      clientId: socket.id,
+      userId: socket.player?.data?.id,
+      userName: socket.player?.data?.name,
+      clientIP: socket.ws?.remoteAddress || 'unknown',
+      timestamp: Date.now()
+    }
+
+    errorObserver.recordClientError(socket.id, data.error || data, metadata)
+
     if (this.world.errorMonitor) {
       this.world.errorMonitor.receiveClientError({
         error: data.error || data,
-        realTime: data.realTime || false,
-        clientId: socket.id,
-        playerId: socket.player?.data?.id,
-        playerName: socket.player?.data?.name
+        ...metadata
       })
     }
 
-    // Immediately relay client errors to connected MCP servers
     this.sockets.forEach(mcpSocket => {
       if (mcpSocket.mcpErrorSubscription?.active) {
         mcpSocket.send('mcpErrorEvent', {
           error: data.error || data,
-          realTime: true,
-          clientId: socket.id,
-          playerId: socket.player?.data?.id,
-          playerName: socket.player?.data?.name,
+          ...metadata,
           timestamp: new Date().toISOString(),
           side: 'client-reported'
         })

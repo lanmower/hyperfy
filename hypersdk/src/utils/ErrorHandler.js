@@ -401,7 +401,9 @@ export class ErrorHandler {
   sendErrorToServer(errorEvent) {
     try {
       const serialized = serializeErrorEvent(errorEvent)
-      this.networkSender(serialized)
+      if (this.networkSender && typeof this.networkSender === 'function') {
+        this.networkSender('errorEvent', serialized)
+      }
     } catch (err) {
       // Silently fail to avoid error loops
     }

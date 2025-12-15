@@ -4,6 +4,8 @@ import { Serialization } from '../utils/serialization.js'
 import { StateManager } from '../state/StateManager.js'
 import { ErrorEventBus } from '../utils/ErrorEventBus.js'
 import { createErrorEvent, deserializeErrorEvent, ErrorLevels, ErrorSources } from '../schemas/ErrorEvent.schema.js'
+import { errorObserver } from '../../server/services/ErrorObserver.js'
+import { errorFormatter } from '../../server/utils/ErrorFormatter.js'
 
 export class ErrorMonitor extends System {
   constructor(world) {
@@ -369,11 +371,79 @@ export class ErrorMonitor extends System {
         errorEvent.level
       )
 
+      if (this.isServer && errorEvent.level === ErrorLevels.ERROR) {
+        this.reportServerError(errorEvent, errorData)
+      }
+
       if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
         this.world.events.emit('criticalError', errorEvent)
       }
     } catch (err) {
       console.error('Failed to process client error:', err)
+    }
+  }
+
+  reportServerError = (errorEvent, errorData) => {
+    const metadata = {
+      clientId: errorData.clientId,
+      userId: errorData.userId,
+      userName: errorData.userName,
+      clientIP: errorData.clientIP
+    }
+
+    const formatted = errorFormatter.formatForStderr(errorEvent, metadata)
+    process.stderr.write(formatted)
+  }
+
+  getServerErrorReport = () => {
+    if (!this.isServer) return null
+
+    const localStats = this.getStats()
+    const observerStats = errorObserver.getErrorStats()
+
+    return {
+      local: localStats,
+      client: observerStats,
+      combined: {
+        total: localStats.total + observerStats.total,
+        lastMinute: localStats.recent + observerStats.lastMinute,
+        critical: localStats.critical + observerStats.critical,
+        byType: {
+          ...localStats.byType,
+          ...observerStats.byCategory
+        }
+      }
+    }
+  }
+
+  captureClientError = (clientId, error) => {
+    if (!this.isServer) return
+
+    errorObserver.recordClientError(clientId, error, {
+      timestamp: Date.now(),
+      source: 'server-detected'
+    })
+  }
+
+  checkAlertThresholds = () => {
+    if (!this.isServer) return
+
+    const stats = errorObserver.getErrorStats()
+
+    if (stats.lastMinute >= 25) {
+      const alert = errorFormatter.formatAlert(
+        'High error rate detected across all clients',
+        'CRITICAL'
+      )
+      process.stderr.write(alert)
+    }
+
+    if (stats.critical > 0) {
+      const alert = errorFormatter.formatAlert(
+        `${stats.critical} critical errors detected`,
+        'CRITICAL'
+      )
+      process.stderr.write(alert)
     }
   }
 

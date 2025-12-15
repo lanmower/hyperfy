@@ -30,6 +30,13 @@ export const PacketTypes = {
   MCP_SUBSCRIBE_ERRORS: 'mcpSubscribeErrors',
   MCP_ERROR_EVENT: 'mcpErrorEvent',
   HOT_RELOAD: 'hotReload',
+  FILE_UPLOAD: 'fileUpload',
+  FILE_UPLOAD_PROGRESS: 'fileUploadProgress',
+  FILE_UPLOAD_COMPLETE: 'fileUploadComplete',
+  FILE_UPLOAD_ERROR: 'fileUploadError',
+  FILE_UPLOAD_CHECK: 'fileUploadCheck',
+  FILE_UPLOAD_CHECK_RESULT: 'fileUploadCheckResult',
+  FILE_UPLOAD_STATS: 'fileUploadStats',
 }
 
 // Reverse mapping for validation
