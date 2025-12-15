@@ -1,5 +1,5 @@
 import * as THREE from '../extras/three.js'
-import { Entity } from './Entity.js'
+import { BaseEntity } from './BaseEntity.js'
 import { createNode } from '../extras/createNode.js'
 import { LerpQuaternion } from '../extras/LerpQuaternion.js'
 import { LerpVector3 } from '../extras/LerpVector3.js'
@@ -16,7 +16,7 @@ let capsuleGeometry
   capsuleGeometry.translate(0, height / 2, 0)
 }
 
-export class PlayerRemote extends Entity {
+export class PlayerRemote extends BaseEntity {
   constructor(world, data, local) {
     super(world, data, local)
     this.isPlayer = true

@@ -3,8 +3,9 @@
 import { uuid } from '../utils.js'
 
 export class BaseEntity {
-  constructor(world, data = {}) {
+  constructor(world, data = {}, local = false) {
     this.world = world
+    this.local = local
     this.data = {
       id: data.id || uuid(),
       name: data.name || 'Entity',
@@ -14,6 +15,11 @@ export class BaseEntity {
     }
     this.events = new Map()
     this.state = {}
+
+    // if spawned locally we need to broadcast to server/clients
+    if (local && world?.network) {
+      world.network.send('entityAdded', this.data)
+    }
   }
 
   get id() { return this.data.id }
@@ -94,9 +100,13 @@ export class BaseEntity {
     this.emit('event', { version, name, data, sourceId })
   }
 
-  destroy() {
+  destroy(local) {
     this.events.clear()
     this.state = {}
+    // if removed locally we need to broadcast to server/clients
+    if (local && this.world?.network) {
+      this.world.network.send('entityRemoved', this.data.id)
+    }
   }
 
   toString() {

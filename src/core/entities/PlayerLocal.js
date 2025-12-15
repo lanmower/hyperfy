@@ -1,4 +1,4 @@
-import { Entity } from './Entity.js'
+import { BaseEntity } from './BaseEntity.js'
 import { clamp } from '../utils.js'
 import * as THREE from '../extras/three.js'
 import { Layers } from '../extras/Layers.js'
@@ -54,7 +54,7 @@ const Modes = {
   TALK: 6,
 }
 
-export class PlayerLocal extends Entity {
+export class PlayerLocal extends BaseEntity {
   constructor(world, data, local) {
     super(world, data, local)
     this.isPlayer = true

@@ -1,28 +1,6 @@
-export class Entity {
-  constructor(world, data, local) {
-    this.world = world
-    this.data = data
+// DEPRECATED: Use BaseEntity instead
+// This file is kept for backward compatibility only
 
-    // if spawned locally we need to broadcast to server/clients
-    if (local) {
-      this.world.network.send('entityAdded', data)
-    }
-  }
+import { BaseEntity } from './BaseEntity.js'
 
-  modify(data) {
-    // called when remote receives entity changes
-    // or applying local changes
-  }
-
-  onEvent(version, name, data, networkId) {
-    // ...
-  }
-
-  serialize() {
-    return this.data
-  }
-
-  destroy(local) {
-    // ...
-  }
-}
+export { BaseEntity as Entity }
