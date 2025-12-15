@@ -5,6 +5,7 @@ import { storage } from '../storage.js'
 import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { System } from './System.js'
+import { NetworkProtocol } from '../network/NetworkProtocol.js'
 
 /**
  * Client Network System
@@ -16,12 +17,14 @@ import { System } from './System.js'
 export class ClientNetwork extends System {
   constructor(world) {
     super(world)
-    this.ids = -1
     this.ws = null
     this.apiUrl = null
     this.id = null
     this.isClient = true
-    this.queue = []
+    this.serverTimeOffset = 0
+    this.protocol = new NetworkProtocol('ClientNetwork')
+    this.protocol.isClient = true
+    this.protocol.flushTarget = this
   }
 
   init({ wsUrl, name, avatar }) {
@@ -33,16 +36,17 @@ export class ClientNetwork extends System {
     this.ws.binaryType = 'arraybuffer'
     this.ws.addEventListener('message', this.onPacket)
     this.ws.addEventListener('close', this.onClose)
+    this.protocol.isConnected = true
   }
 
   preFixedUpdate() {
-    this.flush()
+    this.protocol.flush()
   }
 
   send(name, data) {
-    const ignore = ['ping'];
-    if(!ignore.includes(name) && data.id != this.id) {
-      console.log('->', name, data);
+    const ignore = ['ping']
+    if (!ignore.includes(name) && data.id != this.id) {
+      console.log('->', name, data)
     }
     const packet = writePacket(name, data)
     this.ws.send(packet)
@@ -70,28 +74,15 @@ export class ClientNetwork extends System {
   }
 
   enqueue(method, data) {
-    this.queue.push([method, data])
-  }
-
-  flush() {
-    while (this.queue.length) {
-      try {
-        const [method, data] = this.queue.shift()
-        this[method]?.(data)
-      } catch (err) {
-        console.error(err)
-      }
-    }
+    this.protocol.enqueue(method, data)
   }
 
   getTime() {
-    return (performance.now() + this.serverTimeOffset) / 1000 // seconds
+    return (performance.now() + this.serverTimeOffset) / 1000
   }
 
   onPacket = e => {
-    const [method, data] = readPacket(e.data)
-    this.enqueue(method, data)
-    // console.log('<-', method, data)
+    this.protocol.processPacket(e.data)
   }
 
   onSnapshot(data) {

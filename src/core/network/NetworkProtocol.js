@@ -1,6 +1,7 @@
 // Unified network protocol handler - eliminates Client/Server duplication
 
 import { EventBus } from '../utils/EventBus.js'
+import { writePacket, readPacket } from '../packets.js'
 
 export class NetworkProtocol {
   constructor(name = 'Network') {
@@ -12,6 +13,8 @@ export class NetworkProtocol {
     this.isClient = false
     this.retries = 0
     this.maxRetries = 3
+    this.queue = []
+    this.ids = -1
   }
 
   register(packetName, handler) {
@@ -32,6 +35,10 @@ export class NetworkProtocol {
   async handle(packetName, data, metadata = {}) {
     const handler = this.handlers.get(packetName)
     if (!handler) {
+      const method = this[packetName]
+      if (typeof method === 'function') {
+        return method.call(this, data, metadata)
+      }
       console.warn(`No handler for packet: ${packetName}`)
       return null
     }
@@ -47,6 +54,39 @@ export class NetworkProtocol {
     }
   }
 
+  enqueue(contextOrMethod, methodOrData, dataOrUndef) {
+    if (arguments.length === 3) {
+      this.queue.push([contextOrMethod, methodOrData, dataOrUndef])
+    } else {
+      this.queue.push([null, contextOrMethod, methodOrData])
+    }
+  }
+
+  flush() {
+    const target = this.flushTarget || this
+    while (this.queue.length) {
+      try {
+        const [context, method, data] = this.queue.shift()
+        if (context) {
+          target[method]?.(context, data)
+        } else {
+          target[method]?.(data)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  processPacket(packet, context = null) {
+    const [method, data] = readPacket(packet)
+    if (context) {
+      this.enqueue(context, method, data)
+    } else {
+      this.enqueue(method, data)
+    }
+  }
+
   async send(packetName, data) {
     if (!this.isConnected) {
       console.warn(`Not connected, cannot send ${packetName}`)
@@ -54,7 +94,8 @@ export class NetworkProtocol {
     }
     try {
       this.events.emit('sending', { packet: packetName, data })
-      const result = await this._doSend(packetName, data)
+      const packet = writePacket(packetName, data)
+      const result = await this._doSend(packet, packetName, data)
       this.events.emit('sent', { packet: packetName, success: true })
       return result
     } catch (err) {
@@ -62,6 +103,10 @@ export class NetworkProtocol {
       this.events.emit('sent', { packet: packetName, success: false, error: err })
       return false
     }
+  }
+
+  getTime() {
+    return performance.now() / 1000
   }
 
   async broadcast(packetName, data, exclude = null) {
@@ -135,7 +180,7 @@ export class NetworkProtocol {
     throw new Error('_doDisconnect must be implemented')
   }
 
-  async _doSend(packetName, data) {
+  async _doSend(packet, packetName, data) {
     throw new Error('_doSend must be implemented')
   }
 

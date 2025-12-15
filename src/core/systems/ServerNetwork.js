@@ -9,6 +9,7 @@ import * as THREE from '../extras/three.js'
 import { Ranks } from '../extras/ranks.js'
 import { CommandHandler } from '../../server/services/CommandHandler.js'
 import { WorldPersistence } from '../../server/services/WorldPersistence.js'
+import { NetworkProtocol } from '../network/NetworkProtocol.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -27,14 +28,17 @@ export class ServerNetwork extends System {
   constructor(world) {
     super(world)
     this.id = 0
-    this.ids = -1
     this.sockets = new Map()
     this.socketIntervalId = setInterval(() => this.checkSockets(), PING_RATE * 1000)
     this.saveTimerId = null
     this.dirtyBlueprints = new Set()
     this.dirtyApps = new Set()
     this.isServer = true
-    this.queue = []
+    this.isConnected = true
+    this.protocol = new NetworkProtocol('ServerNetwork')
+    this.protocol.isServer = true
+    this.protocol.isConnected = true
+    this.protocol.flushTarget = this
     this.setupHotReload()
   }
 
@@ -82,11 +86,10 @@ export class ServerNetwork extends System {
   }
 
   preFixedUpdate() {
-    this.flush()
+    this.protocol.flush()
   }
 
   send(name, data, ignoreSocketId) {
-    // console.log('->>>', name, data)
     const packet = writePacket(name, data)
     this.sockets.forEach(socket => {
       if (socket.id === ignoreSocketId) return
@@ -100,7 +103,6 @@ export class ServerNetwork extends System {
   }
 
   checkSockets() {
-    // see: https://www.npmjs.com/package/ws#how-to-detect-and-close-broken-connections
     const dead = []
     this.sockets.forEach(socket => {
       if (!socket.alive) {
@@ -113,22 +115,11 @@ export class ServerNetwork extends System {
   }
 
   enqueue(socket, method, data) {
-    this.queue.push([socket, method, data])
-  }
-
-  flush() {
-    while (this.queue.length) {
-      try {
-        const [socket, method, data] = this.queue.shift()
-        this[method]?.(socket, data)
-      } catch (err) {
-        console.error(err)
-      }
-    }
+    this.protocol.enqueue(socket, method, data)
   }
 
   getTime() {
-    return performance.now() / 1000 // seconds
+    return this.protocol.getTime()
   }
 
   save = async () => {
