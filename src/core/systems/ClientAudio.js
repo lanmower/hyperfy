@@ -17,9 +17,9 @@ export class ClientAudio extends System {
       sfx: this.ctx.createGain(),
       voice: this.ctx.createGain(),
     }
-    this.groupGains.music.gain.value = world.prefs.music
-    this.groupGains.sfx.gain.value = world.prefs.sfx
-    this.groupGains.voice.gain.value = world.prefs.voice
+    this.groupGains.music.gain.value = world.prefs.state.get('music')
+    this.groupGains.sfx.gain.value = world.prefs.state.get('sfx')
+    this.groupGains.voice.gain.value = world.prefs.state.get('voice')
     this.groupGains.music.connect(this.masterGain)
     this.groupGains.sfx.connect(this.masterGain)
     this.groupGains.voice.connect(this.masterGain)
@@ -90,7 +90,7 @@ export class ClientAudio extends System {
   }
 
   async init() {
-    this.world.prefs.on('change', this.onPrefsChange)
+    this.world.events.on('prefChanged', this.onPrefChanged)
   }
 
   start() {
@@ -120,15 +120,13 @@ export class ClientAudio extends System {
     this.lastDelta = delta * 2
   }
 
-  onPrefsChange = changes => {
-    if (changes.music) {
-      this.groupGains.music.gain.value = changes.music.value
-    }
-    if (changes.sfx) {
-      this.groupGains.sfx.gain.value = changes.sfx.value
-    }
-    if (changes.voice) {
-      this.groupGains.voice.gain.value = changes.voice.value
+  onPrefChanged = ({ key, value }) => {
+    if (key === 'music') {
+      this.groupGains.music.gain.value = value
+    } else if (key === 'sfx') {
+      this.groupGains.sfx.gain.value = value
+    } else if (key === 'voice') {
+      this.groupGains.voice.gain.value = value
     }
   }
 

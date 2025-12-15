@@ -349,7 +349,7 @@ export class ClientControls extends System {
         }
       }
     }
-    this.world.emit('actions', this.actions)
+    this.world.events.emit('actions', this.actions)
   }
 
   setTouchBtn(prop, down) {
@@ -602,7 +602,7 @@ export class ClientControls extends System {
   onPointerLockStart() {
     if (this.pointer.locked) return
     this.pointer.locked = true
-    this.world.emit('pointer-lock', true)
+    this.world.events.emit('pointerLockChanged', true)
     // pointerlock is async so if its no longer meant to be locked, exit
     if (!this.pointer.shouldLock) this.unlockPointer()
   }
@@ -610,7 +610,7 @@ export class ClientControls extends System {
   onPointerLockEnd() {
     if (!this.pointer.locked) return
     this.pointer.locked = false
-    this.world.emit('pointer-lock', false)
+    this.world.events.emit('pointerLockChanged', false)
   }
 
   onScroll = e => {

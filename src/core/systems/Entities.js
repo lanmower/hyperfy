@@ -73,7 +73,7 @@ export class Entities extends System {
     }
     if (data.owner === this.world.network.id) {
       this.player = entity
-      this.world.emit('player', entity)
+      this.world.events.emit('player', entity)
     }
     this.world.events.emit('entityAdded', entity)
     return entity

@@ -67,7 +67,7 @@ export class ClientLoader extends System {
       return this.load(item.type, item.url).then(() => {
         loadedItems++
         progress = (loadedItems / totalItems) * 100
-        this.world.emit('progress', progress)
+        this.world.events.emit('progress', progress)
       })
     })
     this.preloader = Promise.allSettled(promises).then(() => {

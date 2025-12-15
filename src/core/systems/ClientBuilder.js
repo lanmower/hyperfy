@@ -60,8 +60,8 @@ export class ClientBuilder extends System {
     this.viewport.addEventListener('dragenter', this.onDragEnter)
     this.viewport.addEventListener('dragleave', this.onDragLeave)
     this.viewport.addEventListener('drop', this.onDrop)
-    this.world.on('player', this.checkLocalPlayer)
-    this.world.settings.on('change', this.checkLocalPlayer)
+    this.world.events.on('player', this.checkLocalPlayer)
+    this.world.events.on('settingChanged', this.checkLocalPlayer)
   }
 
   start() {
@@ -83,7 +83,7 @@ export class ClientBuilder extends System {
       // builder revoked
       this.select(null)
       this.enabled = false
-      this.world.emit('build-mode', false)
+      this.world.events.emit('buildModeChanged', false)
     }
     this.updateActions()
   }
@@ -213,7 +213,7 @@ export class ClientBuilder extends System {
         entity.modify({ blueprint: blueprint.id })
         this.world.network.send('entityModified', { id: entity.data.id, blueprint: blueprint.id })
         // toast
-        this.world.emit('toast', 'Unlinked')
+        this.world.events.emit('toast', 'Unlinked')
       }
     }
     // pin/unpin
@@ -225,7 +225,7 @@ export class ClientBuilder extends System {
           id: entity.data.id,
           pinned: entity.data.pinned,
         })
-        this.world.emit('toast', entity.data.pinned ? 'Pinned' : 'Un-pinned')
+        this.world.events.emit('toast', entity.data.pinned ? 'Pinned' : 'Un-pinned')
         this.select(null)
       }
     }
@@ -503,7 +503,7 @@ export class ClientBuilder extends System {
     this.enabled = enabled
     if (!this.enabled) this.select(null)
     this.updateActions()
-    this.world.emit('build-mode', enabled)
+    this.world.events.emit('buildModeChanged', enabled)
   }
 
   setMode(mode) {
@@ -914,14 +914,14 @@ export class ClientBuilder extends System {
     const url = `asset://${filename}`
     // cache file locally so this client can insta-load it
     this.world.loader.insert('avatar', url, file)
-    this.world.emit('avatar', {
+    this.world.events.emit('avatar', {
       file,
       url,
       hash,
       canPlace,
       onPlace: async () => {
         // close pane
-        this.world.emit('avatar', null)
+        this.world.events.emit('avatar', null)
         // make blueprint
         const blueprint = {
           id: uuid(),
@@ -966,7 +966,7 @@ export class ClientBuilder extends System {
       },
       onEquip: async () => {
         // close pane
-        this.world.emit('avatar', null)
+        this.world.events.emit('avatar', null)
         // prep new user data
         const player = this.world.entities.player
         const prevUrl = player.data.avatar

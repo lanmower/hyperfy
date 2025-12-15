@@ -175,7 +175,7 @@ export class PlayerLocal extends Entity {
     this.initControl()
 
     this.world.setHot(this, true)
-    this.world.emit('ready', true)
+    this.world.events.emit('ready', true)
   }
 
   getAvatarUrl() {
@@ -295,7 +295,7 @@ export class PlayerLocal extends Entity {
       onTouchEnd: touch => {
         if (this.stick?.touch === touch) {
           this.stick = null
-          this.world.emit('stick', null)
+          this.world.events.emit('stick', null)
         }
         if (this.pan === touch) {
           this.pan = null
@@ -806,7 +806,7 @@ export class PlayerLocal extends Entity {
       const stickY = (touchY - this.stick.center.y) / moveRadius
       this.moveDir.x = stickX
       this.moveDir.z = stickY
-      this.world.emit('stick', this.stick)
+      this.world.events.emit('stick', this.stick)
     } else {
       // otherwise use keyboard
       if (this.control.keyW.down || this.control.arrowUp.down) this.moveDir.z -= 1
@@ -1139,7 +1139,7 @@ export class PlayerLocal extends Entity {
     let changed
     if (data.hasOwnProperty('name')) {
       this.data.name = data.name
-      this.world.emit('name', { playerId: this.data.id, name: this.data.name })
+      this.world.events.emit('name', { playerId: this.data.id, name: this.data.name })
       changed = true
     }
     if (data.hasOwnProperty('health')) {
@@ -1168,14 +1168,14 @@ export class PlayerLocal extends Entity {
     }
     if (data.hasOwnProperty('rank')) {
       this.data.rank = data.rank
-      this.world.emit('rank', { playerId: this.data.id, rank: this.data.rank })
+      this.world.events.emit('rank', { playerId: this.data.id, rank: this.data.rank })
       changed = true
     }
     if (avatarChanged) {
       this.applyAvatar()
     }
     if (changed) {
-      this.world.emit('player', this)
+      this.world.events.emit('player', this)
     }
   }
 }

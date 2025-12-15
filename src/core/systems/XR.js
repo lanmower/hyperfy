@@ -45,7 +45,7 @@ export class XR extends System {
     session.addEventListener('end', this.onSessionEnd)
     this.session = session
     this.camera = this.world.graphics.renderer.xr.getCamera()
-    this.world.emit('xrSession', session)
+    this.world.events.emit('xrSession', session)
 
     this.controller1Model = this.world.graphics.renderer.xr.getControllerGrip(0)
     this.controller1Model.add(this.controllerModelFactory.createControllerModel(this.controller1Model))
@@ -65,6 +65,6 @@ export class XR extends System {
     this.camera = null
     this.controller1Model = null
     this.controller2Model = null
-    this.world.emit('xrSession', null)
+    this.world.events.emit('xrSession', null)
   }
 }

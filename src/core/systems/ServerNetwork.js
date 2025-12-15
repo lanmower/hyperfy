@@ -74,7 +74,7 @@ export class ServerNetwork extends System {
       console.error(err)
     }
     // watch settings changes
-    this.world.settings.on('change', this.saveSettings)
+    this.world.events.on('settingChanged', this.saveSettings)
     // queue first save
     if (SAVE_INTERVAL) {
       this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)

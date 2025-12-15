@@ -214,7 +214,7 @@ export class PlayerRemote extends Entity {
     if (data.hasOwnProperty('name')) {
       this.data.name = data.name
       this.nametag.label = data.name
-      this.world.emit('name', { playerId: this.data.id, name: this.data.name })
+      this.world.events.emit('name', { playerId: this.data.id, name: this.data.name })
     }
     if (data.hasOwnProperty('health')) {
       this.data.health = data.health
@@ -231,7 +231,7 @@ export class PlayerRemote extends Entity {
     }
     if (data.hasOwnProperty('rank')) {
       this.data.rank = data.rank
-      this.world.emit('rank', { playerId: this.data.id, rank: this.data.rank })
+      this.world.events.emit('rank', { playerId: this.data.id, rank: this.data.rank })
     }
     if (avatarChanged) {
       this.applyAvatar()

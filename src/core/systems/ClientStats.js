@@ -30,13 +30,13 @@ export class ClientStats extends System {
   }
 
   start() {
-    this.world.prefs.on('change', this.onPrefsChange)
-    this.world.on('ui', this.onUIState)
-    this.world.on('ready', this.onReady)
+    this.world.events.on('prefChanged', this.onPrefChanged)
+    this.world.events.on('uiStateChanged', this.onUIState)
+    this.world.events.on('ready', this.onReady)
   }
 
   onReady = () => {
-    if (this.world.prefs.stats) {
+    if (this.world.prefs.state.get('stats')) {
       this.toggle(true)
     }
   }
@@ -138,9 +138,9 @@ export class ClientStats extends System {
     // }
   }
 
-  onPrefsChange = changes => {
-    if (changes.stats) {
-      this.toggle(changes.stats.value)
+  onPrefChanged = ({ key, value }) => {
+    if (key === 'stats') {
+      this.toggle(value)
     }
   }
 

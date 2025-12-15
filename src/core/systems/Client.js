@@ -67,12 +67,12 @@ export class Client extends System {
     this.world.graphics.renderer.setAnimationLoop(this.world.tick)
     document.addEventListener('visibilitychange', this.onVisibilityChange)
 
-    this.world.settings.on('change', this.onSettingsChange)
+    this.world.events.on('settingChanged', this.onSettingChanged)
   }
 
-  onSettingsChange = changes => {
-    if (changes.title) {
-      document.title = changes.title.value || 'World'
+  onSettingChanged = ({ key, value }) => {
+    if (key === 'title') {
+      document.title = value || 'World'
     }
   }
 

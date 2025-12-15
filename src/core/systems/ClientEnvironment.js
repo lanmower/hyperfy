@@ -88,8 +88,8 @@ export class ClientEnvironment extends System {
     this.buildCSM()
     this.updateSky()
 
-    this.world.prefs.on('change', this.onPrefsChange)
-    this.world.graphics.on('resize', this.onViewportResize)
+    this.world.events.on('prefChanged', this.onPrefChanged)
+    this.world.events.on('graphicsResize', this.onGraphicsResize)
   }
 
   addSky(node) {
@@ -258,14 +258,14 @@ export class ClientEnvironment extends System {
     }
   }
 
-  onPrefsChange = changes => {
-    if (changes.shadows) {
+  onPrefChanged = ({ key, value }) => {
+    if (key === 'shadows') {
       this.buildCSM()
       this.updateSky()
     }
   }
 
-  onViewportResize = () => {
+  onGraphicsResize = () => {
     this.csm.updateFrustums()
   }
 }

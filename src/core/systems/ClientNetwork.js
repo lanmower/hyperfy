@@ -212,7 +212,7 @@ export class ClientNetwork extends System {
   }
 
   onKick = code => {
-    this.world.emit('kick', code)
+    this.world.events.emit('kick', code)
   }
 
   onHotReload = data => {
@@ -222,7 +222,7 @@ export class ClientNetwork extends System {
 
   onErrors = (data) => {
     // Received error data from server
-    this.world.emit('errors', data)
+    this.world.events.emit('errors', data)
   }
 
   // Helper method to request errors from server
@@ -243,7 +243,7 @@ export class ClientNetwork extends System {
       body: `You have been disconnected.`,
       createdAt: moment().toISOString(),
     })
-    this.world.emit('disconnect', code || true)
+    this.world.events.emit('disconnect', code || true)
     console.log('disconnect', code)
   }
 
