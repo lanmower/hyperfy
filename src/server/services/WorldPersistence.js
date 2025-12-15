@@ -1,8 +1,9 @@
 // Unified database persistence for world data
 
 export class WorldPersistence {
-  constructor(db) {
+  constructor(db, fileUploader = null) {
     this.db = db
+    this.fileUploader = fileUploader
   }
 
   async upsert(table, whereClause, data) {
@@ -98,4 +99,111 @@ export class WorldPersistence {
   async setConfig(key, value) {
     await this.upsert('config', { key }, { value })
   }
+
+  async exportBlueprints(blueprints) {
+    const exported = []
+    for (const blueprint of blueprints) {
+      const data = typeof blueprint === 'string' ? JSON.parse(blueprint) : blueprint
+      exported.push(data)
+    }
+    return exported
+  }
+
+  async importBlueprints(blueprints, uploader = null) {
+    const results = []
+    for (const blueprint of blueprints) {
+      try {
+        await this.saveBlueprint(blueprint.id, blueprint)
+        results.push({ success: true, id: blueprint.id })
+      } catch (error) {
+        results.push({ success: false, id: blueprint.id, error: error.message })
+      }
+    }
+    return results
+  }
+
+  async exportEntities(entities) {
+    const exported = []
+    for (const entity of entities) {
+      const data = typeof entity === 'string' ? JSON.parse(entity) : entity
+      exported.push(data)
+    }
+    return exported
+  }
+
+  async importEntities(entities, uploader = null) {
+    const results = []
+    for (const entity of entities) {
+      try {
+        await this.saveEntity(entity.id, entity)
+        results.push({ success: true, id: entity.id })
+      } catch (error) {
+        results.push({ success: false, id: entity.id, error: error.message })
+      }
+    }
+    return results
+  }
+
+  async backupWorld() {
+    const blueprints = await this.loadBlueprints()
+    const entities = await this.loadEntities()
+    const settings = await this.loadSettings()
+    const spawn = await this.loadSpawn()
+
+    return {
+      blueprints: blueprints.map(b => JSON.parse(b.data)),
+      entities: entities.map(e => JSON.parse(e.data)),
+      settings,
+      spawn: JSON.parse(spawn),
+      timestamp: Date.now()
+    }
+  }
+
+  async restoreWorld(backup, uploader = null) {
+    const results = {
+      blueprints: [],
+      entities: [],
+      settings: false,
+      spawn: false
+    }
+
+    if (backup.blueprints) {
+      results.blueprints = await this.importBlueprints(backup.blueprints, uploader)
+    }
+
+    if (backup.entities) {
+      results.entities = await this.importEntities(backup.entities, uploader)
+    }
+
+    if (backup.settings) {
+      try {
+        await this.saveSettings(backup.settings)
+        results.settings = true
+      } catch (error) {
+        results.settings = error.message
+      }
+    }
+
+    if (backup.spawn) {
+      try {
+        await this.setConfig('spawn', JSON.stringify(backup.spawn))
+        results.spawn = true
+      } catch (error) {
+        results.spawn = error.message
+      }
+    }
+
+    return results
+  }
+
+  async getFileStats() {
+    if (!this.fileUploader) return null
+    return this.fileUploader.getStats()
+  }
+
+  async listFiles(options = {}) {
+    if (!this.fileUploader) return []
+    return await this.fileUploader.storage.listAll(options)
+  }
 }
+

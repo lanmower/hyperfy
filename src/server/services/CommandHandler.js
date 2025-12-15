@@ -1,6 +1,7 @@
 import { uuid } from '../../core/utils.js'
 import { Ranks } from '../../core/extras/ranks.js'
 import moment from 'moment'
+import { serializeForNetwork } from '../../core/schemas/ChatMessage.schema.js'
 
 export class CommandHandler {
   constructor(world, db) {
@@ -72,12 +73,14 @@ export class CommandHandler {
   }
 
   sendChat(socket, body) {
-    socket.send('chatAdded', {
+    const message = serializeForNetwork({
       id: uuid(),
-      from: null,
-      fromId: null,
-      body,
-      createdAt: moment().toISOString(),
+      userId: 'system',
+      name: 'System',
+      text: body,
+      timestamp: Date.now(),
+      isSystem: true
     })
+    socket.send('chatAdded', message)
   }
 }

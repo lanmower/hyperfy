@@ -9,7 +9,10 @@ import * as THREE from '../extras/three.js'
 import { Ranks } from '../extras/ranks.js'
 import { CommandHandler } from '../../server/services/CommandHandler.js'
 import { WorldPersistence } from '../../server/services/WorldPersistence.js'
+import { FileStorage } from '../../server/services/FileStorage.js'
+import { FileUploader } from '../../server/services/FileUploader.js'
 import { NetworkProtocol } from '../network/NetworkProtocol.js'
+import { serializeForNetwork } from '../schemas/ChatMessage.schema.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -51,10 +54,12 @@ export class ServerNetwork extends System {
     })
   }
 
-  init({ db }) {
+  init({ db, assetsDir }) {
     this.db = db
+    this.fileStorage = new FileStorage(assetsDir, db)
+    this.fileUploader = new FileUploader(this.fileStorage, parseInt(process.env.PUBLIC_MAX_UPLOAD_SIZE || 50 * 1024 * 1024))
     this.commandHandler = new CommandHandler(this.world, db)
-    this.persistence = new WorldPersistence(db)
+    this.persistence = new WorldPersistence(db, this.fileUploader)
   }
 
   async start() {
@@ -404,13 +409,15 @@ export class ServerNetwork extends System {
     }
     const data = JSON.stringify(this.spawn)
     await this.persistence.setConfig('spawn', data)
-    socket.send('chatAdded', {
+    const message = serializeForNetwork({
       id: uuid(),
-      from: null,
-      fromId: null,
-      body: op === 'set' ? 'Spawn updated' : 'Spawn cleared',
-      createdAt: moment().toISOString(),
+      userId: 'system',
+      name: 'System',
+      text: op === 'set' ? 'Spawn updated' : 'Spawn cleared',
+      timestamp: Date.now(),
+      isSystem: true
     })
+    socket.send('chatAdded', message)
   }
 
   onPlayerTeleport = (socket, data) => {
@@ -512,6 +519,75 @@ export class ServerNetwork extends System {
     }
     const count = this.world.errorMonitor.clearErrors()
     socket.send('clearErrors', { cleared: count })
+  }
+
+  onFileUpload = async (socket, data) => {
+    try {
+      const { buffer, filename, mimeType, metadata } = data
+      const bufferData = Buffer.from(buffer)
+
+      const result = await this.fileUploader.uploadFile(bufferData, filename, {
+        mimeType: mimeType || 'application/octet-stream',
+        uploader: socket.id,
+        metadata: metadata || {},
+        onProgress: (progress) => {
+          socket.send('fileUploadProgress', { filename, progress })
+        }
+      })
+
+      socket.send('fileUploadComplete', {
+        filename,
+        hash: result.hash,
+        url: result.url,
+        size: result.size,
+        deduplicated: result.deduplicated
+      })
+
+    } catch (error) {
+      console.error('File upload error:', error)
+      socket.send('fileUploadError', {
+        filename: data.filename,
+        error: error.message
+      })
+    }
+  }
+
+  onFileUploadCheck = async (socket, data) => {
+    try {
+      const { hash } = data
+      const exists = await this.fileUploader.checkExists(hash)
+      const record = exists ? await this.fileStorage.getRecord(hash) : null
+
+      socket.send('fileUploadCheckResult', {
+        hash,
+        exists,
+        record
+      })
+    } catch (error) {
+      console.error('File upload check error:', error)
+      socket.send('fileUploadCheckResult', {
+        hash: data.hash,
+        exists: false,
+        error: error.message
+      })
+    }
+  }
+
+  onFileUploadStats = async (socket) => {
+    try {
+      const stats = this.fileUploader.getStats()
+      const storageStats = await this.fileStorage.getStats()
+
+      socket.send('fileUploadStats', {
+        uploader: stats,
+        storage: storageStats
+      })
+    } catch (error) {
+      console.error('File upload stats error:', error)
+      socket.send('fileUploadStats', {
+        error: error.message
+      })
+    }
   }
 
   onDisconnect = (socket, code) => {

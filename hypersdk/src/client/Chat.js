@@ -1,3 +1,6 @@
+import { normalizeMessage, MessageTypes } from '../../../src/core/schemas/ChatMessage.schema.js'
+import { formatMessage as formatMsg, formatRankName } from '../../../src/core/utils/ChatFormatter.js'
+
 export class Chat {
   constructor(client) {
     this.client = client
@@ -7,7 +10,6 @@ export class Chat {
     this.onCleared = null
   }
 
-  // Message management
   sendMessage(text) {
     if (!text || typeof text !== 'string') {
       throw new Error('Message text must be a non-empty string')
@@ -24,7 +26,6 @@ export class Chat {
     return this.client.send('command', [command, ...args])
   }
 
-  // Message retrieval
   getMessages(limit = null) {
     if (limit && limit > 0) {
       return this.messages.slice(-limit)
@@ -44,7 +45,6 @@ export class Chat {
     return this.messages.filter(msg => msg.type === type)
   }
 
-  // Message filtering
   searchMessages(query, caseSensitive = false) {
     const searchQuery = caseSensitive ? query : query.toLowerCase()
     return this.messages.filter(msg => {
@@ -57,7 +57,6 @@ export class Chat {
     return this.messages.length
   }
 
-  // Message clearing
   clear() {
     this.messages = []
     this.client.emit('chatCleared')
@@ -66,23 +65,11 @@ export class Chat {
     }
   }
 
-  // Internal methods (called by client)
   addMessage(messageData) {
-    const message = {
-      id: messageData.id || Date.now().toString(),
-      userId: messageData.userId || messageData.networkId,
-      name: messageData.name || 'Unknown',
-      text: messageData.text || messageData.message,
-      type: messageData.type || 'chat',
-      timestamp: messageData.timestamp || Date.now(),
-      isSystem: messageData.isSystem || false,
-      isPrivate: messageData.isPrivate || false,
-      rank: messageData.rank || 0
-    }
+    const message = normalizeMessage(messageData)
 
     this.messages.push(message)
 
-    // Maintain max message limit
     if (this.messages.length > this.maxMessages) {
       this.messages = this.messages.slice(-this.maxMessages)
     }
@@ -95,14 +82,8 @@ export class Chat {
     return message
   }
 
-  // Chat utilities
   formatMessage(message, includeTimestamp = true) {
-    const time = new Date(message.timestamp).toLocaleTimeString()
-    const rankName = this.getRankName(message.rank)
-    const prefix = includeTimestamp ? `[${time}] ` : ''
-    const rankPrefix = rankName !== 'Visitor' ? `[${rankName}] ` : ''
-
-    return `${prefix}${rankPrefix}${message.name}: ${message.text}`
+    return formatMsg(message, { includeTimestamp })
   }
 
   getRecentMessages(minutes = 5) {
@@ -130,11 +111,7 @@ export class Chat {
   }
 
   getRankName(rank) {
-    switch (rank) {
-      case 2: return 'Admin'
-      case 1: return 'Builder'
-      default: return 'Visitor'
-    }
+    return formatRankName(rank)
   }
 
   // Export/Import

@@ -2,6 +2,7 @@ import moment from 'moment'
 import { uuid } from '../utils.js'
 import { System } from './System.js'
 import { StateManager } from '../state/StateManager.js'
+import { normalizeMessage, serializeForNetwork, deserializeFromNetwork } from '../schemas/ChatMessage.schema.js'
 
 export class Chat extends System {
   constructor(world) {
@@ -12,6 +13,8 @@ export class Chat extends System {
   add(msg, broadcast) {
     if (!msg.id) msg.id = uuid()
     if (!msg.createdAt) msg.createdAt = moment().toISOString()
+
+    const normalized = normalizeMessage(msg)
 
     const msgs = this.state.get('messages')
     const updated = [...msgs, msg]

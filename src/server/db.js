@@ -411,7 +411,7 @@ export async function getDB(worldDir) {
 
   // Simplified migration - just ensure tables exist
   try {
-    const tables = ['users', 'blueprints', 'entities']
+    const tables = ['users', 'blueprints', 'entities', 'files']
     for (const tableName of tables) {
       const exists = await db.schema.hasTable(tableName)
       if (!exists) {
@@ -421,6 +421,18 @@ export async function getDB(worldDir) {
             table.string('name').notNullable()
             table.string('avatar').nullable()
             table.integer('rank').notNullable()
+          })
+        } else if (tableName === 'files') {
+          await db.schema.createTable('files', table => {
+            table.string('hash').primary()
+            table.string('filename').notNullable()
+            table.string('storedFilename').notNullable()
+            table.integer('size').notNullable()
+            table.string('mimeType').notNullable()
+            table.string('uploader').nullable()
+            table.integer('timestamp').notNullable()
+            table.integer('stored').notNullable()
+            table.string('url').notNullable()
           })
         } else {
           await db.schema.createTable(tableName, table => {
