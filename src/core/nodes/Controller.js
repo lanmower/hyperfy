@@ -1,3 +1,4 @@
+import { collisionLayers as layers } from '../utils/NodeConstants.js'
 import * as THREE from '../extras/three.js'
 import { isNumber, isBoolean, isString, isFunction } from 'lodash-es'
 
@@ -6,7 +7,6 @@ import { DEG2RAD } from '../extras/general.js'
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 
-const layers = ['environment', 'prop', 'player', 'tool']
 
 const defaults = {
   radius: 0.4,

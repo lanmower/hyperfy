@@ -1,3 +1,4 @@
+import { imageFits as fits } from '../utils/NodeConstants.js'
 import { isBoolean, isNumber, isString } from 'lodash-es'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import * as THREE from '../extras/three.js'
@@ -6,7 +7,6 @@ import { getRef, Node, secureRef } from './Node.js'
 import { uuid } from '../utils.js'
 import { v, q } from '../utils/TempVectors.js'
 import { audioGroups as groups, distanceModels } from '../utils/AudioConstants.js'
-const fits = ['none', 'cover', 'contain']
 const pivots = [
   'top-left',
   'top-center',

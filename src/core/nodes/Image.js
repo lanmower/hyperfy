@@ -1,9 +1,9 @@
+import { imageFits as fits } from '../utils/NodeConstants.js'
 import { isBoolean, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 
-const fits = ['none', 'cover', 'contain']
 const pivots = [
   'top-left',
   'top-center',

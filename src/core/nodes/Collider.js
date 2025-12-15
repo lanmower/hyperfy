@@ -1,3 +1,4 @@
+import { collisionLayers as layers } from '../utils/NodeConstants.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean, isNumber } from 'lodash-es'
 
@@ -26,7 +27,6 @@ const _v2 = new THREE.Vector3()
 const _q1 = new THREE.Quaternion()
 
 const types = ['box', 'sphere', 'geometry']
-const layers = ['environment', 'prop', 'player', 'tool']
 
 export class Collider extends Node {
   constructor(data = {}) {
