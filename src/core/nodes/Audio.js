@@ -3,9 +3,7 @@ import { every, isBoolean, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
-
-const groups = ['music', 'sfx']
-const distanceModels = ['linear', 'inverse', 'exponential']
+import { audioGroups as groups, distanceModels } from '../utils/AudioConstants.js'
 
 const defaults = {
   src: null,

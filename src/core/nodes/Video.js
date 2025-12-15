@@ -5,9 +5,7 @@ import * as THREE from '../extras/three.js'
 import { getRef, Node, secureRef } from './Node.js'
 import { uuid } from '../utils.js'
 import { v, q } from '../utils/TempVectors.js'
-
-const groups = ['music', 'sfx']
-const distanceModels = ['linear', 'inverse', 'exponential']
+import { audioGroups as groups, distanceModels } from '../utils/AudioConstants.js'
 const fits = ['none', 'cover', 'contain']
 const pivots = [
   'top-left',
