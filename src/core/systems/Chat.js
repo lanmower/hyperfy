@@ -1,36 +1,24 @@
 import moment from 'moment'
 import { uuid } from '../utils.js'
 import { System } from './System.js'
-
-/**
- * Chat System
- *
- * - Runs on both the server and client.
- * - Stores and handles chat messages
- * - Provides subscribe hooks for client UI
- *
- */
+import { ListenerMixin } from '../mixins/ListenerMixin.js'
 
 const CHAT_MAX_MESSAGES = 50
 
-export class Chat extends System {
+export class Chat extends ListenerMixin(System) {
   constructor(world) {
     super(world)
     this.msgs = []
-    this.listeners = new Set()
   }
 
   add(msg, broadcast) {
     if (!msg.id) msg.id = uuid()
     if (!msg.createdAt) moment().toISOString()
-    // add to chat messages
     this.msgs = [...this.msgs, msg]
     if (this.msgs.length > CHAT_MAX_MESSAGES) {
       this.msgs.shift()
     }
-    for (const callback of this.listeners) {
-      callback(this.msgs)
-    }
+    this.notifyListeners(this.msgs)
     if (msg.fromId) {
       const player = this.world.entities.getPlayer(msg.fromId)
       player?.chat(msg.body)
@@ -64,9 +52,7 @@ export class Chat extends System {
 
   clear(broadcast) {
     this.msgs = []
-    for (const callback of this.listeners) {
-      callback(this.msgs)
-    }
+    this.notifyListeners(this.msgs)
     if (broadcast) {
       this.world.network.send('chatCleared')
     }
@@ -93,21 +79,11 @@ export class Chat extends System {
 
   deserialize(msgs) {
     this.msgs = msgs
-    for (const callback of this.listeners) {
-      callback(msgs)
-    }
+    this.notifyListeners(msgs)
   }
 
   subscribe(callback) {
-    this.listeners.add(callback)
     callback(this.msgs)
-    return () => {
-      this.listeners.delete(callback)
-    }
-  }
-
-  destroy() {
-    this.msgs = []
-    this.listeners.clear()
+    return this.addListener(callback)
   }
 }

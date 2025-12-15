@@ -8,6 +8,7 @@ import { cloneDeep, isNumber } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 import { Ranks } from '../extras/ranks.js'
 import { CommandHandler } from '../../server/services/CommandHandler.js'
+import { WorldPersistence } from '../../server/services/WorldPersistence.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -49,29 +50,24 @@ export class ServerNetwork extends System {
   init({ db }) {
     this.db = db
     this.commandHandler = new CommandHandler(this.world, db)
+    this.persistence = new WorldPersistence(db)
   }
 
   async start() {
-    // get spawn
-    const spawnRow = await this.db('config').where('key', 'spawn').first()
-    this.spawn = JSON.parse(spawnRow?.value || defaultSpawn)
-    // hydrate blueprints
-    const blueprints = await this.db('blueprints')
+    this.spawn = JSON.parse(await this.persistence.loadSpawn())
+    const blueprints = await this.persistence.loadBlueprints()
     for (const blueprint of blueprints) {
       const data = JSON.parse(blueprint.data)
       this.world.blueprints.add(data, true)
     }
-    // hydrate entities
-    const entities = await this.db('entities')
+    const entities = await this.persistence.loadEntities()
     for (const entity of entities) {
       const data = JSON.parse(entity.data)
       data.state = {}
       this.world.entities.add(data, true)
     }
-    // hydrate settings
-    let settingsRow = await this.db('config').where('key', 'settings').first()
     try {
-      const settings = JSON.parse(settingsRow?.value || '{}')
+      const settings = await this.persistence.loadSettings()
       this.world.settings.deserialize(settings)
       this.world.settings.setHasAdminCode(!!process.env.ADMIN_CODE)
     } catch (err) {
@@ -136,24 +132,12 @@ export class ServerNetwork extends System {
   }
 
   save = async () => {
-    const counts = {
-      upsertedBlueprints: 0,
-      upsertedApps: 0,
-      deletedApps: 0,
-    }
+    const counts = { upsertedBlueprints: 0, upsertedApps: 0, deletedApps: 0 }
     const now = moment().toISOString()
-    // blueprints
     for (const id of this.dirtyBlueprints) {
       const blueprint = this.world.blueprints.get(id)
       try {
-        const record = {
-          id: blueprint.id,
-          data: JSON.stringify(blueprint),
-        }
-        await this.db('blueprints')
-          .insert({ ...record, createdAt: now, updatedAt: now })
-          .onConflict('id')
-          .merge({ ...record, updatedAt: now })
+        await this.persistence.saveBlueprint(blueprint.id, blueprint, now, now)
         counts.upsertedBlueprints++
         this.dirtyBlueprints.delete(id)
       } catch (err) {
@@ -161,25 +145,12 @@ export class ServerNetwork extends System {
         console.error(err)
       }
     }
-    // app entities
     for (const id of this.dirtyApps) {
       const entity = this.world.entities.get(id)
       if (entity) {
-        // it needs creating/updating
-        if (entity.data.uploader || entity.data.mover) {
-          continue // ignore while uploading or moving
-        }
+        if (entity.data.uploader || entity.data.mover) continue
         try {
-          const data = cloneDeep(entity.data)
-          data.state = null
-          const record = {
-            id: entity.data.id,
-            data: JSON.stringify(entity.data),
-          }
-          await this.db('entities')
-            .insert({ ...record, createdAt: now, updatedAt: now })
-            .onConflict('id')
-            .merge({ ...record, updatedAt: now })
+          await this.persistence.saveEntity(entity.data.id, entity.data, now, now)
           counts.upsertedApps++
           this.dirtyApps.delete(id)
         } catch (err) {
@@ -187,35 +158,21 @@ export class ServerNetwork extends System {
           console.error(err)
         }
       } else {
-        // it was removed
-        await this.db('entities').where('id', id).delete()
+        await this.persistence.deleteEntity(id)
         counts.deletedApps++
         this.dirtyApps.delete(id)
       }
     }
-    // log
     const didSave = counts.upsertedBlueprints > 0 || counts.upsertedApps > 0 || counts.deletedApps > 0
     if (didSave) {
-      console.log(
-        `world saved (${counts.upsertedBlueprints} blueprints, ${counts.upsertedApps} apps, ${counts.deletedApps} apps removed)`
-      )
+      console.log(`world saved (${counts.upsertedBlueprints} blueprints, ${counts.upsertedApps} apps, ${counts.deletedApps} deleted)`)
     }
-    // queue again
     this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
   }
 
   saveSettings = async () => {
     const data = this.world.settings.serialize()
-    const value = JSON.stringify(data)
-    await this.db('config')
-      .insert({
-        key: 'settings',
-        value,
-      })
-      .onConflict('key')
-      .merge({
-        value,
-      })
+    await this.persistence.setConfig('settings', JSON.stringify(data))
   }
 
   async onConnection(ws, params) {
@@ -239,7 +196,7 @@ export class ServerNetwork extends System {
       if (authToken) {
         try {
           const { userId } = await readJWT(authToken)
-          user = await this.db('users').where('id', userId).first()
+          user = await this.persistence.loadUser(userId)
         } catch (err) {
           console.error('failed to read authToken:', authToken)
         }
@@ -252,7 +209,7 @@ export class ServerNetwork extends System {
           rank: 0,
           createdAt: moment().toISOString(),
         }
-        await this.db('users').insert(user)
+        await this.persistence.saveUser(user.id, user)
         authToken = await createJWT({ userId: user.id })
       }
 
@@ -334,7 +291,7 @@ export class ServerNetwork extends System {
     if (!player || !player.isPlayer) return
     player.modify({ rank })
     this.send('entityModified', { id: playerId, rank })
-    await this.db('users').where('id', playerId).update({ rank })
+    await this.persistence.updateUserRank(playerId, rank)
   }
 
   onKick = (socket, playerId) => {
@@ -416,7 +373,7 @@ export class ServerNetwork extends System {
         changed = true
       }
       if (changed) {
-        await this.db('users').where('id', entity.data.userId).update(changes)
+        await this.persistence.updateUserData(entity.data.userId, changes)
       }
     }
   }
@@ -455,15 +412,7 @@ export class ServerNetwork extends System {
       return
     }
     const data = JSON.stringify(this.spawn)
-    await this.db('config')
-      .insert({
-        key: 'spawn',
-        value: data,
-      })
-      .onConflict('key')
-      .merge({
-        value: data,
-      })
+    await this.persistence.setConfig('spawn', data)
     socket.send('chatAdded', {
       id: uuid(),
       from: null,

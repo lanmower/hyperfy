@@ -1,15 +1,15 @@
 import { System } from './System.js'
 import { ErrorPatterns } from '../utils/errorPatterns.js'
 import { Serialization } from '../utils/serialization.js'
+import { ListenerMixin } from '../mixins/ListenerMixin.js'
 
-export class ErrorMonitor extends System {
+export class ErrorMonitor extends ListenerMixin(System) {
   constructor(world) {
     super(world)
     this.isClient = !world.isServer
     this.isServer = world.isServer
     this.errors = []
     this.maxErrors = 500
-    this.listeners = new Set()
     this.errorId = 0
 
     this.interceptGlobalErrors()
@@ -217,21 +217,6 @@ export class ErrorMonitor extends System {
     }
   }
 
-  // Public API
-  addListener(callback) {
-    this.listeners.add(callback)
-    return () => this.listeners.delete(callback)
-  }
-
-  notifyListeners(event, data) {
-    this.listeners.forEach(callback => {
-      try {
-        callback(event, data)
-      } catch (err) {
-        console.error('ErrorMonitor listener error:', err)
-      }
-    })
-  }
 
   getErrors(options = {}) {
     const { 
@@ -352,7 +337,7 @@ export class ErrorMonitor extends System {
   }
 
   destroy() {
-    this.listeners.clear()
     this.errors = []
+    super.destroy()
   }
 }
