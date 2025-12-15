@@ -1,9 +1,20 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const defaults = {
   label: '...',
   health: 100,
+}
+
+const propertySchema = {
+  health: {
+    default: defaults.health,
+    validate: validators.number,
+    onSet(value) {
+      this.handle?.setHealth(value)
+    }
+  },
 }
 
 export class Nametag extends Node {
@@ -11,8 +22,25 @@ export class Nametag extends Node {
     super(data)
     this.name = 'nametag'
 
-    this.label = data.label
+    defineProps(this, propertySchema, defaults)
+
+    this._label = defaults.label
+    if (data.label !== undefined) {
+      this.label = data.label
+    }
     this.health = data.health
+  }
+
+  get label() {
+    return this._label
+  }
+
+  set label(value = defaults.label) {
+    if (isNumber(value)) value = String(value)
+    if (!isString(value)) throw new Error('[nametag] label invalid')
+    if (this._label === value) return
+    this._label = value
+    this.handle?.setName(value)
   }
 
   mount() {
@@ -35,37 +63,11 @@ export class Nametag extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._label = source._label
+    this.label = source.label
+    for (const key in propertySchema) {
+      this[key] = source[key]
+    }
     return this
-  }
-
-  get label() {
-    return this._label
-  }
-
-  set label(value = defaults.label) {
-    if (isNumber(value)) {
-      value = value + ''
-    }
-    if (!isString(value)) {
-      throw new Error('[nametag] label invalid')
-    }
-    if (this._label === value) return
-    this._label = value
-    this.handle?.setName(value)
-  }
-
-  get health() {
-    return this._health
-  }
-
-  set health(value = defaults.health) {
-    if (!isNumber(value)) {
-      throw new Error('[nametag] health not a number')
-    }
-    if (this._health === value) return
-    this._health = value
-    this.handle?.setHealth(value)
   }
 
   getProxy() {
