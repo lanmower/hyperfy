@@ -1,8 +1,8 @@
 import { collisionLayers as layers } from '../utils/NodeConstants.js'
 import * as THREE from '../extras/three.js'
-import { isBoolean, isNumber } from 'lodash-es'
 
 import { getRef, Node, secureRef } from './Node.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
@@ -22,6 +22,64 @@ const defaults = {
   restitution: 0,
 }
 
+const propertySchema = {
+  type: {
+    default: defaults.type,
+    validate: (value) => !types.includes(value) ? `invalid type: ${value}` : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  width: {
+    default: defaults.width,
+    validate: validators.number,
+    onSet() { if (this.shape && this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+  },
+  height: {
+    default: defaults.height,
+    validate: validators.number,
+    onSet() { if (this.shape && this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+  },
+  depth: {
+    default: defaults.depth,
+    validate: validators.number,
+    onSet() { if (this.shape && this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+  },
+  radius: {
+    default: defaults.radius,
+    validate: validators.number,
+    onSet() { if (this.shape && this._type === 'sphere') { this.needsRebuild = true; this.setDirty() } },
+  },
+  convex: {
+    default: defaults.convex,
+    validate: validators.boolean,
+    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+  },
+  trigger: {
+    default: defaults.trigger,
+    validate: validators.boolean,
+    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+  },
+  layer: {
+    default: defaults.layer,
+    validate: (value) => !layers.includes(value) ? `invalid layer: ${value}` : null,
+    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+  },
+  staticFriction: {
+    default: defaults.staticFriction,
+    validate: validators.number,
+    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+  },
+  dynamicFriction: {
+    default: defaults.dynamicFriction,
+    validate: validators.number,
+    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+  },
+  restitution: {
+    default: defaults.restitution,
+    validate: validators.number,
+    onSet() { if (this.shape) { this.needsRebuild = true; this.setDirty() } },
+  },
+}
+
 const _v1 = new THREE.Vector3()
 const _v2 = new THREE.Vector3()
 const _q1 = new THREE.Quaternion()
@@ -32,6 +90,7 @@ export class Collider extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'collider'
+    defineProps(this, propertySchema, defaults)
 
     this.type = data.type
     this.width = data.width
@@ -140,98 +199,11 @@ export class Collider extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._type = source._type
-    this._width = source._width
-    this._height = source._height
-    this._depth = source._depth
-    this._radius = source._radius
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     this._geometry = source._geometry
-    this._convex = source._convex
-    this._trigger = source._trigger
-    this._layer = source._layer
-    this._staticFriction = source._staticFriction
-    this._dynamicFriction = source._dynamicFriction
-    this._restitution = source._restitution
     return this
-  }
-
-  get type() {
-    return this._type
-  }
-
-  set type(value = defaults.type) {
-    if (!isType(value)) {
-      throw new Error(`[collider] invalid type:`, value)
-    }
-    this._type = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get width() {
-    return this._width
-  }
-
-  set width(value = defaults.width) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] width not a number')
-    }
-    this._width = value
-    if (this.shape && this._type === 'box') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] height not a number')
-    }
-    this._height = value
-    if (this.shape && this._type === 'box') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get depth() {
-    return this._depth
-  }
-
-  set depth(value = defaults.depth) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] depth not a number')
-    }
-    this._depth = value
-    if (this.shape && this._type === 'box') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  setSize(width, height, depth) {
-    this.width = width
-    this.height = height
-    this.depth = depth
-  }
-
-  get radius() {
-    return this._radius
-  }
-
-  set radius(value = defaults.radius) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] radius not a number')
-    }
-    this._radius = value
-    if (this.shape && this._type === 'sphere') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
   }
 
   get geometry() {
@@ -242,100 +214,6 @@ export class Collider extends Node {
     this._geometry = getRef(value)
     this.needsRebuild = true
     this.setDirty()
-  }
-
-  get convex() {
-    return this._convex
-  }
-
-  set convex(value = defaults.convex) {
-    if (!isBoolean(value)) {
-      throw new Error('[collider] convex not a boolean')
-    }
-    this._convex = value
-    if (this.shape) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get trigger() {
-    return this._trigger
-  }
-
-  set trigger(value = defaults.trigger) {
-    if (!isBoolean(value)) {
-      throw new Error('[collider] trigger not a boolean')
-    }
-    this._trigger = value
-    if (this.shape) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get layer() {
-    return this._layer
-  }
-
-  set layer(value = defaults.layer) {
-    if (!isLayer(value)) {
-      throw new Error(`[collider] invalid layer: ${value}`)
-    }
-    this._layer = value
-    if (this.shape) {
-      // TODO: we could just update the PxFilterData tbh
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get staticFriction() {
-    return this._staticFriction
-  }
-
-  set staticFriction(value = defaults.staticFriction) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] staticFriction not a number')
-    }
-    this._staticFriction = value
-    if (this.shape) {
-      // todo: we could probably just update the PxMaterial tbh
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get dynamicFriction() {
-    return this._dynamicFriction
-  }
-
-  set dynamicFriction(value = defaults.dynamicFriction) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] dynamicFriction not a number')
-    }
-    this._dynamicFriction = value
-    if (this.shape) {
-      // todo: we could probably just update the PxMaterial tbh
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get restitution() {
-    return this._restitution
-  }
-
-  set restitution(value = defaults.restitution) {
-    if (!isNumber(value)) {
-      throw new Error('[collider] restitution not a number')
-    }
-    this._restitution = value
-    if (this.shape) {
-      // todo: we could probably just update the PxMaterial tbh
-      this.needsRebuild = true
-      this.setDirty()
-    }
   }
 
   setMaterial(staticFriction, dynamicFriction, restitution) {
@@ -443,12 +321,4 @@ export class Collider extends Node {
     }
     return this.proxy
   }
-}
-
-function isType(value) {
-  return types.includes(value)
-}
-
-function isLayer(value) {
-  return layers.includes(value)
 }
