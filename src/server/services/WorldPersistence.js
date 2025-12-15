@@ -27,23 +27,27 @@ export class WorldPersistence {
     return await this.db('blueprints')
   }
 
-  async saveBlueprint(id, data, createdAt, updatedAt) {
-    const exists = await this.db('blueprints').where('id', id).first()
+  async saveRecord(table, id, data, createdAt, updatedAt) {
+    const exists = await this.db(table).where('id', id).first()
     const now = updatedAt || new Date().toISOString()
     const created = createdAt || now
     if (exists) {
-      await this.db('blueprints').where('id', id).update({
+      await this.db(table).where('id', id).update({
         data: JSON.stringify(data),
         updatedAt: now
       })
     } else {
-      await this.db('blueprints').insert({
+      await this.db(table).insert({
         id,
         data: JSON.stringify(data),
         createdAt: created,
         updatedAt: now
       })
     }
+  }
+
+  async saveBlueprint(id, data, createdAt, updatedAt) {
+    return this.saveRecord('blueprints', id, data, createdAt, updatedAt)
   }
 
   async loadEntities() {
@@ -51,22 +55,7 @@ export class WorldPersistence {
   }
 
   async saveEntity(id, data, createdAt, updatedAt) {
-    const exists = await this.db('entities').where('id', id).first()
-    const now = updatedAt || new Date().toISOString()
-    const created = createdAt || now
-    if (exists) {
-      await this.db('entities').where('id', id).update({
-        data: JSON.stringify(data),
-        updatedAt: now
-      })
-    } else {
-      await this.db('entities').insert({
-        id,
-        data: JSON.stringify(data),
-        createdAt: created,
-        updatedAt: now
-      })
-    }
+    return this.saveRecord('entities', id, data, createdAt, updatedAt)
   }
 
   async deleteEntity(id) {
