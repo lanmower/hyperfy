@@ -1,19 +1,36 @@
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import { Node } from './Node.js'
+import { defineProps } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
-
-const defaults = {
-  object3d: null,
-  animations: [],
-  castShadow: true,
-  receiveShadow: true,
-}
 
 const m1 = new THREE.Matrix4()
 
 const defaultStopOpts = { fade: 0.15 }
+
+const propertySchema = {
+  castShadow: {
+    default: true,
+    validate: v => !isBoolean(v) ? '[skinnedmesh] castShadow not a boolean' : null,
+    onSet() {
+      if (this.handle) {
+        this.needsRebuild = true
+        this.setDirty()
+      }
+    },
+  },
+  receiveShadow: {
+    default: true,
+    validate: v => !isBoolean(v) ? '[skinnedmesh] receiveShadow not a boolean' : null,
+    onSet() {
+      if (this.handle) {
+        this.needsRebuild = true
+        this.setDirty()
+      }
+    },
+  },
+}
 
 export class SkinnedMesh extends Node {
   constructor(data = {}) {
@@ -23,8 +40,7 @@ export class SkinnedMesh extends Node {
     this._object3d = data.object3d
     this._animations = data.animations
 
-    this.castShadow = data.castShadow
-    this.receiveShadow = data.receiveShadow
+    defineProps(this, propertySchema, data)
 
     this.clips = {}
     this.actions = {}
@@ -94,45 +110,14 @@ export class SkinnedMesh extends Node {
     super.copy(source, recursive)
     this._object3d = source._object3d
     this._animations = source._animations
-    this._castShadow = source._castShadow
-    this._receiveShadow = source._receiveShadow
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
   }
 
   get anims() {
     return this.animNames.slice()
-  }
-
-  get castShadow() {
-    return this._castShadow
-  }
-
-  set castShadow(value = defaults.castShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[skinnedmesh] castShadow not a boolean')
-    }
-    if (this._castShadow === value) return
-    this._castShadow = value
-    if (this.handle) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get receiveShadow() {
-    return this._receiveShadow
-  }
-
-  set receiveShadow(value = defaults.receiveShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[skinnedmesh] receiveShadow not a boolean')
-    }
-    if (this._receiveShadow === value) return
-    this._receiveShadow = value
-    if (this.handle) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
   }
 
   play({ name, fade = 0.15, speed, loop = true }) {
