@@ -536,9 +536,7 @@ export class UI extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
+    this.copyProperties(source, propertySchema)
     this._offset = source._offset
     return this
   }

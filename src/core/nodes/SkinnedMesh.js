@@ -109,9 +109,7 @@ export class SkinnedMesh extends Node {
     super.copy(source, recursive)
     this._object3d = source._object3d
     this._animations = source._animations
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
+    this.copyProperties(source, propertySchema)
     return this
   }
 
