@@ -1,28 +1,46 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
-
+import { defineProps } from '../utils/defineProperty.js'
 import { Node } from './Node.js'
 
-const defaults = {
-  label: 'Interact',
-  distance: 3,
-  duration: 0.5,
-  onStart: () => {},
-  onTrigger: () => {},
-  onCancel: () => {},
+const propertySchema = {
+  label: {
+    default: 'Interact',
+    validate: v => {
+      if (isString(v) || isNumber(v)) return null
+      return '[action] label not a string or number'
+    },
+    onSet(value) {
+      this._label = isString(value) ? value : isNumber(value) ? value + '' : 'Interact'
+    },
+  },
+  distance: {
+    default: 3,
+    validate: v => !isNumber(v) ? '[action] distance not a number' : null,
+  },
+  duration: {
+    default: 0.5,
+    validate: v => !isNumber(v) ? '[action] duration not a number' : null,
+  },
+  onStart: {
+    default: () => {},
+    validate: v => !isFunction(v) ? '[action] onStart not a function' : null,
+  },
+  onTrigger: {
+    default: () => {},
+    validate: v => !isFunction(v) ? '[action] onTrigger not a function' : null,
+  },
+  onCancel: {
+    default: () => {},
+    validate: v => !isFunction(v) ? '[action] onCancel not a function' : null,
+  },
 }
 
 export class Action extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'action'
-
-    this.label = data.label
-    this.distance = data.distance
-    this.duration = data.duration
-    this.onStart = data.onStart
-    this.onTrigger = data.onTrigger
-    this.onCancel = data.onCancel
+    defineProps(this, propertySchema, data)
 
     this.worldPos = new THREE.Vector3()
     this.progress = 0
@@ -45,76 +63,10 @@ export class Action extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._label = source._label
-    this._distance = source._distance
-    this._duration = source._duration
-    this._onStart = source._onStart
-    this._onTrigger = source._onTrigger
-    this._onCancel = source._onCancel
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     return this
-  }
-
-  get label() {
-    return this._label
-  }
-
-  set label(value) {
-    this._label = isString(value) ? value : isNumber(value) ? value + '' : defaults.label
-  }
-
-  get distance() {
-    return this._distance
-  }
-
-  set distance(value = defaults.distance) {
-    if (!isNumber(value)) {
-      throw new Error('[action] distance not a number')
-    }
-    this._distance = value
-  }
-
-  get duration() {
-    return this._duration
-  }
-
-  set duration(value = defaults.duration) {
-    if (!isNumber(value)) {
-      throw new Error('[action] duration not a number')
-    }
-    this._duration = value
-  }
-
-  get onStart() {
-    return this._onStart
-  }
-
-  set onStart(value = defaults.onStart) {
-    if (!isFunction(value)) {
-      throw new Error('[action] onStart not a function')
-    }
-    this._onStart = value
-  }
-
-  get onTrigger() {
-    return this._onTrigger
-  }
-
-  set onTrigger(value = defaults.onTrigger) {
-    if (!isFunction(value)) {
-      throw new Error('[action] onTrigger not a function')
-    }
-    this._onTrigger = value
-  }
-
-  get onCancel() {
-    return this._onCancel
-  }
-
-  set onCancel(value = defaults.onCancel) {
-    if (!isFunction(value)) {
-      throw new Error('[action] onCancel not a function')
-    }
-    this._onCancel = value
   }
 
   getProxy() {
