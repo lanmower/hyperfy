@@ -3,8 +3,6 @@ import { System } from './System.js'
 import * as THREE from '../extras/three.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { clamp, num, uuid } from '../utils.js'
-import { LerpVector3 } from '../extras/LerpVector3.js'
-import { LerpQuaternion } from '../extras/LerpQuaternion.js'
 import { Curve } from '../extras/Curve.js'
 import { prng } from '../extras/prng.js'
 import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
@@ -48,8 +46,6 @@ export class Scripts extends System {
       Vector3: THREE.Vector3,
       Euler: THREE.Euler,
       Matrix4: THREE.Matrix4,
-      LerpVector3, // deprecated - use BufferedLerpVector3
-      LerpQuaternion, // deprecated - use BufferedLerpQuaternion
       BufferedLerpVector3,
       BufferedLerpQuaternion,
       // Material: Material,
@@ -75,13 +71,11 @@ export class Scripts extends System {
   }
 }
 
-// NOTE: config is deprecated and renamed to props
 function wrapRawCode(code) {
   return `
   (function() {
     const shared = {}
     return (world, app, fetch, props, setTimeout) => {
-      const config = props // deprecated
       ${code}
     }
   })()

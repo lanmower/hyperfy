@@ -4,8 +4,8 @@ import moment from 'moment'
 
 import { BaseEntity } from './BaseEntity.js'
 import { createNode } from '../extras/createNode.js'
-import { LerpVector3 } from '../extras/LerpVector3.js'
-import { LerpQuaternion } from '../extras/LerpQuaternion.js'
+import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
+import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
@@ -171,9 +171,9 @@ export class App extends BaseEntity {
     }
     // if remote is moving, set up to receive network updates
     if (root) {
-      this.networkPos = new LerpVector3(root.position, this.world.networkRate)
-      this.networkQuat = new LerpQuaternion(root.quaternion, this.world.networkRate)
-      this.networkSca = new LerpVector3(root.scale, this.world.networkRate)
+      this.networkPos = new BufferedLerpVector3(root.position, this.world.networkRate)
+      this.networkQuat = new BufferedLerpQuaternion(root.quaternion, this.world.networkRate)
+      this.networkSca = new BufferedLerpVector3(root.scale, this.world.networkRate)
     }
     // execute any events we collected while building
     while (this.eventQueue.length) {
