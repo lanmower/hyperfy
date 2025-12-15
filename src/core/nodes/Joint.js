@@ -56,18 +56,7 @@ export class Joint extends Node {
     bindRotations(this.quaternion1, this.rotation1)
     this.axis = new THREE.Vector3(0, 1, 0)
 
-    defineProps(this, propertySchema, defaults)
-
-    this.type = data.type
-    this.breakForce = data.breakForce
-    this.breakTorque = data.breakTorque
-    this.limitY = data.limitY
-    this.limitZ = data.limitZ
-    this.limitMin = data.limitMin
-    this.limitMax = data.limitMax
-    this.limitStiffness = data.limitStiffness
-    this.limitDamping = data.limitDamping
-    this.collide = data.collide
+    defineProps(this, propertySchema, defaults, data)
 
     this.frame0 = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
     this.frame1 = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)

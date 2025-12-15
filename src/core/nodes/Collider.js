@@ -85,20 +85,7 @@ export class Collider extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'collider'
-    defineProps(this, propertySchema, defaults)
-
-    this.type = data.type
-    this.width = data.width
-    this.height = data.height
-    this.depth = data.depth
-    this.radius = data.radius
-    this.geometry = data.geometry
-    this.convex = data.convex
-    this.trigger = data.trigger
-    this.layer = data.layer
-    this.staticFriction = data.staticFriction
-    this.dynamicFriction = data.dynamicFriction
-    this.restitution = data.restitution
+    defineProps(this, propertySchema, defaults, data)
   }
 
   mount() {

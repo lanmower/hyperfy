@@ -74,18 +74,7 @@ export class Image extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'image'
-    defineProps(this, propertySchema, defaults)
-
-    this.src = data.src
-    this.width = data.width
-    this.height = data.height
-    this.fit = data.fit
-    this.color = data.color
-    this.pivot = data.pivot
-    this.lit = data.lit
-    this.doubleside = data.doubleside
-    this.castShadow = data.castShadow
-    this.receiveShadow = data.receiveShadow
+    defineProps(this, propertySchema, defaults, data)
 
     this.n = 0
   }

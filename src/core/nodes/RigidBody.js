@@ -96,19 +96,9 @@ export class RigidBody extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'rigidbody'
-    defineProps(this, propertySchema, defaults)
+    defineProps(this, propertySchema, defaults, data)
 
     this.shapes = new Set()
-
-    this.type = data.type
-    this.mass = data.mass
-    this.linearDamping = data.linearDamping
-    this.angularDamping = data.angularDamping
-    this.tag = data.tag
-    this.onContactStart = data.onContactStart
-    this.onContactEnd = data.onContactEnd
-    this.onTriggerEnter = data.onTriggerEnter
-    this.onTriggerLeave = data.onTriggerLeave
 
     this._tm = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
 

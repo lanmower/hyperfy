@@ -1,8 +1,8 @@
 // Define properties on a class with automatic getters/setters
-export function defineProps(target, schema, defaults = {}) {
+export function defineProps(target, schema, defaults = {}, data = {}) {
   for (const [key, config] of Object.entries(schema)) {
     const privateKey = `_${key}`
-    const initialValue = defaults[key] ?? config.default ?? null
+    const initialValue = data[key] !== undefined ? data[key] : defaults[key] ?? config.default ?? null
 
     // Getter
     Object.defineProperty(target, key, {

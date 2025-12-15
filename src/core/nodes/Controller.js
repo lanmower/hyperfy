@@ -57,15 +57,7 @@ export class Controller extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'controller'
-    defineProps(this, propertySchema, defaults)
-
-    this.radius = data.radius
-    this.height = data.height
-    this.visible = data.visible
-    this.layer = data.layer
-    this.tag = data.tag
-    this.onContactStart = data.onContactStart
-    this.onContactEnd = data.onContactEnd
+    defineProps(this, propertySchema, defaults, data)
   }
 
   mount() {

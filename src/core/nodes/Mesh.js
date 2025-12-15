@@ -91,19 +91,7 @@ export class Mesh extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'mesh'
-    defineProps(this, propertySchema, defaults)
-
-    this.type = data.type
-    this.width = data.width
-    this.height = data.height
-    this.depth = data.depth
-    this.radius = data.radius
-    this.geometry = data.geometry
-    this.material = data.material
-    this.linked = data.linked
-    this.castShadow = data.castShadow
-    this.receiveShadow = data.receiveShadow
-    this.visible = data.visible
+    defineProps(this, propertySchema, defaults, data)
   }
 
   mount() {

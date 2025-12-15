@@ -89,20 +89,7 @@ export class Audio extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'audio'
-    defineProps(this, propertySchema, defaults)
-
-    this.src = data.src
-    this.volume = data.volume
-    this.loop = data.loop
-    this.group = data.group
-    this.spatial = data.spatial
-    this.distanceModel = data.distanceModel
-    this.refDistance = data.refDistance
-    this.maxDistance = data.maxDistance
-    this.rolloffFactor = data.rolloffFactor
-    this.coneInnerAngle = data.coneInnerAngle
-    this.coneOuterAngle = data.coneOuterAngle
-    this.coneOuterGain = data.coneOuterGain
+    defineProps(this, propertySchema, defaults, data)
 
     this.n = 0
     this.source = null
