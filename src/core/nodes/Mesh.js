@@ -1,10 +1,10 @@
 import * as THREE from '../extras/three.js'
-import { isBoolean, isNumber } from 'lodash-es'
 
-import { Node, secureRef } from './Node.js'
+import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
+import { defineProps, validators } from '../utils/defineProperty.js'
 
 const defaults = {
   type: 'box',
@@ -18,6 +18,54 @@ const defaults = {
   castShadow: true,
   receiveShadow: true,
   visible: true, // DEPRECATED: use Node.active
+}
+
+const propertySchema = {
+  type: {
+    default: defaults.type,
+    validate: (value) => !types.includes(value) ? `invalid type: ${value}` : null,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  width: {
+    default: defaults.width,
+    validate: validators.number,
+    onSet() { if (this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+  },
+  height: {
+    default: defaults.height,
+    validate: validators.number,
+    onSet() { if (this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+  },
+  depth: {
+    default: defaults.depth,
+    validate: validators.number,
+    onSet() { if (this._type === 'box') { this.needsRebuild = true; this.setDirty() } },
+  },
+  radius: {
+    default: defaults.radius,
+    validate: validators.number,
+    onSet() { if (this._type === 'sphere') { this.needsRebuild = true; this.setDirty() } },
+  },
+  linked: {
+    default: defaults.linked,
+    validate: validators.boolean,
+    onSet() { this.needsRebuild = true; this.setDirty() },
+  },
+  castShadow: {
+    default: defaults.castShadow,
+    validate: validators.boolean,
+    onSet() { if (this.mesh) this.mesh.castShadow = this._castShadow },
+  },
+  receiveShadow: {
+    default: defaults.receiveShadow,
+    validate: validators.boolean,
+    onSet() { if (this.mesh) this.mesh.receiveShadow = this._receiveShadow },
+  },
+  visible: {
+    default: defaults.visible,
+    validate: validators.boolean,
+    onSet() { if (this.mesh) this.mesh.visible = this._visible },
+  },
 }
 
 const types = ['box', 'sphere', 'geometry']
@@ -44,6 +92,7 @@ export class Mesh extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'mesh'
+    defineProps(this, propertySchema, defaults)
 
     this.type = data.type
     this.width = data.width
@@ -118,17 +167,11 @@ export class Mesh extends Node {
 
   copy(source, recursive) {
     super.copy(source, recursive)
-    this._type = source._type
-    this._width = source._width
-    this._height = source._height
-    this._depth = source._depth
-    this._radius = source._radius
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
     this._geometry = source._geometry
     this._material = source._material
-    this._linked = source._linked
-    this._castShadow = source._castShadow
-    this._receiveShadow = source._receiveShadow
-    this._visible = source._visible
     return this
   }
 
@@ -143,90 +186,10 @@ export class Mesh extends Node {
     }
   }
 
-  get type() {
-    return this._type
-  }
-
-  set type(value = defaults.type) {
-    if (!isType(value)) {
-      throw new Error('[mesh] type invalid')
-    }
-    if (this._type === value) return
-    this._type = value
-    if (this.handle) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get width() {
-    return this._width
-  }
-
-  set width(value = defaults.width) {
-    if (!isNumber(value)) {
-      throw new Error('[mesh] width not a number')
-    }
-    if (this._width === value) return
-    this._width = value
-    if (this.handle && this._type === 'box') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get height() {
-    return this._height
-  }
-
-  set height(value = defaults.height) {
-    if (!isNumber(value)) {
-      throw new Error('[mesh] height not a number')
-    }
-    if (this._height === value) return
-    this._height = value
-    if (this.handle && this._type === 'box') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get depth() {
-    return this._depth
-  }
-
-  set depth(value = defaults.depth) {
-    if (!isNumber(value)) {
-      throw new Error('[mesh] depth not a number')
-    }
-    if (this._depth === value) return
-    this._depth = value
-    if (this.handle && this._type === 'box') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
   setSize(width, height, depth) {
     this.width = width
     this.height = height
     this.depth = depth
-  }
-
-  get radius() {
-    return this._radius
-  }
-
-  set radius(value = defaults.radius) {
-    if (!isNumber(value)) {
-      throw new Error('[mesh] radius not a number')
-    }
-    if (this._radius === value) return
-    this._radius = value
-    if (this.handle && this._type === 'sphere') {
-      this.needsRebuild = true
-      this.setDirty()
-    }
   }
 
   get geometry() {
@@ -253,66 +216,6 @@ export class Mesh extends Node {
     }
     if (this._material === value) return
     this._material = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get linked() {
-    return this._linked
-  }
-
-  set linked(value = defaults.linked) {
-    if (!isBoolean(value)) {
-      throw new Error('[mesh] linked not a boolean')
-    }
-    if (this._linked === value) return
-    this._linked = value
-    this.needsRebuild = true
-    this.setDirty()
-  }
-
-  get castShadow() {
-    return this._castShadow
-  }
-
-  set castShadow(value = defaults.castShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[mesh] castShadow not a boolean')
-    }
-    if (this._castShadow === value) return
-    this._castShadow = value
-    if (this.handle) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get receiveShadow() {
-    return this._receiveShadow
-  }
-
-  set receiveShadow(value = defaults.receiveShadow) {
-    if (!isBoolean(value)) {
-      throw new Error('[mesh] receiveShadow not a boolean')
-    }
-    if (this._receiveShadow === value) return
-    this._receiveShadow = value
-    if (this.handle) {
-      this.needsRebuild = true
-      this.setDirty()
-    }
-  }
-
-  get visible() {
-    return this._visible
-  }
-
-  set visible(value = defaults.visible) {
-    if (!isBoolean(value)) {
-      throw new Error('[mesh] visible not a boolean')
-    }
-    if (this._visible === value) return
-    this._visible = value
     this.needsRebuild = true
     this.setDirty()
   }
@@ -402,8 +305,4 @@ export class Mesh extends Node {
     }
     return this.proxy
   }
-}
-
-function isType(value) {
-  return types.includes(value)
 }
