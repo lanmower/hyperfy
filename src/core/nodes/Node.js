@@ -278,6 +278,12 @@ export class Node {
     return this
   }
 
+  copyProperties(source, propertySchema = {}) {
+    for (const key in propertySchema) {
+      this[`_${key}`] = source[`_${key}`]
+    }
+  }
+
   get(id) {
     if (this.id === id) return this
     for (let i = 0, l = this.children.length; i < l; i++) {

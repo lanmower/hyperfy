@@ -143,14 +143,6 @@ export class Audio extends Node {
     }
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
-    return this
-  }
-
   get currentTime() {
     const audio = this.ctx.world.audio
     if (!audio) {

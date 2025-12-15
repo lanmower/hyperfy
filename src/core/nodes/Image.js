@@ -79,14 +79,6 @@ export class Image extends Node {
     this.n = 0
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    for (const key in propertySchema) {
-      this[`_${key}`] = source[`_${key}`]
-    }
-    return this
-  }
-
   async mount() {
     this.build()
   }
