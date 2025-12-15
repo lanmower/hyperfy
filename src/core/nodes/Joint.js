@@ -6,9 +6,7 @@ import { Layers } from '../extras/Layers.js'
 import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
-
-const _q1 = new THREE.Quaternion()
-const _q2 = new THREE.Quaternion()
+import { q } from '../utils/TempVectors.js'
 
 const defaults = {
   type: 'fixed',
@@ -101,8 +99,8 @@ export class Joint extends Node {
       this.offset1.toPxTransform(frame1)
       // create rotation to align X-axis with desired axis and apply (this relates to the limit angles)
       const alignRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), this.axis)
-      _q1.copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
-      _q2.copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
+      q[0].copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
+      q[1].copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
       // make joint
       this.joint = new PHYSX.SphericalJointCreate(this.ctx.world.physics.physics, actor0, frame0, actor1, frame1)
       // apply cone limit
@@ -125,8 +123,8 @@ export class Joint extends Node {
       this.offset1.toPxTransform(frame1)
       // create rotation to align X-axis with desired axis and apply
       const alignRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), this.axis)
-      _q1.copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
-      _q2.copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
+      q[0].copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
+      q[1].copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
       // make joint
       this.joint = new PHYSX.RevoluteJointCreate(this.ctx.world.physics.physics, actor0, frame0, actor1, frame1)
       // apply limits

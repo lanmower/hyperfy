@@ -3,10 +3,7 @@ import * as THREE from '../extras/three.js'
 
 import { getRef, Node } from './Node.js'
 import { defineProps, validators } from '../utils/defineProperty.js'
-
-const v0 = new THREE.Vector3()
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
+import { v } from '../utils/TempVectors.js'
 
 const defaults = {
   scaleAware: true,
@@ -44,12 +41,12 @@ export class LOD extends Node {
       this.prevLod.node.active = false
       this.prevLod = null
     }
-    const cameraPos = v0.setFromMatrixPosition(this.ctx.world.camera.matrixWorld)
-    const itemPos = v1.setFromMatrixPosition(this.matrixWorld)
+    const cameraPos = v[0].setFromMatrixPosition(this.ctx.world.camera.matrixWorld)
+    const itemPos = v[1].setFromMatrixPosition(this.matrixWorld)
     let distance = cameraPos.distanceTo(itemPos)
     if (this._scaleAware) {
-      v2.setFromMatrixScale(this.matrixWorld)
-      const avgScale = (v2.x + v2.y + v2.z) / 3
+      v[2].setFromMatrixScale(this.matrixWorld)
+      const avgScale = (v[2].x + v[2].y + v[2].z) / 3
       distance = distance / avgScale
     }
     const lod = this.lods.find(lod => distance <= lod.maxDistance)

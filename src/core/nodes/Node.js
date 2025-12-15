@@ -1,13 +1,7 @@
 import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
+import { v, q, m } from '../utils/TempVectors.js'
 
-const _v1 = new THREE.Vector3()
-const _v2 = new THREE.Vector3()
-const _v3 = new THREE.Vector3()
-const _q1 = new THREE.Quaternion()
-const _m1 = new THREE.Matrix4()
-const _m2 = new THREE.Matrix4()
-const _m3 = new THREE.Matrix4()
 const _box3 = new THREE.Box3()
 const _sphere = new THREE.Sphere()
 const _points = []
@@ -296,12 +290,12 @@ export class Node {
   }
 
   // todo: getWorldQuaternion etc
-  getWorldPosition(vec3 = _v1) {
-    this.matrixWorld.decompose(vec3, _q1, _v2)
+  getWorldPosition(vec3 = v[0]) {
+    this.matrixWorld.decompose(vec3, q[0], v[1])
     return vec3
   }
 
-  getWorldMatrix(mat = _m1) {
+  getWorldMatrix(mat = m[0]) {
     return mat.copy(this.matrixWorld)
   }
 

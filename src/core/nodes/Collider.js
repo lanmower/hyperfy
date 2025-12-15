@@ -6,6 +6,7 @@ import { defineProps, validators } from '../utils/defineProperty.js'
 
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
+import { v, q } from '../utils/TempVectors.js'
 
 const defaults = {
   type: 'box',
@@ -80,10 +81,6 @@ const propertySchema = {
   },
 }
 
-const _v1 = new THREE.Vector3()
-const _v2 = new THREE.Vector3()
-const _q1 = new THREE.Quaternion()
-
 const types = ['box', 'sphere', 'geometry']
 
 export class Collider extends Node {
@@ -118,8 +115,8 @@ export class Collider extends Node {
       const isConvex = this._trigger || this._convex
       pmesh = geometryToPxMesh(this.ctx.world, this._geometry, isConvex)
       if (!pmesh) return console.error('failed to generate collider pmesh')
-      this.matrixWorld.decompose(_v1, _q1, _v2)
-      const scale = new PHYSX.PxMeshScale(new PHYSX.PxVec3(_v2.x, _v2.y, _v2.z), new PHYSX.PxQuat(0, 0, 0, 1))
+      this.matrixWorld.decompose(v[0], q[0], v[1])
+      const scale = new PHYSX.PxMeshScale(new PHYSX.PxVec3(v[1].x, v[1].y, v[1].z), new PHYSX.PxQuat(0, 0, 0, 1))
       if (isConvex) {
         geometry = new PHYSX.PxConvexMeshGeometry(pmesh.value, scale)
       } else {
@@ -160,9 +157,9 @@ export class Collider extends Node {
     }
     this.shape.setQueryFilterData(filterData)
     this.shape.setSimulationFilterData(filterData)
-    // const parentWorldScale = _v2
-    // this.parent.matrixWorld.decompose(_v1, _q1, parentWorldScale)
-    const position = _v1.copy(this.position).multiply(this.parent.scale)
+    // const parentWorldScale = v[1]
+    // this.parent.matrixWorld.decompose(v[0], q[0], parentWorldScale)
+    const position = v[0].copy(this.position).multiply(this.parent.scale)
     const pose = new PHYSX.PxTransform()
     position.toPxTransform(pose)
     this.quaternion.toPxTransform(pose)

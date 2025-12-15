@@ -4,8 +4,7 @@ import { Node } from './Node.js'
 import { defineProps } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
-
-const m1 = new THREE.Matrix4()
+import { m } from '../utils/TempVectors.js'
 
 const defaultStopOpts = { fade: 0.15 }
 
@@ -210,9 +209,9 @@ export class SkinnedMesh extends Node {
     const bone = this.readBone(name)
     if (!bone) return null
     // combine the skinned mesh's world matrix with the bone's world matrix
-    // return m1.multiplyMatrices(this.matrixWorld, bone.matrixWorld)
+    // return m[0].multiplyMatrices(this.matrixWorld, bone.matrixWorld)
     bone.updateMatrixWorld(true)
-    return m1.copy(bone.matrixWorld)
+    return m[0].copy(bone.matrixWorld)
   }
 
   getProxy() {

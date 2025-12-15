@@ -20,17 +20,7 @@ import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
 import { clamp } from '../utils.js'
 import { defineProps } from '../utils/defineProperty.js'
-
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
-const v4 = new THREE.Vector3()
-const v5 = new THREE.Vector3()
-const v6 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
-const q2 = new THREE.Quaternion()
-const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
-const m1 = new THREE.Matrix4()
+import { v, q, m, e } from '../utils/TempVectors.js'
 
 const FORWARD = new THREE.Vector3(0, 0, 1)
 
@@ -462,9 +452,9 @@ export class UI extends Node {
     }
     if (didMove) {
       // if (this._billboard !== 'none') {
-      //   v1.setFromMatrixPosition(this.matrixWorld)
-      //   v2.setFromMatrixScale(this.matrixWorld)
-      //   this.mesh.matrixWorld.compose(v1, iQuaternion, v2)
+      //   v[0].setFromMatrixPosition(this.matrixWorld)
+      //   v[1].setFromMatrixScale(this.matrixWorld)
+      //   this.mesh.matrixWorld.compose(v[0], iQuaternion, v[1])
       // } else {
       //   this.mesh.matrixWorld.copy(this.matrixWorld)
       //   this.ctx.world.stage.octree.move(this.sItem)
@@ -476,23 +466,23 @@ export class UI extends Node {
     if (this._space === 'world') {
       const world = this.ctx.world
       const camera = world.camera
-      const camPosition = v1.setFromMatrixPosition(camera.matrixWorld)
-      const uiPosition = v2.setFromMatrixPosition(this.matrixWorld)
+      const camPosition = v[0].setFromMatrixPosition(camera.matrixWorld)
+      const uiPosition = v[1].setFromMatrixPosition(this.matrixWorld)
       const distance = camPosition.distanceTo(uiPosition)
       // this.mesh.renderOrder = -distance // Same ordering as particles
 
-      const pos = v3
-      const qua = q1
-      const sca = v4
+      const pos = v[2]
+      const qua = q[0]
+      const sca = v[3]
       this.matrixWorld.decompose(pos, qua, sca)
       if (this._billboard === 'full') {
         if (world.xr.session) {
           // full in XR means lookAt camera (excludes roll)
-          v5.subVectors(camPosition, pos).normalize()
-          qua.setFromUnitVectors(FORWARD, v5)
-          e1.setFromQuaternion(qua)
-          e1.z = 0
-          qua.setFromEuler(e1)
+          v[4].subVectors(camPosition, pos).normalize()
+          qua.setFromUnitVectors(FORWARD, v[4])
+          e[0].setFromQuaternion(qua)
+          e[0].z = 0
+          qua.setFromEuler(e[0])
         } else {
           // full in desktop/mobile means matching camera rotation
           qua.copy(world.rig.quaternion)
@@ -500,18 +490,18 @@ export class UI extends Node {
       } else if (this._billboard === 'y') {
         if (world.xr.session) {
           // full in XR means lookAt camera (only y)
-          v5.subVectors(camPosition, pos).normalize()
-          qua.setFromUnitVectors(FORWARD, v5)
-          e1.setFromQuaternion(qua)
-          e1.x = 0
-          e1.z = 0
-          qua.setFromEuler(e1)
+          v[4].subVectors(camPosition, pos).normalize()
+          qua.setFromUnitVectors(FORWARD, v[4])
+          e[0].setFromQuaternion(qua)
+          e[0].x = 0
+          e[0].z = 0
+          qua.setFromEuler(e[0])
         } else {
           // full in desktop/mobile means matching camera y rotation
-          e1.setFromQuaternion(world.rig.quaternion)
-          e1.x = 0
-          e1.z = 0
-          qua.setFromEuler(e1)
+          e[0].setFromQuaternion(world.rig.quaternion)
+          e[0].x = 0
+          e[0].z = 0
+          qua.setFromEuler(e[0])
         }
       }
       if (this._scaler) {
@@ -565,14 +555,14 @@ export class UI extends Node {
 
   resolveHit(hit) {
     if (hit?.point) {
-      const inverseMatrix = m1.copy(this.mesh.matrixWorld).invert()
+      const inverseMatrix = m[0].copy(this.mesh.matrixWorld).invert()
       // convert world hit point to canvas coordinates (0,0 is top left x,y)
-      v1.copy(hit.point)
+      v[0].copy(hit.point)
         .applyMatrix4(inverseMatrix)
         .multiplyScalar(1 / this._size)
         .sub(this.pivotOffset)
-      const x = v1.x * this._res
-      const y = -v1.y * this._res
+      const x = v[0].x * this._res
+      const y = -v[0].y * this._res
       return this.findNodeAt(x, y)
     }
     if (hit?.coords) {
