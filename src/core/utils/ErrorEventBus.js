@@ -3,9 +3,9 @@
 import { EventBus } from './EventBus.js'
 import { createErrorEvent, mergeErrorEvents, isSameError, ErrorLevels } from '../schemas/ErrorEvent.schema.js'
 
-export class ErrorEventBus {
+export class ErrorEventBus extends EventBus {
   constructor() {
-    this.events = new EventBus()
+    super()
     this.handlers = new Set()
     this.errorHistory = []
     this.errorMap = new Map()
@@ -80,7 +80,7 @@ export class ErrorEventBus {
       }
     }
 
-    this.events.emit('error', event, isDuplicate)
+    this.emit('error', event, isDuplicate)
   }
 
   getErrorKey(event) {
@@ -166,15 +166,7 @@ export class ErrorEventBus {
       byCategory: {},
       bySource: {}
     }
-    this.events.emit('cleared')
-  }
-
-  on(event, callback) {
-    return this.events.on(event, callback)
-  }
-
-  off(event, callback) {
-    this.events.off(event, callback)
+    this.emit('cleared')
   }
 }
 

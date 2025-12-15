@@ -5,8 +5,6 @@ const restRotationInverse = new THREE.Quaternion()
 const parentRestWorldRotation = new THREE.Quaternion()
 
 export function createEmoteFactory(glb, url) {
-  // console.time('emote-init')
-
   const clip = glb.animations[0]
 
   const scale = glb.scene.children[0].scale.x // armature should be here?
@@ -65,9 +63,7 @@ export function createEmoteFactory(glb, url) {
     } else if (track instanceof THREE.VectorKeyframeTrack) {
       if (yOffset) {
         track.values = track.values.map((v, i) => {
-          // if this is Y then offset it
           if (i % 3 === 1) {
-            // console.log(v, v + yOffset)
             return v + yOffset
           }
           return v
@@ -77,9 +73,6 @@ export function createEmoteFactory(glb, url) {
   })
 
   clip.optimize()
-
-  // console.timeEnd('emote-init')
-  // console.log(clip)
 
   return {
     toClip({ rootToHips, version, getBoneName }) {
@@ -92,15 +85,7 @@ export function createEmoteFactory(glb, url) {
         const trackSplitted = track.name.split('.')
         const ogBoneName = trackSplitted[0]
         const vrmBoneName = normalizedBoneNames[ogBoneName]
-        // TODO: use vrm.bones[name] not getBoneNode
         const vrmNodeName = getBoneName(vrmBoneName)
-
-        // console.log('----')
-        // console.log('trackSplitted', trackSplitted)
-        // console.log('mixamoRigName', mixamoRigName)
-        // console.log('vrmBoneName', vrmBoneName)
-        // console.log('vrmNodeName', vrmNodeName)
-        // console.log('----')
 
         // animations come from mixamo X Bot character
         // and we scale based on height of our VRM.

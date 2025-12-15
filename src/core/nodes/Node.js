@@ -367,6 +367,16 @@ export class Node {
     this._cursor = value
   }
 
+  createProxy(customProps = {}) {
+    if (!this.proxy) {
+      const self = this
+      const proxy = customProps
+      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(this.getProxy()))
+      this.proxy = proxy
+    }
+    return this.proxy
+  }
+
   getProxy() {
     if (!this.proxy) {
       const self = this

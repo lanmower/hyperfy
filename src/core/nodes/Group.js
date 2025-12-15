@@ -6,11 +6,6 @@ export class Group extends Node {
     this.name = 'group'
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    return this
-  }
-
   getProxy() {
     if (!this.proxy) {
       let proxy = {

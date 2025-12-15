@@ -6,11 +6,6 @@ export class Anchor extends Node {
     this.name = 'anchor'
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    return this
-  }
-
   mount() {
     this.anchorId = `${this.ctx?.entity?.data.id || ''}:${this.id}`
     this.ctx.world.anchors.add(this.anchorId, this.matrixWorld)

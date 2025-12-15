@@ -43,7 +43,6 @@ const m3 = new THREE.Matrix4()
 const gazeTiltAngle = 10 * DEG2RAD
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0) // X-axis for pitch
 
-// TODO: de-dup createVRMFactory.js has a copy
 const Modes = {
   IDLE: 0,
   WALK: 1,
@@ -1146,8 +1145,6 @@ export class PlayerLocal extends BaseEntity {
       this.data.health = data.health
       this.nametag.health = data.health
       this.world.events.emit('health', { playerId: this.data.id, health: data.health })
-      console.log('modify', data.health)
-      // changed = true
     }
     if (data.hasOwnProperty('avatar')) {
       this.data.avatar = data.avatar

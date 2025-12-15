@@ -25,11 +25,6 @@ export class Snap extends Node {
     this.handle = null
   }
 
-  copy(source, recursive) {
-    super.copy(source, recursive)
-    return this
-  }
-
   getProxy() {
     if (!this.proxy) {
       let proxy = {

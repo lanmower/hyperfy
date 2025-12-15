@@ -19,9 +19,6 @@ export class BufferedLerpVector3 {
   }
 
   push(inV, snapToken = null) {
-    // const timeSinceLast = this.localTime - this.lastPush
-    // this.lastPush = this.localTime
-    // console.log(timeSinceLast)
     // if snapshot changed, reset all three to new value
     if (this.snapToken !== snapToken) {
       this.snapToken = snapToken
