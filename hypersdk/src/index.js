@@ -13,6 +13,13 @@ import { ServiceBase } from '../../../src/core/ServiceBase.js'
 import { EventBus, globalEvents } from '../../../src/core/utils/EventBus.js'
 import * as collections from '../../../src/core/utils/collections.js'
 import * as validation from '../../../src/core/utils/validation.js'
+import { NetworkProtocol } from '../../../src/core/network/NetworkProtocol.js'
+import { BaseEntity } from '../../../src/core/entities/BaseEntity.js'
+import { SystemRegistry } from '../../../src/core/SystemRegistry.js'
+import { StateManager } from '../../../src/core/state/StateManager.js'
+import { CommandRegistry } from '../../../src/core/cli/CommandRegistry.js'
+import { DataModel } from '../../../src/core/models/DataModel.js'
+import { PluginSystem } from '../../../src/core/plugin/PluginSystem.js'
 
 export {
   HyperfyClient,
@@ -31,7 +38,14 @@ export {
   EventBus,
   globalEvents,
   collections,
-  validation
+  validation,
+  NetworkProtocol,
+  BaseEntity,
+  SystemRegistry,
+  StateManager,
+  CommandRegistry,
+  DataModel,
+  PluginSystem
 }
 
 export { HyperfyClient as default }
