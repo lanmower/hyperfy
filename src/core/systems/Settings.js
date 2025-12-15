@@ -1,4 +1,5 @@
 import { System } from './System.js'
+import { StateManager } from '../state/StateManager.js'
 import { Ranks } from '../extras/ranks.js'
 
 const DEFAULT_CONFIG = {
@@ -17,60 +18,54 @@ const DEFAULT_CONFIG = {
 export class Settings extends System {
   constructor(world) {
     super(world)
-    this.config = { ...DEFAULT_CONFIG }
-    this.changes = null
+    this.state = new StateManager({ ...DEFAULT_CONFIG })
   }
 
-  get(key) { return this.config[key] }
+  get(key) { return this.state.get(key) }
 
   set(key, value, broadcast) {
-    if (this.config[key] === value) return
-    const prev = this.config[key]
-    this.config[key] = value
-    if (!this.changes) this.changes = {}
-    this.changes[key] = { prev, value }
+    if (this.state.get(key) === value) return
+    this.state.set(key, value)
+    this.world.events.emit('settingChanged', { key, value })
     if (broadcast) this.world.network.send('settingsModified', { key, value })
   }
 
-  setHasAdminCode(value) { this.config.hasAdminCode = value }
+  setHasAdminCode(value) { this.state.set('hasAdminCode', value) }
 
-  get effectiveRank() { return this.config.hasAdminCode ? this.config.rank : Ranks.ADMIN }
+  get effectiveRank() { return this.state.get('hasAdminCode') ? this.state.get('rank') : Ranks.ADMIN }
 
   deserialize(data) {
-    this.config = { ...this.config, ...data }
-    const changeMap = {}
-    for (const [key, value] of Object.entries(data)) changeMap[key] = { value }
-    this.emit('change', changeMap)
+    for (const [key, value] of Object.entries(data)) {
+      this.state.set(key, value)
+    }
   }
 
-  serialize() { return { ...this.config } }
-
-  preFixedUpdate() {
-    if (!this.changes) return
-    const changeMap = {}
-    for (const [key, value] of Object.entries(this.changes)) changeMap[key] = { value: value.value }
-    this.emit('change', changeMap)
-    this.changes = null
+  serialize() {
+    const result = {}
+    for (const key of Object.keys(DEFAULT_CONFIG)) {
+      result[key] = this.state.get(key)
+    }
+    return result
   }
 
-  get title() { return this.config.title }
+  get title() { return this.state.get('title') }
   set title(v) { this.set('title', v) }
-  get desc() { return this.config.desc }
+  get desc() { return this.state.get('desc') }
   set desc(v) { this.set('desc', v) }
-  get image() { return this.config.image }
+  get image() { return this.state.get('image') }
   set image(v) { this.set('image', v) }
-  get avatar() { return this.config.avatar }
+  get avatar() { return this.state.get('avatar') }
   set avatar(v) { this.set('avatar', v) }
-  get customAvatars() { return this.config.customAvatars }
+  get customAvatars() { return this.state.get('customAvatars') }
   set customAvatars(v) { this.set('customAvatars', v) }
-  get voice() { return this.config.voice }
+  get voice() { return this.state.get('voice') }
   set voice(v) { this.set('voice', v) }
-  get rank() { return this.config.rank }
+  get rank() { return this.state.get('rank') }
   set rank(v) { this.set('rank', v) }
-  get playerLimit() { return this.config.playerLimit }
+  get playerLimit() { return this.state.get('playerLimit') }
   set playerLimit(v) { this.set('playerLimit', v) }
-  get ao() { return this.config.ao }
+  get ao() { return this.state.get('ao') }
   set ao(v) { this.set('ao', v) }
-  get hasAdminCode() { return this.config.hasAdminCode }
-  set hasAdminCode(v) { this.config.hasAdminCode = v }
+  get hasAdminCode() { return this.state.get('hasAdminCode') }
+  set hasAdminCode(v) { this.set('hasAdminCode', v) }
 }

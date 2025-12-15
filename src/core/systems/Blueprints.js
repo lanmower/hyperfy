@@ -42,40 +42,21 @@ export class Blueprints extends System {
 
   async executeWithErrorMonitoring(blueprintId, operation) {
     const errorMonitor = this.world.errorMonitor
-    if (!errorMonitor) {
-      // No error monitoring available, proceed normally
-      return await operation()
-    }
+    if (!errorMonitor) return await operation()
 
-    // Capture ALL errors globally for 1 second to catch error chains
-    // Error chains can propagate through async operations, model loading, 
-    // script compilation, and other delayed processes
-    const errorsBefore = errorMonitor.errors.length
-    
-    // Execute the operation
+    const errorsBefore = errorMonitor.getErrors({ limit: 1000 }).length
     const result = await operation()
 
-    // Wait 1 full second to capture any error chains that might propagate
-    // This catches:
-    // - Immediate errors (0-100ms)
-    // - Async operation errors (100-500ms) 
-    // - Model loading chain errors (500ms-1s)
-    // - Script compilation cascading errors (up to 1s)
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Capture ALL new errors that occurred during this window
-    const errorsAfter = errorMonitor.errors.length
+
+    const errorsAfter = errorMonitor.getErrors({ limit: 1000 }).length
     if (errorsAfter > errorsBefore) {
-      const newErrors = errorMonitor.errors.slice(errorsBefore)
-      
-      // Since error chains can be complex, capture ALL errors during blueprint operations
-      // The isBlueprintRelatedError method will return true for everything during this window
-      const blueprintErrors = newErrors.filter(error => 
+      const newErrors = errorMonitor.getErrors({ limit: 1000 }).slice(errorsBefore)
+      const blueprintErrors = newErrors.filter(error =>
         this.isBlueprintRelatedError(error, blueprintId)
       )
-      
+
       if (blueprintErrors.length > 0) {
-        // Include ALL errors in the response for complete error chain visibility
         return {
           ...result,
           success: false,
@@ -84,18 +65,16 @@ export class Blueprints extends System {
             message: error.args.join(' '),
             stack: error.stack,
             timestamp: error.timestamp,
-            critical: errorMonitor.isCriticalError ? errorMonitor.isCriticalError(error.type, error.args) : true,
-            // Add context about when this error occurred relative to blueprint operation
+            critical: errorMonitor.isCriticalError(error.type, error.args),
             timeFromOperation: new Date(error.timestamp) - Date.now() + 1000
           })),
-          // Additional metadata about the error capture window
           errorCaptureWindow: '1000ms',
           totalErrorsCaptured: newErrors.length,
           blueprintRelatedErrors: blueprintErrors.length
         }
       }
     }
-    
+
     return result
   }
 
@@ -121,7 +100,7 @@ export class Blueprints extends System {
     })
     
     this.world.network.send('blueprintModified', response)
-    this.emit('modify', modified)
+    this.world.events.emit('blueprintModified', modified)
   }
 
   serialize() {

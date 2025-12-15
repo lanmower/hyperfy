@@ -1,16 +1,15 @@
 import { System } from './System.js'
 import { ErrorPatterns } from '../utils/errorPatterns.js'
 import { Serialization } from '../utils/serialization.js'
-import { ListenerMixin } from '../mixins/ListenerMixin.js'
+import { StateManager } from '../state/StateManager.js'
 
-export class ErrorMonitor extends ListenerMixin(System) {
+export class ErrorMonitor extends System {
   constructor(world) {
     super(world)
     this.isClient = !world.isServer
     this.isServer = world.isServer
-    this.errors = []
+    this.state = new StateManager({ errors: [], errorId: 0 })
     this.maxErrors = 500
-    this.errorId = 0
 
     this.interceptGlobalErrors()
     setInterval(() => this.cleanup(), 60000)
@@ -63,8 +62,11 @@ export class ErrorMonitor extends ListenerMixin(System) {
   }
 
   captureError(type, args, stack) {
+    const errorId = this.state.get('errorId') + 1
+    this.state.set('errorId', errorId)
+
     const errorEntry = {
-      id: ++this.errorId,
+      id: errorId,
       timestamp: new Date().toISOString(),
       type,
       side: this.isClient ? 'client' : 'server',
@@ -75,22 +77,17 @@ export class ErrorMonitor extends ListenerMixin(System) {
       playerId: this.world.entities?.player?.data?.id
     }
 
-    this.errors.push(errorEntry)
+    const errors = this.state.get('errors')
+    const updated = [...errors, errorEntry]
+    if (updated.length > this.maxErrors) updated.shift()
+    this.state.set('errors', updated)
 
-    // Maintain max size
-    if (this.errors.length > this.maxErrors) {
-      this.errors.shift()
-    }
+    this.world.events.emit('errorCaptured', errorEntry)
 
-    // Notify listeners
-    this.notifyListeners('error', errorEntry)
-
-    // CRITICAL FIX: Send ALL client errors to server via WebSocket immediately
     if (this.isClient && this.world.network) {
       this.sendErrorToServer(errorEntry)
     }
 
-    // Legacy HTTP streaming (keeping for backward compatibility)
     if (this.enableRealTimeStreaming && this.mcpEndpoint) {
       this.streamToMCP(errorEntry)
     }
@@ -190,9 +187,8 @@ export class ErrorMonitor extends ListenerMixin(System) {
   }
 
   handleCriticalError(errorEntry) {
-    this.notifyListeners('critical', errorEntry)
+    this.world.events.emit('criticalError', errorEntry)
 
-    // Critical errors get additional handling but all errors are already sent via sendErrorToServer
     if (this.isClient && this.world.network) {
       this.world.network.send('errorReport', {
         critical: true,
@@ -219,29 +215,22 @@ export class ErrorMonitor extends ListenerMixin(System) {
 
 
   getErrors(options = {}) {
-    const { 
-      limit = 50, 
-      type = null, 
+    const {
+      limit = 50,
+      type = null,
       since = null,
       side = null,
       critical = null
     } = options
 
-    let filtered = this.errors
+    let filtered = this.state.get('errors')
 
-    if (type) {
-      filtered = filtered.filter(error => error.type === type)
-    }
-
+    if (type) filtered = filtered.filter(error => error.type === type)
     if (since) {
       const sinceTime = new Date(since).getTime()
       filtered = filtered.filter(error => new Date(error.timestamp).getTime() >= sinceTime)
     }
-
-    if (side) {
-      filtered = filtered.filter(error => error.side === side)
-    }
-
+    if (side) filtered = filtered.filter(error => error.side === side)
     if (critical !== null) {
       filtered = filtered.filter(error => this.isCriticalError(error.type, error.args) === critical)
     }
@@ -252,16 +241,17 @@ export class ErrorMonitor extends ListenerMixin(System) {
   }
 
   clearErrors() {
-    const count = this.errors.length
-    this.errors = []
-    this.errorId = 0
+    const count = this.state.get('errors').length
+    this.state.set('errors', [])
+    this.state.set('errorId', 0)
     return count
   }
 
   getStats() {
     const now = Date.now()
     const hourAgo = now - (60 * 60 * 1000)
-    const recent = this.errors.filter(error => 
+    const errors = this.state.get('errors')
+    const recent = errors.filter(error =>
       new Date(error.timestamp).getTime() >= hourAgo
     )
 
@@ -271,9 +261,9 @@ export class ErrorMonitor extends ListenerMixin(System) {
     })
 
     return {
-      total: this.errors.length,
+      total: errors.length,
       recent: recent.length,
-      critical: recent.filter(error => 
+      critical: recent.filter(error =>
         this.isCriticalError(error.type, error.args)
       ).length,
       byType
@@ -281,11 +271,12 @@ export class ErrorMonitor extends ListenerMixin(System) {
   }
 
   cleanup() {
-    // Remove very old errors to prevent memory leaks
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000) // 24 hours ago
-    this.errors = this.errors.filter(error => 
+    const cutoff = Date.now() - (24 * 60 * 60 * 1000)
+    const errors = this.state.get('errors')
+    const cleaned = errors.filter(error =>
       new Date(error.timestamp).getTime() >= cutoff
     )
+    this.state.set('errors', cleaned)
   }
 
 
@@ -300,16 +291,15 @@ export class ErrorMonitor extends ListenerMixin(System) {
       realTime: errorData.realTime || false
     }
 
-    this.errors.push(error)
-    if (this.errors.length > this.maxErrors) {
-      this.errors.shift()
-    }
+    const errors = this.state.get('errors')
+    const updated = [...errors, error]
+    if (updated.length > this.maxErrors) updated.shift()
+    this.state.set('errors', updated)
 
-    // CRITICAL FIX: Forward ALL client errors to MCP subscribers immediately
-    this.notifyListeners('error', error)
+    this.world.events.emit('errorCaptured', error)
 
     if (this.isCriticalError(error.type, error.args) || errorData.critical) {
-      this.notifyListeners('critical', error)
+      this.world.events.emit('criticalError', error)
     }
   }
 
@@ -323,21 +313,20 @@ export class ErrorMonitor extends ListenerMixin(System) {
       realTime: errorData.realTime || false
     }
 
-    this.errors.push(error)
-    if (this.errors.length > this.maxErrors) {
-      this.errors.shift()
-    }
+    const errors = this.state.get('errors')
+    const updated = [...errors, error]
+    if (updated.length > this.maxErrors) updated.shift()
+    this.state.set('errors', updated)
 
-    // Notify listeners for real-time error streaming - this sends to MCP subscribers
-    this.notifyListeners('error', error)
+    this.world.events.emit('errorCaptured', error)
 
     if (this.isCriticalError(error.type, error.args) || errorData.critical) {
-      this.notifyListeners('critical', error)
+      this.world.events.emit('criticalError', error)
     }
   }
 
   destroy() {
-    this.errors = []
+    this.state.set('errors', [])
     super.destroy()
   }
 }
