@@ -1,6 +1,6 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 
 // NOTE: actual defaults bubble up to ClientEnvironment.js
@@ -103,66 +103,8 @@ export class Sky extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get bg() {
-          return self.bg
-        },
-        set bg(value) {
-          self.bg = value
-        },
-        get hdr() {
-          return self.hdr
-        },
-        set hdr(value) {
-          self.hdr = value
-        },
-        get rotationY() {
-          return self.rotationY
-        },
-        set rotationY(value) {
-          self.rotationY = value
-        },
-        get sunDirection() {
-          return self.sunDirection
-        },
-        set sunDirection(value) {
-          self.sunDirection = value
-        },
-        get sunIntensity() {
-          return self.sunIntensity
-        },
-        set sunIntensity(value) {
-          self.sunIntensity = value
-        },
-        get sunColor() {
-          return self.sunColor
-        },
-        set sunColor(value) {
-          self.sunColor = value
-        },
-        get fogNear() {
-          return self.fogNear
-        },
-        set fogNear(value) {
-          self.fogNear = value
-        },
-        get fogFar() {
-          return self.fogFar
-        },
-        set fogFar(value) {
-          self.fogFar = value
-        },
-        get fogColor() {
-          return self.fogColor
-        },
-        set fogColor(value) {
-          self.fogColor = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
     }
     return this.proxy
   }

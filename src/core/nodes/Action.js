@@ -1,6 +1,6 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import { Node } from './Node.js'
 
 const propertySchema = {
@@ -62,48 +62,8 @@ export class Action extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get label() {
-          return self.label
-        },
-        set label(value) {
-          self.label = value
-        },
-        get distance() {
-          return self.distance
-        },
-        set distance(value) {
-          self.distance = value
-        },
-        get duration() {
-          return self.duration
-        },
-        set duration(value) {
-          self.duration = value
-        },
-        get onStart() {
-          return self.onStart
-        },
-        set onStart(value) {
-          self.onStart = value
-        },
-        get onTrigger() {
-          return self.onTrigger
-        },
-        set onTrigger(value) {
-          self.onTrigger = value
-        },
-        get onCancel() {
-          return self.onCancel
-        },
-        set onCancel(value) {
-          self.onCancel = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
     }
     return this.proxy
   }

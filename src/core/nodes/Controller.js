@@ -6,7 +6,7 @@ import { DEG2RAD } from '../extras/general.js'
 
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
 
 const defaults = {
   radius: 0.4,
@@ -185,68 +185,17 @@ export class Controller extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get radius() {
-          return self.radius
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          teleport: this.teleport,
+          move: this.move,
         },
-        set radius(value) {
-          self.radius = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get visible() {
-          return self.visible
-        },
-        set visible(value) {
-          self.visible = value
-        },
-        get layer() {
-          return self.layer
-        },
-        set layer(value) {
-          if (value === 'player') {
-            throw new Error('[controller] layer invalid: player')
-          }
-          self.layer = value
-        },
-        get tag() {
-          return self.tag
-        },
-        set tag(value) {
-          self.tag = value
-        },
-        get onContactStart() {
-          return self.onContactStart
-        },
-        set onContactStart(value) {
-          self.onContactStart = value
-        },
-        get onContactEnd() {
-          return self.onContactEnd
-        },
-        set onContactEnd(value) {
-          self.onContactEnd = value
-        },
-        get isGrounded() {
-          return self.isGrounded
-        },
-        get isCeiling() {
-          return self.isCeiling
-        },
-        teleport(vec3) {
-          return self.teleport(vec3)
-        },
-        move(vec3) {
-          return self.move(vec3)
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+        {
+          layer: { get: function() { return this.layer }, set: function(v) { if (v === 'player') throw new Error('[controller] layer invalid: player'); this.layer = v } },
+          isGrounded: function() { return this.isGrounded },
+          isCeiling: function() { return this.isCeiling },
+        }
+      )
     }
     return this.proxy
   }

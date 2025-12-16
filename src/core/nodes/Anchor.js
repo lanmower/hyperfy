@@ -1,4 +1,5 @@
 import { Node } from './Node.js'
+import { createPropertyProxy } from '../utils/defineProperty.js'
 
 export class Anchor extends Node {
   constructor(data = {}) {
@@ -17,14 +18,7 @@ export class Anchor extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get anchorId() {
-          return self.anchorId
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, {}, super.getProxy(), {}, { anchorId: function() { return this.anchorId } })
     }
     return this.proxy
   }
