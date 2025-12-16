@@ -1,5 +1,5 @@
 import { isBoolean, isString } from 'lodash-es'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import { Node } from './Node.js'
 import * as THREE from 'three'
 
@@ -135,55 +135,18 @@ export class Avatar extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get src() {
-          return self.src
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          getHeight: this.getHeight,
+          getHeadToHeight: this.getHeadToHeight,
+          getBoneTransform: this.getBoneTransform,
+          setLocomotion: this.setLocomotion,
+          setEmote: this.setEmote,
         },
-        set src(value) {
-          self.src = value
-        },
-        get emote() {
-          return self.emote
-        },
-        set emote(value) {
-          self.emote = value
-        },
-        get visible() {
-          return self.visible
-        },
-        set visible(value) {
-          self.visible = value
-        },
-        get onLoad() {
-          return self.onLoad
-        },
-        set onLoad(value) {
-          self.onLoad = value
-        },
-        getHeight() {
-          return self.getHeight()
-        },
-        getHeadToHeight() {
-          return self.getHeadToHeight()
-        },
-        getBoneTransform(boneName) {
-          return self.getBoneTransform(boneName)
-        },
-        setLocomotion(mode, axis, gazeDir) {
-          self.setLocomotion(mode, axis, gazeDir)
-        },
-        setEmote(url) {
-          // DEPRECATED: use .emote
-          return self.setEmote(url)
-        },
-        get height() {
-          // DEPRECATED: use .getHeight()
-          return self.height
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+        {
+          height: function() { return this.height },
+        }
+      )
     }
     return this.proxy
   }
