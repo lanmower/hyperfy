@@ -1,6 +1,6 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy, validators } from '../utils/defineProperty.js'
 import { Node } from './Node.js'
 
 const propertySchema = {
@@ -16,23 +16,23 @@ const propertySchema = {
   },
   distance: {
     default: 3,
-    validate: v => !isNumber(v) ? '[action] distance not a number' : null,
+    validate: validators.number,
   },
   duration: {
     default: 0.5,
-    validate: v => !isNumber(v) ? '[action] duration not a number' : null,
+    validate: validators.number,
   },
   onStart: {
     default: () => {},
-    validate: v => !isFunction(v) ? '[action] onStart not a function' : null,
+    validate: validators.func,
   },
   onTrigger: {
     default: () => {},
-    validate: v => !isFunction(v) ? '[action] onTrigger not a function' : null,
+    validate: validators.func,
   },
   onCancel: {
     default: () => {},
-    validate: v => !isFunction(v) ? '[action] onCancel not a function' : null,
+    validate: validators.func,
   },
 }
 
