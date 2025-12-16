@@ -19,7 +19,7 @@ import {
   isFlexWrap,
 } from '../extras/yoga.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy, validators } from '../utils/defineProperty.js'
 
 const defaults = {
   display: 'flex',
@@ -58,7 +58,7 @@ const propertySchema = {
   },
   width: {
     default: defaults.width,
-    validate: v => v !== null && !isNumber(v) ? '[uiview] width not a number' : null,
+    validate: validators.numberOrNull,
     onSet() {
       this.yogaNode?.setWidth(this._width === null ? undefined : this._width * this.ui._res)
       this.ui?.redraw()
@@ -66,7 +66,7 @@ const propertySchema = {
   },
   height: {
     default: defaults.height,
-    validate: v => v !== null && !isNumber(v) ? '[uiview] height not a number' : null,
+    validate: validators.numberOrNull,
     onSet() {
       this.yogaNode?.setHeight(this._height === null ? undefined : this._height * this.ui._res)
       this.ui?.redraw()
@@ -74,7 +74,7 @@ const propertySchema = {
   },
   absolute: {
     default: defaults.absolute,
-    validate: v => !isBoolean(v) ? '[uiview] absolute not a boolean' : null,
+    validate: validators.boolean,
     onSet() {
       this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE)
       this.ui?.redraw()
@@ -82,7 +82,7 @@ const propertySchema = {
   },
   top: {
     default: defaults.top,
-    validate: v => v !== null && !isNumber(v) ? '[uiview] top must be a number or null' : null,
+    validate: validators.numberOrNull,
     onSet() {
       this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined)
       this.ui?.redraw()
@@ -90,7 +90,7 @@ const propertySchema = {
   },
   right: {
     default: defaults.right,
-    validate: v => v !== null && !isNumber(v) ? '[uiview] right must be a number or null' : null,
+    validate: validators.numberOrNull,
     onSet() {
       this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined)
       this.ui?.redraw()
@@ -98,7 +98,7 @@ const propertySchema = {
   },
   bottom: {
     default: defaults.bottom,
-    validate: v => v !== null && !isNumber(v) ? '[uiview] bottom must be a number or null' : null,
+    validate: validators.numberOrNull,
     onSet() {
       this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined)
       this.ui?.redraw()
@@ -106,7 +106,7 @@ const propertySchema = {
   },
   left: {
     default: defaults.left,
-    validate: v => v !== null && !isNumber(v) ? '[uiview] left must be a number or null' : null,
+    validate: validators.numberOrNull,
     onSet() {
       this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined)
       this.ui?.redraw()
@@ -114,28 +114,28 @@ const propertySchema = {
   },
   backgroundColor: {
     default: defaults.backgroundColor,
-    validate: v => v !== null && !isString(v) ? '[uiview] backgroundColor not a string' : null,
+    validate: validators.stringOrNull,
     onSet() {
       this.ui?.redraw()
     },
   },
   borderWidth: {
     default: defaults.borderWidth,
-    validate: v => !isNumber(v) ? '[uiview] borderWidth not a number' : null,
+    validate: validators.number,
     onSet() {
       this.ui?.redraw()
     },
   },
   borderColor: {
     default: defaults.borderColor,
-    validate: v => v !== null && !isString(v) ? '[uiview] borderColor not a string' : null,
+    validate: validators.stringOrNull,
     onSet() {
       this.ui?.redraw()
     },
   },
   borderRadius: {
     default: defaults.borderRadius,
-    validate: v => !isNumber(v) ? '[uiview] borderRadius not a number' : null,
+    validate: validators.number,
     onSet() {
       this.ui?.redraw()
     },
@@ -214,7 +214,7 @@ const propertySchema = {
   },
   gap: {
     default: defaults.gap,
-    validate: v => !isNumber(v) ? '[uiview] gap not a number' : null,
+    validate: validators.number,
     onSet() {
       this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this.ui._res)
       this.ui?.redraw()
@@ -230,7 +230,7 @@ const propertySchema = {
   },
   flexGrow: {
     default: defaults.flexGrow,
-    validate: v => !isNumber(v) ? '[uiview] flexGrow not a number' : null,
+    validate: validators.number,
     onSet() {
       this.yogaNode?.setFlexGrow(this._flexGrow)
       this.ui?.redraw()
@@ -238,7 +238,7 @@ const propertySchema = {
   },
   flexShrink: {
     default: defaults.flexShrink,
-    validate: v => !isNumber(v) ? '[uiview] flexShrink not a number' : null,
+    validate: validators.number,
     onSet() {
       this.yogaNode?.setFlexShrink(this._flexShrink)
       this.ui?.redraw()
