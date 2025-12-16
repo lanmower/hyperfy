@@ -1,4 +1,5 @@
 import { Node } from './Node.js'
+import { createPropertyProxy } from '../utils/defineProperty.js'
 
 export class Group extends Node {
   constructor(data = {}) {
@@ -8,11 +9,7 @@ export class Group extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      let proxy = {
-        // ...
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, {}, super.getProxy())
     }
     return this.proxy
   }

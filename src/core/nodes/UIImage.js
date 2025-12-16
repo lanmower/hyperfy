@@ -3,7 +3,7 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { Display, isDisplay } from '../extras/yoga.js'
 import { fillRoundRect, imageRoundRect } from '../extras/roundRect.js'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 
 const objectFits = ['contain', 'cover', 'fill']
 
@@ -342,89 +342,7 @@ export class UIImage extends Node {
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      let proxy = {
-        get display() {
-          return self.display
-        },
-        set display(value) {
-          self.display = value
-        },
-        get absolute() {
-          return self.absolute
-        },
-        set absolute(value) {
-          self.absolute = value
-        },
-        get top() {
-          return self.top
-        },
-        set top(value) {
-          self.top = value
-        },
-        get right() {
-          return self.right
-        },
-        set right(value) {
-          self.right = value
-        },
-        get bottom() {
-          return self.bottom
-        },
-        set bottom(value) {
-          self.bottom = value
-        },
-        get left() {
-          return self.left
-        },
-        set left(value) {
-          self.left = value
-        },
-        get src() {
-          return self.src
-        },
-        set src(value) {
-          self.src = value
-        },
-        get width() {
-          return self.width
-        },
-        set width(value) {
-          self.width = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get objectFit() {
-          return self.objectFit
-        },
-        set objectFit(value) {
-          self.objectFit = value
-        },
-        get backgroundColor() {
-          return self.backgroundColor
-        },
-        set backgroundColor(value) {
-          self.backgroundColor = value
-        },
-        get borderRadius() {
-          return self.borderRadius
-        },
-        set borderRadius(value) {
-          self.borderRadius = value
-        },
-        get margin() {
-          return self.margin
-        },
-        set margin(value) {
-          self.margin = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
     }
     return this.proxy
   }
