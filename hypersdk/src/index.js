@@ -36,6 +36,14 @@ import { Bootstrap } from '../../../src/core/Bootstrap.js'
 import { Config, config, setupServerConfig, setupClientConfig } from '../../../src/core/Config.js'
 import { Events, listen, emit, sys } from '../../../src/core/Events.js'
 import { Schema, field } from '../../../src/core/Schema.js'
+import { Auto } from '../../../src/core/Auto.js'
+import { Props, prop, propSchema } from '../../../src/core/Props.js'
+import { DynamicFactory } from '../../../src/core/DynamicFactory.js'
+import { DynamicWorld } from '../../../src/core/DynamicWorld.js'
+import { NodeBuilder } from '../../../src/core/NodeBuilder.js'
+import { BaseNetwork } from '../../../src/core/network/BaseNetwork.js'
+import { Transport, WebSocketTransport, SocketTransport } from '../../../src/core/network/Transport.js'
+import { ConnectionPool } from '../../../src/core/network/ConnectionPool.js'
 
 export {
   HyperfyClient,
@@ -91,7 +99,19 @@ export {
   emit,
   sys,
   Schema,
-  field
+  field,
+  Auto,
+  Props,
+  prop,
+  propSchema,
+  DynamicFactory,
+  DynamicWorld,
+  NodeBuilder,
+  BaseNetwork,
+  Transport,
+  WebSocketTransport,
+  SocketTransport,
+  ConnectionPool
 }
 
 export { HyperfyClient as default }
