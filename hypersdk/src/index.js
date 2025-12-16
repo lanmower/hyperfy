@@ -5,14 +5,13 @@ import { App } from './client/App.js'
 import { Chat } from './client/Chat.js'
 import { Packets } from './protocol/Packets.js'
 import { WebSocketManager } from './client/WebSocketManager.js'
-import { ErrorPatterns } from '../../../src/core/utils/errorPatterns.js'
-import { Serialization } from '../../../src/core/utils/serialization.js'
+import { ErrorEventBus, EventBus, globalEvents } from '../../../src/core/utils/events/index.js'
+import * as validation from '../../../src/core/utils/validation/index.js'
+import * as serialization from '../../../src/core/utils/serialization/index.js'
+import * as collections from '../../../src/core/utils/collections/collections.js'
 import { PacketTypes, PACKET_NAMES } from '../../../src/core/packets.constants.js'
 import { ListenerMixin } from '../../../src/core/mixins/ListenerMixin.js'
 import { ServiceBase } from '../../../src/core/ServiceBase.js'
-import { EventBus, globalEvents } from '../../../src/core/utils/EventBus.js'
-import * as collections from '../../../src/core/utils/collections.js'
-import * as validation from '../../../src/core/utils/validation.js'
 import { NetworkProtocol } from '../../../src/core/network/NetworkProtocol.js'
 import { BaseEntity } from '../../../src/core/entities/BaseEntity.js'
 import { SystemRegistry } from '../../../src/core/SystemRegistry.js'
@@ -26,9 +25,9 @@ import { PluginSystem } from '../../../src/core/plugin/PluginSystem.js'
 import { AppValidator } from '../../../src/core/validators/AppValidator.js'
 import * as AppBlueprintSchema from '../../../src/core/schemas/AppBlueprint.schema.js'
 import { PersistenceBase } from '../../../src/core/services/PersistenceBase.js'
-import { ObjectPool } from '../../../src/core/utils/ObjectPool.js'
-import { Cache } from '../../../src/core/utils/Cache.js'
-import { TaskQueue } from '../../../src/core/utils/TaskQueue.js'
+import { ObjectPool } from '../../../src/core/utils/caching/ObjectPool.js'
+import { Cache } from '../../../src/core/utils/caching/Cache.js'
+import { TaskQueue } from '../../../src/core/utils/async/TaskQueue.js'
 import { SystemFactory, serverSystems, clientSystems } from '../../../src/core/SystemFactory.js'
 import { EntityFactory, entityTypes } from '../../../src/core/EntityFactory.js'
 import { Request, Response } from '../../../src/core/Request.js'
@@ -55,16 +54,16 @@ export {
   Chat,
   WebSocketManager,
   Packets,
-  ErrorPatterns,
-  Serialization,
   PacketTypes,
   PACKET_NAMES,
   ListenerMixin,
   ServiceBase,
   EventBus,
+  ErrorEventBus,
   globalEvents,
   collections,
   validation,
+  serialization,
   NetworkProtocol,
   BaseEntity,
   SystemRegistry,
