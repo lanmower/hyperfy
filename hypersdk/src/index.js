@@ -34,6 +34,8 @@ import { EntityFactory, entityTypes } from '../../../src/core/EntityFactory.js'
 import { Request, Response } from '../../../src/core/Request.js'
 import { Bootstrap } from '../../../src/core/Bootstrap.js'
 import { Config, config, setupServerConfig, setupClientConfig } from '../../../src/core/Config.js'
+import { Events, listen, emit, sys } from '../../../src/core/Events.js'
+import { Schema, field } from '../../../src/core/Schema.js'
 
 export {
   HyperfyClient,
@@ -83,7 +85,13 @@ export {
   Config,
   config,
   setupServerConfig,
-  setupClientConfig
+  setupClientConfig,
+  Events,
+  listen,
+  emit,
+  sys,
+  Schema,
+  field
 }
 
 export { HyperfyClient as default }
