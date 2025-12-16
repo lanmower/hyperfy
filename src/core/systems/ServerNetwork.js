@@ -13,6 +13,7 @@ import { FileUploader } from '../../server/services/FileUploader.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { serializeForNetwork } from '../schemas/ChatMessage.schema.js'
 import { errorObserver } from '../../server/services/ErrorObserver.js'
+import { serverNetworkHandlers } from '../config/HandlerRegistry.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -29,7 +30,7 @@ const HEALTH_MAX = 100
  */
 export class ServerNetwork extends BaseNetwork {
   constructor(world) {
-    super(world)
+    super(world, serverNetworkHandlers)
     this.id = 0
     this.sockets = new Map()
     this.socketIntervalId = setInterval(() => this.checkSockets(), PING_RATE * 1000)
@@ -41,37 +42,6 @@ export class ServerNetwork extends BaseNetwork {
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
     this.setupHotReload()
-  }
-
-  getMessageHandlers() {
-    return {
-      'chatAdded': this.onChatAdded,
-      'command': this.onCommand,
-      'modifyRank': this.onModifyRank,
-      'kick': this.onKick,
-      'mute': this.onMute,
-      'blueprintAdded': this.onBlueprintAdded,
-      'blueprintModified': this.onBlueprintModified,
-      'entityAdded': this.onEntityAdded,
-      'entityModified': this.onEntityModified,
-      'entityEvent': this.onEntityEvent,
-      'entityRemoved': this.onEntityRemoved,
-      'settingsModified': this.onSettingsModified,
-      'spawnModified': this.onSpawnModified,
-      'playerTeleport': this.onPlayerTeleport,
-      'playerPush': this.onPlayerPush,
-      'playerSessionAvatar': this.onPlayerSessionAvatar,
-      'ping': this.onPing,
-      'errorEvent': this.onErrorEvent,
-      'errorReport': this.onErrorReport,
-      'mcpSubscribeErrors': this.onMcpSubscribeErrors,
-      'getErrors': this.onGetErrors,
-      'clearErrors': this.onClearErrors,
-      'fileUpload': this.onFileUpload,
-      'fileUploadCheck': this.onFileUploadCheck,
-      'fileUploadStats': this.onFileUploadStats,
-      'disconnect': this.onDisconnect,
-    }
   }
 
   setupHotReload() {

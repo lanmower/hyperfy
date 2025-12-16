@@ -35,107 +35,125 @@ export class ClientLoader extends BaseLoader {
 
   getTypeHandlers() {
     return {
-      'video': (url, file, key) => new Promise(resolve => {
-        const factory = createVideoFactory(this.world, this.world.resolveURL(url))
-        resolve(factory)
-      }),
-      'hdr': (url, file, key) => file.arrayBuffer().then(buffer => {
-        const result = this.rgbeLoader.parse(buffer)
-        const texture = new THREE.DataTexture(result.data, result.width, result.height)
-        texture.colorSpace = THREE.LinearSRGBColorSpace
-        texture.minFilter = THREE.LinearFilter
-        texture.magFilter = THREE.LinearFilter
-        texture.generateMipmaps = false
-        texture.flipY = true
-        texture.type = result.type
-        texture.needsUpdate = true
-        this.results.set(key, texture)
-        return texture
-      }),
-      'image': (url, file, key) => new Promise(resolve => {
-        const img = new Image()
-        img.onload = () => {
-          this.results.set(key, img)
-          resolve(img)
-        }
-        img.src = URL.createObjectURL(file)
-      }),
-      'texture': (url, file, key) => new Promise(resolve => {
-        const img = new Image()
-        img.onload = () => {
-          const texture = this.texLoader.load(img.src)
-          this.results.set(key, texture)
-          resolve(texture)
-          URL.revokeObjectURL(img.src)
-        }
-        img.src = URL.createObjectURL(file)
-      }),
-      'model': (url, file, key) => file.arrayBuffer().then(async buffer => {
-        const glb = await this.gltfLoader.parseAsync(buffer)
-        const node = glbToNodes(glb, this.world)
-        const model = {
-          toNodes() {
-            return node.clone(true)
-          },
-          getStats() {
-            const stats = node.getStats(true)
-            stats.fileBytes = file.size
-            return stats
-          },
-        }
-        this.results.set(key, model)
-        return model
-      }),
-      'emote': (url, file, key) => file.arrayBuffer().then(async buffer => {
-        const glb = await this.gltfLoader.parseAsync(buffer)
-        const factory = createEmoteFactory(glb, url)
-        const emote = {
-          toClip(options) {
-            return factory.toClip(options)
-          },
-        }
-        this.results.set(key, emote)
-        return emote
-      }),
-      'avatar': (url, file, key) => file.arrayBuffer().then(async buffer => {
-        const glb = await this.gltfLoader.parseAsync(buffer)
-        const factory = createVRMFactory(glb, this.world.setupMaterial)
-        const hooks = this.vrmHooks
-        const node = createNode('group', { id: '$root' })
-        const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
-        node.add(node2)
-        const avatar = {
-          factory,
-          hooks,
-          toNodes(customHooks) {
-            const clone = node.clone(true)
-            if (customHooks) {
-              clone.get('avatar').hooks = customHooks
-            }
-            return clone
-          },
-          getStats() {
-            const stats = node.getStats(true)
-            stats.fileBytes = file.size
-            return stats
-          },
-        }
-        this.results.set(key, avatar)
-        return avatar
-      }),
-      'script': (url, file, key) => file.text().then(code => {
-        const script = this.world.scripts.evaluate(code)
-        this.results.set(key, script)
-        return script
-      }),
-      'audio': (url, file, key) => file.arrayBuffer().then(buffer =>
-        this.world.audio.ctx.decodeAudioData(buffer)
-      ).then(audioBuffer => {
-        this.results.set(key, audioBuffer)
-        return audioBuffer
-      }),
+      'video': this.handleVideo,
+      'hdr': this.handleHDR,
+      'image': this.handleImage,
+      'texture': this.handleTexture,
+      'model': this.handleModel,
+      'emote': this.handleEmote,
+      'avatar': this.handleAvatar,
+      'script': this.handleScript,
+      'audio': this.handleAudio,
     }
   }
+
+  handleVideo = (url, file, key) => new Promise(resolve => {
+    const factory = createVideoFactory(this.world, this.world.resolveURL(url))
+    resolve(factory)
+  })
+
+  handleHDR = (url, file, key) => file.arrayBuffer().then(buffer => {
+    const result = this.rgbeLoader.parse(buffer)
+    const texture = new THREE.DataTexture(result.data, result.width, result.height)
+    texture.colorSpace = THREE.LinearSRGBColorSpace
+    texture.minFilter = THREE.LinearFilter
+    texture.magFilter = THREE.LinearFilter
+    texture.generateMipmaps = false
+    texture.flipY = true
+    texture.type = result.type
+    texture.needsUpdate = true
+    this.results.set(key, texture)
+    return texture
+  })
+
+  handleImage = (url, file, key) => new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      this.results.set(key, img)
+      resolve(img)
+    }
+    img.src = URL.createObjectURL(file)
+  })
+
+  handleTexture = (url, file, key) => new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const texture = this.texLoader.load(img.src)
+      this.results.set(key, texture)
+      resolve(texture)
+      URL.revokeObjectURL(img.src)
+    }
+    img.src = URL.createObjectURL(file)
+  })
+
+  handleModel = (url, file, key) => file.arrayBuffer().then(async buffer => {
+    const glb = await this.gltfLoader.parseAsync(buffer)
+    const node = glbToNodes(glb, this.world)
+    const model = {
+      toNodes() {
+        return node.clone(true)
+      },
+      getStats() {
+        const stats = node.getStats(true)
+        stats.fileBytes = file.size
+        return stats
+      },
+    }
+    this.results.set(key, model)
+    return model
+  })
+
+  handleEmote = (url, file, key) => file.arrayBuffer().then(async buffer => {
+    const glb = await this.gltfLoader.parseAsync(buffer)
+    const factory = createEmoteFactory(glb, url)
+    const emote = {
+      toClip(options) {
+        return factory.toClip(options)
+      },
+    }
+    this.results.set(key, emote)
+    return emote
+  })
+
+  handleAvatar = (url, file, key) => file.arrayBuffer().then(async buffer => {
+    const glb = await this.gltfLoader.parseAsync(buffer)
+    const factory = createVRMFactory(glb, this.world.setupMaterial)
+    const hooks = this.vrmHooks
+    const node = createNode('group', { id: '$root' })
+    const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
+    node.add(node2)
+    const avatar = {
+      factory,
+      hooks,
+      toNodes(customHooks) {
+        const clone = node.clone(true)
+        if (customHooks) {
+          clone.get('avatar').hooks = customHooks
+        }
+        return clone
+      },
+      getStats() {
+        const stats = node.getStats(true)
+        stats.fileBytes = file.size
+        return stats
+      },
+    }
+    this.results.set(key, avatar)
+    return avatar
+  })
+
+  handleScript = (url, file, key) => file.text().then(code => {
+    const script = this.world.scripts.evaluate(code)
+    this.results.set(key, script)
+    return script
+  })
+
+  handleAudio = (url, file, key) => file.arrayBuffer().then(buffer =>
+    this.world.audio.ctx.decodeAudioData(buffer)
+  ).then(audioBuffer => {
+    this.results.set(key, audioBuffer)
+    return audioBuffer
+  })
 
   start() {
     this.vrmHooks = {

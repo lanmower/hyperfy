@@ -35,32 +35,29 @@ export class ServerLoader extends BaseLoader {
 
   getTypeHandlers() {
     return {
-      'model': (url) => new Promise(async (resolve, reject) => {
-        try {
-          const arrayBuffer = await this.fetchArrayBuffer(url)
-          this.gltfLoader.parse(arrayBuffer, '',
-            glb => {
-              const node = glbToNodes(glb, this.world)
-              resolve({
-                toNodes() {
-                  return node.clone(true)
-                },
-              })
+      'model': this.handleModel,
+      'emote': this.handleEmote,
+      'avatar': this.handleAvatar,
+      'script': this.handleScript,
+      'audio': this.handleAudio,
+    }
+  }
+
+  handleModel = (url) => new Promise(async (resolve, reject) => {
+    try {
+      const arrayBuffer = await this.fetchArrayBuffer(url)
+      this.gltfLoader.parse(arrayBuffer, '',
+        glb => {
+          const node = glbToNodes(glb, this.world)
+          resolve({
+            toNodes() {
+              return node.clone(true)
             },
-            err => {
-              if (this.world.errorMonitor) {
-                this.world.errorMonitor.captureError('gltfloader.error', {
-                  message: err.message || String(err),
-                  url: url,
-                  type: 'model'
-                }, err.stack)
-              }
-              reject(err)
-            }
-          )
-        } catch (err) {
+          })
+        },
+        err => {
           if (this.world.errorMonitor) {
-            this.world.errorMonitor.captureError('model.load.error', {
+            this.world.errorMonitor.captureError('gltfloader.error', {
               message: err.message || String(err),
               url: url,
               type: 'model'
@@ -68,33 +65,34 @@ export class ServerLoader extends BaseLoader {
           }
           reject(err)
         }
-      }),
-      'emote': (url) => new Promise(async (resolve, reject) => {
-        try {
-          const arrayBuffer = await this.fetchArrayBuffer(url)
-          this.gltfLoader.parse(arrayBuffer, '',
-            glb => {
-              const factory = createEmoteFactory(glb, url)
-              resolve({
-                toClip(options) {
-                  return factory.toClip(options)
-                },
-              })
+      )
+    } catch (err) {
+      if (this.world.errorMonitor) {
+        this.world.errorMonitor.captureError('model.load.error', {
+          message: err.message || String(err),
+          url: url,
+          type: 'model'
+        }, err.stack)
+      }
+      reject(err)
+    }
+  })
+
+  handleEmote = (url) => new Promise(async (resolve, reject) => {
+    try {
+      const arrayBuffer = await this.fetchArrayBuffer(url)
+      this.gltfLoader.parse(arrayBuffer, '',
+        glb => {
+          const factory = createEmoteFactory(glb, url)
+          resolve({
+            toClip(options) {
+              return factory.toClip(options)
             },
-            err => {
-              if (this.world.errorMonitor) {
-                this.world.errorMonitor.captureError('gltfloader.error', {
-                  message: err.message || String(err),
-                  url: url,
-                  type: 'emote'
-                }, err.stack)
-              }
-              reject(err)
-            }
-          )
-        } catch (err) {
+          })
+        },
+        err => {
           if (this.world.errorMonitor) {
-            this.world.errorMonitor.captureError('emote.load.error', {
+            this.world.errorMonitor.captureError('gltfloader.error', {
               message: err.message || String(err),
               url: url,
               type: 'emote'
@@ -102,38 +100,50 @@ export class ServerLoader extends BaseLoader {
           }
           reject(err)
         }
-      }),
-      'avatar': (url) => new Promise(async (resolve, reject) => {
-        try {
-          let node
-          resolve({
-            toNodes: () => {
-              if (!node) {
-                node = createNode('group')
-                const node2 = createNode('avatar', { id: 'avatar', factory: null })
-                node.add(node2)
-              }
-              return node.clone(true)
-            },
-          })
-        } catch (err) {
-          reject(err)
-        }
-      }),
-      'script': (url) => new Promise(async (resolve, reject) => {
-        try {
-          const code = await this.fetchText(url)
-          const script = this.world.scripts.evaluate(code)
-          resolve(script)
-        } catch (err) {
-          reject(err)
-        }
-      }),
-      'audio': (url) => new Promise(async (resolve, reject) => {
-        reject(null)
-      }),
+      )
+    } catch (err) {
+      if (this.world.errorMonitor) {
+        this.world.errorMonitor.captureError('emote.load.error', {
+          message: err.message || String(err),
+          url: url,
+          type: 'emote'
+        }, err.stack)
+      }
+      reject(err)
     }
-  }
+  })
+
+  handleAvatar = (url) => new Promise(async (resolve, reject) => {
+    try {
+      let node
+      resolve({
+        toNodes: () => {
+          if (!node) {
+            node = createNode('group')
+            const node2 = createNode('avatar', { id: 'avatar', factory: null })
+            node.add(node2)
+          }
+          return node.clone(true)
+        },
+      })
+    } catch (err) {
+      reject(err)
+    }
+  })
+
+  handleScript = (url) => new Promise(async (resolve, reject) => {
+    try {
+      const code = await this.fetchText(url)
+      const script = this.world.scripts.evaluate(code)
+      resolve(script)
+    } catch (err) {
+      reject(err)
+    }
+  })
+
+  handleAudio = (url) => new Promise(async (resolve, reject) => {
+    reject(null)
+  })
 
   async fetchArrayBuffer(url) {
     const isRemote = url.startsWith('http://') || url.startsWith('https://')

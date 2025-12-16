@@ -10,9 +10,10 @@ import { NetworkProtocol } from './NetworkProtocol.js'
  *
  */
 export class BaseNetwork extends System {
-  constructor(world) {
+  constructor(world, handlerNames) {
     super(world)
     this.protocol = new NetworkProtocol(this.constructor.name)
+    this.handlerNames = handlerNames // Optional: handler name mapping for dependency injection
     this.setupHandlerRegistry()
   }
 
@@ -30,9 +31,31 @@ export class BaseNetwork extends System {
   /**
    * Override in subclass to define platform-specific message handlers
    * Returns object mapping handler name -> handler method
+   *
+   * If handlerNames was provided in constructor, use that instead of overriding
    */
   getMessageHandlers() {
+    if (this.handlerNames) {
+      return this.createHandlerMap(this.handlerNames)
+    }
     return {}
+  }
+
+  /**
+   * Create handler map from handler names
+   * Maps handler name -> bound handler method
+   */
+  createHandlerMap(handlerNames) {
+    const handlers = {}
+    for (const [name, methodName] of Object.entries(handlerNames)) {
+      const method = this[methodName]
+      if (!method) {
+        console.warn(`Handler method not found: ${methodName}`)
+        continue
+      }
+      handlers[name] = method.bind(this)
+    }
+    return handlers
   }
 
   /**
