@@ -20,6 +20,7 @@ import { StateManager } from '../../../src/core/state/StateManager.js'
 import { CommandRegistry } from '../../../src/core/cli/CommandRegistry.js'
 import { Output, globalOutput } from '../../../src/core/cli/Output.js'
 import { Metrics, globalMetrics } from '../../../src/core/cli/Metrics.js'
+import { Cmd, cmd } from '../../../src/core/cli/Cmd.js'
 import { DataModel } from '../../../src/core/models/DataModel.js'
 import { PluginSystem } from '../../../src/core/plugin/PluginSystem.js'
 import { AppValidator } from '../../../src/core/validators/AppValidator.js'
@@ -28,6 +29,8 @@ import { PersistenceBase } from '../../../src/core/services/PersistenceBase.js'
 import { ObjectPool } from '../../../src/core/utils/ObjectPool.js'
 import { Cache } from '../../../src/core/utils/Cache.js'
 import { TaskQueue } from '../../../src/core/utils/TaskQueue.js'
+import { SystemFactory, serverSystems, clientSystems } from '../../../src/core/SystemFactory.js'
+import { EntityFactory, entityTypes } from '../../../src/core/EntityFactory.js'
 
 export {
   HyperfyClient,
@@ -56,6 +59,8 @@ export {
   globalOutput,
   Metrics,
   globalMetrics,
+  Cmd,
+  cmd,
   DataModel,
   PluginSystem,
   AppValidator,
@@ -63,7 +68,12 @@ export {
   PersistenceBase,
   ObjectPool,
   Cache,
-  TaskQueue
+  TaskQueue,
+  SystemFactory,
+  serverSystems,
+  clientSystems,
+  EntityFactory,
+  entityTypes
 }
 
 export { HyperfyClient as default }
