@@ -4,8 +4,7 @@ import { readPacket, writePacket } from '../packets.js'
 import { storage } from '../storage.js'
 import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
-import { System } from './System.js'
-import { NetworkProtocol } from '../network/NetworkProtocol.js'
+import { BaseNetwork } from '../network/BaseNetwork.js'
 
 /**
  * Client Network System
@@ -14,7 +13,7 @@ import { NetworkProtocol } from '../network/NetworkProtocol.js'
  * - provides abstract network methods matching ServerNetwork
  *
  */
-export class ClientNetwork extends System {
+export class ClientNetwork extends BaseNetwork {
   constructor(world) {
     super(world)
     this.ws = null
@@ -22,14 +21,12 @@ export class ClientNetwork extends System {
     this.id = null
     this.isClient = true
     this.serverTimeOffset = 0
-    this.protocol = new NetworkProtocol('ClientNetwork')
     this.protocol.isClient = true
     this.protocol.flushTarget = this
-    this.setupHandlerRegistry()
   }
 
-  setupHandlerRegistry() {
-    const handlers = {
+  getMessageHandlers() {
+    return {
       'snapshot': this.onSnapshot,
       'settingsModified': this.onSettingsModified,
       'chatAdded': this.onChatAdded,
@@ -50,9 +47,6 @@ export class ClientNetwork extends System {
       'hotReload': this.onHotReload,
       'errors': this.onErrors,
     }
-    for (const [name, handler] of Object.entries(handlers)) {
-      this.protocol.register(name, handler.bind(this))
-    }
   }
 
   init({ wsUrl, name, avatar }) {
@@ -65,10 +59,6 @@ export class ClientNetwork extends System {
     this.ws.addEventListener('message', this.onPacket)
     this.ws.addEventListener('close', this.onClose)
     this.protocol.isConnected = true
-  }
-
-  preFixedUpdate() {
-    this.protocol.flush()
   }
 
   send(name, data) {

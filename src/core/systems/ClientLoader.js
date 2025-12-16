@@ -3,7 +3,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin } from '@pixiv/three-vrm'
 
-import { System } from './System.js'
+import { BaseLoader } from './BaseLoader.js'
 import { createNode } from '../extras/createNode.js'
 import { createVRMFactory } from '../extras/createVRMFactory.js'
 import { glbToNodes } from '../extras/glbToNodes.js'
@@ -22,22 +22,19 @@ import Hls from 'hls.js/dist/hls.js'
  * - Basic file loader for many different formats, cached.
  *
  */
-export class ClientLoader extends System {
+export class ClientLoader extends BaseLoader {
   constructor(world) {
     super(world)
+    this.isServer = false
     this.files = new Map()
-    this.promises = new Map()
-    this.results = new Map()
     this.rgbeLoader = new RGBELoader()
     this.texLoader = new TextureLoader()
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
-    this.preloadItems = []
-    this.setupTypeRegistry()
   }
 
-  setupTypeRegistry() {
-    this.typeHandlers = {
+  getTypeHandlers() {
+    return {
       'video': (url, file, key) => new Promise(resolve => {
         const factory = createVideoFactory(this.world, this.world.resolveURL(url))
         resolve(factory)
@@ -148,20 +145,6 @@ export class ClientLoader extends System {
       setupMaterial: this.world.setupMaterial,
       loader: this.world.loader,
     }
-  }
-
-  has(type, url) {
-    const key = `${type}/${url}`
-    return this.promises.has(key)
-  }
-
-  get(type, url) {
-    const key = `${type}/${url}`
-    return this.results.get(key)
-  }
-
-  preload(type, url) {
-    this.preloadItems.push({ type, url })
   }
 
   execPreload() {

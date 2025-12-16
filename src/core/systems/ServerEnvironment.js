@@ -1,4 +1,4 @@
-import { System } from './System.js'
+import { BaseEnvironment } from './BaseEnvironment.js'
 
 /**
  * Environment System
@@ -7,9 +7,5 @@ import { System } from './System.js'
  * - Currently not in use
  *
  */
-export class ServerEnvironment extends System {
-  constructor(world) {
-    super(world)
-    this.model = null
-  }
+export class ServerEnvironment extends BaseEnvironment {
 }
