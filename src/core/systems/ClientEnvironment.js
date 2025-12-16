@@ -1,6 +1,6 @@
 import * as THREE from '../extras/three.js'
 
-import { System } from './System.js'
+import { BaseEnvironment } from './BaseEnvironment.js'
 
 import { CSM } from '../libs/csm/CSM.js'
 import { isNumber, isString } from 'lodash-es'
@@ -68,11 +68,9 @@ THREE.ShaderChunk.fog_vertex = `
  * - Sets up the sky, hdr, sun, shadows, fog etc
  *
  */
-export class ClientEnvironment extends System {
+export class ClientEnvironment extends BaseEnvironment {
   constructor(world) {
     super(world)
-
-    this.model = null
     this.skys = []
     this.sky = null
     this.skyN = 0

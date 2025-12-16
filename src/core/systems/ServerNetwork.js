@@ -2,7 +2,6 @@ import moment from 'moment'
 import { writePacket } from '../packets.js'
 import { Socket } from '../Socket.js'
 import { uuid } from '../utils.js'
-import { System } from './System.js'
 import { createJWT, readJWT } from '../utils-server.js'
 import { cloneDeep, isNumber } from 'lodash-es'
 import * as THREE from '../extras/three.js'
@@ -11,7 +10,7 @@ import { CommandHandler } from '../../server/services/CommandHandler.js'
 import { WorldPersistence } from '../../server/services/WorldPersistence.js'
 import { FileStorage } from '../../server/services/FileStorage.js'
 import { FileUploader } from '../../server/services/FileUploader.js'
-import { NetworkProtocol } from '../network/NetworkProtocol.js'
+import { BaseNetwork } from '../network/BaseNetwork.js'
 import { serializeForNetwork } from '../schemas/ChatMessage.schema.js'
 import { errorObserver } from '../../server/services/ErrorObserver.js'
 
@@ -28,7 +27,7 @@ const HEALTH_MAX = 100
  * - provides abstract network methods matching ClientNetwork
  *
  */
-export class ServerNetwork extends System {
+export class ServerNetwork extends BaseNetwork {
   constructor(world) {
     super(world)
     this.id = 0
@@ -38,17 +37,14 @@ export class ServerNetwork extends System {
     this.dirtyBlueprints = new Set()
     this.dirtyApps = new Set()
     this.isServer = true
-    this.isConnected = true
-    this.protocol = new NetworkProtocol('ServerNetwork')
     this.protocol.isServer = true
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
-    this.setupHandlerRegistry()
     this.setupHotReload()
   }
 
-  setupHandlerRegistry() {
-    const handlers = {
+  getMessageHandlers() {
+    return {
       'chatAdded': this.onChatAdded,
       'command': this.onCommand,
       'modifyRank': this.onModifyRank,
@@ -75,9 +71,6 @@ export class ServerNetwork extends System {
       'fileUploadCheck': this.onFileUploadCheck,
       'fileUploadStats': this.onFileUploadStats,
       'disconnect': this.onDisconnect,
-    }
-    for (const [name, handler] of Object.entries(handlers)) {
-      this.protocol.register(name, handler.bind(this))
     }
   }
 
@@ -124,10 +117,6 @@ export class ServerNetwork extends System {
     if (SAVE_INTERVAL) {
       this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
     }
-  }
-
-  preFixedUpdate() {
-    this.protocol.flush()
   }
 
   send(name, data, ignoreSocketId) {

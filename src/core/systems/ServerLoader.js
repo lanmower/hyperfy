@@ -5,7 +5,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader } from '../libs/gltfloader/GLTFLoader.js'
 // import { VRMLoaderPlugin } from '@pixiv/three-vrm'
 
-import { System } from './System.js'
+import { BaseLoader } from './BaseLoader.js'
 import { createVRMFactory } from '../extras/createVRMFactory.js'
 import { glbToNodes } from '../extras/glbToNodes.js'
 import { createNode } from '../extras/createNode.js'
@@ -18,15 +18,12 @@ import { createEmoteFactory } from '../extras/createEmoteFactory.js'
  * - Basic file loader for many different formats, cached.
  *
  */
-export class ServerLoader extends System {
+export class ServerLoader extends BaseLoader {
   constructor(world) {
     super(world)
-    this.promises = new Map()
-    this.results = new Map()
+    this.isServer = true
     this.rgbeLoader = new RGBELoader()
     this.gltfLoader = new GLTFLoader()
-    this.preloadItems = []
-    this.setupTypeRegistry()
 
     // mock globals to allow gltf loader to work in nodejs
     globalThis.self = { URL }
@@ -36,8 +33,8 @@ export class ServerLoader extends System {
     }
   }
 
-  setupTypeRegistry() {
-    this.typeHandlers = {
+  getTypeHandlers() {
+    return {
       'model': (url) => new Promise(async (resolve, reject) => {
         try {
           const arrayBuffer = await this.fetchArrayBuffer(url)
@@ -138,31 +135,6 @@ export class ServerLoader extends System {
     }
   }
 
-  start() {
-    // ...
-  }
-
-  has(type, url) {
-    const key = `${type}/${url}`
-    return this.promises.has(key)
-  }
-
-  get(type, url) {
-    const key = `${type}/${url}`
-    return this.results.get(key)
-  }
-
-  preload(type, url) {
-    this.preloadItems.push({ type, url })
-  }
-
-  execPreload() {
-    const promises = this.preloadItems.map(item => this.load(item.type, item.url))
-    this.preloader = Promise.allSettled(promises).then(() => {
-      this.preloader = null
-    })
-  }
-
   async fetchArrayBuffer(url) {
     const isRemote = url.startsWith('http://') || url.startsWith('https://')
     if (isRemote) {
@@ -188,28 +160,4 @@ export class ServerLoader extends System {
     }
   }
 
-  load(type, url) {
-    const key = `${type}/${url}`
-    if (this.promises.has(key)) {
-      return this.promises.get(key)
-    }
-    url = this.world.resolveURL(url, true)
-    const handler = this.typeHandlers[type]
-    if (!handler) {
-      console.warn(`No handler for asset type: ${type}`)
-      return Promise.resolve(null)
-    }
-    const promise = handler(url).then(result => {
-      this.results.set(key, result)
-      return result
-    })
-    this.promises.set(key, promise)
-    return promise
-  }
-
-  destroy() {
-    this.promises.clear()
-    this.results.clear()
-    this.preloadItems = []
-  }
 }

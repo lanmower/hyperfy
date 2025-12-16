@@ -1,103 +1,66 @@
-// Unified client/server network abstraction consolidating protocol duplication
+import { System } from '../systems/System.js'
+import { NetworkProtocol } from './NetworkProtocol.js'
 
-import { Request, Response } from '../Request.js'
-import { EventBus } from '../utils/EventBus.js'
-
-export class BaseNetwork {
-  constructor(options = {}) {
-    this.options = options
-    this.connections = new Map()
-    this.handlers = new Map()
-    this.events = new EventBus()
-    this.isServer = options.isServer || false
+/**
+ * Base Network System
+ *
+ * - Shared functionality for ClientNetwork and ServerNetwork
+ * - Manages protocol, handler registry, and lifecycle
+ * - Subclasses override getMessageHandlers() for platform-specific handlers
+ *
+ */
+export class BaseNetwork extends System {
+  constructor(world) {
+    super(world)
+    this.protocol = new NetworkProtocol(this.constructor.name)
+    this.setupHandlerRegistry()
   }
 
-  // Register message handler
-  on(type, handler) {
-    if (!this.handlers.has(type)) {
-      this.handlers.set(type, [])
-    }
-    this.handlers.get(type).push(handler)
-    return this
-  }
-
-  // Unregister message handler
-  off(type, handler) {
-    if (!this.handlers.has(type)) return this
-    const handlers = this.handlers.get(type)
-    const index = handlers.indexOf(handler)
-    if (index > -1) {
-      handlers.splice(index, 1)
-    }
-    return this
-  }
-
-  // Send message with optional request/response pattern
-  async send(connectionId, type, data = {}, options = {}) {
-    const connection = this.connections.get(connectionId)
-    if (!connection) {
-      throw new Error("Connection not found: " + connectionId)
-    }
-
-    if (options.request) {
-      return new Request(type, data).send(connection)
-    } else {
-      return connection.send(JSON.stringify({ type, data }))
+  /**
+   * Sets up the handler registry by binding all message handlers
+   * Each handler is registered with the protocol for dispatch
+   */
+  setupHandlerRegistry() {
+    const handlers = this.getMessageHandlers()
+    for (const [name, handler] of Object.entries(handlers)) {
+      this.protocol.register(name, handler.bind(this))
     }
   }
 
-  // Broadcast message to all connections
-  broadcast(type, data = {}, exclude = null) {
-    for (const [id, connection] of this.connections) {
-      if (exclude && id === exclude) continue
-      connection.send(JSON.stringify({ type, data }))
-    }
+  /**
+   * Override in subclass to define platform-specific message handlers
+   * Returns object mapping handler name -> handler method
+   */
+  getMessageHandlers() {
+    return {}
   }
 
-  // Register connection
-  registerConnection(id, connection) {
-    this.connections.set(id, connection)
-    this.events.emit('connection', id)
-    return this
+  /**
+   * Flush pending protocol messages
+   * Called during pre-fixed update cycle
+   */
+  preFixedUpdate() {
+    this.protocol.flush()
   }
 
-  // Unregister connection
-  unregisterConnection(id) {
-    this.connections.delete(id)
-    this.events.emit('disconnect', id)
-    return this
+  /**
+   * Get current server time (accounting for network offset on client)
+   */
+  getTime() {
+    return this.protocol.getTime()
   }
 
-  // Handle incoming message
-  handleMessage(connectionId, message) {
-    try {
-      const msg = typeof message === 'string' ? JSON.parse(message) : message
-      const handlers = this.handlers.get(msg.type) || []
-
-      for (const handler of handlers) {
-        handler(connectionId, msg.data, msg)
-      }
-    } catch (err) {
-      console.error("Error handling message:", err)
-    }
+  /**
+   * Send a message (abstract - override in subclass)
+   */
+  send(name, data) {
+    throw new Error('send() must be implemented by subclass')
   }
 
-  // Get connection info
-  getConnection(id) {
-    return this.connections.get(id)
-  }
-
-  // Get all connections
-  getConnections() {
-    return Array.from(this.connections.values())
-  }
-
-  // Get connection count
-  getConnectionCount() {
-    return this.connections.size
-  }
-
-  toString() {
-    return "BaseNetwork(" + this.connections.size + " connections, " + this.handlers.size + " handlers)"
+  /**
+   * Enqueue a message for sending (abstract - override in subclass)
+   */
+  enqueue(socket, method, data) {
+    throw new Error('enqueue() must be implemented by subclass')
   }
 }
