@@ -31,6 +31,9 @@ import { Cache } from '../../../src/core/utils/Cache.js'
 import { TaskQueue } from '../../../src/core/utils/TaskQueue.js'
 import { SystemFactory, serverSystems, clientSystems } from '../../../src/core/SystemFactory.js'
 import { EntityFactory, entityTypes } from '../../../src/core/EntityFactory.js'
+import { Request, Response } from '../../../src/core/Request.js'
+import { Bootstrap } from '../../../src/core/Bootstrap.js'
+import { Config, config, setupServerConfig, setupClientConfig } from '../../../src/core/Config.js'
 
 export {
   HyperfyClient,
@@ -73,7 +76,14 @@ export {
   serverSystems,
   clientSystems,
   EntityFactory,
-  entityTypes
+  entityTypes,
+  Request,
+  Response,
+  Bootstrap,
+  Config,
+  config,
+  setupServerConfig,
+  setupClientConfig
 }
 
 export { HyperfyClient as default }
