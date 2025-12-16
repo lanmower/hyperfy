@@ -3,15 +3,18 @@ import * as THREE from '../extras/three.js'
 
 import { getRef, Node } from './Node.js'
 import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 import { v } from '../utils/TempVectors.js'
 
 const defaults = {
   scaleAware: true,
 }
 
-const propertySchema = {
-  scaleAware: { default: defaults.scaleAware, validate: validators.boolean },
-}
+const propertySchema = schema('scaleAware')
+  .overrideAll({
+    scaleAware: { default: defaults.scaleAware },
+  })
+  .build()
 
 export class LOD extends Node {
   constructor(data = {}) {

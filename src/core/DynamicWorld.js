@@ -1,59 +1,87 @@
-// Dynamic world creation - zero-config complete world setup
+// Zero-config world initialization with automatic system discovery and registration
 
+import { Auto } from './Auto.js'
 import { DynamicFactory } from './DynamicFactory.js'
 import { Bootstrap } from './Bootstrap.js'
-import { Config } from './Config.js'
 
 export class DynamicWorld {
-  static async createServerWorld(World) {
-    const world = await DynamicFactory.createWorldWithEntities(World, true)
+  constructor(world, options = {}) {
+    this.world = world
+    this.options = options
+    this.bootstrap = new Bootstrap('DynamicWorld')
+    this.factory = new DynamicFactory()
+  }
 
-    if (!world.isInitialized) {
-      await this.initializeServerServices(world)
-      world.isInitialized = true
+  // Discover and auto-register systems from directory
+  async autoSystems(systemsPath, prefix = 'System') {
+    const modules = await Auto.discover(systemsPath)
+    const mapped = Auto.map(modules, prefix)
+    
+    for (const [name, module] of Object.entries(mapped)) {
+      const System = module.default || module
+      if (typeof System === 'function') {
+        this.bootstrap.register(name, System)
+      }
     }
-
-    return world
+    return this
   }
 
-  static async createClientWorld(World) {
-    const world = await DynamicFactory.createWorldWithEntities(World, false)
-
-    if (!world.isInitialized) {
-      await this.initializeClientServices(world)
-      world.isInitialized = true
-    }
-
-    return world
+  // Discover and auto-register entity types
+  async autoEntities(entitiesPath, prefix = '') {
+    await this.factory.discover(entitiesPath, prefix)
+    return this
   }
 
-  static async initializeServerServices(world) {
-    const boot = new Bootstrap('ServerServices')
-
-    const services = await boot.init(world)
-    world.services = services
-
-    await boot.start(world, services)
+  // Manually register system
+  registerSystem(name, System, deps = []) {
+    this.bootstrap.register(name, System, deps)
+    return this
   }
 
-  static async initializeClientServices(world) {
-    const boot = new Bootstrap('ClientServices')
-
-    const services = await boot.init(world)
-    world.services = services
-
-    await boot.start(world, services)
+  // Manually register entity type
+  registerEntity(name, Class, schema = null) {
+    this.factory.register(name, Class, schema)
+    return this
   }
 
-  static configure(config = {}) {
-    const defaults = {
-      port: Config.env('PORT', 'number', 3000),
-      env: Config.env('NODE_ENV', 'string', 'development'),
-      world: Config.env('WORLD', 'string', './world'),
-      saveInterval: Config.env('SAVE_INTERVAL', 'number', 60),
-      pingRate: Config.env('PING_RATE', 'number', 1),
-    }
+  // Initialize all registered systems
+  async init() {
+    await this.bootstrap.init(this.world, this.options)
+    this.world.factory = this.factory
+    return this
+  }
 
-    return { ...defaults, ...config }
+  // Start all registered systems
+  async start() {
+    const instances = new Map(
+      Array.from(this.bootstrap.initialized).map(name => [
+        name,
+        this.world[name]
+      ])
+    )
+    await this.bootstrap.start(this.world, instances)
+    return this
+  }
+
+  // Create entity with factory
+  createEntity(type, data = {}) {
+    return this.factory.create(type, data)
+  }
+
+  // Cleanup and destroy
+  async destroy() {
+    const instances = new Map(
+      Array.from(this.bootstrap.initialized).map(name => [
+        name,
+        this.world[name]
+      ])
+    )
+    await this.bootstrap.destroy(instances)
+    return this
+  }
+
+  toString() {
+    const typeCount = this.factory.types().length
+    return `DynamicWorld(${this.bootstrap.services.size} systems, ${typeCount} types)`
   }
 }

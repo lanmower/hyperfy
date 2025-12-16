@@ -1,21 +1,18 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 const defaults = {
   label: '...',
   health: 100,
 }
 
-const propertySchema = {
-  health: {
-    default: defaults.health,
-    validate: validators.number,
-    onSet(value) {
-      this.handle?.setHealth(value)
-    }
-  },
-}
+const propertySchema = schema('health')
+  .overrideAll({
+    health: { default: defaults.health, onSet: function() { this.handle?.setHealth(this._health) } },
+  })
+  .build()
 
 export class Nametag extends Node {
   constructor(data = {}) {

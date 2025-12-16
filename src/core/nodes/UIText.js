@@ -5,6 +5,7 @@ import { Node } from './Node.js'
 import { Display, isDisplay } from '../extras/yoga.js'
 import { fillRoundRect } from '../extras/roundRect.js'
 import { defineProps, createPropertyProxy, validators } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 const textAligns = ['left', 'center', 'right']
 
@@ -31,182 +32,32 @@ const defaults = {
   flexShrink: 1,
 }
 
-const propertySchema = {
-  display: {
-    default: defaults.display,
-    validate: v => !isDisplay(v) ? `[uitext] display invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setDisplay(Display[this._display])
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  absolute: {
-    default: defaults.absolute,
-    validate: validators.boolean,
-    onSet() {
-      this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE)
-      this.ui?.redraw()
-    },
-  },
-  top: {
-    default: defaults.top,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  right: {
-    default: defaults.right,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  bottom: {
-    default: defaults.bottom,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  left: {
-    default: defaults.left,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  backgroundColor: {
-    default: defaults.backgroundColor,
-    validate: validators.stringOrNull,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  borderRadius: {
-    default: defaults.borderRadius,
-    validate: validators.number,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  margin: {
-    default: defaults.margin,
-    validate: v => !isEdge(v) ? '[uitext] margin not a number or array of numbers' : null,
-    onSet() {
-      if (isArray(this._margin)) {
-        const [top, right, bottom, left] = this._margin
-        this.yogaNode?.setMargin(Yoga.EDGE_TOP, top * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_RIGHT, right * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_LEFT, left * this.ui._res)
-      } else {
-        this.yogaNode?.setMargin(Yoga.EDGE_ALL, this._margin * this.ui._res)
-      }
-      this.ui?.redraw()
-    },
-  },
-  padding: {
-    default: defaults.padding,
-    validate: v => !isEdge(v) ? '[uitext] padding not a number or array of numbers' : null,
-    onSet() {
-      if (isArray(this._padding)) {
-        const [top, right, bottom, left] = this._padding
-        this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this.ui._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this.ui._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this.ui._res)
-      } else {
-        this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this.ui._res)
-      }
-      this.ui?.redraw()
-    },
-  },
-  value: {
-    default: defaults.value,
-    validate: v => !isString(v) && !isNumber(v) ? '[uitext] value not a string' : null,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  fontSize: {
-    default: defaults.fontSize,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  color: {
-    default: defaults.color,
-    validate: validators.string,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  lineHeight: {
-    default: defaults.lineHeight,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  textAlign: {
-    default: defaults.textAlign,
-    validate: v => !isTextAlign(v) ? `[uitext] textAlign invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  fontFamily: {
-    default: defaults.fontFamily,
-    validate: validators.string,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  fontWeight: {
-    default: defaults.fontWeight,
-    validate: v => !isString(v) && !isNumber(v) ? '[uitext] fontWeight invalid' : null,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  flexBasis: {
-    default: defaults.flexBasis,
-    validate: validators.stringOrNumber,
-    onSet() {
-      this.yogaNode?.setFlexBasis(this._flexBasis)
-      this.ui?.redraw()
-    },
-  },
-  flexGrow: {
-    default: defaults.flexGrow,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.setFlexGrow(this._flexGrow)
-      this.ui?.redraw()
-    },
-  },
-  flexShrink: {
-    default: defaults.flexShrink,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.setFlexShrink(this._flexShrink)
-      this.ui?.redraw()
-    },
-  },
-}
+const redraw = function() { this.ui?.redraw() }
+const markDirtyRedraw = function() { this.yogaNode?.markDirty(); this.ui?.redraw() }
+const propertySchema = schema('display', 'absolute', 'top', 'right', 'bottom', 'left', 'backgroundColor', 'borderRadius', 'margin', 'padding', 'value', 'fontSize', 'color', 'lineHeight', 'textAlign', 'fontFamily', 'fontWeight', 'flexBasis', 'flexGrow', 'flexShrink')
+  .overrideAll({
+    display: { default: defaults.display, onSet: function() { this.yogaNode?.setDisplay(Display[this._display]); this.yogaNode?.markDirty(); this.ui?.redraw() } },
+    absolute: { default: defaults.absolute, onSet: function() { this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE); this.ui?.redraw() } },
+    top: { default: defaults.top, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined); this.ui?.redraw() } },
+    right: { default: defaults.right, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined); this.ui?.redraw() } },
+    bottom: { default: defaults.bottom, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined); this.ui?.redraw() } },
+    left: { default: defaults.left, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined); this.ui?.redraw() } },
+    backgroundColor: { default: defaults.backgroundColor, onSet: redraw },
+    borderRadius: { default: defaults.borderRadius, onSet: redraw },
+    margin: { default: defaults.margin, onSet: function() { if (isArray(this._margin)) { const [t,r,b,l]=this._margin; this.yogaNode?.setMargin(Yoga.EDGE_TOP,t*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_RIGHT,r*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM,b*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_LEFT,l*this.ui._res) } else { this.yogaNode?.setMargin(Yoga.EDGE_ALL,this._margin*this.ui._res) } this.ui?.redraw() } },
+    padding: { default: defaults.padding, onSet: function() { if (isArray(this._padding)) { const [t,r,b,l]=this._padding; this.yogaNode?.setPadding(Yoga.EDGE_TOP,t*this.ui._res); this.yogaNode?.setPadding(Yoga.EDGE_RIGHT,r*this.ui._res); this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM,b*this.ui._res); this.yogaNode?.setPadding(Yoga.EDGE_LEFT,l*this.ui._res) } else { this.yogaNode?.setPadding(Yoga.EDGE_ALL,this._padding*this.ui._res) } this.ui?.redraw() } },
+    value: { default: defaults.value, onSet: markDirtyRedraw },
+    fontSize: { default: defaults.fontSize, onSet: markDirtyRedraw },
+    color: { default: defaults.color, onSet: redraw },
+    lineHeight: { default: defaults.lineHeight, onSet: markDirtyRedraw },
+    textAlign: { default: defaults.textAlign, onSet: markDirtyRedraw },
+    fontFamily: { default: defaults.fontFamily, onSet: markDirtyRedraw },
+    fontWeight: { default: defaults.fontWeight, onSet: markDirtyRedraw },
+    flexBasis: { default: defaults.flexBasis, onSet: function() { this.yogaNode?.setFlexBasis(this._flexBasis); this.ui?.redraw() } },
+    flexGrow: { default: defaults.flexGrow, onSet: function() { this.yogaNode?.setFlexGrow(this._flexGrow); this.ui?.redraw() } },
+    flexShrink: { default: defaults.flexShrink, onSet: function() { this.yogaNode?.setFlexShrink(this._flexShrink); this.ui?.redraw() } },
+  })
+  .build()
 
 let offscreenContext
 const getOffscreenContext = () => {

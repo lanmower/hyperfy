@@ -1,35 +1,17 @@
 import { isBoolean, isString } from 'lodash-es'
 import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 import { Node } from './Node.js'
 import * as THREE from 'three'
 
-const propertySchema = {
-  src: {
-    default: null,
-    validate: v => v !== null && !isString(v) ? '[avatar] src not a string' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  emote: {
-    default: null,
-    validate: v => v !== null && !isString(v) ? '[avatar] emote not a string' : null,
-    onSet(value) {
-      this.instance?.setEmote(value)
-    },
-  },
-  visible: {
-    default: true,
-    validate: v => !isBoolean(v) ? '[avatar] visible not a boolean' : null,
-    onSet(value) {
-      this.instance?.setVisible(value)
-    },
-  },
-  onLoad: {
-    default: null,
-  },
-}
+const propertySchema = schema('src', 'emote', 'visible', 'onLoad')
+  .overrideAll({
+    src: { default: null, onSet: function() { this.needsRebuild = true; this.setDirty() } },
+    emote: { default: null, onSet: function() { this.instance?.setEmote(this._emote) } },
+    visible: { default: true, onSet: function() { this.instance?.setVisible(this._visible) } },
+    onLoad: { default: null },
+  })
+  .build()
 
 export class Avatar extends Node {
   constructor(data = {}) {

@@ -26,13 +26,115 @@ export class ServerLoader extends System {
     this.rgbeLoader = new RGBELoader()
     this.gltfLoader = new GLTFLoader()
     this.preloadItems = []
-    // this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
+    this.setupTypeRegistry()
 
     // mock globals to allow gltf loader to work in nodejs
     globalThis.self = { URL }
     globalThis.window = {}
     globalThis.document = {
       createElementNS: () => ({ style: {} }),
+    }
+  }
+
+  setupTypeRegistry() {
+    this.typeHandlers = {
+      'model': (url) => new Promise(async (resolve, reject) => {
+        try {
+          const arrayBuffer = await this.fetchArrayBuffer(url)
+          this.gltfLoader.parse(arrayBuffer, '',
+            glb => {
+              const node = glbToNodes(glb, this.world)
+              resolve({
+                toNodes() {
+                  return node.clone(true)
+                },
+              })
+            },
+            err => {
+              if (this.world.errorMonitor) {
+                this.world.errorMonitor.captureError('gltfloader.error', {
+                  message: err.message || String(err),
+                  url: url,
+                  type: 'model'
+                }, err.stack)
+              }
+              reject(err)
+            }
+          )
+        } catch (err) {
+          if (this.world.errorMonitor) {
+            this.world.errorMonitor.captureError('model.load.error', {
+              message: err.message || String(err),
+              url: url,
+              type: 'model'
+            }, err.stack)
+          }
+          reject(err)
+        }
+      }),
+      'emote': (url) => new Promise(async (resolve, reject) => {
+        try {
+          const arrayBuffer = await this.fetchArrayBuffer(url)
+          this.gltfLoader.parse(arrayBuffer, '',
+            glb => {
+              const factory = createEmoteFactory(glb, url)
+              resolve({
+                toClip(options) {
+                  return factory.toClip(options)
+                },
+              })
+            },
+            err => {
+              if (this.world.errorMonitor) {
+                this.world.errorMonitor.captureError('gltfloader.error', {
+                  message: err.message || String(err),
+                  url: url,
+                  type: 'emote'
+                }, err.stack)
+              }
+              reject(err)
+            }
+          )
+        } catch (err) {
+          if (this.world.errorMonitor) {
+            this.world.errorMonitor.captureError('emote.load.error', {
+              message: err.message || String(err),
+              url: url,
+              type: 'emote'
+            }, err.stack)
+          }
+          reject(err)
+        }
+      }),
+      'avatar': (url) => new Promise(async (resolve, reject) => {
+        try {
+          let node
+          resolve({
+            toNodes: () => {
+              if (!node) {
+                node = createNode('group')
+                const node2 = createNode('avatar', { id: 'avatar', factory: null })
+                node.add(node2)
+              }
+              return node.clone(true)
+            },
+          })
+        } catch (err) {
+          reject(err)
+        }
+      }),
+      'script': (url) => new Promise(async (resolve, reject) => {
+        try {
+          const code = await this.fetchText(url)
+          const script = this.world.scripts.evaluate(code)
+          resolve(script)
+        } catch (err) {
+          reject(err)
+        }
+      }),
+      'audio': (url) => new Promise(async (resolve, reject) => {
+        reject(null)
+      }),
     }
   }
 
@@ -92,146 +194,15 @@ export class ServerLoader extends System {
       return this.promises.get(key)
     }
     url = this.world.resolveURL(url, true)
-
-    let promise
-    if (type === 'hdr') {
-      // promise = this.rgbeLoader.loadAsync(url).then(texture => {
-      //   return texture
-      // })
+    const handler = this.typeHandlers[type]
+    if (!handler) {
+      console.warn(`No handler for asset type: ${type}`)
+      return Promise.resolve(null)
     }
-    if (type === 'image') {
-      // ...
-    }
-    if (type === 'texture') {
-      // ...
-    }
-    if (type === 'model') {
-      promise = new Promise(async (resolve, reject) => {
-        try {
-          const arrayBuffer = await this.fetchArrayBuffer(url)
-          this.gltfLoader.parse(arrayBuffer, '', 
-            // onLoad callback
-            glb => {
-              const node = glbToNodes(glb, this.world)
-              const model = {
-                toNodes() {
-                  return node.clone(true)
-                },
-              }
-              this.results.set(key, model)
-              resolve(model)
-            },
-            // onError callback - Capture GLTF parsing errors
-            err => {
-              // Send error to ErrorMonitor for MCP transmission
-              if (this.world.errorMonitor) {
-                this.world.errorMonitor.captureError('gltfloader.error', {
-                  message: err.message || String(err),
-                  url: url,
-                  type: 'model'
-                }, err.stack)
-              }
-              
-              reject(err)
-            }
-          )
-        } catch (err) {
-          // Send error to ErrorMonitor for MCP transmission
-          if (this.world.errorMonitor) {
-            this.world.errorMonitor.captureError('model.load.error', {
-              message: err.message || String(err),
-              url: url,
-              type: 'model'
-            }, err.stack)
-          }
-          
-          reject(err)
-        }
-      })
-    }
-    if (type === 'emote') {
-      promise = new Promise(async (resolve, reject) => {
-        try {
-          const arrayBuffer = await this.fetchArrayBuffer(url)
-          this.gltfLoader.parse(arrayBuffer, '', 
-            // onLoad callback
-            glb => {
-              const factory = createEmoteFactory(glb, url)
-              const emote = {
-                toClip(options) {
-                  return factory.toClip(options)
-                },
-              }
-              this.results.set(key, emote)
-              resolve(emote)
-            },
-            // onError callback - Capture GLTF parsing errors
-            err => {
-              // Send error to ErrorMonitor for MCP transmission
-              if (this.world.errorMonitor) {
-                this.world.errorMonitor.captureError('gltfloader.error', {
-                  message: err.message || String(err),
-                  url: url,
-                  type: 'emote'
-                }, err.stack)
-              }
-              
-              reject(err)
-            }
-          )
-        } catch (err) {
-          // Send error to ErrorMonitor for MCP transmission
-          if (this.world.errorMonitor) {
-            this.world.errorMonitor.captureError('emote.load.error', {
-              message: err.message || String(err),
-              url: url,
-              type: 'emote'
-            }, err.stack)
-          }
-          
-          reject(err)
-        }
-      })
-    }
-    if (type === 'avatar') {
-      promise = new Promise(async (resolve, reject) => {
-        try {
-          // NOTE: we can't load vrms on the server yet but we don't need 'em anyway
-          let node
-          const glb = {
-            toNodes: () => {
-              if (!node) {
-                node = createNode('group')
-                const node2 = createNode('avatar', { id: 'avatar', factory: null })
-                node.add(node2)
-              }
-              return node.clone(true)
-            },
-          }
-          this.results.set(key, glb)
-          resolve(glb)
-        } catch (err) {
-          reject(err)
-        }
-      })
-    }
-    if (type === 'script') {
-      promise = new Promise(async (resolve, reject) => {
-        try {
-          const code = await this.fetchText(url)
-          const script = this.world.scripts.evaluate(code)
-          this.results.set(key, script)
-          resolve(script)
-        } catch (err) {
-          reject(err)
-        }
-      })
-    }
-    if (type === 'audio') {
-      promise = new Promise(async (resolve, reject) => {
-        reject(null)
-      })
-    }
+    const promise = handler(url).then(result => {
+      this.results.set(key, result)
+      return result
+    })
     this.promises.set(key, promise)
     return promise
   }

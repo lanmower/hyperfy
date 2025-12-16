@@ -1,87 +1,27 @@
-import { collisionLayers as layers, geometryTypes as types } from '../utils/NodeConstants.js'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, validators, onSetRebuild, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
 import { v, q } from '../utils/TempVectors.js'
 
-const defaults = {
-  type: 'box',
-  width: 1,
-  height: 1,
-  depth: 1,
-  radius: 0.5,
-  geometry: null,
-  convex: false,
-  trigger: false,
-  layer: 'environment',
-  staticFriction: 0.6,
-  dynamicFriction: 0.6,
-  restitution: 0,
-}
-
 const rebuildIfShape = onSetRebuildIf(function() { return !!this.shape })
 
-const propertySchema = {
-  type: {
-    default: defaults.type,
-    validate: validators.enum(types),
-    onSet: onSetRebuild(),
-  },
-  width: {
-    default: defaults.width,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }),
-  },
-  height: {
-    default: defaults.height,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }),
-  },
-  depth: {
-    default: defaults.depth,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }),
-  },
-  radius: {
-    default: defaults.radius,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this.shape && this._type === 'sphere' }),
-  },
-  convex: {
-    default: defaults.convex,
-    validate: validators.boolean,
-    onSet: rebuildIfShape,
-  },
-  trigger: {
-    default: defaults.trigger,
-    validate: validators.boolean,
-    onSet: rebuildIfShape,
-  },
-  layer: {
-    default: defaults.layer,
-    validate: validators.enum(layers),
-    onSet: rebuildIfShape,
-  },
-  staticFriction: {
-    default: defaults.staticFriction,
-    validate: validators.number,
-    onSet: rebuildIfShape,
-  },
-  dynamicFriction: {
-    default: defaults.dynamicFriction,
-    validate: validators.number,
-    onSet: rebuildIfShape,
-  },
-  restitution: {
-    default: defaults.restitution,
-    validate: validators.number,
-    onSet: rebuildIfShape,
-  },
-}
+const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'convex', 'trigger', 'friction', 'restitution')
+  .add('layer', { default: 'environment' })
+  .add('staticFriction', { default: 0.6, onSet: rebuildIfShape })
+  .add('dynamicFriction', { default: 0.6, onSet: rebuildIfShape })
+  .override('type', { onSet() { this.needsRebuild = true } })
+  .override('width', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }) })
+  .override('height', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }) })
+  .override('depth', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }) })
+  .override('radius', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'sphere' }) })
+  .override('convex', { onSet: rebuildIfShape })
+  .override('trigger', { onSet: rebuildIfShape })
+  .build()
 
 export class Collider extends Node {
   constructor(data = {}) {

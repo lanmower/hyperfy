@@ -7,6 +7,17 @@ export class CommandHandler {
   constructor(world, db) {
     this.world = world
     this.db = db
+    this.setupCommandRegistry()
+  }
+
+  setupCommandRegistry() {
+    this.commands = {
+      'admin': this.admin.bind(this),
+      'name': this.name.bind(this),
+      'spawn': (socket, player, arg1) => this.world.network.onSpawnModified(socket, arg1),
+      'chat': this.chat.bind(this),
+      'server': this.server.bind(this),
+    }
   }
 
   async execute(socket, args) {
@@ -14,16 +25,9 @@ export class CommandHandler {
     const playerId = player.data.id
     const [cmd, arg1, arg2] = args
 
-    if (cmd === 'admin') {
-      await this.admin(socket, player, arg1)
-    } else if (cmd === 'name') {
-      await this.name(socket, player, arg1)
-    } else if (cmd === 'spawn') {
-      this.world.network.onSpawnModified(socket, arg1)
-    } else if (cmd === 'chat') {
-      this.chat(socket, player, arg1)
-    } else if (cmd === 'server') {
-      await this.server(socket, arg1)
+    const handler = this.commands[cmd]
+    if (handler) {
+      await handler(socket, player, arg1)
     }
 
     if (cmd !== 'admin') {

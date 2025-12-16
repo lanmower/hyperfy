@@ -106,6 +106,35 @@ export class ClientGraphics extends System {
     this.xrWidth = null
     this.xrHeight = null
     this.xrDimensionsNeeded = false
+    this.setupPrefRegistry()
+    this.setupSettingRegistry()
+  }
+
+  setupPrefRegistry() {
+    this.prefHandlers = {
+      'dpr': (value) => {
+        this.renderer.setPixelRatio(value)
+        this.resize(this.width, this.height)
+      },
+      'postprocessing': (value) => {
+        this.usePostprocessing = value
+      },
+      'bloom': (value) => {
+        this.bloomEnabled = value
+        this.updatePostProcessingEffects()
+      },
+      'ao': (value) => {
+        this.aoPass.enabled = value && this.world.settings.get('ao')
+      },
+    }
+  }
+
+  setupSettingRegistry() {
+    this.settingHandlers = {
+      'ao': (value) => {
+        this.aoPass.enabled = value && this.world.prefs.state.get('ao')
+      },
+    }
   }
 
   start() {
@@ -150,17 +179,8 @@ export class ClientGraphics extends System {
   }
 
   onPrefChanged = ({ key, value }) => {
-    if (key === 'dpr') {
-      this.renderer.setPixelRatio(value)
-      this.resize(this.width, this.height)
-    } else if (key === 'postprocessing') {
-      this.usePostprocessing = value
-    } else if (key === 'bloom') {
-      this.bloomEnabled = value
-      this.updatePostProcessingEffects()
-    } else if (key === 'ao') {
-      this.aoPass.enabled = value && this.world.settings.get('ao')
-    }
+    const handler = this.prefHandlers[key]
+    if (handler) handler(value)
   }
 
   onXRSession = session => {
@@ -207,9 +227,8 @@ export class ClientGraphics extends System {
   }
 
   onSettingChanged = ({ key, value }) => {
-    if (key === 'ao') {
-      this.aoPass.enabled = value && this.world.prefs.state.get('ao')
-    }
+    const handler = this.settingHandlers[key]
+    if (handler) handler(value)
   }
 
   updatePostProcessingEffects() {

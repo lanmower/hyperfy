@@ -40,6 +40,21 @@ export class ClientAudio extends System {
     if (!this.unlocked) {
       this.setupUnlockListener()
     }
+    this.setupPrefRegistry()
+  }
+
+  setupPrefRegistry() {
+    this.prefHandlers = {
+      'music': (value) => {
+        this.groupGains.music.gain.value = value
+      },
+      'sfx': (value) => {
+        this.groupGains.sfx.gain.value = value
+      },
+      'voice': (value) => {
+        this.groupGains.voice.gain.value = value
+      },
+    }
   }
 
   ready(fn) {
@@ -121,13 +136,8 @@ export class ClientAudio extends System {
   }
 
   onPrefChanged = ({ key, value }) => {
-    if (key === 'music') {
-      this.groupGains.music.gain.value = value
-    } else if (key === 'sfx') {
-      this.groupGains.sfx.gain.value = value
-    } else if (key === 'voice') {
-      this.groupGains.voice.gain.value = value
-    }
+    const handler = this.prefHandlers[key]
+    if (handler) handler(value)
   }
 
   destroy() {

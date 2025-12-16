@@ -7,6 +7,7 @@ import { DEG2RAD } from '../extras/general.js'
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 const defaults = {
   radius: 0.4,
@@ -18,40 +19,18 @@ const defaults = {
   onContactEnd: null,
 }
 
-const propertySchema = {
-  radius: {
-    default: defaults.radius,
-    validate: validators.number,
-    onSet() { this.needsRebuild = true; this.setDirty() },
-  },
-  height: {
-    default: defaults.height,
-    validate: validators.number,
-    onSet() { this.needsRebuild = true; this.setDirty() },
-  },
-  visible: {
-    default: defaults.visible,
-    validate: validators.boolean,
-    onSet() { this.needsRebuild = true; this.setDirty() },
-  },
-  layer: {
-    default: defaults.layer,
-    validate: validators.enum(layers),
-    onSet() { this.needsRebuild = true; this.setDirty() },
-  },
-  tag: {
-    default: defaults.tag,
-    validate: validators.stringOrNull,
-  },
-  onContactStart: {
-    default: defaults.onContactStart,
-    validate: validators.func,
-  },
-  onContactEnd: {
-    default: defaults.onContactEnd,
-    validate: validators.func,
-  },
-}
+const rebuild = function() { this.needsRebuild = true; this.setDirty() }
+const propertySchema = schema('radius', 'height', 'visible', 'layer', 'tag', 'onContactStart', 'onContactEnd')
+  .overrideAll({
+    radius: { default: defaults.radius, onSet: rebuild },
+    height: { default: defaults.height, onSet: rebuild },
+    visible: { default: defaults.visible, onSet: rebuild },
+    layer: { default: defaults.layer, onSet: rebuild },
+    tag: { default: defaults.tag },
+    onContactStart: { default: defaults.onContactStart },
+    onContactEnd: { default: defaults.onContactEnd },
+  })
+  .build()
 
 export class Controller extends Node {
   constructor(data = {}) {

@@ -1,43 +1,29 @@
 import * as THREE from '../extras/three.js'
-import { isBoolean, isNumber } from 'lodash-es'
 
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
-import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 import { q } from '../utils/TempVectors.js'
-import { jointTypes as types } from '../utils/NodeConstants.js'
-
-const defaults = {
-  type: 'fixed',
-  body0: null,
-  body1: null,
-  breakForce: Infinity,
-  breakTorque: Infinity,
-  limitY: null,
-  limitZ: null,
-  limitMin: null,
-  limitMax: null,
-  limitStiffness: null,
-  limitDamping: null,
-  collide: false,
-}
 
 const rebuild = function() { this.needsRebuild = true; this.setDirty() }
 
-const propertySchema = {
-  type: { default: defaults.type, validate: validators.enum(types), onSet: rebuild },
-  breakForce: { default: defaults.breakForce, validate: validators.number, onSet: rebuild },
-  breakTorque: { default: defaults.breakTorque, validate: validators.number, onSet: rebuild },
-  limitY: { default: defaults.limitY, validate: validators.numberOrNull, onSet: rebuild },
-  limitZ: { default: defaults.limitZ, validate: validators.numberOrNull, onSet: rebuild },
-  limitMin: { default: defaults.limitMin, validate: validators.numberOrNull, onSet: rebuild },
-  limitMax: { default: defaults.limitMax, validate: validators.numberOrNull, onSet: rebuild },
-  limitStiffness: { default: defaults.limitStiffness, validate: validators.numberOrNull, onSet: rebuild },
-  limitDamping: { default: defaults.limitDamping, validate: validators.numberOrNull, onSet: rebuild },
-  collide: { default: defaults.collide, validate: validators.boolean, onSet: rebuild },
-}
+const propertySchema = schema('limits', 'stiffness', 'damping', 'collide', 'breakForce', 'breakTorque')
+  .add('type', { default: 'fixed', onSet: rebuild })
+  .add('limitY', { default: null, onSet: rebuild })
+  .add('limitZ', { default: null, onSet: rebuild })
+  .add('limitMin', { default: null, onSet: rebuild })
+  .add('limitMax', { default: null, onSet: rebuild })
+  .add('limitStiffness', { default: null, onSet: rebuild })
+  .add('limitDamping', { default: null, onSet: rebuild })
+  .overrideAll({
+    breakForce: { default: Infinity, onSet: rebuild },
+    breakTorque: { default: Infinity, onSet: rebuild },
+    collide: { default: false, onSet: rebuild },
+  })
+  .build()
 
 export class Joint extends Node {
   constructor(data = {}) {

@@ -47,204 +47,34 @@ const defaults = {
   flexShrink: 1,
 }
 
-const propertySchema = {
-  display: {
-    default: defaults.display,
-    validate: v => !isDisplay(v) ? `[uiview] display invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setDisplay(Display[this._display])
-      this.ui?.redraw()
-    },
-  },
-  width: {
-    default: defaults.width,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setWidth(this._width === null ? undefined : this._width * this.ui._res)
-      this.ui?.redraw()
-    },
-  },
-  height: {
-    default: defaults.height,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setHeight(this._height === null ? undefined : this._height * this.ui._res)
-      this.ui?.redraw()
-    },
-  },
-  absolute: {
-    default: defaults.absolute,
-    validate: validators.boolean,
-    onSet() {
-      this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE)
-      this.ui?.redraw()
-    },
-  },
-  top: {
-    default: defaults.top,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  right: {
-    default: defaults.right,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  bottom: {
-    default: defaults.bottom,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  left: {
-    default: defaults.left,
-    validate: validators.numberOrNull,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  backgroundColor: {
-    default: defaults.backgroundColor,
-    validate: validators.stringOrNull,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  borderWidth: {
-    default: defaults.borderWidth,
-    validate: validators.number,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  borderColor: {
-    default: defaults.borderColor,
-    validate: validators.stringOrNull,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  borderRadius: {
-    default: defaults.borderRadius,
-    validate: validators.number,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  margin: {
-    default: defaults.margin,
-    validate: v => !isEdge(v) ? '[uiview] margin not a number or array of numbers' : null,
-    onSet() {
-      if (isArray(this._margin)) {
-        const [top, right, bottom, left] = this._margin
-        this.yogaNode?.setMargin(Yoga.EDGE_TOP, top * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_RIGHT, right * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_LEFT, left * this.ui._res)
-      } else {
-        this.yogaNode?.setMargin(Yoga.EDGE_ALL, this._margin * this.ui._res)
-      }
-      this.ui?.redraw()
-    },
-  },
-  padding: {
-    default: defaults.padding,
-    validate: v => !isEdge(v) ? '[uiview] padding not a number or array of numbers' : null,
-    onSet() {
-      if (isArray(this._padding)) {
-        const [top, right, bottom, left] = this._padding
-        this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this.ui._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this.ui._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this.ui._res)
-      } else {
-        this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this.ui._res)
-      }
-      this.ui?.redraw()
-    },
-  },
-  flexDirection: {
-    default: defaults.flexDirection,
-    validate: v => !isFlexDirection(v) ? `[uiview] flexDirection invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection])
-      this.ui?.redraw()
-    },
-  },
-  justifyContent: {
-    default: defaults.justifyContent,
-    validate: v => !isJustifyContent(v) ? `[uiview] justifyContent invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent])
-      this.ui?.redraw()
-    },
-  },
-  alignItems: {
-    default: defaults.alignItems,
-    validate: v => !isAlignItem(v) ? `[uiview] alignItems invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setAlignItems(AlignItems[this._alignItems])
-      this.ui?.redraw()
-    },
-  },
-  alignContent: {
-    default: defaults.alignContent,
-    validate: v => !isAlignContent(v) ? `[uiview] alignContent invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setAlignContent(AlignContent[this._alignContent])
-      this.ui?.redraw()
-    },
-  },
-  flexWrap: {
-    default: defaults.flexWrap,
-    validate: v => !isFlexWrap(v) ? `[uiview] flexWrap invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap])
-      this.ui?.redraw()
-    },
-  },
-  gap: {
-    default: defaults.gap,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this.ui._res)
-      this.ui?.redraw()
-    },
-  },
-  flexBasis: {
-    default: defaults.flexBasis,
-    validate: v => !isNumber(v) && !isString(v) ? '[uiview] flexBasis invalid' : null,
-    onSet() {
-      this.yogaNode?.setFlexBasis(this._flexBasis)
-      this.ui?.redraw()
-    },
-  },
-  flexGrow: {
-    default: defaults.flexGrow,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.setFlexGrow(this._flexGrow)
-      this.ui?.redraw()
-    },
-  },
-  flexShrink: {
-    default: defaults.flexShrink,
-    validate: validators.number,
-    onSet() {
-      this.yogaNode?.setFlexShrink(this._flexShrink)
-      this.ui?.redraw()
-    },
-  },
-}
+const redraw = function() { this.ui?.redraw() }
+const propertySchema = schema('display', 'width', 'height', 'absolute', 'top', 'right', 'bottom', 'left', 'backgroundColor', 'borderWidth', 'borderColor', 'borderRadius', 'margin', 'padding', 'flexDirection', 'justifyContent', 'alignItems', 'alignContent', 'flexWrap', 'gap', 'flexBasis', 'flexGrow', 'flexShrink')
+  .overrideAll({
+    display: { default: defaults.display, onSet: function() { this.yogaNode?.setDisplay(Display[this._display]); this.ui?.redraw() } },
+    width: { default: defaults.width, onSet: function() { this.yogaNode?.setWidth(this._width === null ? undefined : this._width * this.ui._res); this.ui?.redraw() } },
+    height: { default: defaults.height, onSet: function() { this.yogaNode?.setHeight(this._height === null ? undefined : this._height * this.ui._res); this.ui?.redraw() } },
+    absolute: { default: defaults.absolute, onSet: function() { this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE); this.ui?.redraw() } },
+    top: { default: defaults.top, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined); this.ui?.redraw() } },
+    right: { default: defaults.right, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined); this.ui?.redraw() } },
+    bottom: { default: defaults.bottom, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined); this.ui?.redraw() } },
+    left: { default: defaults.left, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined); this.ui?.redraw() } },
+    backgroundColor: { default: defaults.backgroundColor, onSet: redraw },
+    borderWidth: { default: defaults.borderWidth, onSet: redraw },
+    borderColor: { default: defaults.borderColor, onSet: redraw },
+    borderRadius: { default: defaults.borderRadius, onSet: redraw },
+    margin: { default: defaults.margin, onSet: function() { if (isArray(this._margin)) { const [t,r,b,l]=this._margin; this.yogaNode?.setMargin(Yoga.EDGE_TOP,t*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_RIGHT,r*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM,b*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_LEFT,l*this.ui._res) } else { this.yogaNode?.setMargin(Yoga.EDGE_ALL,this._margin*this.ui._res) } this.ui?.redraw() } },
+    padding: { default: defaults.padding, onSet: function() { if (isArray(this._padding)) { const [t,r,b,l]=this._padding; this.yogaNode?.setPadding(Yoga.EDGE_TOP,t*this.ui._res); this.yogaNode?.setPadding(Yoga.EDGE_RIGHT,r*this.ui._res); this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM,b*this.ui._res); this.yogaNode?.setPadding(Yoga.EDGE_LEFT,l*this.ui._res) } else { this.yogaNode?.setPadding(Yoga.EDGE_ALL,this._padding*this.ui._res) } this.ui?.redraw() } },
+    flexDirection: { default: defaults.flexDirection, onSet: function() { this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection]); this.ui?.redraw() } },
+    justifyContent: { default: defaults.justifyContent, onSet: function() { this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent]); this.ui?.redraw() } },
+    alignItems: { default: defaults.alignItems, onSet: function() { this.yogaNode?.setAlignItems(AlignItems[this._alignItems]); this.ui?.redraw() } },
+    alignContent: { default: defaults.alignContent, onSet: function() { this.yogaNode?.setAlignContent(AlignContent[this._alignContent]); this.ui?.redraw() } },
+    flexWrap: { default: defaults.flexWrap, onSet: function() { this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap]); this.ui?.redraw() } },
+    gap: { default: defaults.gap, onSet: function() { this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this.ui._res); this.ui?.redraw() } },
+    flexBasis: { default: defaults.flexBasis, onSet: function() { this.yogaNode?.setFlexBasis(this._flexBasis); this.ui?.redraw() } },
+    flexGrow: { default: defaults.flexGrow, onSet: function() { this.yogaNode?.setFlexGrow(this._flexGrow); this.ui?.redraw() } },
+    flexShrink: { default: defaults.flexShrink, onSet: function() { this.yogaNode?.setFlexShrink(this._flexShrink); this.ui?.redraw() } },
+  })
+  .build()
 
 export class UIView extends Node {
   constructor(data = {}) {

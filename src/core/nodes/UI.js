@@ -20,6 +20,7 @@ import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
 import { clamp } from '../utils.js'
 import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 import { v, q, m, e } from '../utils/TempVectors.js'
 import { pivots } from '../utils/NodeConstants.js'
 
@@ -62,186 +63,35 @@ const defaults = {
   gap: 0,
 }
 
-const propertySchema = {
-  space: {
-    default: defaults.space,
-    validate: v => !isSpace(v) ? '[ui] space not valid' : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  width: {
-    default: defaults.width,
-    validate: v => !isNumber(v) ? '[ui] width not a number' : null,
-    onSet() {
-      this.yogaNode?.setWidth(this._width * this._res)
-      this.rebuild()
-    },
-  },
-  height: {
-    default: defaults.height,
-    validate: v => !isNumber(v) ? '[ui] height not a number' : null,
-    onSet() {
-      this.yogaNode?.setHeight(this._height * this._res)
-      this.rebuild()
-    },
-  },
-  size: {
-    default: defaults.size,
-    validate: v => !isNumber(v) ? '[ui] size not a number' : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  res: {
-    default: defaults.res,
-    validate: v => !isNumber(v) ? '[ui] res not a number' : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  lit: {
-    default: defaults.lit,
-    validate: v => !isBoolean(v) ? '[ui] lit not a boolean' : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  doubleside: {
-    default: defaults.doubleside,
-    validate: v => !isBoolean(v) ? '[ui] doubleside not a boolean' : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  billboard: {
-    default: defaults.billboard,
-    validate: v => !isBillboard(v) ? `[ui] billboard invalid: ${v}` : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  pivot: {
-    default: defaults.pivot,
-    validate: v => !isPivot(v) ? `[ui] pivot invalid: ${v}` : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  scaler: {
-    default: defaults.scaler,
-    validate: v => v !== null && !isScaler(v) ? '[ui] scaler invalid' : null,
-    onSet() {
-      this.rebuild()
-    },
-  },
-  pointerEvents: {
-    default: defaults.pointerEvents,
-    validate: v => !isBoolean(v) ? '[ui] pointerEvents not a boolean' : null,
-    onSet() {
-      this.redraw()
-    },
-  },
-  transparent: {
-    default: defaults.transparent,
-    validate: v => !isBoolean(v) ? '[ui] transparent not a boolean' : null,
-    onSet() {
-      this.redraw()
-    },
-  },
-  backgroundColor: {
-    default: defaults.backgroundColor,
-    validate: v => v !== null && !isString(v) ? '[ui] backgroundColor not a string' : null,
-    onSet() {
-      this.redraw()
-    },
-  },
-  borderWidth: {
-    default: defaults.borderWidth,
-    validate: v => !isNumber(v) ? '[ui] borderWidth not a number' : null,
-    onSet() {
-      this.redraw()
-    },
-  },
-  borderColor: {
-    default: defaults.borderColor,
-    validate: v => v !== null && !isString(v) ? '[ui] borderColor not a string' : null,
-    onSet() {
-      this.redraw()
-    },
-  },
-  borderRadius: {
-    default: defaults.borderRadius,
-    validate: v => !isNumber(v) ? '[ui] borderRadius not a number' : null,
-    onSet() {
-      this.redraw()
-    },
-  },
-  padding: {
-    default: defaults.padding,
-    validate: v => !isEdge(v) ? '[ui] padding not a number or array of numbers' : null,
-    onSet() {
-      if (isArray(this._padding)) {
-        const [top, right, bottom, left] = this._padding
-        this.yogaNode?.setPadding(Yoga.EDGE_TOP, top * this._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_RIGHT, right * this._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM, bottom * this._res)
-        this.yogaNode?.setPadding(Yoga.EDGE_LEFT, left * this._res)
-      } else {
-        this.yogaNode?.setPadding(Yoga.EDGE_ALL, this._padding * this._res)
-      }
-      this.redraw()
-    },
-  },
-  flexDirection: {
-    default: defaults.flexDirection,
-    validate: v => !isFlexDirection(v) ? `[ui] flexDirection invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection])
-      this.redraw()
-    },
-  },
-  justifyContent: {
-    default: defaults.justifyContent,
-    validate: v => !isJustifyContent(v) ? `[ui] justifyContent invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent])
-      this.redraw()
-    },
-  },
-  alignItems: {
-    default: defaults.alignItems,
-    validate: v => !isAlignItem(v) ? `[ui] alignItems invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setAlignItems(AlignItems[this._alignItems])
-      this.redraw()
-    },
-  },
-  alignContent: {
-    default: defaults.alignContent,
-    validate: v => !isAlignContent(v) ? `[ui] alignContent invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setAlignContent(AlignContent[this._alignContent])
-      this.redraw()
-    },
-  },
-  flexWrap: {
-    default: defaults.flexWrap,
-    validate: v => !isFlexWrap(v) ? `[uiview] flexWrap invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap])
-      this.redraw()
-    },
-  },
-  gap: {
-    default: defaults.gap,
-    validate: v => !isNumber(v) ? '[uiview] gap not a number' : null,
-    onSet() {
-      this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this._res)
-      this.redraw()
-    },
-  },
-}
+const rebuild = function() { this.rebuild() }
+const redraw = function() { this.redraw() }
+const propertySchema = schema('space', 'width', 'height', 'size', 'res', 'lit', 'doubleside', 'billboard', 'pivot', 'scaler', 'pointerEvents', 'transparent', 'backgroundColor', 'borderWidth', 'borderColor', 'borderRadius', 'padding', 'flexDirection', 'justifyContent', 'alignItems', 'alignContent', 'flexWrap', 'gap')
+  .overrideAll({
+    space: { default: defaults.space, onSet: rebuild },
+    width: { default: defaults.width, onSet: function() { this.yogaNode?.setWidth(this._width * this._res); this.rebuild() } },
+    height: { default: defaults.height, onSet: function() { this.yogaNode?.setHeight(this._height * this._res); this.rebuild() } },
+    size: { default: defaults.size, onSet: rebuild },
+    res: { default: defaults.res, onSet: rebuild },
+    lit: { default: defaults.lit, onSet: rebuild },
+    doubleside: { default: defaults.doubleside, onSet: rebuild },
+    billboard: { default: defaults.billboard, onSet: rebuild },
+    pivot: { default: defaults.pivot, onSet: rebuild },
+    scaler: { default: defaults.scaler, onSet: rebuild },
+    pointerEvents: { default: defaults.pointerEvents, onSet: redraw },
+    transparent: { default: defaults.transparent, onSet: redraw },
+    backgroundColor: { default: defaults.backgroundColor, onSet: redraw },
+    borderWidth: { default: defaults.borderWidth, onSet: redraw },
+    borderColor: { default: defaults.borderColor, onSet: redraw },
+    borderRadius: { default: defaults.borderRadius, onSet: redraw },
+    padding: { default: defaults.padding, onSet: function() { if (isArray(this._padding)) { const [t,r,b,l]=this._padding; this.yogaNode?.setPadding(Yoga.EDGE_TOP,t*this._res); this.yogaNode?.setPadding(Yoga.EDGE_RIGHT,r*this._res); this.yogaNode?.setPadding(Yoga.EDGE_BOTTOM,b*this._res); this.yogaNode?.setPadding(Yoga.EDGE_LEFT,l*this._res) } else { this.yogaNode?.setPadding(Yoga.EDGE_ALL,this._padding*this._res) } this.redraw() } },
+    flexDirection: { default: defaults.flexDirection, onSet: function() { this.yogaNode?.setFlexDirection(FlexDirection[this._flexDirection]); this.redraw() } },
+    justifyContent: { default: defaults.justifyContent, onSet: function() { this.yogaNode?.setJustifyContent(JustifyContent[this._justifyContent]); this.redraw() } },
+    alignItems: { default: defaults.alignItems, onSet: function() { this.yogaNode?.setAlignItems(AlignItems[this._alignItems]); this.redraw() } },
+    alignContent: { default: defaults.alignContent, onSet: function() { this.yogaNode?.setAlignContent(AlignContent[this._alignContent]); this.redraw() } },
+    flexWrap: { default: defaults.flexWrap, onSet: function() { this.yogaNode?.setFlexWrap(FlexWrap[this._flexWrap]); this.redraw() } },
+    gap: { default: defaults.gap, onSet: function() { this.yogaNode?.setGap(Yoga.GUTTER_ALL, this._gap * this._res); this.redraw() } },
+  })
+  .build()
 
 export class UI extends Node {
   constructor(data = {}) {

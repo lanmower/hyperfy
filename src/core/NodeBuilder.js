@@ -1,82 +1,104 @@
-// Node builder - unified node creation and property management
+// Builder pattern for node creation with fluent API and automatic property validation
 
-import { Props, propSchema } from './Props.js'
+import { Props } from './Props.js'
 
 export class NodeBuilder {
-  static create(NodeClass, properties = {}) {
-    const node = new NodeClass()
+  constructor(NodeClass, type = null) {
+    this.NodeClass = NodeClass
+    this.type = type
+    this.data = {}
+    this.schema = null
+  }
 
-    if (properties && typeof properties === 'object') {
-      this.setProperties(node, properties)
+  // Set property value
+  set(key, value) {
+    this.data[key] = value
+    return this
+  }
+
+  // Set multiple properties
+  setAll(props) {
+    Object.assign(this.data, props)
+    return this
+  }
+
+  // Set position
+  position(x, y = 0, z = 0) {
+    this.data.position = Array.isArray(x) ? x : [x, y, z]
+    return this
+  }
+
+  // Set rotation
+  rotation(x, y = 0, z = 0) {
+    this.data.rotation = Array.isArray(x) ? x : [x, y, z]
+    return this
+  }
+
+  // Set scale
+  scale(x, y = 1, z = 1) {
+    this.data.scale = Array.isArray(x) ? x : [x, y, z]
+    return this
+  }
+
+  // Set visibility
+  visible(v = true) {
+    this.data.visible = v
+    return this
+  }
+
+  // Set color
+  color(c) {
+    this.data.color = c
+    return this
+  }
+
+  // Set with schema validation
+  withSchema(schema) {
+    this.schema = schema
+    return this
+  }
+
+  // Build the node
+  build() {
+    let props = this.data
+    if (this.schema) {
+      props = Props.validate(props, this.schema)
     }
+    return new this.NodeClass(props)
+  }
 
+  // Build and add to parent
+  buildIn(parent, id = null) {
+    const node = this.build()
+    if (id) {
+      parent.add(node, id)
+    } else {
+      parent.add(node)
+    }
     return node
   }
 
-  static setProperties(node, properties) {
-    for (const [key, value] of Object.entries(properties)) {
-      if (Props[key]) {
-        node[key] = value
-      }
-    }
+  // Get current data
+  getData() {
+    return Object.assign({}, this.data)
   }
 
-  static getSchema(NodeClass, keys = null) {
-    if (keys && Array.isArray(keys)) {
-      return propSchema(keys)
-    }
-
-    return nodeSchemas[NodeClass.name] || {}
+  // Clone builder
+  clone() {
+    const builder = new NodeBuilder(this.NodeClass, this.type)
+    builder.data = Object.assign({}, this.data)
+    builder.schema = this.schema
+    return builder
   }
 
-  static validate(properties, schema) {
-    const errors = {}
-
-    for (const [key, spec] of Object.entries(schema)) {
-      const value = properties[key]
-
-      if (spec.validate && value !== undefined) {
-        const error = spec.validate(value)
-        if (error) errors[key] = error
-      }
-    }
-
-    return errors
-  }
-
-  static merge(baseProps, overrides) {
-    return { ...baseProps, ...overrides }
-  }
-
-  static clone(node, modifications = {}) {
-    const props = {}
-
-    for (const key of Object.keys(Props)) {
-      if (key in node) {
-        props[key] = node[key]
-      }
-    }
-
-    return this.create(node.constructor, this.merge(props, modifications))
+  toString() {
+    const className = this.NodeClass.name
+    const propCount = Object.keys(this.data).length
+    return "NodeBuilder(" + (this.type || className) + ", " + propCount + " props)"
   }
 }
 
-const nodeSchemas = {
-  Mesh: propSchema(['type', 'width', 'height', 'depth', 'radius', 'color', 'metalness', 'roughness', 'emissive', 'castShadow', 'receiveShadow']),
-  Image: propSchema(['src', 'fit', 'pivot', 'lit', 'doubleside']),
-  Video: propSchema(['src', 'screenId', 'aspect', 'volume', 'loop', 'group', 'spatial']),
-  Audio: propSchema(['src', 'volume', 'loop', 'group', 'spatial', 'distanceModel', 'maxDistance']),
-  RigidBody: propSchema(['mass', 'linearDamping', 'angularDamping', 'staticFriction', 'dynamicFriction', 'restitution']),
-  Collider: propSchema(['type', 'width', 'height', 'depth', 'radius', 'trigger', 'convex']),
-  Joint: propSchema(['type', 'limitMin', 'limitMax', 'limitStiffness', 'limitDamping', 'breakForce', 'breakTorque']),
-  UI: propSchema(['space', 'width', 'height', 'size', 'res', 'lit', 'doubleside', 'billboard', 'pointerEvents', 'transparent']),
-  UIView: propSchema(['display', 'width', 'height', 'absolute', 'top', 'right', 'bottom', 'left', 'backgroundColor', 'borderWidth', 'borderColor', 'borderRadius', 'margin', 'padding', 'flexDirection', 'justifyContent', 'alignItems', 'gap']),
-  UIText: propSchema(['value', 'fontSize', 'color', 'lineHeight', 'textAlign', 'fontFamily', 'fontWeight', 'absolute', 'top', 'right', 'bottom', 'left', 'margin', 'padding']),
-  UIImage: propSchema(['src', 'objectFit', 'width', 'height', 'absolute', 'top', 'right', 'bottom', 'left', 'margin', 'padding']),
-  Particles: propSchema(['emitting', 'shape', 'rate', 'duration', 'max', 'life', 'speed', 'color', 'image', 'force']),
-  Sky: propSchema(['bg', 'hdr', 'rotationY', 'sunDirection', 'sunIntensity', 'sunColor', 'fogNear', 'fogFar', 'fogColor']),
-  Avatar: propSchema(['src', 'emote', 'visible']),
-  Action: propSchema(['label', 'distance', 'duration']),
-  Nametag: propSchema(['label', 'health']),
-  Group: propSchema(['visible', 'active']),
+// Factory function for creating builders
+export function builder(NodeClass, type = null) {
+  return new NodeBuilder(NodeClass, type)
 }

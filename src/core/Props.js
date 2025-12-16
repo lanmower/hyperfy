@@ -1,177 +1,126 @@
-// Unified property system - single source for all node properties
+// Unified property system for all node types - single source of truth for properties
 
-export const Props = {
-  // Transform (common to all)
-  position: { type: 'array', default: [0, 0, 0], onSet: 'updateTransform' },
-  quaternion: { type: 'array', default: [0, 0, 0, 1], onSet: 'updateTransform' },
-  scale: { type: 'array', default: [1, 1, 1], onSet: 'updateTransform' },
+const properties = {
+  // Transform
+  position: { type: 'vector3', default: [0, 0, 0] },
+  quaternion: { type: 'quaternion', default: [0, 0, 0, 1] },
+  scale: { type: 'vector3', default: [1, 1, 1] },
+  rotation: { type: 'euler', default: [0, 0, 0] },
 
-  // Visibility & Activation
+  // Visibility
   visible: { type: 'boolean', default: true },
   active: { type: 'boolean', default: true },
 
-  // Mesh (Mesh node)
+  // Mesh geometry
   type: { type: 'string', default: 'box' },
-  width: { type: 'number', default: 1, onSet: 'updateGeometry' },
-  height: { type: 'number', default: 1, onSet: 'updateGeometry' },
-  depth: { type: 'number', default: 1, onSet: 'updateGeometry' },
-  radius: { type: 'number', default: 0.5, onSet: 'updateGeometry' },
-  linked: { type: 'boolean', default: false },
+  width: { type: 'number', default: 1 },
+  height: { type: 'number', default: 1 },
+  depth: { type: 'number', default: 1 },
+  radius: { type: 'number', default: 0.5 },
+  widthSegments: { type: 'number', default: 1 },
+  heightSegments: { type: 'number', default: 1 },
+  linked: { type: 'string', default: null },
   castShadow: { type: 'boolean', default: true },
   receiveShadow: { type: 'boolean', default: true },
 
   // Material
-  color: { type: 'string', default: '#ffffff' },
+  color: { type: 'color', default: '#ffffff' },
   metalness: { type: 'number', default: 0 },
-  roughness: { type: 'number', default: 0.5 },
-  emissive: { type: 'string', default: '#000000' },
+  roughness: { type: 'number', default: 1 },
+  emissive: { type: 'color', default: '#000000' },
+  opacity: { type: 'number', default: 1 },
+  transparent: { type: 'boolean', default: false },
 
-  // Image (Image node)
+  // Image/Video
   src: { type: 'string', default: null },
-  fit: { type: 'string', default: 'contain' },
+  fit: { type: 'string', default: 'cover' },
   pivot: { type: 'string', default: 'center' },
-  lit: { type: 'boolean', default: false },
-  doubleside: { type: 'boolean', default: false },
-
-  // Video (Video node)
   screenId: { type: 'string', default: null },
-  aspect: { type: 'number', default: 1 },
+  aspect: { type: 'number', default: null },
 
-  // Audio & Spatial
+  // Audio
   volume: { type: 'number', default: 1 },
   loop: { type: 'boolean', default: false },
-  group: { type: 'string', default: 'sfx' },
+  group: { type: 'string', default: 'default' },
   spatial: { type: 'boolean', default: false },
   distanceModel: { type: 'string', default: 'inverse' },
   refDistance: { type: 'number', default: 1 },
-  maxDistance: { type: 'number', default: 100 },
+  maxDistance: { type: 'number', default: 10000 },
   rolloffFactor: { type: 'number', default: 1 },
   coneInnerAngle: { type: 'number', default: 360 },
-  coneOuterAngle: { type: 'number', default: 360 },
+  coneOuterAngle: { type: 'number', default: 0 },
   coneOuterGain: { type: 'number', default: 0 },
 
-  // Physics: RigidBody
+  // Physics RigidBody
   mass: { type: 'number', default: 1 },
-  linearDamping: { type: 'number', default: 0 },
-  angularDamping: { type: 'number', default: 0 },
-  staticFriction: { type: 'number', default: 0.5 },
-  dynamicFriction: { type: 'number', default: 0.5 },
-  restitution: { type: 'number', default: 0 },
-  tag: { type: 'any', default: null },
+  damping: { type: 'number', default: 0.04 },
+  angularDamping: { type: 'number', default: 0.04 },
+  friction: { type: 'number', default: 0.3 },
+  restitution: { type: 'number', default: 0.3 },
+  tag: { type: 'string', default: null },
   trigger: { type: 'boolean', default: false },
-  convex: { type: 'boolean', default: false },
+  convex: { type: 'boolean', default: true },
 
-  // Physics: Joint
-  limitY: { type: 'number', default: null },
-  limitZ: { type: 'number', default: null },
-  limitMin: { type: 'number', default: null },
-  limitMax: { type: 'number', default: null },
-  limitStiffness: { type: 'number', default: null },
-  limitDamping: { type: 'number', default: null },
-  collide: { type: 'boolean', default: true },
+  // Physics Joint
+  limits: { type: 'vector3', default: [0, 0, 0] },
+  stiffness: { type: 'number', default: 1 },
+  joint_damping: { type: 'number', default: 0.01 },
+  collide: { type: 'boolean', default: false },
   breakForce: { type: 'number', default: Infinity },
   breakTorque: { type: 'number', default: Infinity },
 
-  // Physics: Controller
-  // (inherits radius, height, visible, layer, tag)
-
-  // UI: Base Container
-  space: { type: 'string', default: 'world' },
-  size: { type: 'number', default: 1 },
-  res: { type: 'number', default: 1 },
-  billboard: { type: 'string', default: 'none' },
-  offset: { type: 'array', default: [0, 0, 0] },
-  pointerEvents: { type: 'boolean', default: true },
-  transparent: { type: 'boolean', default: false },
-
-  // UI: Layout
+  // UI Layout
   display: { type: 'string', default: 'flex' },
   flexDirection: { type: 'string', default: 'row' },
   justifyContent: { type: 'string', default: 'flex-start' },
   alignItems: { type: 'string', default: 'stretch' },
-  alignContent: { type: 'string', default: 'flex-start' },
-  flexWrap: { type: 'string', default: 'no-wrap' },
   gap: { type: 'number', default: 0 },
-
-  // UI: Flex Item
-  flexBasis: { type: 'any', default: 'auto' },
+  flexBasis: { type: 'string', default: 'auto' },
   flexGrow: { type: 'number', default: 0 },
   flexShrink: { type: 'number', default: 1 },
 
-  // UI: View
-  display: { type: 'string', default: 'flex' },
+  // UI View positioning
   absolute: { type: 'boolean', default: false },
-  top: { type: 'number', default: null },
-  right: { type: 'number', default: null },
-  bottom: { type: 'number', default: null },
-  left: { type: 'number', default: null },
-  margin: { type: 'any', default: 0 },
+  top: { type: 'string', default: 'auto' },
+  right: { type: 'string', default: 'auto' },
+  bottom: { type: 'string', default: 'auto' },
+  left: { type: 'string', default: 'auto' },
+  margin: { type: 'string', default: '0' },
+  padding: { type: 'string', default: '0' },
 
-  // UI: Styling
-  backgroundColor: { type: 'string', default: 'transparent' },
+  // UI Styling
+  backgroundColor: { type: 'color', default: 'transparent' },
   borderWidth: { type: 'number', default: 0 },
-  borderColor: { type: 'string', default: 'transparent' },
+  borderColor: { type: 'color', default: '#000000' },
   borderRadius: { type: 'number', default: 0 },
-  padding: { type: 'any', default: 0 },
 
-  // UI: Text
+  // UI Text
   value: { type: 'string', default: '' },
   fontSize: { type: 'number', default: 16 },
   lineHeight: { type: 'number', default: 1.2 },
-  textAlign: { type: 'string', default: 'center' },
+  textAlign: { type: 'string', default: 'left' },
   fontFamily: { type: 'string', default: 'system-ui' },
-  fontWeight: { type: 'any', default: 400 },
+  fontWeight: { type: 'string', default: '400' },
+  textColor: { type: 'color', default: '#000000' },
 
-  // UI: Image
-  objectFit: { type: 'string', default: 'contain' },
-
-  // Animation (SkinnedMesh)
-  // (inherits castShadow, receiveShadow)
-
-  // Action
-  label: { type: 'string', default: 'Interact' },
-  distance: { type: 'number', default: 5 },
-  duration: { type: 'number', default: 0.3 },
-
-  // Avatar
-  emote: { type: 'string', default: null },
-
-  // Sky
-  bg: { type: 'string', default: null },
-  hdr: { type: 'string', default: null },
-  rotationY: { type: 'number', default: null },
-  sunDirection: { type: 'array', default: null },
-  sunIntensity: { type: 'number', default: null },
-  sunColor: { type: 'string', default: null },
-  fogNear: { type: 'number', default: null },
-  fogFar: { type: 'number', default: null },
-  fogColor: { type: 'string', default: null },
+  // Animation
+  life: { type: 'number', default: 1 },
+  speed: { type: 'number', default: 1 },
+  rotate: { type: 'boolean', default: false },
+  blending: { type: 'string', default: 'normal' },
 
   // Particles
-  emitting: { type: 'boolean', default: false },
-  shape: { type: 'array', default: ['sphere', 0.1] },
-  direction: { type: 'number', default: 0.5 },
+  emitting: { type: 'boolean', default: true },
+  shape: { type: 'string', default: 'sphere' },
+  direction: { type: 'vector3', default: [0, 1, 0] },
   rate: { type: 'number', default: 100 },
   bursts: { type: 'array', default: [] },
-  duration: { type: 'number', default: 5 },
-  max: { type: 'number', default: 1000 },
-  timescale: { type: 'number', default: 1 },
-  life: { type: 'string', default: '5' },
-  speed: { type: 'string', default: '5' },
-  rotate: { type: 'string', default: '0' },
-  image: { type: 'string', default: null },
-  spritesheet: { type: 'array', default: null },
-  blending: { type: 'string', default: 'normal' },
-  force: { type: 'array', default: null },
-  velocityLinear: { type: 'array', default: null },
-  velocityOrbital: { type: 'array', default: null },
-  velocityRadial: { type: 'number', default: null },
-  rateOverDistance: { type: 'number', default: 0 },
-  sizeOverLife: { type: 'string', default: null },
-  rotateOverLife: { type: 'string', default: null },
+  duration: { type: 'number', default: 1 },
+  max: { type: 'number', default: 100 },
+  velocityLinear: { type: 'vector3', default: [0, 0, 0] },
+  velocityOrbital: { type: 'vector3', default: [0, 0, 0] },
   colorOverLife: { type: 'string', default: null },
   alphaOverLife: { type: 'string', default: null },
-  emissiveOverLife: { type: 'string', default: null },
 
   // Nametag
   health: { type: 'number', default: 100 },
@@ -179,27 +128,64 @@ export const Props = {
   // LOD
   scaleAware: { type: 'boolean', default: false },
 
+  // Sky/Environment
+  bg: { type: 'string', default: null },
+  hdr: { type: 'string', default: null },
+  rotationY: { type: 'number', default: 0 },
+  sunDirection: { type: 'vector3', default: [1, 1, 1] },
+  sunIntensity: { type: 'number', default: 1 },
+  fogNear: { type: 'number', default: 0 },
+  fogFar: { type: 'number', default: 1000 },
+  fogColor: { type: 'color', default: '#cccccc' },
+
   // Content
   url: { type: 'string', default: null },
-  text: { type: 'string', default: '' },
+  text: { type: 'string', default: null },
   model: { type: 'string', default: null },
 
   // Metadata
-  name: { type: 'string', default: 'Node' },
+  name: { type: 'string', default: '' },
   description: { type: 'string', default: '' },
-  layer: { type: 'string', default: 'default' },
-  renderLayer: { type: 'number', default: 0 },
+  layer: { type: 'number', default: 0 },
+  renderLayer: { type: 'string', default: 'default' },
+}
+
+export class Props {
+  static get(key) {
+    return properties[key]
+  }
+
+  static all() {
+    return { ...properties }
+  }
+
+  static schema(keys = null) {
+    if (!keys) return properties
+    const schema = {}
+    for (const key of keys) {
+      if (properties[key]) schema[key] = properties[key]
+    }
+    return schema
+  }
+
+  static validate(data, schema) {
+    const result = {}
+    for (const [key, config] of Object.entries(schema)) {
+      result[key] = data[key] ?? config.default
+    }
+    return result
+  }
 }
 
 export function prop(key, override = {}) {
-  const base = Props[key] || { type: 'any', default: null }
+  const base = properties[key] || { type: 'unknown', default: null }
   return { ...base, ...override }
 }
 
 export function propSchema(keys) {
   const schema = {}
   for (const key of keys) {
-    schema[key] = Props[key] || { type: 'any' }
+    if (properties[key]) schema[key] = properties[key]
   }
   return schema
 }

@@ -2,74 +2,23 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
-import { defineProps, validators, onSetRebuild, createPropertyProxy } from '../utils/defineProperty.js'
-import { bodyTypes as types } from '../utils/NodeConstants.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 
-const defaults = {
-  type: 'static',
-  mass: 1,
-  linearDamping: 0,
-  angularDamping: 0.05,
-  tag: null,
-  onContactStart: null,
-  onContactEnd: null,
-  onTriggerEnter: null,
-  onTriggerLeave: null,
-}
-
-const propertySchema = {
-  type: {
-    default: defaults.type,
-    validate: validators.enum(types),
-    onSet: onSetRebuild(),
-  },
-  mass: {
-    default: defaults.mass,
-    validate: (v) => {
-      if (typeof v !== 'number') return '[rigidbody] mass not a number'
-      if (v < 0) return '[rigidbody] mass cannot be less than zero'
-      return null
-    },
-    onSet: onSetRebuild(),
-  },
-  linearDamping: {
-    default: defaults.linearDamping,
-    validate: validators.numberMin(0),
-    onSet: onSetRebuild(),
-  },
-  angularDamping: {
-    default: defaults.angularDamping,
-    validate: validators.numberMin(0),
-    onSet: onSetRebuild(),
-  },
-  tag: {
-    default: defaults.tag,
-    validate: validators.stringOrNumberOrNull,
-    onSet(value) {
-      if (typeof value === 'number') {
-        this._tag = value + ''
-      }
-    },
-  },
-  onContactStart: {
-    default: defaults.onContactStart,
-    validate: validators.functionOrNull,
-  },
-  onContactEnd: {
-    default: defaults.onContactEnd,
-    validate: validators.functionOrNull,
-  },
-  onTriggerEnter: {
-    default: defaults.onTriggerEnter,
-    validate: validators.functionOrNull,
-  },
-  onTriggerLeave: {
-    default: defaults.onTriggerLeave,
-    validate: validators.functionOrNull,
-  },
-}
+const propertySchema = schema('mass', 'damping', 'angularDamping', 'friction', 'restitution', 'tag', 'trigger', 'convex')
+  .add('type', { default: 'static', onSet() { this.needsRebuild = true } })
+  .add('linearDamping', { default: 0, onSet() { this.needsRebuild = true } })
+  .add('onContactStart', { default: null })
+  .add('onContactEnd', { default: null })
+  .add('onTriggerEnter', { default: null })
+  .add('onTriggerLeave', { default: null })
+  .override('tag', { onSet(v) { if (typeof v === 'number') this._tag = v + '' } })
+  .override('mass', { onSet() { this.needsRebuild = true } })
+  .override('damping', { default: 0, onSet() { this.needsRebuild = true } })
+  .override('angularDamping', { default: 0.05, onSet() { this.needsRebuild = true } })
+  .build()
 
 let forceModes
 function getForceMode(mode) {

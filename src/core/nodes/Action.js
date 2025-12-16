@@ -1,40 +1,19 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
 import { defineProps, createPropertyProxy, validators } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 import { Node } from './Node.js'
 
-const propertySchema = {
-  label: {
-    default: 'Interact',
-    validate: v => {
-      if (isString(v) || isNumber(v)) return null
-      return '[action] label not a string or number'
-    },
-    onSet(value) {
-      this._label = isString(value) ? value : isNumber(value) ? value + '' : 'Interact'
-    },
-  },
-  distance: {
-    default: 3,
-    validate: validators.number,
-  },
-  duration: {
-    default: 0.5,
-    validate: validators.number,
-  },
-  onStart: {
-    default: () => {},
-    validate: validators.func,
-  },
-  onTrigger: {
-    default: () => {},
-    validate: validators.func,
-  },
-  onCancel: {
-    default: () => {},
-    validate: validators.func,
-  },
-}
+const propertySchema = schema('label', 'distance', 'duration', 'onStart', 'onTrigger', 'onCancel')
+  .overrideAll({
+    label: { default: 'Interact', onSet: function() { this._label = isString(this._label) ? this._label : isNumber(this._label) ? this._label + '' : 'Interact' } },
+    distance: { default: 3 },
+    duration: { default: 0.5 },
+    onStart: { default: () => {} },
+    onTrigger: { default: () => {} },
+    onCancel: { default: () => {} },
+  })
+  .build()
 
 export class Action extends Node {
   constructor(data = {}) {

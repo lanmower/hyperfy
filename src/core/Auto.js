@@ -1,64 +1,72 @@
-// Zero-config automatic system - self-discovering and self-configuring
+// Automatic module discovery and registration system for zero-config initialization
+
+import fs from 'fs-extra'
+import path from 'path'
 
 export class Auto {
-  static async discover(path) {
+  // Discover modules from directory with optional pattern matching
+  static async discover(dirPath, pattern = /\.js$/) {
     const modules = {}
-    try {
-      const files = await import.meta.glob?.(path, { eager: true })
-      for (const [key, mod] of Object.entries(files || {})) {
-        const name = key.split('/').pop().replace('.js', '')
-        modules[name] = mod[Object.keys(mod)[0]]
+    const files = await fs.readdir(dirPath)
+
+    for (const file of files) {
+      if (!pattern.test(file)) continue
+      const name = file.replace('.js', '')
+      const fullPath = path.join(dirPath, file)
+      try {
+        const module = await import(`file://${fullPath}`)
+        modules[name] = module.default || module
+      } catch (err) {
+        console.warn(`Failed to load module ${name}: ${err.message}`)
       }
-    } catch (err) {
-      console.warn(`Auto discovery failed for ${path}:`, err.message)
     }
     return modules
   }
 
+  // Auto-map module names by removing common prefix
   static map(modules, prefix = '') {
-    const map = {}
-    for (const [name, Module] of Object.entries(modules)) {
-      const key = prefix ? name.replace(prefix, '') : name
-      const clean = key[0].toLowerCase() + key.slice(1)
-      map[clean] = Module
+    const mapped = {}
+    for (const [name, module] of Object.entries(modules)) {
+      const key = prefix ? name.replace(new RegExp(`^${prefix}`), '') : name
+      mapped[key] = module
     }
-    return map
+    return mapped
   }
 
-  static async register(world, modules) {
-    for (const [name, Module] of Object.entries(modules)) {
-      world.register(name, Module)
-    }
-    return world
-  }
-
-  static defaults() {
-    return {
-      port: process.env.PORT || 3000,
-      env: process.env.NODE_ENV || 'development',
-      world: process.env.WORLD || './world',
-      saveInterval: parseInt(process.env.SAVE_INTERVAL || '60'),
-      pingRate: parseInt(process.env.PING_RATE || '1'),
+  // Auto-register modules into world or registry
+  static register(target, modules, registerer = null) {
+    for (const [key, module] of Object.entries(modules)) {
+      if (registerer) {
+        registerer(key, module)
+      } else if (typeof target[key] === 'function') {
+        target[key](module)
+      } else if (typeof module === 'function') {
+        target[key] = module
+      }
     }
   }
 
+  // Type-safe environment variable access
   static env(key, type = 'string', fallback = null) {
-    const val = process.env[key]
-    if (val === undefined) return fallback
+    const value = process.env[key]
+    if (value === undefined) return fallback
+
     switch (type) {
-      case 'number': return Number(val)
-      case 'boolean': return val === 'true' || val === '1'
-      case 'json': return JSON.parse(val)
-      default: return val
+      case 'number': return parseInt(value, 10)
+      case 'boolean': return value === 'true' || value === '1'
+      case 'json': return JSON.parse(value)
+      default: return value
     }
   }
 
-  static envAll(prefix = '') {
-    const result = {}
-    for (const [key, val] of Object.entries(process.env)) {
-      if (prefix && !key.startsWith(prefix)) continue
-      result[key] = val
+  // Get environment with prefix filter
+  static envFiltered(prefix) {
+    const filtered = {}
+    for (const [key, value] of Object.entries(process.env)) {
+      if (key.startsWith(prefix)) {
+        filtered[key] = value
+      }
     }
-    return result
+    return filtered
   }
 }

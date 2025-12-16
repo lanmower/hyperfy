@@ -5,31 +5,16 @@ import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 const defaultStopOpts = { fade: 0.15 }
 
-const propertySchema = {
-  castShadow: {
-    default: true,
-    validate: v => !isBoolean(v) ? '[skinnedmesh] castShadow not a boolean' : null,
-    onSet() {
-      if (this.handle) {
-        this.needsRebuild = true
-        this.setDirty()
-      }
-    },
-  },
-  receiveShadow: {
-    default: true,
-    validate: v => !isBoolean(v) ? '[skinnedmesh] receiveShadow not a boolean' : null,
-    onSet() {
-      if (this.handle) {
-        this.needsRebuild = true
-        this.setDirty()
-      }
-    },
-  },
-}
+const propertySchema = schema('castShadow', 'receiveShadow')
+  .overrideAll({
+    castShadow: { default: true, onSet: function() { if (this.handle) { this.needsRebuild = true; this.setDirty() } } },
+    receiveShadow: { default: true, onSet: function() { if (this.handle) { this.needsRebuild = true; this.setDirty() } } },
+  })
+  .build()
 
 export class SkinnedMesh extends Node {
   constructor(data = {}) {

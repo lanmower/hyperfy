@@ -1,7 +1,7 @@
-// Client world with client-side systems
+// Client world with auto-discovered client-side systems
 
 import { World } from './World.js'
-import { clientSystems } from './SystemFactory.js'
+import { clientSystems } from './initClientSystems.js'
 
 export function createClientWorld() {
   const world = new World()

@@ -25,6 +25,34 @@ export class ClientNetwork extends System {
     this.protocol = new NetworkProtocol('ClientNetwork')
     this.protocol.isClient = true
     this.protocol.flushTarget = this
+    this.setupHandlerRegistry()
+  }
+
+  setupHandlerRegistry() {
+    const handlers = {
+      'snapshot': this.onSnapshot,
+      'settingsModified': this.onSettingsModified,
+      'chatAdded': this.onChatAdded,
+      'chatCleared': this.onChatCleared,
+      'blueprintAdded': this.onBlueprintAdded,
+      'blueprintModified': this.onBlueprintModified,
+      'entityAdded': this.onEntityAdded,
+      'entityModified': this.onEntityModified,
+      'entityEvent': this.onEntityEvent,
+      'entityRemoved': this.onEntityRemoved,
+      'playerTeleport': this.onPlayerTeleport,
+      'playerPush': this.onPlayerPush,
+      'playerSessionAvatar': this.onPlayerSessionAvatar,
+      'liveKitLevel': this.onLiveKitLevel,
+      'mute': this.onMute,
+      'pong': this.onPong,
+      'kick': this.onKick,
+      'hotReload': this.onHotReload,
+      'errors': this.onErrors,
+    }
+    for (const [name, handler] of Object.entries(handlers)) {
+      this.protocol.register(name, handler.bind(this))
+    }
   }
 
   init({ wsUrl, name, avatar }) {

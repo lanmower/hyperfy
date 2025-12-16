@@ -43,7 +43,42 @@ export class ServerNetwork extends System {
     this.protocol.isServer = true
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
+    this.setupHandlerRegistry()
     this.setupHotReload()
+  }
+
+  setupHandlerRegistry() {
+    const handlers = {
+      'chatAdded': this.onChatAdded,
+      'command': this.onCommand,
+      'modifyRank': this.onModifyRank,
+      'kick': this.onKick,
+      'mute': this.onMute,
+      'blueprintAdded': this.onBlueprintAdded,
+      'blueprintModified': this.onBlueprintModified,
+      'entityAdded': this.onEntityAdded,
+      'entityModified': this.onEntityModified,
+      'entityEvent': this.onEntityEvent,
+      'entityRemoved': this.onEntityRemoved,
+      'settingsModified': this.onSettingsModified,
+      'spawnModified': this.onSpawnModified,
+      'playerTeleport': this.onPlayerTeleport,
+      'playerPush': this.onPlayerPush,
+      'playerSessionAvatar': this.onPlayerSessionAvatar,
+      'ping': this.onPing,
+      'errorEvent': this.onErrorEvent,
+      'errorReport': this.onErrorReport,
+      'mcpSubscribeErrors': this.onMcpSubscribeErrors,
+      'getErrors': this.onGetErrors,
+      'clearErrors': this.onClearErrors,
+      'fileUpload': this.onFileUpload,
+      'fileUploadCheck': this.onFileUploadCheck,
+      'fileUploadStats': this.onFileUploadStats,
+      'disconnect': this.onDisconnect,
+    }
+    for (const [name, handler] of Object.entries(handlers)) {
+      this.protocol.register(name, handler.bind(this))
+    }
   }
 
   setupHotReload() {

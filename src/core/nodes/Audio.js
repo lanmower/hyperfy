@@ -3,87 +3,19 @@ import { every, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
-import { audioGroups as groups, distanceModels } from '../utils/NodeConstants.js'
-import { defineProps, validators, onSetRebuild, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
-const defaults = {
-  src: null,
-  volume: 1,
-  loop: false,
-  group: 'music',
-  // see: https://medium.com/@kfarr/understanding-web-audio-api-positional-audio-distance-models-for-webxr-e77998afcdff
-  spatial: true,
-  distanceModel: 'inverse',
-  refDistance: 1,
-  maxDistance: 40,
-  rolloffFactor: 3,
-  coneInnerAngle: 360,
-  coneOuterAngle: 360,
-  coneOuterGain: 0,
-}
-
-const propertySchema = {
-  src: {
-    default: defaults.src,
-    validate: validators.stringOrNull,
-    onSet: onSetRebuild(),
-  },
-  volume: {
-    default: defaults.volume,
-    validate: validators.number,
-    onSet() { if (this.gainNode) this.gainNode.gain.value = this._volume },
-  },
-  loop: {
-    default: defaults.loop,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-  group: {
-    default: defaults.group,
-    validate: validators.enum(groups),
-    onSet: onSetRebuild(),
-  },
-  spatial: {
-    default: defaults.spatial,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-  distanceModel: {
-    default: defaults.distanceModel,
-    validate: validators.enum(distanceModels),
-    onSet() { if (this.pannerNode) this.pannerNode.distanceModel = this._distanceModel },
-  },
-  refDistance: {
-    default: defaults.refDistance,
-    validate: validators.number,
-    onSet() { if (this.pannerNode) this.pannerNode.refDistance = this._refDistance },
-  },
-  maxDistance: {
-    default: defaults.maxDistance,
-    validate: validators.number,
-    onSet() { if (this.pannerNode) this.pannerNode.maxDistance = this._maxDistance },
-  },
-  rolloffFactor: {
-    default: defaults.rolloffFactor,
-    validate: validators.number,
-    onSet() { if (this.pannerNode) this.pannerNode.rolloffFactor = this._rolloffFactor },
-  },
-  coneInnerAngle: {
-    default: defaults.coneInnerAngle,
-    validate: validators.number,
-    onSet() { if (this.pannerNode) this.pannerNode.coneInnerAngle = this._coneInnerAngle },
-  },
-  coneOuterAngle: {
-    default: defaults.coneOuterAngle,
-    validate: validators.number,
-    onSet() { if (this.pannerNode) this.pannerNode.coneOuterAngle = this._coneOuterAngle },
-  },
-  coneOuterGain: {
-    default: defaults.coneOuterGain,
-    validate: validators.number,
-    onSet() { if (this.pannerNode) this.pannerNode.coneOuterGain = this._coneOuterGain },
-  },
-}
+const propertySchema = schema('src', 'volume', 'loop', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
+  .override('volume', { onSet() { if (this.gainNode) this.gainNode.gain.value = this._volume } })
+  .override('distanceModel', { onSet() { if (this.pannerNode) this.pannerNode.distanceModel = this._distanceModel } })
+  .override('refDistance', { onSet() { if (this.pannerNode) this.pannerNode.refDistance = this._refDistance } })
+  .override('maxDistance', { onSet() { if (this.pannerNode) this.pannerNode.maxDistance = this._maxDistance } })
+  .override('rolloffFactor', { onSet() { if (this.pannerNode) this.pannerNode.rolloffFactor = this._rolloffFactor } })
+  .override('coneInnerAngle', { onSet() { if (this.pannerNode) this.pannerNode.coneInnerAngle = this._coneInnerAngle } })
+  .override('coneOuterAngle', { onSet() { if (this.pannerNode) this.pannerNode.coneOuterAngle = this._coneOuterAngle } })
+  .override('coneOuterGain', { onSet() { if (this.pannerNode) this.pannerNode.coneOuterGain = this._coneOuterGain } })
+  .build()
 
 export class Audio extends Node {
   constructor(data = {}) {

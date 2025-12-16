@@ -67,7 +67,10 @@ export class NetworkProtocol {
     while (this.queue.length) {
       try {
         const [context, method, data] = this.queue.shift()
-        if (context) {
+        const handler = this.handlers.get(method)
+        if (handler) {
+          handler(context, data)
+        } else if (context) {
           target[method]?.(context, data)
         } else {
           target[method]?.(data)

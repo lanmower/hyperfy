@@ -4,6 +4,7 @@ import { Node } from './Node.js'
 import { Display, isDisplay } from '../extras/yoga.js'
 import { fillRoundRect, imageRoundRect } from '../extras/roundRect.js'
 import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 const objectFits = ['contain', 'cover', 'fill']
 
@@ -23,121 +24,25 @@ const defaults = {
   margin: 0,
 }
 
-const propertySchema = {
-  display: {
-    default: defaults.display,
-    validate: v => !isDisplay(v) ? `[uiimage] display invalid: ${v}` : null,
-    onSet() {
-      this.yogaNode?.setDisplay(Display[this._display])
-      this.ui?.redraw()
-    },
-  },
-  src: {
-    default: defaults.src,
-    validate: v => v !== null && !isString(v) ? '[uiimage] src not a string' : null,
-    onSet() {
-      if (this._src) {
-        this.loadImage(this._src)
-      } else {
-        this.img = null
-        this.ui?.redraw()
-      }
-    },
-  },
-  width: {
-    default: defaults.width,
-    validate: v => v !== null && !isNumber(v) ? '[uiimage] width not a number' : null,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  height: {
-    default: defaults.height,
-    validate: v => v !== null && !isNumber(v) ? '[uiimage] height not a number' : null,
-    onSet() {
-      this.yogaNode?.markDirty()
-      this.ui?.redraw()
-    },
-  },
-  absolute: {
-    default: defaults.absolute,
-    validate: v => !isBoolean(v) ? '[uiimage] absolute not a boolean' : null,
-    onSet() {
-      this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE)
-      this.ui?.redraw()
-    },
-  },
-  top: {
-    default: defaults.top,
-    validate: v => v !== null && !isNumber(v) ? '[uiimage] top must be a number or null' : null,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  right: {
-    default: defaults.right,
-    validate: v => v !== null && !isNumber(v) ? '[uiimage] right must be a number or null' : null,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  bottom: {
-    default: defaults.bottom,
-    validate: v => v !== null && !isNumber(v) ? '[uiimage] bottom must be a number or null' : null,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  left: {
-    default: defaults.left,
-    validate: v => v !== null && !isNumber(v) ? '[uiimage] left must be a number or null' : null,
-    onSet() {
-      this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined)
-      this.ui?.redraw()
-    },
-  },
-  objectFit: {
-    default: defaults.objectFit,
-    validate: v => !isObjectFit(v) ? `[uiimage] objectFit invalid: ${v}` : null,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  backgroundColor: {
-    default: defaults.backgroundColor,
-    validate: v => v !== null && !isString(v) ? '[uiimage] backgroundColor not a string' : null,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  borderRadius: {
-    default: defaults.borderRadius,
-    validate: v => !isNumber(v) ? '[uiimage] borderRadius not a number' : null,
-    onSet() {
-      this.ui?.redraw()
-    },
-  },
-  margin: {
-    default: defaults.margin,
-    validate: v => !isEdge(v) ? '[uiimage] margin not a number or array of numbers' : null,
-    onSet() {
-      if (isArray(this._margin)) {
-        const [top, right, bottom, left] = this._margin
-        this.yogaNode?.setMargin(Yoga.EDGE_TOP, top * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_RIGHT, right * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM, bottom * this.ui._res)
-        this.yogaNode?.setMargin(Yoga.EDGE_LEFT, left * this.ui._res)
-      } else {
-        this.yogaNode?.setMargin(Yoga.EDGE_ALL, this._margin * this.ui._res)
-      }
-      this.ui?.redraw()
-    },
-  },
-}
+const redraw = function() { this.ui?.redraw() }
+const markDirtyRedraw = function() { this.yogaNode?.markDirty(); this.ui?.redraw() }
+const propertySchema = schema('display', 'src', 'width', 'height', 'absolute', 'top', 'right', 'bottom', 'left', 'objectFit', 'backgroundColor', 'borderRadius', 'margin')
+  .overrideAll({
+    display: { default: defaults.display, onSet: function() { this.yogaNode?.setDisplay(Display[this._display]); this.ui?.redraw() } },
+    src: { default: defaults.src, onSet: function() { if (this._src) { this.loadImage(this._src) } else { this.img = null; this.ui?.redraw() } } },
+    width: { default: defaults.width, onSet: markDirtyRedraw },
+    height: { default: defaults.height, onSet: markDirtyRedraw },
+    absolute: { default: defaults.absolute, onSet: function() { this.yogaNode?.setPositionType(this._absolute ? Yoga.POSITION_TYPE_ABSOLUTE : Yoga.POSITION_TYPE_RELATIVE); this.ui?.redraw() } },
+    top: { default: defaults.top, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_TOP, isNumber(this._top) ? this._top * this.ui._res : undefined); this.ui?.redraw() } },
+    right: { default: defaults.right, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_RIGHT, isNumber(this._right) ? this._right * this.ui._res : undefined); this.ui?.redraw() } },
+    bottom: { default: defaults.bottom, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_BOTTOM, isNumber(this._bottom) ? this._bottom * this.ui._res : undefined); this.ui?.redraw() } },
+    left: { default: defaults.left, onSet: function() { this.yogaNode?.setPosition(Yoga.EDGE_LEFT, isNumber(this._left) ? this._left * this.ui._res : undefined); this.ui?.redraw() } },
+    objectFit: { default: defaults.objectFit, onSet: redraw },
+    backgroundColor: { default: defaults.backgroundColor, onSet: redraw },
+    borderRadius: { default: defaults.borderRadius, onSet: redraw },
+    margin: { default: defaults.margin, onSet: function() { if (isArray(this._margin)) { const [t,r,b,l]=this._margin; this.yogaNode?.setMargin(Yoga.EDGE_TOP,t*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_RIGHT,r*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_BOTTOM,b*this.ui._res); this.yogaNode?.setMargin(Yoga.EDGE_LEFT,l*this.ui._res) } else { this.yogaNode?.setMargin(Yoga.EDGE_ALL,this._margin*this.ui._res) } this.ui?.redraw() } },
+  })
+  .build()
 
 export class UIImage extends Node {
   constructor(data = {}) {

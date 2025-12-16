@@ -4,70 +4,20 @@ import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
-import { defineProps, validators, onSetRebuild, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
-import { geometryTypes as types } from '../utils/NodeConstants.js'
+import { defineProps, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
+import { schema } from '../utils/createNodeSchema.js'
 
-const defaults = {
-  type: 'box',
-  width: 1,
-  height: 1,
-  depth: 1,
-  radius: 0.5,
-  geometry: null,
-  material: null,
-  linked: true,
-  castShadow: true,
-  receiveShadow: true,
-  visible: true, // DEPRECATED: use Node.active
-}
-
-const propertySchema = {
-  type: {
-    default: defaults.type,
-    validate: validators.enum(types),
-    onSet: onSetRebuild(),
-  },
-  width: {
-    default: defaults.width,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this._type === 'box' }),
-  },
-  height: {
-    default: defaults.height,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this._type === 'box' }),
-  },
-  depth: {
-    default: defaults.depth,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this._type === 'box' }),
-  },
-  radius: {
-    default: defaults.radius,
-    validate: validators.number,
-    onSet: onSetRebuildIf(function() { return this._type === 'sphere' }),
-  },
-  linked: {
-    default: defaults.linked,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-  castShadow: {
-    default: defaults.castShadow,
-    validate: validators.boolean,
-    onSet() { if (this.mesh) this.mesh.castShadow = this._castShadow },
-  },
-  receiveShadow: {
-    default: defaults.receiveShadow,
-    validate: validators.boolean,
-    onSet() { if (this.mesh) this.mesh.receiveShadow = this._receiveShadow },
-  },
-  visible: {
-    default: defaults.visible,
-    validate: validators.boolean,
-    onSet() { if (this.mesh) this.mesh.visible = this._visible },
-  },
-}
+const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')
+  .override('type', { onSet() { this.needsRebuild = true } })
+  .override('width', { onSet: onSetRebuildIf(function() { return this._type === 'box' }) })
+  .override('height', { onSet: onSetRebuildIf(function() { return this._type === 'box' }) })
+  .override('depth', { onSet: onSetRebuildIf(function() { return this._type === 'box' }) })
+  .override('radius', { onSet: onSetRebuildIf(function() { return this._type === 'sphere' }) })
+  .override('linked', { onSet() { this.needsRebuild = true } })
+  .override('castShadow', { onSet() { if (this.mesh) this.mesh.castShadow = this._castShadow } })
+  .override('receiveShadow', { onSet() { if (this.mesh) this.mesh.receiveShadow = this._receiveShadow } })
+  .override('visible', { onSet() { if (this.mesh) this.mesh.visible = this._visible } })
+  .build()
 
 let boxes = {}
 const getBox = (width, height, depth) => {

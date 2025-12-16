@@ -1,74 +1,10 @@
-import { imageFits as fits, pivots } from '../utils/NodeConstants.js'
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
-import { defineProps, validators, onSetRebuild, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { createImageSchema } from '../utils/createNodeSchema.js'
 
-const defaults = {
-  src: null,
-  width: null,
-  height: 1,
-  fit: 'contain',
-  color: 'black',
-  pivot: 'center',
-  lit: false,
-  doubleside: false,
-  castShadow: false,
-  receiveShadow: false,
-}
-
-const propertySchema = {
-  src: {
-    default: defaults.src,
-    validate: validators.stringOrNull,
-    onSet: onSetRebuild(),
-  },
-  width: {
-    default: defaults.width,
-    validate: validators.numberOrNull,
-    onSet: onSetRebuild(),
-  },
-  height: {
-    default: defaults.height,
-    validate: validators.numberOrNull,
-    onSet: onSetRebuild(),
-  },
-  fit: {
-    default: defaults.fit,
-    validate: validators.enum(fits),
-    onSet: onSetRebuild(),
-  },
-  color: {
-    default: defaults.color,
-    validate: validators.stringOrNull,
-    onSet: onSetRebuild(),
-  },
-  pivot: {
-    default: defaults.pivot,
-    validate: validators.enum(pivots),
-    onSet: onSetRebuild(),
-  },
-  lit: {
-    default: defaults.lit,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-  doubleside: {
-    default: defaults.doubleside,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-  castShadow: {
-    default: defaults.castShadow,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-  receiveShadow: {
-    default: defaults.receiveShadow,
-    validate: validators.boolean,
-    onSet: onSetRebuild(),
-  },
-}
+const propertySchema = createImageSchema()
 
 export class Image extends Node {
   constructor(data = {}) {

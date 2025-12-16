@@ -1,83 +1,23 @@
-import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
+import { schema } from '../utils/createNodeSchema.js'
 
 // NOTE: actual defaults bubble up to ClientEnvironment.js
-const propertySchema = {
-  bg: {
-    default: null,
-    validate: v => v !== null && !isString(v) ? '[sky] bg not a string' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  hdr: {
-    default: null,
-    validate: v => v !== null && !isString(v) ? '[sky] hdr not a string' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  rotationY: {
-    default: null,
-    validate: v => v !== null && !isNumber(v) ? '[sky] rotationY not a number' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  sunDirection: {
-    default: null,
-    validate: v => v !== null && !v?.isVector3 ? '[sky] sunDirection not a Vector3' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  sunIntensity: {
-    default: null,
-    validate: v => v !== null && !isNumber(v) ? '[sky] sunIntensity not a number' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  sunColor: {
-    default: null,
-    validate: v => v !== null && !isString(v) ? '[sky] sunColor not a string' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  fogNear: {
-    default: null,
-    validate: v => v !== null && !isNumber(v) ? '[sky] fogNear not a number' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  fogFar: {
-    default: null,
-    validate: v => v !== null && !isNumber(v) ? '[sky] fogFar not a number' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-  fogColor: {
-    default: null,
-    validate: v => v !== null && !isString(v) ? '[sky] fogColor not a string' : null,
-    onSet() {
-      this.needsRebuild = true
-      this.setDirty()
-    },
-  },
-}
+const rebuild = () => function() { this.needsRebuild = true; this.setDirty() }
+const propertySchema = schema('bg', 'hdr', 'rotationY', 'sunDirection', 'sunIntensity', 'fogNear', 'fogFar', 'fogColor')
+  .add('sunColor', { default: null, onSet: rebuild() })
+  .overrideAll({
+    bg: { default: null, onSet: rebuild() },
+    hdr: { default: null, onSet: rebuild() },
+    rotationY: { default: null, onSet: rebuild() },
+    sunDirection: { default: null, onSet: rebuild() },
+    sunIntensity: { default: null, onSet: rebuild() },
+    fogNear: { default: null, onSet: rebuild() },
+    fogFar: { default: null, onSet: rebuild() },
+    fogColor: { default: null, onSet: rebuild() },
+  })
+  .build()
 
 export class Sky extends Node {
   constructor(data = {}) {

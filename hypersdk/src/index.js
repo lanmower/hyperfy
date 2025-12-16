@@ -44,6 +44,8 @@ import { NodeBuilder } from '../../../src/core/NodeBuilder.js'
 import { BaseNetwork } from '../../../src/core/network/BaseNetwork.js'
 import { Transport, WebSocketTransport, SocketTransport } from '../../../src/core/network/Transport.js'
 import { ConnectionPool } from '../../../src/core/network/ConnectionPool.js'
+import { UnifiedNetwork } from '../../../src/core/network/UnifiedNetwork.js'
+import { Integration } from '../../../src/core/Integration.js'
 
 export {
   HyperfyClient,
@@ -111,7 +113,9 @@ export {
   Transport,
   WebSocketTransport,
   SocketTransport,
-  ConnectionPool
+  ConnectionPool,
+  UnifiedNetwork,
+  Integration
 }
 
 export { HyperfyClient as default }

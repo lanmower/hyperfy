@@ -1,136 +1,103 @@
-// Unified network abstraction - eliminates server/client duplication
+// Unified client/server network abstraction consolidating protocol duplication
 
+import { Request, Response } from '../Request.js'
 import { EventBus } from '../utils/EventBus.js'
 
 export class BaseNetwork {
-  constructor(world, options = {}) {
-    this.world = world
-    this.isServer = world?.isServer || false
-    this.isClient = !this.isServer
-    this.isConnected = false
-    this.transport = null
+  constructor(options = {}) {
+    this.options = options
+    this.connections = new Map()
     this.handlers = new Map()
-    this.queue = []
     this.events = new EventBus()
-    this.state = 'disconnected'
-    this.options = { reconnectAttempts: 5, reconnectDelay: 1000, ...options }
+    this.isServer = options.isServer || false
   }
 
-  setState(newState) {
-    if (this.state !== newState) {
-      this.state = newState
-      this.events.emit('state', newState)
-      this.isConnected = newState === 'connected'
+  // Register message handler
+  on(type, handler) {
+    if (!this.handlers.has(type)) {
+      this.handlers.set(type, [])
+    }
+    this.handlers.get(type).push(handler)
+    return this
+  }
+
+  // Unregister message handler
+  off(type, handler) {
+    if (!this.handlers.has(type)) return this
+    const handlers = this.handlers.get(type)
+    const index = handlers.indexOf(handler)
+    if (index > -1) {
+      handlers.splice(index, 1)
+    }
+    return this
+  }
+
+  // Send message with optional request/response pattern
+  async send(connectionId, type, data = {}, options = {}) {
+    const connection = this.connections.get(connectionId)
+    if (!connection) {
+      throw new Error("Connection not found: " + connectionId)
+    }
+
+    if (options.request) {
+      return new Request(type, data).send(connection)
+    } else {
+      return connection.send(JSON.stringify({ type, data }))
     }
   }
 
-  registerHandler(name, handler) {
-    this.handlers.set(name, handler)
-  }
-
-  registerHandlers(handlers) {
-    for (const [name, handler] of Object.entries(handlers)) {
-      this.registerHandler(name, handler)
+  // Broadcast message to all connections
+  broadcast(type, data = {}, exclude = null) {
+    for (const [id, connection] of this.connections) {
+      if (exclude && id === exclude) continue
+      connection.send(JSON.stringify({ type, data }))
     }
   }
 
-  async send(name, data, options = {}) {
-    if (!this.transport) return false
-
-    const packet = this.encodePacket(name, data)
-    return await this.transport.send(packet, options)
+  // Register connection
+  registerConnection(id, connection) {
+    this.connections.set(id, connection)
+    this.events.emit('connection', id)
+    return this
   }
 
-  async broadcast(name, data, options = {}) {
-    if (!this.isServer) return false
-    return await this.send(name, data, { ...options, broadcast: true })
+  // Unregister connection
+  unregisterConnection(id) {
+    this.connections.delete(id)
+    this.events.emit('disconnect', id)
+    return this
   }
 
-  enqueue(context, methodName, data) {
-    this.queue.push({ context, methodName, data })
-  }
+  // Handle incoming message
+  handleMessage(connectionId, message) {
+    try {
+      const msg = typeof message === 'string' ? JSON.parse(message) : message
+      const handlers = this.handlers.get(msg.type) || []
 
-  async flush() {
-    const batch = this.queue.splice(0, this.queue.length)
-
-    for (const { context, methodName, data } of batch) {
-      const handler = this.handlers.get(methodName)
-      if (handler) {
-        try {
-          await handler.call(context, data)
-        } catch (err) {
-          this.events.emit('error', { methodName, error: err })
-        }
+      for (const handler of handlers) {
+        handler(connectionId, msg.data, msg)
       }
-    }
-  }
-
-  encodePacket(name, data) {
-    return [name, data]
-  }
-
-  decodePacket(packet) {
-    return Array.isArray(packet) ? [packet[0], packet[1]] : [null, packet]
-  }
-
-  async processPacket(packet, context = null) {
-    const [name, data] = this.decodePacket(packet)
-
-    if (!name) return
-
-    const handler = this.handlers.get(name)
-    if (!handler && !this[name]) {
-      this.events.emit('unknown', { name, data })
-      return
-    }
-
-    if (handler) {
-      this.enqueue(context || this, name, data)
-    } else if (typeof this[name] === 'function') {
-      this.enqueue(context || this, name, data)
-    }
-  }
-
-  async connect() {
-    this.setState('connecting')
-    try {
-      await this._connect()
-      this.setState('connected')
-      return true
     } catch (err) {
-      this.events.emit('error', { phase: 'connect', error: err })
-      this.setState('disconnected')
-      return false
+      console.error("Error handling message:", err)
     }
   }
 
-  async disconnect() {
-    this.setState('disconnecting')
-    try {
-      await this._disconnect()
-      this.setState('disconnected')
-    } catch (err) {
-      this.events.emit('error', { phase: 'disconnect', error: err })
-    }
+  // Get connection info
+  getConnection(id) {
+    return this.connections.get(id)
   }
 
-  async _connect() {
-    throw new Error('_connect() must be implemented by subclass')
+  // Get all connections
+  getConnections() {
+    return Array.from(this.connections.values())
   }
 
-  async _disconnect() {
-    throw new Error('_disconnect() must be implemented by subclass')
+  // Get connection count
+  getConnectionCount() {
+    return this.connections.size
   }
 
-  async init(world) {
-    this.world = world
-  }
-
-  async start(world, services) {
-    await this.connect()
-  }
-
-  async destroy() {
-    await this.disconnect()
+  toString() {
+    return "BaseNetwork(" + this.connections.size + " connections, " + this.handlers.size + " handlers)"
   }
 }

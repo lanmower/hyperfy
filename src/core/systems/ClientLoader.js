@@ -33,6 +33,111 @@ export class ClientLoader extends System {
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
     this.preloadItems = []
+    this.setupTypeRegistry()
+  }
+
+  setupTypeRegistry() {
+    this.typeHandlers = {
+      'video': (url, file, key) => new Promise(resolve => {
+        const factory = createVideoFactory(this.world, this.world.resolveURL(url))
+        resolve(factory)
+      }),
+      'hdr': (url, file, key) => file.arrayBuffer().then(buffer => {
+        const result = this.rgbeLoader.parse(buffer)
+        const texture = new THREE.DataTexture(result.data, result.width, result.height)
+        texture.colorSpace = THREE.LinearSRGBColorSpace
+        texture.minFilter = THREE.LinearFilter
+        texture.magFilter = THREE.LinearFilter
+        texture.generateMipmaps = false
+        texture.flipY = true
+        texture.type = result.type
+        texture.needsUpdate = true
+        this.results.set(key, texture)
+        return texture
+      }),
+      'image': (url, file, key) => new Promise(resolve => {
+        const img = new Image()
+        img.onload = () => {
+          this.results.set(key, img)
+          resolve(img)
+        }
+        img.src = URL.createObjectURL(file)
+      }),
+      'texture': (url, file, key) => new Promise(resolve => {
+        const img = new Image()
+        img.onload = () => {
+          const texture = this.texLoader.load(img.src)
+          this.results.set(key, texture)
+          resolve(texture)
+          URL.revokeObjectURL(img.src)
+        }
+        img.src = URL.createObjectURL(file)
+      }),
+      'model': (url, file, key) => file.arrayBuffer().then(async buffer => {
+        const glb = await this.gltfLoader.parseAsync(buffer)
+        const node = glbToNodes(glb, this.world)
+        const model = {
+          toNodes() {
+            return node.clone(true)
+          },
+          getStats() {
+            const stats = node.getStats(true)
+            stats.fileBytes = file.size
+            return stats
+          },
+        }
+        this.results.set(key, model)
+        return model
+      }),
+      'emote': (url, file, key) => file.arrayBuffer().then(async buffer => {
+        const glb = await this.gltfLoader.parseAsync(buffer)
+        const factory = createEmoteFactory(glb, url)
+        const emote = {
+          toClip(options) {
+            return factory.toClip(options)
+          },
+        }
+        this.results.set(key, emote)
+        return emote
+      }),
+      'avatar': (url, file, key) => file.arrayBuffer().then(async buffer => {
+        const glb = await this.gltfLoader.parseAsync(buffer)
+        const factory = createVRMFactory(glb, this.world.setupMaterial)
+        const hooks = this.vrmHooks
+        const node = createNode('group', { id: '$root' })
+        const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
+        node.add(node2)
+        const avatar = {
+          factory,
+          hooks,
+          toNodes(customHooks) {
+            const clone = node.clone(true)
+            if (customHooks) {
+              clone.get('avatar').hooks = customHooks
+            }
+            return clone
+          },
+          getStats() {
+            const stats = node.getStats(true)
+            stats.fileBytes = file.size
+            return stats
+          },
+        }
+        this.results.set(key, avatar)
+        return avatar
+      }),
+      'script': (url, file, key) => file.text().then(code => {
+        const script = this.world.scripts.evaluate(code)
+        this.results.set(key, script)
+        return script
+      }),
+      'audio': (url, file, key) => file.arrayBuffer().then(buffer =>
+        this.world.audio.ctx.decodeAudioData(buffer)
+      ).then(audioBuffer => {
+        this.results.set(key, audioBuffer)
+        return audioBuffer
+      }),
+    }
   }
 
   start() {
@@ -118,125 +223,14 @@ export class ClientLoader extends System {
     if (this.promises.has(key)) {
       return this.promises.get(key)
     }
-    if (type === 'video') {
-      const promise = new Promise(resolve => {
-        url = this.world.resolveURL(url)
-        const factory = createVideoFactory(this.world, url)
-        resolve(factory)
-      })
-      this.promises.set(key, promise)
-      return promise
+    const handler = this.typeHandlers[type]
+    if (!handler) {
+      console.warn(`No handler for asset type: ${type}`)
+      return null
     }
-    const promise = this.loadFile(url).then(async file => {
-      if (type === 'hdr') {
-        const buffer = await file.arrayBuffer()
-        const result = this.rgbeLoader.parse(buffer)
-        // we just mimicing what rgbeLoader.load() does behind the scenes
-        const texture = new THREE.DataTexture(result.data, result.width, result.height)
-        texture.colorSpace = THREE.LinearSRGBColorSpace
-        texture.minFilter = THREE.LinearFilter
-        texture.magFilter = THREE.LinearFilter
-        texture.generateMipmaps = false
-        texture.flipY = true
-        texture.type = result.type
-        texture.needsUpdate = true
-        this.results.set(key, texture)
-        return texture
-      }
-      if (type === 'image') {
-        return new Promise(resolve => {
-          const img = new Image()
-          img.onload = () => {
-            this.results.set(key, img)
-            resolve(img)
-            // URL.revokeObjectURL(img.src)
-          }
-          img.src = URL.createObjectURL(file)
-        })
-      }
-      if (type === 'texture') {
-        return new Promise(resolve => {
-          const img = new Image()
-          img.onload = () => {
-            const texture = this.texLoader.load(img.src)
-            this.results.set(key, texture)
-            resolve(texture)
-            URL.revokeObjectURL(img.src)
-          }
-          img.src = URL.createObjectURL(file)
-        })
-      }
-      if (type === 'model') {
-        const buffer = await file.arrayBuffer()
-        const glb = await this.gltfLoader.parseAsync(buffer)
-        const node = glbToNodes(glb, this.world)
-        const model = {
-          toNodes() {
-            return node.clone(true)
-          },
-          getStats() {
-            const stats = node.getStats(true)
-            // append file size
-            stats.fileBytes = file.size
-            return stats
-          },
-        }
-        this.results.set(key, model)
-        return model
-      }
-      if (type === 'emote') {
-        const buffer = await file.arrayBuffer()
-        const glb = await this.gltfLoader.parseAsync(buffer)
-        const factory = createEmoteFactory(glb, url)
-        const emote = {
-          toClip(options) {
-            return factory.toClip(options)
-          },
-        }
-        this.results.set(key, emote)
-        return emote
-      }
-      if (type === 'avatar') {
-        const buffer = await file.arrayBuffer()
-        const glb = await this.gltfLoader.parseAsync(buffer)
-        const factory = createVRMFactory(glb, this.world.setupMaterial)
-        const hooks = this.vrmHooks
-        const node = createNode('group', { id: '$root' })
-        const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
-        node.add(node2)
-        const avatar = {
-          factory,
-          hooks,
-          toNodes(customHooks) {
-            const clone = node.clone(true)
-            if (customHooks) {
-              clone.get('avatar').hooks = customHooks
-            }
-            return clone
-          },
-          getStats() {
-            const stats = node.getStats(true)
-            // append file size
-            stats.fileBytes = file.size
-            return stats
-          },
-        }
-        this.results.set(key, avatar)
-        return avatar
-      }
-      if (type === 'script') {
-        const code = await file.text()
-        const script = this.world.scripts.evaluate(code)
-        this.results.set(key, script)
-        return script
-      }
-      if (type === 'audio') {
-        const buffer = await file.arrayBuffer()
-        const audioBuffer = await this.world.audio.ctx.decodeAudioData(buffer)
-        this.results.set(key, audioBuffer)
-        return audioBuffer
-      }
-    })
+    const promise = type === 'video'
+      ? handler(url, null, key)
+      : this.loadFile(url).then(file => handler(url, file, key))
     this.promises.set(key, promise)
     return promise
   }
@@ -244,37 +238,28 @@ export class ClientLoader extends System {
   insert(type, url, file) {
     const key = `${type}/${url}`
     const localUrl = URL.createObjectURL(file)
-    let promise
-    if (type === 'hdr') {
-      promise = this.rgbeLoader.loadAsync(localUrl).then(texture => {
+    const insertHandlers = {
+      'hdr': () => this.rgbeLoader.loadAsync(localUrl).then(texture => {
         this.results.set(key, texture)
         return texture
-      })
-    }
-    if (type === 'image') {
-      promise = new Promise(resolve => {
+      }),
+      'image': () => new Promise(resolve => {
         const img = new Image()
         img.onload = () => {
           this.results.set(key, img)
           resolve(img)
         }
         img.src = localUrl
-      })
-    }
-    if (type === 'video') {
-      promise = new Promise(resolve => {
+      }),
+      'video': () => new Promise(resolve => {
         const factory = createVideoFactory(this.world, localUrl)
         resolve(factory)
-      })
-    }
-    if (type === 'texture') {
-      promise = this.texLoader.loadAsync(localUrl).then(texture => {
+      }),
+      'texture': () => this.texLoader.loadAsync(localUrl).then(texture => {
         this.results.set(key, texture)
         return texture
-      })
-    }
-    if (type === 'model') {
-      promise = this.gltfLoader.loadAsync(localUrl).then(glb => {
+      }),
+      'model': () => this.gltfLoader.loadAsync(localUrl).then(glb => {
         const node = glbToNodes(glb, this.world)
         const model = {
           toNodes() {
@@ -282,17 +267,14 @@ export class ClientLoader extends System {
           },
           getStats() {
             const stats = node.getStats(true)
-            // append file size
             stats.fileBytes = file.size
             return stats
           },
         }
         this.results.set(key, model)
         return model
-      })
-    }
-    if (type === 'emote') {
-      promise = this.gltfLoader.loadAsync(localUrl).then(glb => {
+      }),
+      'emote': () => this.gltfLoader.loadAsync(localUrl).then(glb => {
         const factory = createEmoteFactory(glb, url)
         const emote = {
           toClip(options) {
@@ -301,10 +283,8 @@ export class ClientLoader extends System {
         }
         this.results.set(key, emote)
         return emote
-      })
-    }
-    if (type === 'avatar') {
-      promise = this.gltfLoader.loadAsync(localUrl).then(glb => {
+      }),
+      'avatar': () => this.gltfLoader.loadAsync(localUrl).then(glb => {
         const factory = createVRMFactory(glb, this.world.setupMaterial)
         const hooks = this.vrmHooks
         const node = createNode('group', { id: '$root' })
@@ -322,17 +302,14 @@ export class ClientLoader extends System {
           },
           getStats() {
             const stats = node.getStats(true)
-            // append file size
             stats.fileBytes = file.size
             return stats
           },
         }
         this.results.set(key, avatar)
         return avatar
-      })
-    }
-    if (type === 'script') {
-      promise = new Promise(async (resolve, reject) => {
+      }),
+      'script': () => new Promise(async (resolve, reject) => {
         try {
           const code = await file.text()
           const script = this.world.scripts.evaluate(code)
@@ -341,10 +318,8 @@ export class ClientLoader extends System {
         } catch (err) {
           reject(err)
         }
-      })
-    }
-    if (type === 'audio') {
-      promise = new Promise(async (resolve, reject) => {
+      }),
+      'audio': () => new Promise(async (resolve, reject) => {
         try {
           const arrayBuffer = await file.arrayBuffer()
           const audioBuffer = await this.world.audio.ctx.decodeAudioData(arrayBuffer)
@@ -353,9 +328,12 @@ export class ClientLoader extends System {
         } catch (err) {
           reject(err)
         }
-      })
+      }),
     }
-    this.promises.set(key, promise)
+    const handler = insertHandlers[type]
+    if (handler) {
+      this.promises.set(key, handler())
+    }
   }
 
   destroy() {
