@@ -1,6 +1,6 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
 
 const defaults = {
   label: '...',
@@ -71,24 +71,17 @@ export class Nametag extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get label() {
-          return self.label
-        },
-        set label(value) {
-          self.label = value
-        },
-        get health() {
-          return self.health
-        },
-        set health(value) {
-          self.health = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      const self = this
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {},
+        {
+          label: {
+            get() { return self.label },
+            set(value) { self.label = value }
+          },
+        }
+      )
     }
     return this.proxy
   }

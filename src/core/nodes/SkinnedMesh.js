@@ -1,7 +1,7 @@
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import { Node } from './Node.js'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
@@ -213,39 +213,18 @@ export class SkinnedMesh extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get anims() {
-          return self.anims
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          play: this.play,
+          stop: this.stop,
+          getBone: this.getBone,
+          getBoneTransform: this.getBoneTransform,
         },
-        get castShadow() {
-          return self.castShadow
-        },
-        set castShadow(value) {
-          self.castShadow = value
-        },
-        get receiveShadow() {
-          return self.receiveShadow
-        },
-        set receiveShadow(value) {
-          self.receiveShadow = value
-        },
-        play(opts) {
-          self.play(opts)
-        },
-        stop(opts) {
-          self.stop(opts)
-        },
-        getBone(name) {
-          return self.getBone(name)
-        },
-        getBoneTransform(name) {
-          return self.getBoneTransform(name)
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+        {
+          anims: function() { return this.anims },
+        }
+      )
     }
     return this.proxy
   }

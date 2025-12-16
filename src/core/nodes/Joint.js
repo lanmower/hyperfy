@@ -5,7 +5,7 @@ import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
 import { q } from '../utils/TempVectors.js'
 import { jointTypes as types } from '../utils/NodeConstants.js'
 
@@ -191,119 +191,46 @@ export class Joint extends Node {
   getProxy() {
     if (!this.proxy) {
       const self = this
-      let proxy = {
-        get type() {
-          return self.type
-        },
-        set type(value) {
-          self.type = value
-        },
-        get body0() {
-          return self.body0?.getProxy()
-        },
-        set body0(value) {
-          if (value) {
-            self.ctx.world._allowRefs = true
-            self.body0 = value?._ref
-            self.ctx.world._allowRefs = false
-          } else {
-            self.body0 = null
-          }
-          self.needsRebuild = true
-          self.setDirty()
-        },
-        get offset0() {
-          return self.offset0
-        },
-        get quaternion0() {
-          return self.quaternion0
-        },
-        get rotation0() {
-          return self.rotation0
-        },
-        get body1() {
-          return self.body1?.getProxy()
-        },
-        set body1(value) {
-          if (value) {
-            self.ctx.world._allowRefs = true
-            self.body1 = value?._ref
-            self.ctx.world._allowRefs = false
-          } else {
-            self.body1 = null
-          }
-          self.needsRebuild = true
-          self.setDirty()
-        },
-        get offset1() {
-          return self.offset1
-        },
-        get quaternion1() {
-          return self.quaternion1
-        },
-        get rotation1() {
-          return self.rotation1
-        },
-        get axis() {
-          return self.axis
-        },
-        get breakForce() {
-          return self.breakForce
-        },
-        set breakForce(value) {
-          self.breakForce = value
-        },
-        get breakTorque() {
-          return self.breakTorque
-        },
-        set breakTorque(value) {
-          self.breakTorque = value
-        },
-        get limitY() {
-          return self.limitY
-        },
-        set limitY(value) {
-          self.limitY = value
-        },
-        get limitZ() {
-          return self.limitZ
-        },
-        set limitZ(value) {
-          self.limitZ = value
-        },
-        get limitMin() {
-          return self.limitMin
-        },
-        set limitMin(value) {
-          self.limitMin = value
-        },
-        get limitMax() {
-          return self.limitMax
-        },
-        set limitMax(value) {
-          self.limitMax = value
-        },
-        get limitStiffness() {
-          return self.limitStiffness
-        },
-        set limitStiffness(value) {
-          self.limitStiffness = value
-        },
-        get limitDamping() {
-          return self.limitDamping
-        },
-        set limitDamping(value) {
-          self.limitDamping = value
-        },
-        get collide() {
-          return self.collide
-        },
-        set collide(value) {
-          self.collide = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {},
+        {
+          body0: {
+            get() { return self.body0?.getProxy() },
+            set(value) {
+              if (value) {
+                self.ctx.world._allowRefs = true
+                self.body0 = value?._ref
+                self.ctx.world._allowRefs = false
+              } else {
+                self.body0 = null
+              }
+              self.needsRebuild = true
+              self.setDirty()
+            }
+          },
+          offset0: function() { return self.offset0 },
+          quaternion0: function() { return self.quaternion0 },
+          rotation0: function() { return self.rotation0 },
+          body1: {
+            get() { return self.body1?.getProxy() },
+            set(value) {
+              if (value) {
+                self.ctx.world._allowRefs = true
+                self.body1 = value?._ref
+                self.ctx.world._allowRefs = false
+              } else {
+                self.body1 = null
+              }
+              self.needsRebuild = true
+              self.setDirty()
+            }
+          },
+          offset1: function() { return self.offset1 },
+          quaternion1: function() { return self.quaternion1 },
+          rotation1: function() { return self.rotation1 },
+          axis: function() { return self.axis },
+        }
+      )
     }
     return this.proxy
   }

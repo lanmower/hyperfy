@@ -56,18 +56,22 @@ export function onSetRebuildIf(condition) {
 }
 
 // Proxy generator for schema-based properties
+// Supports both underscore-prefixed (_prop) and non-prefixed (prop) property schemas
 export function createPropertyProxy(instance, propertySchema, superProxy, customMethods = {}, customProperties = {}) {
   const self = instance
   const proxy = {}
 
   // Create getter/setter pairs for all schema properties
   for (const key in propertySchema) {
+    // Auto-detect if property uses underscore prefix (e.g., _src or src)
+    const propKey = `_${key}` in self ? `_${key}` : key
+
     Object.defineProperty(proxy, key, {
       get() {
-        return self[key]
+        return self[propKey]
       },
       set(value) {
-        self[key] = value
+        self[propKey] = value
       },
       enumerable: true,
       configurable: true,

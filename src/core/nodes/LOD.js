@@ -2,7 +2,7 @@ import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node } from './Node.js'
-import { defineProps, validators } from '../utils/defineProperty.js'
+import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
 import { v } from '../utils/TempVectors.js'
 
 const defaults = {
@@ -88,21 +88,15 @@ export class LOD extends Node {
   getProxy() {
     if (!this.proxy) {
       const self = this
-      let proxy = {
-        get scaleAware() {
-          return self.scaleAware
-        },
-        set scaleAware(value) {
-          self.scaleAware = value
-        },
-        insert(pNode, maxDistance) {
-          const node = getRef(pNode)
-          self.insert(node, maxDistance)
-          return this
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
+        {
+          insert(pNode, maxDistance) {
+            const node = getRef(pNode)
+            self.insert(node, maxDistance)
+            return this
+          },
+        }
+      )
     }
     return this.proxy
   }
