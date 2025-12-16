@@ -1,4 +1,5 @@
 // hot reload dev server for hyperfy
+
 import 'dotenv-flow/config'
 import fs from 'fs-extra'
 import path from 'path'
@@ -16,10 +17,18 @@ await fs.emptyDir(path.join(buildDir, 'public'))
 let serverSpawn = null
 let clientBuildId = Date.now()
 let isFirstBuild = true
+let buildStartTime = Date.now()
+
+function log(type, msg, data) {
+  const types = { info: 'ⓘ', warn: '⚠', error: '✕', success: '✓' }
+  const time = new Date().toISOString().split('T')[1].split('.')[0]
+  console.log(`${time} ${types[type] || '·'} ${msg}${data ? ' ' + JSON.stringify(data) : ''}`)
+}
 
 function notifyHotReload() {
   if (serverSpawn && serverSpawn.connected) {
     serverSpawn.send({ type: 'hotReload' })
+    log('success', 'HMR broadcast sent to clients')
   }
 }
 
@@ -58,30 +67,35 @@ async function buildClient() {
         setup(build) {
           build.onEnd(async result => {
             if (result.errors.length > 0) {
-              console.log('[Client] Build failed')
+              log('error', 'Client build failed', { errors: result.errors.length })
               return
             }
-            await fs.copy(clientPublicDir, clientBuildDir)
-            const physxWasmSrc = path.join(rootDir, 'src/core/physx-js-webidl.wasm')
-            const physxWasmDest = path.join(rootDir, 'build/public/physx-js-webidl.wasm')
-            await fs.copy(physxWasmSrc, physxWasmDest)
-            const metafile = result.metafile
-            const outputFiles = Object.keys(metafile.outputs)
-            const jsPath = outputFiles
-              .find(file => file.includes('/index-') && file.endsWith('.js'))
-              .split('build/public')[1]
-            const particlesPath = outputFiles
-              .find(file => file.includes('/particles-') && file.endsWith('.js'))
-              .split('build/public')[1]
-            clientBuildId = Date.now()
-            let htmlContent = await fs.readFile(clientHtmlSrc, 'utf-8')
-            htmlContent = htmlContent.replace('{jsPath}', jsPath)
-            htmlContent = htmlContent.replace('{particlesPath}', particlesPath)
-            htmlContent = htmlContent.replaceAll('{buildId}', clientBuildId)
-            await fs.writeFile(clientHtmlDest, htmlContent)
-            console.log('[Client] Built')
-            if (!isFirstBuild) {
-              notifyHotReload()
+            const buildTime = Date.now() - buildStartTime
+            try {
+              await fs.copy(clientPublicDir, clientBuildDir)
+              const physxWasmSrc = path.join(rootDir, 'src/core/physx-js-webidl.wasm')
+              const physxWasmDest = path.join(rootDir, 'build/public/physx-js-webidl.wasm')
+              await fs.copy(physxWasmSrc, physxWasmDest)
+              const metafile = result.metafile
+              const outputFiles = Object.keys(metafile.outputs)
+              const jsPath = outputFiles
+                .find(file => file.includes('/index-') && file.endsWith('.js'))
+                .split('build/public')[1]
+              const particlesPath = outputFiles
+                .find(file => file.includes('/particles-') && file.endsWith('.js'))
+                .split('build/public')[1]
+              clientBuildId = Date.now()
+              let htmlContent = await fs.readFile(clientHtmlSrc, 'utf-8')
+              htmlContent = htmlContent.replace('{jsPath}', jsPath)
+              htmlContent = htmlContent.replace('{particlesPath}', particlesPath)
+              htmlContent = htmlContent.replaceAll('{buildId}', clientBuildId)
+              await fs.writeFile(clientHtmlDest, htmlContent)
+              log('success', 'Client built', { ms: buildTime })
+              if (!isFirstBuild) {
+                notifyHotReload()
+              }
+            } catch (err) {
+              log('error', 'Client build error', { error: err.message })
             }
           })
         },
@@ -115,26 +129,31 @@ async function buildServer() {
         setup(build) {
           build.onEnd(async result => {
             if (result.errors.length > 0) {
-              console.log('[Server] Build failed')
+              log('error', 'Server build failed', { errors: result.errors.length })
               return
             }
-            const physxIdlSrc = path.join(rootDir, 'src/core/physx-js-webidl.js')
-            const physxIdlDest = path.join(rootDir, 'build/physx-js-webidl.js')
-            await fs.copy(physxIdlSrc, physxIdlDest)
-            const physxWasmSrc = path.join(rootDir, 'src/core/physx-js-webidl.wasm')
-            const physxWasmDest = path.join(rootDir, 'build/physx-js-webidl.wasm')
-            await fs.copy(physxWasmSrc, physxWasmDest)
-            if (serverSpawn) {
-              console.log('[Server] Restarting...')
-              serverSpawn.kill('SIGTERM')
+            const buildTime = Date.now() - buildStartTime
+            try {
+              const physxIdlSrc = path.join(rootDir, 'src/core/physx-js-webidl.js')
+              const physxIdlDest = path.join(rootDir, 'build/physx-js-webidl.js')
+              await fs.copy(physxIdlSrc, physxIdlDest)
+              const physxWasmSrc = path.join(rootDir, 'src/core/physx-js-webidl.wasm')
+              const physxWasmDest = path.join(rootDir, 'build/physx-js-webidl.wasm')
+              await fs.copy(physxWasmSrc, physxWasmDest)
+              if (serverSpawn) {
+                log('info', 'Server restarting...')
+                serverSpawn.kill('SIGTERM')
+              }
+              serverSpawn = fork(path.join(rootDir, 'build/index.js'))
+              serverSpawn.on('error', err => log('error', 'Server process error', { error: err.message }))
+              serverSpawn.on('exit', code => {
+                if (code && code !== 0) log('warn', 'Server exited', { code })
+              })
+              log('success', 'Server started', { ms: buildTime })
+              isFirstBuild = false
+            } catch (err) {
+              log('error', 'Server build error', { error: err.message })
             }
-            serverSpawn = fork(path.join(rootDir, 'build/index.js'))
-            serverSpawn.on('error', err => console.error('[Server] Error:', err))
-            serverSpawn.on('exit', code => {
-              if (code && code !== 0) console.log('[Server] Exited with code', code)
-            })
-            console.log('[Server] Started')
-            isFirstBuild = false
           })
         },
       },
@@ -145,14 +164,20 @@ async function buildServer() {
 }
 
 async function main() {
-  console.log('[Dev] Starting build with hot reload...')
-  await buildClient()
-  await buildServer()
-  console.log('[Dev] Watching for changes...')
+  log('info', 'Dev server starting with hot reload...')
+  try {
+    buildStartTime = Date.now()
+    await buildClient()
+    await buildServer()
+    log('success', 'Dev server ready', { ms: Date.now() - buildStartTime })
+  } catch (err) {
+    log('error', 'Dev server initialization failed', { error: err.message })
+    process.exit(1)
+  }
 }
 
 process.on('SIGINT', () => {
-  console.log('\n[Dev] Shutting down...')
+  log('info', 'Shutting down dev server...')
   serverSpawn?.kill('SIGTERM')
   process.exit(0)
 })
@@ -163,6 +188,6 @@ process.on('SIGTERM', () => {
 })
 
 main().catch(err => {
-  console.error(err)
+  log('error', 'Fatal error', { error: err.message })
   process.exit(1)
 })

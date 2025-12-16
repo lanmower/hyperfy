@@ -1,10 +1,15 @@
 // Command Registry - unified CLI command system
 
+import { Output } from './Output.js'
+import { Metrics } from './Metrics.js'
+
 export class CommandRegistry {
   constructor() {
     this.commands = new Map()
     this.aliases = new Map()
     this.groups = new Map()
+    this.output = new Output('CLI')
+    this.metrics = new Metrics('CLI')
   }
 
   register(name, handler, metadata = {}) {
@@ -33,6 +38,7 @@ export class CommandRegistry {
     }
     this.groups.get(command.group).push(name)
 
+    this.metrics.counter(`commands.registered.${name}`)
     return this
   }
 
@@ -50,13 +56,22 @@ export class CommandRegistry {
 
     const command = this.commands.get(name)
     if (!command) {
+      this.metrics.counter(`commands.failed.unknown`)
       throw new Error(`Unknown command: ${name}`)
     }
 
+    this.metrics.counter(`commands.executed.${name}`)
+    const timer = this.metrics.timer(`command.duration.${name}`)
+
     try {
       const result = await command.handler(args, context)
+      timer()
+      this.metrics.counter(`commands.success.${name}`)
       return { success: true, result, command: name }
     } catch (err) {
+      timer()
+      this.metrics.counter(`commands.error.${name}`)
+      this.output.error(`Command failed: ${name}`, { error: err.message })
       return { success: false, error: err.message, command: name }
     }
   }
@@ -115,7 +130,8 @@ export class CommandRegistry {
     return {
       total: this.commands.size,
       groups: this.groups.size,
-      aliases: this.aliases.size
+      aliases: this.aliases.size,
+      metrics: this.metrics.getStats()
     }
   }
 

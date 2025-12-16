@@ -1,21 +1,11 @@
 // Unified database persistence for world data
 
-export class WorldPersistence {
-  constructor(db, fileUploader = null) {
-    this.db = db
-    this.fileUploader = fileUploader
-  }
+import { PersistenceBase } from '../../core/services/PersistenceBase.js'
 
-  async upsert(table, whereClause, data) {
-    const exists = await this.db(table).where(whereClause).first()
-    if (exists) {
-      await this.db(table).where(whereClause).update(data)
-    } else {
-      const insertData = Object.assign({}, Object.fromEntries(
-        Object.entries(whereClause).map(([k, v]) => [k, v])
-      ), data)
-      await this.db(table).insert(insertData)
-    }
+export class WorldPersistence extends PersistenceBase {
+  constructor(db, fileUploader = null) {
+    super(db)
+    this.fileUploader = fileUploader
   }
 
   async loadSpawn() {
@@ -40,27 +30,8 @@ export class WorldPersistence {
     return await this.db('blueprints')
   }
 
-  async saveRecord(table, id, data, createdAt, updatedAt) {
-    const exists = await this.db(table).where('id', id).first()
-    const now = updatedAt || new Date().toISOString()
-    const created = createdAt || now
-    if (exists) {
-      await this.db(table).where('id', id).update({
-        data: JSON.stringify(data),
-        updatedAt: now
-      })
-    } else {
-      await this.db(table).insert({
-        id,
-        data: JSON.stringify(data),
-        createdAt: created,
-        updatedAt: now
-      })
-    }
-  }
-
   async saveBlueprint(id, data, createdAt, updatedAt) {
-    return this.saveRecord('blueprints', id, data, createdAt, updatedAt)
+    return this.save('blueprints', id, data, createdAt, updatedAt)
   }
 
   async loadEntities() {
@@ -68,11 +39,11 @@ export class WorldPersistence {
   }
 
   async saveEntity(id, data, createdAt, updatedAt) {
-    return this.saveRecord('entities', id, data, createdAt, updatedAt)
+    return this.save('entities', id, data, createdAt, updatedAt)
   }
 
   async deleteEntity(id) {
-    await this.db('entities').where('id', id).delete()
+    await this.delete('entities', id)
   }
 
   async loadUser(userId) {
