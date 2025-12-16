@@ -14,6 +14,7 @@ import { Physics } from './systems/Physics.js'
 import { Stage } from './systems/Stage.js'
 import { Scripts } from './systems/Scripts.js'
 import { ErrorMonitor } from './systems/ErrorMonitor.js'
+import { ServiceContainer } from './di/ServiceContainer.js'
 
 export class World extends EventEmitter {
   constructor() {
@@ -29,6 +30,11 @@ export class World extends EventEmitter {
     this.assetsUrl = null
     this.assetsDir = null
     this.hot = new Set()
+
+    // Dependency injection container
+    this.di = new ServiceContainer()
+    // Register world itself for injection
+    this.di.registerSingleton('world', this)
 
     this.rig = new THREE.Object3D()
     // NOTE: camera near is slightly smaller than spherecast. far is slightly more than skybox.
@@ -56,6 +62,8 @@ export class World extends EventEmitter {
     const system = new System(this)
     this.systems.push(system)
     this[key] = system
+    // Register system in DI container for dependency injection
+    this.di.registerSingleton(key, system)
     return system
   }
 
