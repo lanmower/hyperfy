@@ -19,7 +19,7 @@ import {
   isFlexWrap,
 } from '../extras/yoga.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 
 const defaults = {
   display: 'flex',
@@ -351,150 +351,8 @@ export class UIView extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get display() {
-          return self.display
-        },
-        set display(value) {
-          self.display = value
-        },
-        get width() {
-          return self.width
-        },
-        set width(value) {
-          self.width = value
-        },
-        get height() {
-          return self.height
-        },
-        set height(value) {
-          self.height = value
-        },
-        get absolute() {
-          return self.absolute
-        },
-        set absolute(value) {
-          self.absolute = value
-        },
-        get top() {
-          return self.top
-        },
-        set top(value) {
-          self.top = value
-        },
-        get right() {
-          return self.right
-        },
-        set right(value) {
-          self.right = value
-        },
-        get bottom() {
-          return self.bottom
-        },
-        set bottom(value) {
-          self.bottom = value
-        },
-        get left() {
-          return self.left
-        },
-        set left(value) {
-          self.left = value
-        },
-        get backgroundColor() {
-          return self.backgroundColor
-        },
-        set backgroundColor(value) {
-          self.backgroundColor = value
-        },
-        get borderWidth() {
-          return self.borderWidth
-        },
-        set borderWidth(value) {
-          self.borderWidth = value
-        },
-        get borderColor() {
-          return self.borderColor
-        },
-        set borderColor(value) {
-          self.borderColor = value
-        },
-        get borderRadius() {
-          return self.borderRadius
-        },
-        set borderRadius(value) {
-          self.borderRadius = value
-        },
-        get margin() {
-          return self.margin
-        },
-        set margin(value) {
-          self.margin = value
-        },
-        get padding() {
-          return self.padding
-        },
-        set padding(value) {
-          self.padding = value
-        },
-        get flexDirection() {
-          return self.flexDirection
-        },
-        set flexDirection(value) {
-          self.flexDirection = value
-        },
-        get justifyContent() {
-          return self.justifyContent
-        },
-        set justifyContent(value) {
-          self.justifyContent = value
-        },
-        get alignItems() {
-          return self.alignItems
-        },
-        set alignItems(value) {
-          self.alignItems = value
-        },
-        get alignContent() {
-          return self.alignContent
-        },
-        set alignContent(value) {
-          self.alignContent = value
-        },
-        get flexWrap() {
-          return self.flexWrap
-        },
-        set flexWrap(value) {
-          self.flexWrap = value
-        },
-        get gap() {
-          return self.gap
-        },
-        set gap(value) {
-          self.gap = value
-        },
-        get flexBasis() {
-          return self.flexBasis
-        },
-        set flexBasis(value) {
-          self.flexBasis = value
-        },
-        get flexGrow() {
-          return self.flexGrow
-        },
-        set flexGrow(value) {
-          self.flexGrow = value
-        },
-        get flexShrink() {
-          return self.flexShrink
-        },
-        set flexShrink(value) {
-          self.flexShrink = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
     }
     return this.proxy
   }

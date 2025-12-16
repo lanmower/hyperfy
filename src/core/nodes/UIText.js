@@ -4,7 +4,7 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { Display, isDisplay } from '../extras/yoga.js'
 import { fillRoundRect } from '../extras/roundRect.js'
-import { defineProps } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 
 const textAligns = ['left', 'center', 'right']
 
@@ -374,132 +374,8 @@ export class UIText extends Node {
   }
 
   getProxy() {
-    var self = this
     if (!this.proxy) {
-      let proxy = {
-        get display() {
-          return self.display
-        },
-        set display(value) {
-          self.display = value
-        },
-        get absolute() {
-          return self.absolute
-        },
-        set absolute(value) {
-          self.absolute = value
-        },
-        get top() {
-          return self.top
-        },
-        set top(value) {
-          self.top = value
-        },
-        get right() {
-          return self.right
-        },
-        set right(value) {
-          self.right = value
-        },
-        get bottom() {
-          return self.bottom
-        },
-        set bottom(value) {
-          self.bottom = value
-        },
-        get left() {
-          return self.left
-        },
-        set left(value) {
-          self.left = value
-        },
-        get backgroundColor() {
-          return self.backgroundColor
-        },
-        set backgroundColor(value) {
-          self.backgroundColor = value
-        },
-        get borderRadius() {
-          return self.borderRadius
-        },
-        set borderRadius(value) {
-          self.borderRadius = value
-        },
-        get margin() {
-          return self.margin
-        },
-        set margin(value) {
-          self.margin = value
-        },
-        get padding() {
-          return self.padding
-        },
-        set padding(value) {
-          self.padding = value
-        },
-        get value() {
-          return self.value
-        },
-        set value(value) {
-          self.value = value
-        },
-        get fontSize() {
-          return self.fontSize
-        },
-        set fontSize(value) {
-          self.fontSize = value
-        },
-        get color() {
-          return self.color
-        },
-        set color(value) {
-          self.color = value
-        },
-        get lineHeight() {
-          return self.lineHeight
-        },
-        set lineHeight(value) {
-          self.lineHeight = value
-        },
-        get textAlign() {
-          return self.textAlign
-        },
-        set textAlign(value) {
-          self.textAlign = value
-        },
-        get fontFamily() {
-          return self.fontFamily
-        },
-        set fontFamily(value) {
-          self.fontFamily = value
-        },
-        get fontWeight() {
-          return self.fontWeight
-        },
-        set fontWeight(value) {
-          self.fontWeight = value
-        },
-        get flexBasis() {
-          return self.flexBasis
-        },
-        set flexBasis(value) {
-          self.flexBasis = value
-        },
-        get flexGrow() {
-          return self.flexGrow
-        },
-        set flexGrow(value) {
-          self.flexGrow = value
-        },
-        get flexShrink() {
-          return self.flexShrink
-        },
-        set flexShrink(value) {
-          self.flexShrink = value
-        },
-      }
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(super.getProxy())) // inherit Node properties
-      this.proxy = proxy
+      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
     }
     return this.proxy
   }
