@@ -24,9 +24,6 @@ export class ClientUI extends System {
     this.control = null
   }
 
-  get controls() { return this.getService(ClientUI.DEPS.controls) }
-  get events() { return this.getService(ClientUI.DEPS.events) }
-
   start() {
     this.control = this.controls.bind({ priority: ControlPriorities.CORE_UI })
   }

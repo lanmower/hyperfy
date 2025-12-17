@@ -27,8 +27,6 @@ export class ServerLiveKit extends System {
     this.muted = new Set()
   }
 
-  get network() { return this.getService(ServerLiveKit.DEPS.network) }
-
   async serialize(playerId) {
     if (!this.enabled) return null
     const data = {}

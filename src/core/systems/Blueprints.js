@@ -5,22 +5,17 @@ import { AppValidator } from '../validators/AppValidator.js'
 import { normalizeBlueprint } from '../schemas/AppBlueprint.schema.js'
 
 export class Blueprints extends System {
+  static DEPS = {
+    network: 'network',
+    errorMonitor: 'errorMonitor',
+    entities: 'entities',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     this.items = new Map()
   }
-
-  getService(name) {
-    if (this.world.di?.has?.(name)) {
-      return this.world.di.get(name)
-    }
-    return this.world[name]
-  }
-
-  get network() { return this.getService('network') }
-  get errorMonitor() { return this.getService('errorMonitor') }
-  get entities() { return this.getService('entities') }
-  get events() { return this.getService('events') }
 
   get(id) {
     return this.items.get(id)

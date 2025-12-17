@@ -28,9 +28,6 @@ export class ServerLoader extends BaseLoader {
     }
   }
 
-  get errorMonitor() { return this.getService(ServerLoader.DEPS.errorMonitor) }
-  get scripts() { return this.getService(ServerLoader.DEPS.scripts) }
-
   getTypeHandlers() {
     return {
       'model': this.handleModel,

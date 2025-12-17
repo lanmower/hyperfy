@@ -26,11 +26,6 @@ export class XR extends System {
     this.controllerModelFactory = new XRControllerModelFactory()
   }
 
-  get graphics() { return this.getService(XR.DEPS.graphics) }
-  get events() { return this.getService(XR.DEPS.events) }
-  get rig() { return this.getService(XR.DEPS.rig) }
-  get cameraService() { return this.getService(XR.DEPS.camera) }
-
   async init() {
     this.supportsVR = await navigator.xr?.isSessionSupported('immersive-vr')
     this.supportsAR = await navigator.xr?.isSessionSupported('immersive-ar')

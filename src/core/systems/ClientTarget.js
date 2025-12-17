@@ -11,8 +11,6 @@ export class ClientTarget extends System {
     super(world)
   }
 
-  get camera() { return this.getService(ClientTarget.DEPS.camera) }
-
   init({ ui }) {
     this.ui = ui
   }

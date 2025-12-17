@@ -15,9 +15,6 @@ export class ClientPointer extends System {
     this.pointerState = new PointerState()
   }
 
-  get controls() { return this.getService(ClientPointer.DEPS.controls) }
-  get stage() { return this.getService(ClientPointer.DEPS.stage) }
-
   init({ ui }) {
     this.ui = ui
   }

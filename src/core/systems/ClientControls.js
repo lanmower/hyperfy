@@ -25,6 +25,10 @@ export class ClientControls extends System {
     camera: 'camera',
   }
 
+  static EVENTS = {
+    xrSession: 'onXRSession',
+  }
+
   constructor(world) {
     super(world)
     this.controls = []
@@ -74,12 +78,7 @@ export class ClientControls extends System {
     this.controlFactory = new ControlFactory(this)
   }
 
-  get rig() { return this.getService(ClientControls.DEPS.rig) }
-  get events() { return this.getService(ClientControls.DEPS.events) }
-  get camera() { return this.getService(ClientControls.DEPS.camera) }
-
   start() {
-    this.events.on('xrSession', this.onXRSession)
   }
 
   preFixedUpdate() {

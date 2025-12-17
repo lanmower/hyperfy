@@ -140,12 +140,12 @@ export class AssetHandlers {
   }
 
   getInsertHandlers(localUrl, url, file, key) {
-    const handlers = {
-      'hdr': () => this.rgbeLoader.loadAsync(localUrl).then(texture => {
+    return {
+      hdr: () => this.rgbeLoader.loadAsync(localUrl).then(texture => {
         this.loader.results.set(key, texture)
         return texture
       }),
-      'image': () => new Promise(resolve => {
+      image: () => new Promise(resolve => {
         const img = new Image()
         img.onload = () => {
           this.loader.results.set(key, img)
@@ -153,20 +153,18 @@ export class AssetHandlers {
         }
         img.src = localUrl
       }),
-      'video': () => new Promise(resolve => {
+      video: () => new Promise(resolve => {
         const factory = createVideoFactory(this.loader.world, localUrl)
         resolve(factory)
       }),
-      'texture': () => this.texLoader.loadAsync(localUrl).then(texture => {
+      texture: () => this.texLoader.loadAsync(localUrl).then(texture => {
         this.loader.results.set(key, texture)
         return texture
       }),
-      'model': () => this.loader.gltfLoader.loadAsync(localUrl).then(glb => {
+      model: () => this.loader.gltfLoader.loadAsync(localUrl).then(glb => {
         const node = glbToNodes(glb, this.loader.world)
         const model = {
-          toNodes() {
-            return node.clone(true)
-          },
+          toNodes() { return node.clone(true) },
           getStats() {
             const stats = node.getStats(true)
             stats.fileBytes = file.size
@@ -176,17 +174,13 @@ export class AssetHandlers {
         this.loader.results.set(key, model)
         return model
       }),
-      'emote': () => this.loader.gltfLoader.loadAsync(localUrl).then(glb => {
+      emote: () => this.loader.gltfLoader.loadAsync(localUrl).then(glb => {
         const factory = createEmoteFactory(glb, url)
-        const emote = {
-          toClip(options) {
-            return factory.toClip(options)
-          },
-        }
+        const emote = { toClip(options) { return factory.toClip(options) } }
         this.loader.results.set(key, emote)
         return emote
       }),
-      'avatar': () => this.loader.gltfLoader.loadAsync(localUrl).then(glb => {
+      avatar: () => this.loader.gltfLoader.loadAsync(localUrl).then(glb => {
         const factory = createVRMFactory(glb, this.loader.setupMaterial)
         const hooks = this.loader.vrmHooks
         const node = createNode('group', { id: '$root' })
@@ -197,9 +191,7 @@ export class AssetHandlers {
           hooks,
           toNodes(customHooks) {
             const clone = node.clone(true)
-            if (customHooks) {
-              clone.get('avatar').hooks = customHooks
-            }
+            if (customHooks) clone.get('avatar').hooks = customHooks
             return clone
           },
           getStats() {
@@ -211,27 +203,18 @@ export class AssetHandlers {
         this.loader.results.set(key, avatar)
         return avatar
       }),
-      'script': () => new Promise(async (resolve, reject) => {
-        try {
-          const code = await file.text()
-          const script = this.loader.scripts.evaluate(code)
-          this.loader.results.set(key, script)
-          resolve(script)
-        } catch (err) {
-          reject(err)
-        }
+      script: () => Promise.resolve().then(async () => {
+        const code = await file.text()
+        const script = this.loader.scripts.evaluate(code)
+        this.loader.results.set(key, script)
+        return script
       }),
-      'audio': () => new Promise(async (resolve, reject) => {
-        try {
-          const arrayBuffer = await file.arrayBuffer()
-          const audioBuffer = await this.loader.audio.ctx.decodeAudioData(arrayBuffer)
-          this.loader.results.set(key, audioBuffer)
-          resolve(audioBuffer)
-        } catch (err) {
-          reject(err)
-        }
+      audio: () => Promise.resolve().then(async () => {
+        const arrayBuffer = await file.arrayBuffer()
+        const audioBuffer = await this.loader.audio.ctx.decodeAudioData(arrayBuffer)
+        this.loader.results.set(key, audioBuffer)
+        return audioBuffer
       }),
     }
-    return handlers
   }
 }

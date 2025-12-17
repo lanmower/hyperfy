@@ -12,6 +12,11 @@ const Types = {
 }
 
 export class Entities extends System {
+  static DEPS = {
+    network: 'network',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     this.items = new Map()
@@ -20,9 +25,6 @@ export class Entities extends System {
     this.hot = new Set()
     this.removed = []
   }
-
-  get network() { return this.getService('network') }
-  get events() { return this.getService('events') }
 
   get(id) {
     return this.items.get(id)

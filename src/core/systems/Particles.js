@@ -22,6 +22,10 @@ export class Particles extends System {
     events: 'events',
   }
 
+  static EVENTS = {
+    xrSession: 'onXRSession',
+  }
+
   constructor(world) {
     super(world)
     this.worker = null
@@ -30,13 +34,6 @@ export class Particles extends System {
     this.emitters = new Map() // id -> emitter
   }
 
-  get rig() { return this.getService(Particles.DEPS.rig) }
-  get xr() { return this.getService(Particles.DEPS.xr) }
-  get stage() { return this.getService(Particles.DEPS.stage) }
-  get loader() { return this.getService(Particles.DEPS.loader) }
-  get camera() { return this.getService(Particles.DEPS.camera) }
-  get events() { return this.getService(Particles.DEPS.events) }
-
   init() {
     this.worker = getWorker()
     this.worker.onmessage = this.onMessage
@@ -44,7 +41,6 @@ export class Particles extends System {
   }
 
   start() {
-    this.events.on('xrSession', this.onXRSession)
   }
 
   register(node) {

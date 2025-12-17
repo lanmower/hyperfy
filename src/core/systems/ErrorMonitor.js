@@ -31,11 +31,6 @@ export class ErrorMonitor extends System {
     setInterval(() => this.errorQuery.cleanup(), 60000)
   }
 
-  get network() { return this.getService(ErrorMonitor.DEPS.network) }
-  get entities() { return this.getService(ErrorMonitor.DEPS.entities) }
-  get events() { return this.getService(ErrorMonitor.DEPS.events) }
-  get blueprints() { return this.getService(ErrorMonitor.DEPS.blueprints) }
-
   init(options = {}) {
     this.mcpEndpoint = options.mcpEndpoint || null
     this.enableRealTimeStreaming = options.enableRealTimeStreaming !== false

@@ -14,6 +14,12 @@ export class ClientStats extends System {
     network: 'network',
   }
 
+  static EVENTS = {
+    prefChanged: 'onPrefChanged',
+    uiStateChanged: 'onUIState',
+    ready: 'onReady',
+  }
+
   constructor(world) {
     super(world)
     this.stats = null
@@ -21,23 +27,15 @@ export class ClientStats extends System {
     this.active = false
     this.lastPingAt = 0
     this.pingHistory = []
-    this.pingHistorySize = 30 // Store the last 30 ping measurements
-    this.maxPing = 0.01 // Starting value for max (will be updated)
+    this.pingHistorySize = 30
+    this.maxPing = 0.01
   }
-
-  get events() { return this.getService(ClientStats.DEPS.events) }
-  get prefs() { return this.getService(ClientStats.DEPS.prefs) }
-  get graphics() { return this.getService(ClientStats.DEPS.graphics) }
-  get network() { return this.getService(ClientStats.DEPS.network) }
 
   init({ ui }) {
     this.ui = ui
   }
 
   start() {
-    this.events.on('prefChanged', this.onPrefChanged)
-    this.events.on('uiStateChanged', this.onUIState)
-    this.events.on('ready', this.onReady)
   }
 
   onReady = () => {

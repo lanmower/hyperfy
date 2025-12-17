@@ -27,13 +27,6 @@ export class ClientLoader extends BaseLoader {
     this.fileManager = new FileManager(this)
   }
 
-  get stage() { return this.getService(ClientLoader.DEPS.stage) }
-  get scripts() { return this.getService(ClientLoader.DEPS.scripts) }
-  get audio() { return this.getService(ClientLoader.DEPS.audio) }
-  get events() { return this.getService(ClientLoader.DEPS.events) }
-  get camera() { return this.getService(ClientLoader.DEPS.camera) }
-  get loader() { return this.getService(ClientLoader.DEPS.loader) }
-
   getTypeHandlers() {
     return {
       'video': this.handleVideo,

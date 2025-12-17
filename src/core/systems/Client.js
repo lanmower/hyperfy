@@ -12,16 +12,16 @@ export class Client extends System {
     events: 'events',
   }
 
+  static EVENTS = {
+    settingChanged: 'onSettingChanged',
+  }
+
   constructor(world) {
     super(world)
     window.world = world
     window.THREE = THREE
     this.setupDebugGlobals()
   }
-
-  get graphics() { return this.getService(Client.DEPS.graphics) }
-  get tick() { return this.getService(Client.DEPS.tick) }
-  get events() { return this.getService(Client.DEPS.events) }
 
   setupDebugGlobals() {
     const world = this.world
@@ -69,8 +69,6 @@ export class Client extends System {
   start() {
     this.graphics.renderer.setAnimationLoop(this.tick)
     document.addEventListener('visibilitychange', this.onVisibilityChange)
-
-    this.events.on('settingChanged', this.onSettingChanged)
   }
 
   onSettingChanged = ({ key, value }) => {

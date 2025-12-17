@@ -59,6 +59,11 @@ export class ClientEnvironment extends BaseEnvironment {
     camera: 'camera',
   }
 
+  static EVENTS = {
+    prefChanged: 'onPrefChanged',
+    graphicsResize: 'onGraphicsResize',
+  }
+
   constructor(world) {
     super(world)
     this.skys = []
@@ -68,13 +73,6 @@ export class ClientEnvironment extends BaseEnvironment {
     this.hdrUrl = null
   }
 
-  get stage() { return this.getService(ClientEnvironment.DEPS.stage) }
-  get rig() { return this.getService(ClientEnvironment.DEPS.rig) }
-  get loader() { return this.getService(ClientEnvironment.DEPS.loader) }
-  get events() { return this.getService(ClientEnvironment.DEPS.events) }
-  get prefs() { return this.getService(ClientEnvironment.DEPS.prefs) }
-  get camera() { return this.getService(ClientEnvironment.DEPS.camera) }
-
   init({ baseEnvironment }) {
     this.base = baseEnvironment
   }
@@ -82,9 +80,6 @@ export class ClientEnvironment extends BaseEnvironment {
   async start() {
     this.buildCSM()
     this.updateSky()
-
-    this.events.on('prefChanged', this.onPrefChanged)
-    this.events.on('graphicsResize', this.onGraphicsResize)
   }
 
   addSky(node) {

@@ -33,17 +33,6 @@ export class ClientNetwork extends BaseNetwork {
     this.assetsUrl = world.assetsUrl
   }
 
-  get loader() { return this.getService(ClientNetwork.DEPS.loader) }
-  get entities() { return this.getService(ClientNetwork.DEPS.entities) }
-  get chat() { return this.getService(ClientNetwork.DEPS.chat) }
-  get settings() { return this.getService(ClientNetwork.DEPS.settings) }
-  get livekit() { return this.getService(ClientNetwork.DEPS.livekit) }
-  get events() { return this.getService(ClientNetwork.DEPS.events) }
-  get blueprints() { return this.getService(ClientNetwork.DEPS.blueprints) }
-  get environment() { return this.getService(ClientNetwork.DEPS.environment) }
-  get stats() { return this.getService(ClientNetwork.DEPS.stats) }
-  get collections() { return this.getService(ClientNetwork.DEPS.collections) }
-
   init({ wsUrl, name, avatar }) {
     const authToken = storage.get('authToken')
     let url = `${wsUrl}?authToken=${authToken}`

@@ -44,8 +44,6 @@ export class ClientPrefs extends System {
     })
   }
 
-  get events() { return this.getService(ClientPrefs.DEPS.events) }
-
   modify(key, value) {
     if (this.state.get(key) === value) return
     this.state.set(key, value)

@@ -32,6 +32,10 @@ export class ServerNetwork extends BaseNetwork {
     collections: 'collections',
   }
 
+  static EVENTS = {
+    settingChanged: 'saveSettings',
+  }
+
   constructor(world) {
     super(world, serverNetworkHandlers)
     this.id = 0
@@ -47,15 +51,6 @@ export class ServerNetwork extends BaseNetwork {
     this.setupHotReload()
     this.handlers = new PacketHandlers(this)
   }
-
-  get errorMonitor() { return this.getService(ServerNetwork.DEPS.errorMonitor) }
-  get entities() { return this.getService(ServerNetwork.DEPS.entities) }
-  get settings() { return this.getService(ServerNetwork.DEPS.settings) }
-  get blueprints() { return this.getService(ServerNetwork.DEPS.blueprints) }
-  get livekit() { return this.getService(ServerNetwork.DEPS.livekit) }
-  get events() { return this.getService(ServerNetwork.DEPS.events) }
-  get chat() { return this.getService(ServerNetwork.DEPS.chat) }
-  get collections() { return this.getService(ServerNetwork.DEPS.collections) }
 
   setupHotReload() {
     process.on('message', msg => {
@@ -94,7 +89,6 @@ export class ServerNetwork extends BaseNetwork {
     } catch (err) {
       console.error(err)
     }
-    this.events.on('settingChanged', this.saveSettings)
     if (SAVE_INTERVAL) {
       this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
     }

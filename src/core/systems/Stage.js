@@ -31,9 +31,6 @@ export class Stage extends System {
     this.setupMaterial = world.setupMaterial
   }
 
-  get rig() { return this.getService(Stage.DEPS.rig) }
-  get camera() { return this.getService(Stage.DEPS.camera) }
-
   init({ viewport }) {
     this.viewport = viewport
     this.scene.add(this.rig)

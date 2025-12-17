@@ -5,22 +5,17 @@ import { StateManager } from '../state/StateManager.js'
 import { normalizeMessage, serializeForNetwork, deserializeFromNetwork } from '../schemas/ChatMessage.schema.js'
 
 export class Chat extends System {
+  static DEPS = {
+    entities: 'entities',
+    events: 'events',
+    network: 'network',
+    prefs: 'prefs',
+  }
+
   constructor(world) {
     super(world)
     this.state = new StateManager({ messages: [] })
   }
-
-  getService(name) {
-    if (this.world.di?.has?.(name)) {
-      return this.world.di.get(name)
-    }
-    return this.world[name]
-  }
-
-  get entities() { return this.getService('entities') }
-  get events() { return this.getService('events') }
-  get network() { return this.getService('network') }
-  get prefs() { return this.getService('prefs') }
 
   add(msg, broadcast) {
     if (!msg.id) msg.id = uuid()

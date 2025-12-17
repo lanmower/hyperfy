@@ -26,9 +26,6 @@ export class Settings extends System {
     this.state = new StateManager({ ...DEFAULT_CONFIG })
   }
 
-  get events() { return this.getService(Settings.DEPS.events) }
-  get network() { return this.getService(Settings.DEPS.network) }
-
   get(key) { return this.state.get(key) }
 
   set(key, value, broadcast) {

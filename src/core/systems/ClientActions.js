@@ -158,10 +158,6 @@ export class ClientActions extends System {
     this.action = null
   }
 
-  get rig() { return this.getService(ClientActions.DEPS.rig) }
-  get events() { return this.getService(ClientActions.DEPS.events) }
-  get controls() { return this.getService(ClientActions.DEPS.controls) }
-
   start() {
     const widthPx = 300
     const heightPx = 44

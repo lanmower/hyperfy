@@ -25,6 +25,10 @@ export class Nametags extends System {
     events: 'events',
   }
 
+  static EVENTS = {
+    xrSession: 'onXRSession',
+  }
+
   constructor(world) {
     super(world)
     this.nametags = []
@@ -164,13 +168,8 @@ export class Nametags extends System {
     this.mesh.count = 0
   }
 
-  get rig() { return this.getService(Nametags.DEPS.rig) }
-  get stage() { return this.getService(Nametags.DEPS.stage) }
-  get events() { return this.getService(Nametags.DEPS.events) }
-
   start() {
     this.stage.scene.add(this.mesh)
-    this.events.on('xrSession', this.onXRSession)
   }
 
   add({ name, health }) {

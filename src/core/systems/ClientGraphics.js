@@ -42,15 +42,15 @@ export class ClientGraphics extends System {
     settings: 'settings',
   }
 
+  static EVENTS = {
+    prefChanged: 'onPrefChanged',
+    xrSession: 'onXRSession',
+    settingChanged: 'onSettingChanged',
+  }
+
   constructor(world) {
     super(world)
   }
-
-  get camera() { return this.getService(ClientGraphics.DEPS.camera) }
-  get prefs() { return this.getService(ClientGraphics.DEPS.prefs) }
-  get events() { return this.getService(ClientGraphics.DEPS.events) }
-  get stage() { return this.getService(ClientGraphics.DEPS.stage) }
-  get settings() { return this.getService(ClientGraphics.DEPS.settings) }
 
   async init({ viewport }) {
     this.viewport = viewport
@@ -142,9 +142,6 @@ export class ClientGraphics extends System {
   }
 
   start() {
-    this.events.on('prefChanged', this.onPrefChanged)
-    this.events.on('xrSession', this.onXRSession)
-    this.events.on('settingChanged', this.onSettingChanged)
   }
 
   resize(width, height) {

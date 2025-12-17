@@ -12,6 +12,10 @@ export class ClientAudio extends System {
     prefs: 'prefs',
   }
 
+  static EVENTS = {
+    prefChanged: 'onPrefChanged',
+  }
+
   constructor(world) {
     super(world)
     this.handles = new Set()
@@ -109,12 +113,7 @@ export class ClientAudio extends System {
     console.log('[audio] suspended, waiting for interact...')
   }
 
-  get events() { return this.getService(ClientAudio.DEPS.events) }
-  get rig() { return this.getService(ClientAudio.DEPS.rig) }
-  get prefs() { return this.getService(ClientAudio.DEPS.prefs) }
-
   async init() {
-    this.events.on('prefChanged', this.onPrefChanged)
   }
 
   start() {

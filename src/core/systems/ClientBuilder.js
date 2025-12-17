@@ -33,6 +33,11 @@ export class ClientBuilder extends System {
     networkRate: 'networkRate',
   }
 
+  static EVENTS = {
+    player: 'checkLocalPlayer',
+    settingChanged: 'checkLocalPlayer',
+  }
+
   constructor(world) {
     super(world)
     this.enabled = false
@@ -46,16 +51,6 @@ export class ClientBuilder extends System {
     this.target.limit = PROJECT_MAX
   }
 
-  get controls() { return this.getService(ClientBuilder.DEPS.controls) }
-  get network() { return this.getService(ClientBuilder.DEPS.network) }
-  get entities() { return this.getService(ClientBuilder.DEPS.entities) }
-  get ui() { return this.getService(ClientBuilder.DEPS.ui) }
-  get events() { return this.getService(ClientBuilder.DEPS.events) }
-  get blueprints() { return this.getService(ClientBuilder.DEPS.blueprints) }
-  get rig() { return this.getService(ClientBuilder.DEPS.rig) }
-  get snaps() { return this.getService(ClientBuilder.DEPS.snaps) }
-  get networkRate() { return this.getService(ClientBuilder.DEPS.networkRate) }
-
   async init({ viewport }) {
     this.viewport = viewport
 
@@ -68,9 +63,6 @@ export class ClientBuilder extends System {
     this.viewport.addEventListener('dragenter', this.fileHandler.onDragEnter)
     this.viewport.addEventListener('dragleave', this.fileHandler.onDragLeave)
     this.viewport.addEventListener('drop', this.fileHandler.onDrop)
-
-    this.events.on('player', this.checkLocalPlayer)
-    this.events.on('settingChanged', this.checkLocalPlayer)
   }
 
   start() {

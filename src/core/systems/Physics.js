@@ -17,8 +17,6 @@ export class Physics extends System {
     this.scene = null
   }
 
-  get stage() { return this.getService(Physics.DEPS.stage) }
-
   async init() {
     const info = await loadPhysX()
     this.version = info.version

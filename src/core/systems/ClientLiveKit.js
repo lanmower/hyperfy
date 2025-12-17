@@ -15,6 +15,10 @@ export class ClientLiveKit extends System {
     entities: 'entities',
   }
 
+  static EVENTS = {
+    settingChanged: 'onSettingChanged',
+  }
+
   constructor(world) {
     super(world)
     this.room = null
@@ -34,17 +38,9 @@ export class ClientLiveKit extends System {
     this.roomManager = new RoomManager(this)
   }
 
-  get settings() { return this.getService(ClientLiveKit.DEPS.settings) }
-  get events() { return this.getService(ClientLiveKit.DEPS.events) }
-  get network() { return this.getService(ClientLiveKit.DEPS.network) }
-  get audio() { return this.getService(ClientLiveKit.DEPS.audio) }
-  get livekit() { return this.getService(ClientLiveKit.DEPS.livekit) }
-  get entities() { return this.getService(ClientLiveKit.DEPS.entities) }
-
   start() {
     this.defaultLevel = this.settings.get('voice')
     this.status.level = this.defaultLevel
-    this.events.on('settingChanged', this.onSettingChanged)
   }
 
   onSettingChanged = ({ key, value }) => {
