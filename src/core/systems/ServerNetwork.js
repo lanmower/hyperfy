@@ -45,6 +45,7 @@ export class ServerNetwork extends BaseNetwork {
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
     this.setupHotReload()
+    this.handlers = new PacketHandlers(this)
   }
 
   get errorMonitor() { return this.getService(ServerNetwork.DEPS.errorMonitor) }
@@ -263,335 +264,30 @@ export class ServerNetwork extends BaseNetwork {
     }
   }
 
-  onChatAdded = async (socket, msg) => {
-    this.chat.add(msg, false)
-    this.send('chatAdded', msg, socket.id)
-  }
-
-  onCommand = (socket, args) => {
-    this.commandHandler.execute(socket, args)
-  }
-
-  onModifyRank = async (socket, data) => {
-    if (!socket.player.isAdmin()) return
-    const { playerId, rank } = data
-    if (!playerId) return
-    if (!isNumber(rank)) return
-    const player = this.entities.get(playerId)
-    if (!player || !player.isPlayer) return
-    player.modify({ rank })
-    this.send('entityModified', { id: playerId, rank })
-    await this.persistence.updateUserRank(playerId, rank)
-  }
-
-  onKick = (socket, playerId) => {
-    const player = this.entities.get(playerId)
-    if (!player) return
-    if (socket.player.data.rank <= player.data.rank) return
-    const tSocket = this.sockets.get(playerId)
-    tSocket.send('kick', 'moderation')
-    tSocket.disconnect()
-  }
-
-  onMute = (socket, data) => {
-    const player = this.entities.get(data.playerId)
-    if (!player) return
-    if (socket.player.data.rank <= player.data.rank) return
-    this.livekit.setMuted(data.playerId, data.muted)
-  }
-
-  onBlueprintAdded = (socket, blueprint) => {
-    if (!socket.player.isBuilder()) {
-      return console.error('player attempted to add blueprint without builder permission')
-    }
-    this.blueprints.add(blueprint)
-    this.send('blueprintAdded', blueprint, socket.id)
-    this.dirtyBlueprints.add(blueprint.id)
-  }
-
-  onBlueprintModified = (socket, data) => {
-    if (!socket.player.isBuilder()) {
-      return console.error('player attempted to modify blueprint without builder permission')
-    }
-    const blueprint = this.blueprints.get(data.id)
-    if (data.version > blueprint.version) {
-      this.blueprints.modify(data)
-      this.send('blueprintModified', data, socket.id)
-      this.dirtyBlueprints.add(data.id)
-    }
-    else {
-      socket.send('blueprintModified', blueprint)
-    }
-  }
-
-  onEntityAdded = (socket, data) => {
-    if (!socket.player.isBuilder()) {
-      return console.error('player attempted to add entity without builder permission')
-    }
-    const entity = this.entities.add(data)
-    this.send('entityAdded', data, socket.id)
-    if (entity.isApp) this.dirtyApps.add(entity.data.id)
-  }
-
-  onEntityModified = async (socket, data) => {
-    const entity = this.entities.get(data.id)
-    if (!entity) return console.error('onEntityModified: no entity found', data)
-    entity.modify(data)
-    this.send('entityModified', data, socket.id)
-    if (entity.isApp) {
-      this.dirtyApps.add(entity.data.id)
-    }
-    if (entity.isPlayer) {
-      const changes = {}
-      let changed
-      if (data.hasOwnProperty('name')) {
-        changes.name = data.name
-        changed = true
-      }
-      if (data.hasOwnProperty('avatar')) {
-        changes.avatar = data.avatar
-        changed = true
-      }
-      if (changed) {
-        await this.persistence.updateUserData(entity.data.userId, changes)
-      }
-    }
-  }
-
-  onEntityEvent = (socket, event) => {
-    const [id, version, name, data] = event
-    const entity = this.entities.get(id)
-    entity?.onEvent(version, name, data, socket.id)
-  }
-
-  onEntityRemoved = (socket, id) => {
-    if (!socket.player.isBuilder()) return console.error('player attempted to remove entity without builder permission')
-    const entity = this.entities.get(id)
-    this.entities.remove(id)
-    this.send('entityRemoved', id, socket.id)
-    if (entity && entity.isApp) this.dirtyApps.add(id)
-  }
-
-  onSettingsModified = (socket, data) => {
-    if (!socket.player.isBuilder())
-      return console.error('player attempted to modify settings without builder permission')
-    this.settings.set(data.key, data.value)
-    this.send('settingsModified', data, socket.id)
-  }
-
-  onSpawnModified = async (socket, op) => {
-    if (!socket.player.isBuilder()) {
-      return console.error('player attempted to modify spawn without builder permission')
-    }
-    const player = socket.player
-    if (op === 'set') {
-      this.spawn = { position: player.data.position.slice(), quaternion: player.data.quaternion.slice() }
-    } else if (op === 'clear') {
-      this.spawn = { position: [0, 0, 0], quaternion: [0, 0, 0, 1] }
-    } else {
-      return
-    }
-    const data = JSON.stringify(this.spawn)
-    await this.persistence.setConfig('spawn', data)
-    const message = serializeForNetwork({
-      id: uuid(),
-      userId: 'system',
-      name: 'System',
-      text: op === 'set' ? 'Spawn updated' : 'Spawn cleared',
-      timestamp: Date.now(),
-      isSystem: true
-    })
-    socket.send('chatAdded', message)
-  }
-
-  onPlayerTeleport = (socket, data) => {
-    this.sendTo(data.networkId, 'playerTeleport', data)
-  }
-
-  onPlayerPush = (socket, data) => {
-    this.sendTo(data.networkId, 'playerPush', data)
-  }
-
-  onPlayerSessionAvatar = (socket, data) => {
-    this.sendTo(data.networkId, 'playerSessionAvatar', data.avatar)
-  }
-
-  onPing = (socket, time) => {
-    socket.send('pong', time)
-  }
-
-  onErrorEvent = (socket, errorEvent) => {
-    const metadata = {
-      realTime: true,
-      clientId: socket.id,
-      userId: socket.player?.data?.id,
-      userName: socket.player?.data?.name,
-      clientIP: socket.ws?.remoteAddress || 'unknown',
-      timestamp: Date.now()
-    }
-
-    errorObserver.recordClientError(socket.id, errorEvent, metadata)
-
-    if (this.errorMonitor) {
-      this.errorMonitor.receiveClientError({
-        error: errorEvent,
-        ...metadata
-      })
-    }
-
-    this.sockets.forEach(mcpSocket => {
-      if (mcpSocket.mcpErrorSubscription?.active) {
-        mcpSocket.send('mcpErrorEvent', {
-          error: errorEvent,
-          ...metadata
-        })
-      }
-    })
-  }
-
-  onErrorReport = (socket, data) => {
-    const metadata = {
-      realTime: data.realTime || false,
-      clientId: socket.id,
-      userId: socket.player?.data?.id,
-      userName: socket.player?.data?.name,
-      clientIP: socket.ws?.remoteAddress || 'unknown',
-      timestamp: Date.now()
-    }
-
-    errorObserver.recordClientError(socket.id, data.error || data, metadata)
-
-    if (this.errorMonitor) {
-      this.errorMonitor.receiveClientError({
-        error: data.error || data,
-        ...metadata
-      })
-    }
-
-    this.sockets.forEach(mcpSocket => {
-      if (mcpSocket.mcpErrorSubscription?.active) {
-        mcpSocket.send('mcpErrorEvent', {
-          error: data.error || data,
-          ...metadata,
-          timestamp: new Date().toISOString(),
-          side: 'client-reported'
-        })
-      }
-    })
-  }
-
-  onMcpSubscribeErrors = (socket, options = {}) => {
-    if (!this.errorMonitor) return
-
-    const errorListener = (event, errorData) => {
-      if (event === 'error' || event === 'critical') {
-        socket.send('mcpErrorEvent', errorData)
-      }
-    }
-
-    socket.mcpErrorListener = errorListener
-    socket.mcpErrorSubscription = { active: true, options }
-    this.errorMonitor.listeners.add(errorListener)
-  }
-
-  onGetErrors = (socket, options = {}) => {
-    if (!this.errorMonitor) {
-      socket.send('errors', { errors: [], stats: null })
-      return
-    }
-    const errors = this.errorMonitor.getErrors(options)
-    const stats = this.errorMonitor.getStats()
-    socket.send('errors', { errors, stats })
-  }
-
-  onClearErrors = (socket) => {
-    if (!this.errorMonitor) {
-      socket.send('clearErrors', { cleared: 0 })
-      return
-    }
-    const count = this.errorMonitor.clearErrors()
-    socket.send('clearErrors', { cleared: count })
-  }
-
-  onFileUpload = async (socket, data) => {
-    try {
-      const { buffer, filename, mimeType, metadata } = data
-      const bufferData = Buffer.from(buffer)
-
-      const result = await this.fileUploader.uploadFile(bufferData, filename, {
-        mimeType: mimeType || 'application/octet-stream',
-        uploader: socket.id,
-        metadata: metadata || {},
-        onProgress: (progress) => {
-          socket.send('fileUploadProgress', { filename, progress })
-        }
-      })
-
-      socket.send('fileUploadComplete', {
-        filename,
-        hash: result.hash,
-        url: result.url,
-        size: result.size,
-        deduplicated: result.deduplicated
-      })
-
-    } catch (error) {
-      console.error('File upload error:', error)
-      socket.send('fileUploadError', {
-        filename: data.filename,
-        error: error.message
-      })
-    }
-  }
-
-  onFileUploadCheck = async (socket, data) => {
-    try {
-      const { hash } = data
-      const exists = await this.fileUploader.checkExists(hash)
-      const record = exists ? await this.fileStorage.getRecord(hash) : null
-
-      socket.send('fileUploadCheckResult', {
-        hash,
-        exists,
-        record
-      })
-    } catch (error) {
-      console.error('File upload check error:', error)
-      socket.send('fileUploadCheckResult', {
-        hash: data.hash,
-        exists: false,
-        error: error.message
-      })
-    }
-  }
-
-  onFileUploadStats = async (socket) => {
-    try {
-      const stats = this.fileUploader.getStats()
-      const storageStats = await this.fileStorage.getStats()
-
-      socket.send('fileUploadStats', {
-        uploader: stats,
-        storage: storageStats
-      })
-    } catch (error) {
-      console.error('File upload stats error:', error)
-      socket.send('fileUploadStats', {
-        error: error.message
-      })
-    }
-  }
-
-  onDisconnect = (socket, code) => {
-    if (socket.mcpErrorListener && this.errorMonitor) {
-      this.errorMonitor.listeners.delete(socket.mcpErrorListener)
-    }
-    if (socket.mcpErrorSubscription) {
-      socket.mcpErrorSubscription.active = false
-    }
-
-    this.livekit.clearModifiers(socket.id)
-    socket.player.destroy(true)
-    this.sockets.delete(socket.id)
-  }
+  onChatAdded = (socket, msg) => this.handlers.onChatAdded(socket, msg)
+  onCommand = (socket, args) => this.handlers.onCommand(socket, args)
+  onModifyRank = (socket, data) => this.handlers.onModifyRank(socket, data)
+  onKick = (socket, playerId) => this.handlers.onKick(socket, playerId)
+  onMute = (socket, data) => this.handlers.onMute(socket, data)
+  onBlueprintAdded = (socket, blueprint) => this.handlers.onBlueprintAdded(socket, blueprint)
+  onBlueprintModified = (socket, data) => this.handlers.onBlueprintModified(socket, data)
+  onEntityAdded = (socket, data) => this.handlers.onEntityAdded(socket, data)
+  onEntityModified = (socket, data) => this.handlers.onEntityModified(socket, data)
+  onEntityEvent = (socket, event) => this.handlers.onEntityEvent(socket, event)
+  onEntityRemoved = (socket, id) => this.handlers.onEntityRemoved(socket, id)
+  onSettingsModified = (socket, data) => this.handlers.onSettingsModified(socket, data)
+  onSpawnModified = (socket, op) => this.handlers.onSpawnModified(socket, op)
+  onPlayerTeleport = (socket, data) => this.handlers.onPlayerTeleport(socket, data)
+  onPlayerPush = (socket, data) => this.handlers.onPlayerPush(socket, data)
+  onPlayerSessionAvatar = (socket, data) => this.handlers.onPlayerSessionAvatar(socket, data)
+  onPing = (socket, time) => this.handlers.onPing(socket, time)
+  onErrorEvent = (socket, errorEvent) => this.handlers.onErrorEvent(socket, errorEvent)
+  onErrorReport = (socket, data) => this.handlers.onErrorReport(socket, data)
+  onMcpSubscribeErrors = (socket, options) => this.handlers.onMcpSubscribeErrors(socket, options)
+  onGetErrors = (socket, options) => this.handlers.onGetErrors(socket, options)
+  onClearErrors = (socket) => this.handlers.onClearErrors(socket)
+  onFileUpload = (socket, data) => this.handlers.onFileUpload(socket, data)
+  onFileUploadCheck = (socket, data) => this.handlers.onFileUploadCheck(socket, data)
+  onFileUploadStats = (socket) => this.handlers.onFileUploadStats(socket)
+  onDisconnect = (socket, code) => this.handlers.onDisconnect(socket, code)
 }
