@@ -30,6 +30,12 @@ export class Entities extends System {
     this.removed = []
   }
 
+  /**
+   * Shortcut accessors for commonly used services (DI pattern)
+   */
+  get network() { return this.getService('network') }
+  get events() { return this.getService('events') }
+
   get(id) {
     return this.items.get(id)
   }
@@ -45,17 +51,17 @@ export class Entities extends System {
       const validation = hyperfyEntityValidation.validateEntityCreation(this.world, data)
       if (!validation.valid) {
         console.error('🚫 Entity creation rejected:', validation.error)
-        if (local && this.world.network && this.world.network.send) {
-          this.world.network.send('entityCreationFailed', validation.error)
+        if (local && this.network && this.network.send) {
+          this.network.send('entityCreationFailed', validation.error)
         }
         return null // Don't create the entity
       }
     }
-    
+
     // Proceed with entity creation only if validation passed
     let Entity
     if (data.type === 'player') {
-      Entity = Types[data.userId === this.world.network.id ? 'playerLocal' : 'playerRemote']
+      Entity = Types[data.userId === this.network.id ? 'playerLocal' : 'playerRemote']
     } else {
       Entity = Types[data.type]
     }
@@ -67,15 +73,15 @@ export class Entities extends System {
       // but on the server, enter events is delayed for players entering until after their snapshot is sent
       // that way they can actually respond correctly to follow-through events.
       // see ServerNetwork.js -> onConnection
-      if (this.world.network.isClient && data.userId !== this.world.network.id) {
-        this.world.events.emit('enter', { playerId: entity.data.id })
+      if (this.network.isClient && data.userId !== this.network.id) {
+        this.events.emit('enter', { playerId: entity.data.id })
       }
     }
-    if (data.userId === this.world.network.id) {
+    if (data.userId === this.network.id) {
       this.player = entity
-      this.world.events.emit('player', entity)
+      this.events.emit('player', entity)
     }
-    this.world.events.emit('entityAdded', entity)
+    this.events.emit('entityAdded', entity)
     return entity
   }
 
@@ -86,7 +92,7 @@ export class Entities extends System {
     entity.destroy()
     this.items.delete(id)
     this.removed.push(id)
-    this.world.events.emit('entityRemoved', id)
+    this.events.emit('entityRemoved', id)
   }
 
   setHot(entity, hot) {
