@@ -30,7 +30,6 @@ function renderHierarchy(nodes, depth = 0, selectedNode, setSelectedNode) {
   return nodes.map(node => {
     if (!node) return null
 
-    // Safely get children
     const children = node.children || []
     const hasChildren = Array.isArray(children) && children.length > 0
     const isSelected = selectedNode?.id === node.id
@@ -65,13 +64,11 @@ export function Nodes({ app }) {
     }
   }, [rootNode])
 
-  // Helper function to safely get vector string
   const getVectorString = vec => {
     if (!vec || typeof vec.x !== 'number') return null
     return `${vec.x.toFixed(2)}, ${vec.y.toFixed(2)}, ${vec.z.toFixed(2)}`
   }
 
-  // Helper function to safely check if a property exists
   const hasProperty = (obj, prop) => {
     try {
       return obj && typeof obj[prop] !== 'undefined'

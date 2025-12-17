@@ -11,7 +11,6 @@ if (!info || info.v !== 1) {
     v: 1,
     count: 0,
     configs: {
-      // [id]: { x, y, width, height }
     },
   }
 }
@@ -46,7 +45,6 @@ export function usePane(id, paneRef, headRef, resizable = false) {
 
     layer++
 
-    // ensure pane is within screen bounds so it can't get lost
     const maxX = window.innerWidth - config.width
     const maxY = window.innerHeight - config.height
     config.x = Math.min(Math.max(0, config.x), maxX)

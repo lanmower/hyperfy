@@ -50,37 +50,26 @@ export function InputFile({ world, kind: kindName, value, onChange }) {
   const kind = fileKinds[kindName]
   if (!kind) return null
   const set = async e => {
-    // trigger input rebuild
     const n = ++nRef.current
     update()
-    // get file
     const file = e.target.files[0]
     if (!file) return
-    // check ext
     const ext = file.name.split('.').pop().toLowerCase()
     if (!kind.exts.includes(ext)) {
       return console.error(`attempted invalid file extension for ${kindName}: ${ext}`)
     }
-    // immutable hash the file
     const hash = await hashFile(file)
-    // use hash as glb filename
     const filename = `${hash}.${ext}`
-    // canonical url to this file
     const url = `asset://${filename}`
-    // show loading
     const newValue = {
       type: kind.type,
       name: file.name,
       url,
     }
     setLoading(newValue)
-    // upload file
     await world.network.upload(file)
-    // ignore if new value/upload
     if (nRef.current !== n) return
-    // cache file locally so this client can insta-load it
     world.loader.insert(kind.type, url, file)
-    // apply!
     setLoading(null)
     onChange(newValue)
   }

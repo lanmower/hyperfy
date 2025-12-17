@@ -63,8 +63,6 @@ export function CoreUI({ world }) {
     elem.addEventListener('pointermove', onEvent)
     elem.addEventListener('pointerup', onEvent)
     elem.addEventListener('touchstart', onEvent)
-    // elem.addEventListener('touchmove', onEvent)
-    // elem.addEventListener('touchend', onEvent)
   }, [])
   useEffect(() => {
     document.documentElement.style.fontSize = `${16 * world.prefs.ui}px`

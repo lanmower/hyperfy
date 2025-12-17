@@ -24,25 +24,19 @@ const assetsDir = path.join(worldDir, '/assets')
 const collectionsDir = path.join(worldDir, '/collections')
 const port = process.env.PORT
 
-// create world folders if needed
 await fs.ensureDir(worldDir)
 await fs.ensureDir(assetsDir)
 await fs.ensureDir(collectionsDir)
 
-// copy over built-in assets and collections
 await fs.copy(path.join(rootDir, 'src/world/assets'), path.join(assetsDir))
 await fs.copy(path.join(rootDir, 'src/world/collections'), path.join(collectionsDir))
 
-// init collections
 const collections = await initCollections({ collectionsDir, assetsDir })
 
-// init db
 const db = await getDB(worldDir)
 
-// init storage
 const storage = new Storage(path.join(worldDir, '/storage.json'))
 
-// create world
 const world = await createServerWorld()
 world.assetsUrl = process.env.PUBLIC_ASSETS_URL
 world.collections.deserialize(collections)
@@ -87,7 +81,6 @@ fastify.register(statics, {
   prefix: '/assets/',
   decorateReply: false,
   setHeaders: res => {
-    // all assets are hashed & immutable so we can use aggressive caching
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year
     res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString()) // older browsers
   },
@@ -109,20 +102,15 @@ fastify.get('/env.js', async (req, reply) => {
 })
 
 fastify.post('/api/upload', async (req, reply) => {
-  // console.log('DEBUG: slow uploads')
-  // await new Promise(resolve => setTimeout(resolve, 2000))
   const file = await req.file()
   const ext = file.filename.split('.').pop().toLowerCase()
-  // create temp buffer to store contents
   const chunks = []
   for await (const chunk of file.file) {
     chunks.push(chunk)
   }
   const buffer = Buffer.concat(chunks)
-  // hash from buffer
   const hash = await hashFile(buffer)
   const filename = `${hash}.${ext}`
-  // save to fs
   const filePath = path.join(assetsDir, filename)
   const exists = await fs.exists(filePath)
   if (!exists) {
@@ -139,7 +127,6 @@ fastify.get('/api/upload-check', async (req, reply) => {
 
 fastify.get('/health', async (request, reply) => {
   try {
-    // Basic health check
     const health = {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -182,7 +169,6 @@ fastify.get('/status', async (request, reply) => {
   }
 })
 
-// MCP Error Monitoring Endpoints
 fastify.get('/api/errors', async (request, reply) => {
   try {
     const { limit, type, since, side, critical } = request.query
@@ -216,8 +202,6 @@ fastify.get('/api/errors', async (request, reply) => {
 
 fastify.post('/api/errors/clear', async (request, reply) => {
   try {
-    // For MCP, we'll allow clearing without auth for development
-    // In production, you might want to add authentication
     if (!world.errorMonitor) {
       return reply.code(503).send({ error: 'Error monitoring not available' })
     }
@@ -238,7 +222,6 @@ fastify.post('/api/errors/clear', async (request, reply) => {
 })
 
 fastify.get('/api/errors/stream', { websocket: true }, (ws, req) => {
-  // WebSocket endpoint for real-time error streaming to MCP
   if (!world.errorMonitor) {
     ws.close(1011, 'Error monitoring not available')
     return
@@ -248,14 +231,12 @@ fastify.get('/api/errors/stream', { websocket: true }, (ws, req) => {
     try {
       ws.send(JSON.stringify({ event, data, timestamp: new Date().toISOString() }))
     } catch (err) {
-      // Client disconnected, cleanup will be called
     }
   })
 
   ws.on('close', cleanup)
   ws.on('error', cleanup)
 
-  // Send initial stats
   try {
     ws.send(JSON.stringify({
       event: 'connected',
@@ -292,7 +273,6 @@ async function worldNetwork(fastify) {
 
 console.log(`running on port ${port}`)
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
   await fastify.close()
   process.exit(0)

@@ -11,7 +11,6 @@ export function InputNumber({ value, onChange, dp = 0, min = -Infinity, max = In
     if (!focused && local !== value.toFixed(dp)) setLocal(value.toFixed(dp))
   }, [focused, value])
   const setTo = str => {
-    // try parse math
     let num
     try {
       num = (0, eval)(str)
@@ -63,12 +62,10 @@ export function InputNumber({ value, onChange, dp = 0, min = -Infinity, max = In
         }}
         onBlur={e => {
           setFocused(false)
-          // if blank, set back to original
           if (local === '') {
             setLocal(value.toFixed(dp))
             return
           }
-          // otherwise run through pipeline
           setTo(local)
         }}
       />

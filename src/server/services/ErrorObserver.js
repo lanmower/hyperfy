@@ -1,4 +1,3 @@
-// Comprehensive client error observation and stderr reporting
 import { ErrorLevels } from '../../core/schemas/ErrorEvent.schema.js'
 import { errorFormatter } from '../utils/ErrorFormatter.js'
 import { stderrLogger } from '../utils/StderrLogger.js'

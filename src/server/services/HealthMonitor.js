@@ -1,4 +1,3 @@
-// Server health and status monitoring
 
 import { Metrics } from '../../core/cli/Metrics.js'
 

@@ -1,23 +1,19 @@
-// Shared Monaco editor loader and Dark+ theme for script editors
 
 let promise
 export const load = () => {
   if (promise) return promise
   promise = new Promise(async resolve => {
-    // init require
     window.require = {
       paths: {
         vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs',
       },
     }
-    // load loader
     await new Promise(resolve => {
       const script = document.createElement('script')
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs/loader.js' // prettier-ignore
       script.onload = () => resolve()
       document.head.appendChild(script)
     })
-    // load editor
     await new Promise(resolve => {
       window.require(['vs/editor/editor.main'], () => {
         resolve()
@@ -30,9 +26,6 @@ export const load = () => {
   return promise
 }
 
-// see https://stackoverflow.com/questions/65921179/vs-code-theme-dark-plus-css-for-monaco-editor
-// see https://github.com/ChristopherHButler/vscode-themes-in-monaco
-// see https://vsctim.vercel.app/
 export const darkPlusTheme = {
   inherit: true,
   base: 'vs-dark',

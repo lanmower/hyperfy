@@ -34,7 +34,6 @@ let renderer = null // re-use one renderer for this
 function getRenderer() {
   if (!renderer) {
     renderer = new THREE.WebGLRenderer({
-      // canvas: undefined,
       antialias: true,
       powerPreference: 'high-performance',
       alpha: true,
@@ -61,7 +60,6 @@ export class AvatarPreview {
     this.renderer.setClearColor(0xffffff, 0)
     this.renderer.setPixelRatio(window.devicePixelRatio || 1)
     this.renderer.setSize(this.size.width, this.size.height)
-    // this.renderer.useLegacyLights = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1
@@ -80,11 +78,9 @@ export class AvatarPreview {
     if (this.file.size > MAX_UPLOAD_SIZE) {
       return { error: `Max file size ${MAX_UPLOAD_SIZE_LABEL}` }
     }
-    // load hdri
     const texture = await this.world.loader.load('hdr', HDR_URL)
     texture.mapping = THREE.EquirectangularReflectionMapping
     this.scene.environment = texture
-    // load avatar
     this.avatar = await this.world.loader.load('avatar', this.url)
     this.node = this.avatar
       .toNodes({
@@ -96,15 +92,10 @@ export class AvatarPreview {
       .get('avatar')
     this.node.activate({})
     this.node.setEmote(Emotes.IDLE)
-    // check we're still alive / didnt destroy
     if (!this.renderer) return
-    // position camera
     this.positionCamera()
-    // render once to get stats
     this.render()
-    // calc rank and stats
     this.resolveInfo()
-    // start rendering
     this.renderer.setAnimationLoop(this.update)
     return this.info
   }
@@ -114,15 +105,7 @@ export class AvatarPreview {
     const raw = this.node.instance.raw
     const hips = raw.userData.vrm.humanoid.getRawBone('hips').node
 
-    // vrm.bones.leftShoulder.scale.setScalar(0)
-    // vrm.bones.rightShoulder.scale.setScalar(0)
-    // vrm.scene.updateMatrixWorld(true)
-    // vrm.scene.updateWorldMatrix(false, true)
-    // for (const skeleton of vrm.skeletons) {
-    //   skeleton.update()
-    // }
 
-    // see: https://wejn.org/2020/12/cracking-the-threejs-object-fitting-nut/
 
     const box = new THREE.Box3()
     box.setFromObject(raw.scene)
@@ -135,53 +118,11 @@ export class AvatarPreview {
 
     camera.position.y = box.max.y - box.getSize(v1).y / 2
 
-    // box.min.x = 0.1
-    // box.max.x = 0.1
-    // box.min.y += box.getSize(v1).y / 2
 
     var size = new THREE.Vector3()
     box.getSize(size)
 
-    // size.min.x = 0.1
-    // size.max.x = 0.1
-    // size.min.y =
-    // size.x = 0.1
-    // object.position.y = -this.node.height
 
-    // figure out how to fit the box in the view:
-    // 1. figure out horizontal FOV (on non-1.0 aspects)
-    // 2. figure out distance from the object in X and Y planes
-    // 3. select the max distance (to fit both sides in)
-    //
-    // The reason is as follows:
-    //
-    // Imagine a bounding box (BB) is centered at (0,0,0).
-    // Camera has vertical FOV (camera.fov) and horizontal FOV
-    // (camera.fov scaled by aspect, see fovh below)
-    //
-    // Therefore if you want to put the entire object into the field of view,
-    // you have to compute the distance as: z/2 (half of Z size of the BB
-    // protruding towards us) plus for both X and Y size of BB you have to
-    // figure out the distance created by the appropriate FOV.
-    //
-    // The FOV is always a triangle:
-    //
-    //  (size/2)
-    // +--------+
-    // |       /
-    // |      /
-    // |     /
-    // | F° /
-    // |   /
-    // |  /
-    // | /
-    // |/
-    //
-    // F° is half of respective FOV, so to compute the distance (the length
-    // of the straight line) one has to: `size/2 / Math.tan(F)`.
-    //
-    // FTR, from https://threejs.org/docs/#api/en/cameras/PerspectiveCamera
-    // the camera.fov is the vertical FOV.
 
     const fov = camera.fov * (Math.PI / 180)
     const fovh = 2 * Math.atan(Math.tan(fov / 2) * camera.aspect)
@@ -191,9 +132,7 @@ export class AvatarPreview {
 
     camera.position.z = -cameraZ
     camera.rotation.y += 180 * DEG2RAD
-    // camera.position.set(0, 0, cameraZ)
 
-    // set the far plane of the camera so that it easily encompasses the whole object
     const minZ = box.min.z
     const cameraToFarEdge = minZ < 0 ? -minZ + cameraZ : cameraZ - minZ
 
@@ -207,8 +146,6 @@ export class AvatarPreview {
     this.size.aspect = width / height
     this.camera.aspect = this.size.aspect
 
-    // better field-of-view?
-    // see: https://discourse.threejs.org/t/keeping-an-object-scaled-based-on-the-bounds-of-the-canvas-really-battling-to-explain-this-one/17574/10
     if (this.size.aspect > PLANE_ASPECT_RATIO) {
       const cameraHeight = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
       const ratio = this.camera.aspect / PLANE_ASPECT_RATIO
@@ -240,7 +177,6 @@ export class AvatarPreview {
     console.log(this.renderer.info)
     console.log(this.renderer.info.render.triangles)
     const stats = {}
-    // bounds
     const bbox = new THREE.Box3().setFromObject(this.node.instance.raw.scene)
     const bounds = bbox
       .getSize(v1)
@@ -252,7 +188,6 @@ export class AvatarPreview {
         return spec.bounds[0] >= bounds[0] && spec.bounds[1] >= bounds[1] && spec.bounds[2] >= bounds[2]
       }),
     }
-    // triangles
     let triangles = 0
     this.node.instance.raw.scene.traverse(node => {
       if (node.isMesh) {
@@ -268,7 +203,6 @@ export class AvatarPreview {
       value: triangles,
       rank: this.determineRank(spec => spec.triangles >= triangles),
     }
-    // draws
     let draws = 0
     this.node.instance.raw.scene.traverse(function (node) {
       if (node.isMesh) {
@@ -286,13 +220,11 @@ export class AvatarPreview {
       value: draws,
       rank: this.determineRank(spec => spec.draws >= draws),
     }
-    // file size
     const fileSize = this.file.size
     stats.fileSize = {
       value: fileSize,
       rank: this.determineRank(spec => spec.fileSize >= fileSize),
     }
-    // bones
     let skeleton = null
     this.node.instance.raw.scene.traverse(function (node) {
       if (node.isSkinnedMesh) {
@@ -304,7 +236,6 @@ export class AvatarPreview {
       value: bones,
       rank: this.determineRank(spec => spec.bones >= bones),
     }
-    // calculate final rank
     let rank = 5
     for (const key in stats) {
       if (stats[key].rank < rank) {
@@ -319,7 +250,6 @@ export class AvatarPreview {
   }
 
   determineRank(fn) {
-    // if fn returns true it passes the spec
     for (const spec of specs) {
       if (fn(spec)) return spec.rank
     }
@@ -364,7 +294,6 @@ export class AvatarPreview {
 const specs = [
   {
     rank: 5,
-    // Perfect
     fileSize: 5 * 1048576, // 5 MB
     triangles: 4000,
     draws: 1,
@@ -373,7 +302,6 @@ const specs = [
   },
   {
     rank: 4,
-    // Great
     fileSize: 10 * 1048576, // 10 MB
     triangles: 16000,
     draws: 2,
@@ -382,7 +310,6 @@ const specs = [
   },
   {
     rank: 3,
-    // Good
     fileSize: 15 * 1048576, // 15 MB
     triangles: 32000,
     draws: 4,
@@ -391,7 +318,6 @@ const specs = [
   },
   {
     rank: 2,
-    // Heavy
     fileSize: 25 * 1048576, // 25 MB
     triangles: 64000,
     draws: 32,

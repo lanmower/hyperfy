@@ -1,4 +1,3 @@
-// Server-side file upload handler with feature parity to SDK FileUploader
 
 import crypto from 'crypto'
 import { FileStorage } from './FileStorage.js'

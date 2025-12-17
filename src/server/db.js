@@ -10,7 +10,6 @@ import { Ranks } from '../core/extras/ranks.js'
 let db
 let SQL
 
-// sql.js wrapper with parameterized queries
 class SqlJsDatabase {
   constructor(database, SQL) {
     this.db = database
@@ -146,7 +145,6 @@ class AlterTableBuilder {
         try {
           this.db.run(`ALTER TABLE ${this.name} ADD COLUMN ${name} TEXT`)
         } catch (e) {
-          // Column might already exist
         }
         return this
       },
@@ -169,12 +167,10 @@ class AlterTableBuilder {
   }
 
   renameColumn(oldName, newName) {
-    // sql.js doesn't support rename column
     return this
   }
 
   dropColumn(name) {
-    // sql.js doesn't support drop column
     return this
   }
 }
@@ -386,7 +382,6 @@ export async function getDB(worldDir) {
     const dbInstance = new SQL.Database()
     const database = new Database(dbInstance, SQL)
 
-    // Create a callable function with database properties attached
     const dbFunc = (tableName) => new QueryBuilder(dbInstance, SQL, tableName, {})
     dbFunc.schema = database.schema
     dbFunc.insert = database.insert.bind(database)
@@ -395,7 +390,6 @@ export async function getDB(worldDir) {
     db = dbFunc
   }
 
-  // Ensure config table exists
   try {
     const exists = await db.schema.hasTable('config')
     if (!exists) {
@@ -409,7 +403,6 @@ export async function getDB(worldDir) {
     console.error('DB init error:', e.message)
   }
 
-  // Simplified migration - just ensure tables exist
   try {
     const tables = ['users', 'blueprints', 'entities', 'files']
     for (const tableName of tables) {
@@ -445,7 +438,6 @@ export async function getDB(worldDir) {
       }
     }
 
-    // Ensure settings config exists
     const result = await db.query(`SELECT * FROM config WHERE key = 'settings'`)
     if (!result.length || !result[0].values.length) {
       const defaultSettings = {

@@ -1,4 +1,3 @@
-// Format errors for stderr with proper structure
 import { ErrorLevels } from '../../core/schemas/ErrorEvent.schema.js'
 
 const COLORS = {

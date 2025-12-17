@@ -22,28 +22,15 @@ self.onmessage = msg => {
   msg = msg.data
   switch (msg.op) {
     case 'create':
-      // console.log('create!!')
       const system = createEmitter(msg)
       emitters[msg.id] = system
       break
     case 'emitting':
       emitters[msg.emitterId]?.setEmitting(msg.value)
       break
-    // case 'play':
-    //   emitters[msg.emitterId]?.play()
-    //   break
-    // case 'pause':
-    //   emitters[msg.emitterId]?.pause()
-    //   break
-    // case 'stop':
-    //   emitters[msg.emitterId]?.stop(msg)
-    //   break
     case 'update':
       emitters[msg.emitterId]?.update(msg)
       break
-    // case 'emitCustom':
-    //   emitters[msg.emitterId]?.emitCustom(msg)
-    //   break
     case 'destroy':
       emitters[msg.emitterId]?.destroy()
       emitters[msg.emitterId] = null
@@ -68,7 +55,6 @@ function createEmitter(config) {
 
   const particles = []
 
-  // initialize pool
   for (let i = 0; i < config.max; i++) {
     particles.push({
       age: 0,
@@ -98,7 +84,6 @@ function createEmitter(config) {
     })
   }
 
-  // create starters
   const life = createNumericStarter(config.life)
   const speed = createNumericStarter(config.speed)
   const size = createNumericStarter(config.size)
@@ -143,7 +128,6 @@ function createEmitter(config) {
 
       shape(particle.position, particle.direction)
 
-      // direction randomization
       if (config.direction > 0) {
         const randomFactor = config.direction
         particle.direction.x += (Math.random() * 2 - 1) * randomFactor
@@ -152,24 +136,19 @@ function createEmitter(config) {
         particle.direction.normalize()
       }
 
-      // reset velocity and init based on direction and speed
       particle.velocity.copy(particle.direction).multiplyScalar(particle.speed)
 
-      // particle.direction.set(0, 1, 0)
       particle.distance = Infinity
 
-      // particle.position.set(Math.random(), 0, Math.random())
       if (config.space === 'world') {
         particle.position.applyMatrix4(matrixWorld)
         q1.setFromRotationMatrix(matrixWorld)
         particle.direction.applyQuaternion(q1)
         particle.velocity.applyQuaternion(q1)
 
-        // store the emission position and rotation for world space particles
         particle.emissionPosition.setFromMatrixPosition(matrixWorld)
         particle.emissionRotation.setFromRotationMatrix(matrixWorld)
       } else {
-        // for local space, emission position is always origin
         particle.emissionPosition.set(0, 0, 0)
         particle.emissionRotation.identity()
       }
@@ -190,12 +169,9 @@ function createEmitter(config) {
     aUV,
   }) {
     delta *= config.timescale
-    // console.time('update')
-    // console.log('m1', matrixWorld)
     matrixWorld = m1.fromArray(matrixWorld)
     camPosition = v1.fromArray(camPosition)
     elapsed += delta
-    // track move direction and distance
     const currWorldPos = v2.setFromMatrixPosition(matrixWorld)
     let distanceMoved
     if (lastWorldPos) {
@@ -208,138 +184,88 @@ function createEmitter(config) {
       lastWorldPos = currWorldPos.clone()
     }
 
-    // const center = v2.setFromMatrixPosition(matrixWorld) // center in same space as particles
-    // let distanceMoved = 0
-    // if (lastPosition) {
-    //   distanceMoved = center.distanceTo(lastPosition)
-    // } else {
-    //   lastPosition = center.clone()
-    // }
 
-    // emit over time
     if (emitting) {
       newParticlesByTime += config.rate * delta
       const amount = Math.floor(newParticlesByTime)
       if (amount > 0) emit({ amount, matrixWorld })
       newParticlesByTime -= amount
     }
-    // emit over distance
-    // if (emitting && rateOverDistance && distanceMoved > 0) {
-    //   newParticlesByDist += rateOverDistance * distanceMoved
-    //   const amount = Math.floor(newParticlesByDist)
-    //   if (amount > 0) emit({ amount, matrixWorld })
-    //   newParticlesByDist -= amount
-    // }
-    // emit over distance
     if (emitting && rateOverDistance && distanceMoved > 0) {
-      // Calculate the distance interval between particles
       const distanceBetweenParticles = 1.0 / rateOverDistance
 
-      // Add current movement to remainder from previous frames
       distanceRemainder += distanceMoved
 
-      // Calculate how many complete particles we should emit based on distance
       const particlesToEmit = Math.floor(distanceRemainder / distanceBetweenParticles)
 
       if (particlesToEmit > 0) {
-        // Create particles along the movement path
         for (let i = 0; i < particlesToEmit; i++) {
-          // Calculate position along the movement path
-          // The +1 ensures we start from the previous position, not the current one
           const lerpFactor = (i + 1) / (particlesToEmit + 1)
 
-          // Create a position vector along the path
           const emitPosition = new Vector3().copy(lastWorldPos).lerp(currWorldPos, lerpFactor)
 
-          // Create a temporary matrix with this position
           const tempMatrix = new Matrix4().copy(matrixWorld)
           tempMatrix.setPosition(emitPosition)
 
-          // Emit a single particle at this position
           emit({
             amount: 1,
             matrixWorld: tempMatrix,
-            // isDistanceEmission: true,
-            // movementDirection,
           })
         }
 
-        // Update remainder for next frame (keep fractional part)
         distanceRemainder -= particlesToEmit * distanceBetweenParticles
       }
     }
-    // track new pos
     lastWorldPos.copy(currWorldPos)
-    // emit bursts
     while (bursts.length && bursts[0].time <= elapsed) {
       const burst = bursts.shift()
       emit({ amount: burst.count, matrixWorld })
     }
-    // update particles
     for (const particle of particles) {
       particle.age += delta
-      // skip if dead
       if (particle.age >= particle.life) continue
-      // get life progress (0 to 1)
       const progress = particle.age / particle.life
-      // apply force (acceleration) to velocity
       if (force) {
-        // F = ma, so a = F/m, but since we don't track mass, just use F as acceleration
         v3.copy(force).multiplyScalar(delta)
         particle.velocity.add(v3)
       }
-      // linear velocity
       if (velocityLinear) {
         v3.copy(velocityLinear).multiplyScalar(delta)
         if (config.space === 'world') {
-          // Linear velocity is in world space, apply directly
           particle.position.add(v3)
         } else {
-          // Linear velocity is in local space, apply with emitter rotation
           v3.applyQuaternion(q1.setFromRotationMatrix(matrixWorld))
           particle.position.add(v3)
         }
       }
-      // orbital velocity
       if (velocityOrbital) {
-        // determine the center point for orbital motion
-        // calculate vector from orbital center to particle
         v3.copy(particle.position)
         if (config.space === 'world') {
           v3.sub(particle.emissionPosition)
         }
-        // const orbitalCenter = config.space === 'world' ? particle.emissionPosition : currWorldPos
-        // For each axis (X, Y, Z), rotate around that axis
         if (velocityOrbital.x !== 0) {
-          // Rotate around X axis
           q2.setFromAxisAngle(xAxis, velocityOrbital.x * delta)
           v3.applyQuaternion(q2)
         }
         if (velocityOrbital.y !== 0) {
-          // Rotate around Y axis
           q2.setFromAxisAngle(yAxis, velocityOrbital.y * delta)
           v3.applyQuaternion(q2)
         }
         if (velocityOrbital.z !== 0) {
-          // Rotate around Z axis
           q2.setFromAxisAngle(zAxis, velocityOrbital.z * delta)
           v3.applyQuaternion(q2)
         }
 
-        // Set particle position to orbital center + rotated offset
         if (config.space === 'world') {
           particle.position.copy(particle.emissionPosition).add(v3)
         } else {
           particle.position.copy(v3) // Just use the rotated vector directly
         }
 
-        // Update velocity to match orbital motion
-        // This ensures it continues to move in the tangent direction
         if (v3.length() > 0.001) {
           const orbitSpeed =
             v3.length() *
             Math.max(Math.abs(velocityOrbital.x), Math.abs(velocityOrbital.y), Math.abs(velocityOrbital.z))
-          // Calculate tangential direction
           v4.crossVectors(
             velocityOrbital.x > 0
               ? new Vector3(1, 0, 0)
@@ -348,80 +274,58 @@ function createEmitter(config) {
                 : new Vector3(0, 0, 1),
             v3
           ).normalize()
-          // Adjust velocity in the tangential direction
           v4.multiplyScalar(orbitSpeed)
           particle.velocity.copy(v4)
         }
       }
-      // radial velocity (away from emitter center)
       if (velocityRadial) {
-        // Determine the center point for radial motion
-        // In world space, particles move radially from their emission position
-        // In local space, particles move radially from current emitter position
         const radialCenter = config.space === 'world' ? particle.emissionPosition : currWorldPos
-        // Get direction from radial center to particle
         v3.copy(particle.position).sub(radialCenter)
         if (v3.length() > 0.001) {
-          // Normalize to get direction
           v3.normalize()
-          // Scale by radial velocity and delta time
           v3.multiplyScalar(velocityRadial * delta)
-          // Move particle along this radial direction
           particle.position.add(v3)
-          // Also add to velocity for consistency
           particle.velocity.add(v3.divideScalar(delta))
         }
       }
-      // move particles based on current velocity
       v3.copy(particle.velocity).multiplyScalar(delta)
       particle.position.add(v3)
-      // size over life
       if (sizeOverLife) {
         const multiplier = sizeOverLife(progress)
         particle.size = particle.startSize * multiplier
       }
-      // rotate over life
       if (rotateOverLife) {
         const rotation = rotateOverLife(progress)
         particle.rotation = particle.startRotation + rotation
       }
-      // color over life
       if (colorOverLife) {
         particle.color = colorOverLife(progress)
       }
-      // alpha over life
       if (alphaOverLife) {
         const multiplier = alphaOverLife(progress)
         particle.alpha = particle.startAlpha * multiplier
       }
-      // emissive over life
       if (emissiveOverLife) {
         const multiplier = emissiveOverLife(progress)
         particle.emissive = particle.startEmissive * multiplier
       }
-      // final position
       particle.finalPosition.copy(particle.position)
       if (config.space === 'local') {
         particle.finalPosition.applyMatrix4(matrixWorld)
       }
-      // particle.distance = particle.worldPosition.distanceToSquared(camPosition)
       particle.distance = particle.position.distanceToSquared(camPosition)
 
-      // spritesheet
       if (config.spritesheet) {
         particle.uv = spritesheet(particle, delta)
       }
     }
-    // looping or pausing
     if (elapsed >= duration) {
       elapsed = 0
       bursts = config.bursts.slice()
       if (!config.loop) emitting = false
     }
-    // on end callback
     if (!config.loop && !emitting && !ended) {
       const activeParticles = particles.filter(p => p.age < p.life).length
-      // if no active particles, trigger onEnd
       if (activeParticles === 0) {
         ended = true
         self.postMessage({
@@ -430,11 +334,9 @@ function createEmitter(config) {
         })
       }
     }
-    // sort if needed
     if (config.blending === 'normal') {
       particles.sort((a, b) => b.distance - a.distance)
     }
-    // insert into buffers
     let n = 0
     for (const particle of particles) {
       if (particle.age >= particle.life) continue
@@ -447,28 +349,6 @@ function createEmitter(config) {
       aDirection[n * 3 + 1] = particle.direction.y
       aDirection[n * 3 + 2] = particle.direction.z
 
-      // // For direction billboarding, use normalized velocity if it has magnitude
-      // // otherwise fall back to the initial direction
-      // let dx, dy, dz
-      // if (particle.velocity.lengthSq() > 0.0001) {
-      //   // Use normalized velocity as direction
-      //   const velLength = Math.sqrt(
-      //     particle.velocity.x * particle.velocity.x +
-      //       particle.velocity.y * particle.velocity.y +
-      //       particle.velocity.z * particle.velocity.z
-      //   )
-      //   dx = particle.velocity.x / velLength
-      //   dy = particle.velocity.y / velLength
-      //   dz = particle.velocity.z / velLength
-      // } else {
-      //   // Fallback to the initial particle direction
-      //   dx = particle.direction.x
-      //   dy = particle.direction.y
-      //   dz = particle.direction.z
-      // }
-      // aDirection[n * 3 + 0] = dx
-      // aDirection[n * 3 + 1] = dy
-      // aDirection[n * 3 + 2] = dz
 
       aSize[n * 1 + 0] = particle.size
       aColor[n * 3 + 0] = particle.color[0]
@@ -482,7 +362,6 @@ function createEmitter(config) {
       aUV[n * 4 + 3] = particle.uv[3] // v1
       n++
     }
-    // send
     self.postMessage(
       {
         emitterId: config.id,
@@ -498,7 +377,6 @@ function createEmitter(config) {
         aUV,
       },
       [
-        // prettier-ignore
         aPosition.buffer,
         aRotation.buffer,
         aDirection.buffer,
@@ -509,7 +387,6 @@ function createEmitter(config) {
         aUV.buffer,
       ]
     )
-    // console.timeEnd('update')
   }
 
   function destroy() {
@@ -604,13 +481,11 @@ function createColorStarterFixed(rgb) {
   return fn
 }
 
-// Helper function to convert a color string to RGB array [r, g, b] (values 0-1)
 function toRGB(color) {
   try {
     color1.set(color)
     return [color1.r, color1.g, color1.b]
   } catch (error) {
-    // If parsing fails, default to white and warn
     console.warn(`[particles] color '${color}' could not be parsed, using white instead.`)
     return [1, 1, 1]
   }
@@ -623,17 +498,14 @@ function createShape(config) {
 
   switch (type) {
     case 'point':
-      // Point shape - always at origin with upward direction
       return (pos, dir) => {
         pos.set(0, 0, 0)
         dir.set(0, 1, 0)
       }
 
     case 'sphere':
-      // Sphere shape - position on or within sphere, direction points outward
       return (pos, dir) => {
         const [radius, thickness] = args
-        // Random point on unit sphere
         const u = Math.random()
         const v = Math.random()
         const theta = 2 * Math.PI * u
@@ -641,18 +513,14 @@ function createShape(config) {
 
         dir.set(Math.sin(phi) * Math.cos(theta), Math.sin(phi) * Math.sin(theta), Math.cos(phi))
 
-        // Apply thickness (0 = surface only, 1 = anywhere inside)
         const radiusScale = thickness === 0 ? 1 : Math.pow(Math.random(), 1 / 3) * thickness + (1 - thickness)
 
-        // Set position
         pos.copy(dir).multiplyScalar(radius * radiusScale)
       }
 
     case 'hemisphere':
-      // Hemisphere shape - position on or within hemisphere, flat base on XZ plane
       return (pos, dir) => {
         const [radius, thickness] = args
-        // Random point on unit hemisphere (positive Y)
         const u = Math.random()
         const cosTheta = Math.random() // Range [0,1] for upper hemisphere only
         const theta = 2 * Math.PI * u
@@ -664,39 +532,31 @@ function createShape(config) {
           Math.sin(phi) * Math.sin(theta)
         )
 
-        // Apply thickness (0 = surface only, 1 = anywhere inside)
         const radiusScale = thickness === 0 ? 1 : Math.pow(Math.random(), 1 / 3) * thickness + (1 - thickness)
 
-        // Set position
         pos.copy(normal).multiplyScalar(radius * radiusScale)
         dir.copy(normal)
       }
 
     case 'cone':
-      // Cone shape - position on base circle, direction based on cone angle
       return (pos, dir) => {
         let [baseRadius, thickness, angleFromCenter] = args
         angleFromCenter *= DEG2RAD
 
-        // Random angle around the circle
         const angle = Math.random() * Math.PI * 2
 
-        // Apply thickness (0 = edges only, 1 = anywhere in circle)
         let radiusScale
         if (thickness === 0) {
           radiusScale = 1 // Edge only
         } else {
-          // Square root for uniform distribution on disk
           radiusScale = Math.sqrt(Math.random()) * thickness + (1 - thickness)
         }
 
         const x = Math.cos(angle) * baseRadius * radiusScale
         const z = Math.sin(angle) * baseRadius * radiusScale
 
-        // Position at base of cone
         pos.set(x, 0, z)
 
-        // Direction follows cone angle
         dir
           .set(
             Math.sin(angleFromCenter) * Math.cos(angle),
@@ -707,15 +567,11 @@ function createShape(config) {
       }
 
     case 'box':
-      // Box shape - position on or within box, direction points outward
       return (pos, dir) => {
         const [width, height, depth, thickness, origin, spherize] = args
 
-        // Handle different origin types: volume, edge, or shell
         if (origin === 'volume') {
-          // Full volume sampling with thickness consideration
           if (thickness === 0 || Math.random() > thickness) {
-            // Surface point
             const face = Math.floor(Math.random() * 6)
             switch (face) {
               case 0: // +X face
@@ -744,62 +600,45 @@ function createShape(config) {
                 break
             }
 
-            // Apply spherize if enabled
             if (spherize) {
               dir.copy(pos).normalize()
               if (dir.length() === 0) {
-                // Handle the case when pos is at exact center
                 dir.set(0, 1, 0)
               }
             }
           } else {
-            // Interior point with proper thickness consideration
-            // First pick a random position within the box
             const randomX = (Math.random() - 0.5) * width
             const randomY = (Math.random() - 0.5) * height
             const randomZ = (Math.random() - 0.5) * depth
 
-            // Calculate distances from each face as a proportion of max possible distance
             const distToRight = (width / 2 - Math.abs(randomX)) / (width / 2)
             const distToTop = (height / 2 - Math.abs(randomY)) / (height / 2)
             const distToFront = (depth / 2 - Math.abs(randomZ)) / (depth / 2)
 
-            // Find minimum distance to any face (0 = on surface, 1 = at center)
             const minDist = Math.min(distToRight, distToTop, distToFront)
 
-            // Only use this point if it's within our thickness threshold
-            // For thickness t, we want points where minDist <= t
             if (minDist <= thickness) {
               pos.set(randomX, randomY, randomZ)
 
-              // Direction depends on spherize parameter
               if (spherize) {
-                // Direction points outward from center
                 dir.copy(pos).normalize()
                 if (dir.length() === 0) {
-                  // Handle the case when pos is at exact center
                   dir.set(0, 1, 0)
                 }
               } else {
-                // Direction points outward from nearest face
                 if (distToRight === minDist) dir.set(Math.sign(randomX), 0, 0)
                 else if (distToTop === minDist) dir.set(0, Math.sign(randomY), 0)
                 else if (distToFront === minDist) dir.set(0, 0, Math.sign(randomZ))
               }
             } else {
-              // If point is too far from surface, recursively try again
-              // Using a safer approach to avoid infinite recursion
               return createShape(['box', width, height, depth, thickness, origin, spherize])(pos, dir)
             }
           }
         } else if (origin === 'edge') {
-          // Only generate particles along the 12 edges of the box
           const edge = Math.floor(Math.random() * 12)
           let x, y, z
 
-          // Select one of the 12 edges
           switch (edge) {
-            // Bottom edges
             case 0: // Bottom X-aligned edge (front)
               x = (Math.random() - 0.5) * width
               y = -height / 2
@@ -821,7 +660,6 @@ function createShape(config) {
               z = (Math.random() - 0.5) * depth
               break
 
-            // Top edges
             case 4: // Top X-aligned edge (front)
               x = (Math.random() - 0.5) * width
               y = height / 2
@@ -843,7 +681,6 @@ function createShape(config) {
               z = (Math.random() - 0.5) * depth
               break
 
-            // Vertical edges
             case 8: // Vertical Y-aligned edge (front left)
               x = -width / 2
               y = (Math.random() - 0.5) * height
@@ -869,26 +706,18 @@ function createShape(config) {
           pos.set(x, y, z)
 
           if (spherize) {
-            // Direction points outward from center
             dir.copy(pos).normalize()
             if (dir.length() === 0) {
-              // Handle the case when pos is at exact center
               dir.set(0, 1, 0)
             }
           } else {
-            // Direction points outward perpendicular to the edge
-            // For simplicity, we'll use the two coordinates that are at their extremes
             if (Math.abs(x) === width / 2 && Math.abs(z) === depth / 2) {
-              // Corner edge - use diagonal direction
               dir.set(Math.sign(x), 0, Math.sign(z)).normalize()
             } else if (Math.abs(x) === width / 2) {
-              // Edge along X face
               dir.set(Math.sign(x), 0, 0)
             } else if (Math.abs(y) === height / 2) {
-              // Edge along Y face
               dir.set(0, Math.sign(y), 0)
             } else if (Math.abs(z) === depth / 2) {
-              // Edge along Z face
               dir.set(0, 0, Math.sign(z))
             }
           }
@@ -896,19 +725,15 @@ function createShape(config) {
       }
 
     case 'circle':
-      // Circle shape - position on or within circle in XZ plane
       return (pos, dir) => {
         const [radius, thickness, spherize] = args
 
-        // Random angle around the circle
         const angle = Math.random() * Math.PI * 2
 
-        // Apply thickness (0 = edges only, 1 = anywhere in circle)
         let radiusScale
         if (thickness === 0) {
           radiusScale = 1 // Edge only
         } else {
-          // Square root for uniform distribution on disk
           radiusScale = Math.sqrt(Math.random()) * thickness + (1 - thickness)
         }
 
@@ -917,32 +742,25 @@ function createShape(config) {
 
         pos.set(x, 0, z)
 
-        // Set direction based on spherize parameter
         if (spherize) {
-          // Direction points outward from center
           dir.set(x, 0, z).normalize()
           if (dir.length() === 0) {
-            // Handle the case when position is at exact center
             dir.set(0, 1, 0)
           }
         } else {
-          // Default upward direction
           dir.set(0, 1, 0)
         }
       }
 
     case 'rectangle':
-      // Rectangle shape - position on rectangular plane in XZ plane
       return (pos, dir) => {
         const [width, depth, thickness, spherize = false] = args
 
-        // Determine if on edge or inside based on thickness
         const useEdge = thickness === 0 || Math.random() > thickness
 
         let x, z
 
         if (useEdge) {
-          // Position on edge
           const edge = Math.floor(Math.random() * 4)
           switch (edge) {
             case 0: // +X edge
@@ -963,23 +781,18 @@ function createShape(config) {
               break
           }
         } else {
-          // Position inside rectangle
           x = (Math.random() - 0.5) * width
           z = (Math.random() - 0.5) * depth
         }
 
         pos.set(x, 0, z)
 
-        // Set direction based on spherize parameter
         if (spherize) {
-          // Direction from center (adjusted for 2D rectangle)
           dir.set(x, 0, z).normalize()
           if (dir.length() === 0) {
-            // Handle center case
             dir.set(0, 1, 0)
           }
         } else {
-          // Default upward direction
           dir.set(0, 1, 0)
         }
       }
@@ -991,20 +804,15 @@ function createShape(config) {
 }
 
 function createSpritesheet(options) {
-  // no spritesheet, return full UVs
   if (!options) {
     return () => [0, 0, 1, 1]
   }
   const [rows, cols, frameRate, loop] = options
   const totalFrames = rows * cols
-  // pre-calculate all uv frames
   const uvFrames = []
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
-    // calc grid position (reading order: left-to-right, top-to-bottom)
     const col = frameIndex % cols
     const row = Math.floor(frameIndex / cols)
-    // calc UV coords with inverted row calculation for top-to-bottom order
-    // V coords in textures start at bottom (0) and go to top (1)
     const u0 = col / cols
     const v0 = (rows - row - 1) / rows // inverted to start from top
     const u1 = (col + 1) / cols
@@ -1026,42 +834,29 @@ function createSpritesheet(options) {
 }
 
 function createNumberCurve(str) {
-  // Parse the string format: `alpha1,value1|alpha2,value2|...`
-  // Each point is defined by an alpha (0-1) and a corresponding value
-  //
-  // Split the string by '|' to get individual points
   const pointsStr = str.split('|')
-  // Parse each point into [alpha, value] pairs
   const points = pointsStr.map(point => {
     const [alpha, value] = point.split(',').map(parseFloat)
     return { alpha, value }
   })
-  // Sort points by alpha (just in case they're not in order)
   points.sort((a, b) => a.alpha - b.alpha)
-  // Return a function that takes an alpha value and returns interpolated value
   return function (alpha) {
-    // Handle edge cases
     if (alpha <= points[0].alpha) return points[0].value
     if (alpha >= points[points.length - 1].alpha) return points[points.length - 1].value
-    // Find the two points to interpolate between
     let i = 0
     while (i < points.length - 1 && alpha > points[i + 1].alpha) {
       i++
     }
     const p1 = points[i]
     const p2 = points[i + 1]
-    // Calculate interpolation factor (t) between the two points
     const t = (alpha - p1.alpha) / (p2.alpha - p1.alpha)
-    // Linear interpolation between the two values
     return p1.value + t * (p2.value - p1.value)
   }
 }
 
 function createColorCurve(str) {
-  // Parse the string format: `alpha1,color1|alpha2,color2|...`
   const pointsStr = str.split('|')
   const points = []
-  // Parse each point into {alpha,color} pairs
   for (const point of pointsStr) {
     const parts = point.split(',')
     const alpha = parseFloat(parts[0])
@@ -1071,9 +866,7 @@ function createColorCurve(str) {
       color,
     })
   }
-  // Sort points by position (just in case they're not in order)
   points.sort((a, b) => a.alpha - b.alpha)
-  // Return interpolation function as before
   return function (alpha) {
     if (points.length === 0) return [1, 1, 1] // Default to white
     if (alpha <= points[0].alpha) return [...points[0].color]

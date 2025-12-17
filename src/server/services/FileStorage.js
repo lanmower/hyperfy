@@ -1,4 +1,3 @@
-// Abstract storage layer for file uploads with filesystem implementation
 
 import fs from 'fs-extra'
 import path from 'path'

@@ -5,7 +5,6 @@ import { importApp } from '../core/extras/appTools.js'
 export async function initCollections({ collectionsDir, assetsDir }) {
   let folderNames = fs.readdirSync(collectionsDir)
   folderNames.sort((a, b) => {
-    // keep "default" first then sort alphabetically
     if (a === 'default') return -1
     if (b === 'default') return 1
     return a.localeCompare(b)

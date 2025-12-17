@@ -1,4 +1,3 @@
-// Unified database persistence for world data
 
 import { PersistenceBase } from '../../core/services/PersistenceBase.js'
 

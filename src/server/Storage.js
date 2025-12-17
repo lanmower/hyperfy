@@ -27,13 +27,11 @@ export class Storage {
   }
 
   async persist() {
-    // console.time('[storage] persist')
     try {
       await fs.writeJson(this.file, this.data)
     } catch (err) {
       console.error(err)
       console.log('failed to persist storage')
     }
-    // console.timeEnd('[storage] persist')
   }
 }

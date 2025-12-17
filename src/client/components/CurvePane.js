@@ -24,7 +24,6 @@ export function CurvePane({ curve, title, xLabel, yLabel, yMin, yMax, onCommit, 
     })
     container.appendChild(manager.elem)
     return () => {
-      // todo: destroy?
     }
   }, [curve])
   return (

@@ -103,7 +103,6 @@ export function CodeEditor({ app, blur, onClose }) {
           cursor: ew-resize;
         }
         .monaco-editor {
-          // removes the blue focus border
           --vscode-focusBorder: #00000000 !important;
         }
       `}

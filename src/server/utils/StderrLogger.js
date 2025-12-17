@@ -1,4 +1,3 @@
-// Centralized stderr logging with formatting and rate limiting
 import util from 'util'
 
 const COLORS = {
