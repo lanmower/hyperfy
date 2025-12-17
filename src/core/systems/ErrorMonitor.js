@@ -6,6 +6,7 @@ import { ErrorEventBus } from '../utils/ErrorEventBus.js'
 import { createErrorEvent, deserializeErrorEvent, ErrorLevels, ErrorSources } from '../schemas/ErrorEvent.schema.js'
 import { errorObserver } from '../../server/services/ErrorObserver.js'
 import { errorFormatter } from '../../server/utils/ErrorFormatter.js'
+import { ErrorForwarder } from './errors/ErrorForwarder.js'
 
 export class ErrorMonitor extends System {
   static DEPS = {
