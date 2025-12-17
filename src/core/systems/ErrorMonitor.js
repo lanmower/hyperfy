@@ -8,6 +8,14 @@ import { errorObserver } from '../../server/services/ErrorObserver.js'
 import { errorFormatter } from '../../server/utils/ErrorFormatter.js'
 
 export class ErrorMonitor extends System {
+  // DI Service Constants
+  static DEPS = {
+    network: 'network',
+    entities: 'entities',
+    events: 'events',
+    blueprints: 'blueprints',
+  }
+
   constructor(world) {
     super(world)
     this.isClient = !world.isServer
@@ -21,6 +29,12 @@ export class ErrorMonitor extends System {
     this.interceptGlobalErrors()
     setInterval(() => this.cleanup(), 60000)
   }
+
+  // DI Property Getters
+  get network() { return this.getService(ErrorMonitor.DEPS.network) }
+  get entities() { return this.getService(ErrorMonitor.DEPS.entities) }
+  get events() { return this.getService(ErrorMonitor.DEPS.events) }
+  get blueprints() { return this.getService(ErrorMonitor.DEPS.blueprints) }
 
   init(options = {}) {
     this.mcpEndpoint = options.mcpEndpoint || null
@@ -43,8 +57,8 @@ export class ErrorMonitor extends System {
       args: { message: event.message, context: event.context },
       stack: event.stack,
       context: event.context,
-      networkId: this.world.network?.id,
-      playerId: this.world.entities?.player?.data?.id,
+      networkId: this.network?.id,
+      playerId: this.entities?.player?.data?.id,
       level: event.level,
       count: event.count
     }
@@ -54,7 +68,7 @@ export class ErrorMonitor extends System {
     if (updated.length > this.maxErrors) updated.shift()
     this.state.set('errors', updated)
 
-    this.world.events.emit('errorCaptured', errorEntry)
+    this.events.emit('errorCaptured', errorEntry)
 
     for (const listener of this.listeners) {
       try {
@@ -65,7 +79,7 @@ export class ErrorMonitor extends System {
     }
 
     if (event.level === ErrorLevels.ERROR && !isDuplicate) {
-      if (this.isClient && this.world.network) {
+      if (this.isClient && this.network) {
         this.sendErrorToServer(errorEntry)
       }
 
@@ -163,8 +177,8 @@ export class ErrorMonitor extends System {
       url: this.isClient ? window.location?.href : null,
       userAgent: this.isClient ? navigator?.userAgent : null,
       memory: this.getMemoryUsage(),
-      entities: this.world.entities?.count || 0,
-      blueprints: this.world.blueprints?.count || 0
+      entities: this.entities?.count || 0,
+      blueprints: this.blueprints?.count || 0
     }
 
     // Add performance context if available
@@ -221,7 +235,7 @@ export class ErrorMonitor extends System {
   sendErrorToServer(errorEntry) {
     // Send errors to game server via WebSocket for MCP relay
     try {
-      this.world.network.send('errorReport', {
+      this.network.send('errorReport', {
         error: errorEntry,
         realTime: true
       })
@@ -231,10 +245,10 @@ export class ErrorMonitor extends System {
   }
 
   handleCriticalError(errorEntry) {
-    this.world.events.emit('criticalError', errorEntry)
+    this.events.emit('criticalError', errorEntry)
 
-    if (this.isClient && this.world.network) {
-      this.world.network.send('errorReport', {
+    if (this.isClient && this.network) {
+      this.network.send('errorReport', {
         critical: true,
         error: errorEntry
       })
@@ -351,7 +365,7 @@ export class ErrorMonitor extends System {
       )
 
       if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
-        this.world.events.emit('criticalError', errorEvent)
+        this.events.emit('criticalError', errorEvent)
       }
     } catch (err) {
       console.error('Failed to process client error report:', err)
@@ -385,7 +399,7 @@ export class ErrorMonitor extends System {
       }
 
       if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
-        this.world.events.emit('criticalError', errorEvent)
+        this.events.emit('criticalError', errorEvent)
       }
     } catch (err) {
       console.error('Failed to process client error:', err)

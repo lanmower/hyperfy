@@ -45,6 +45,13 @@ const controlTypes = {
 }
 
 export class ClientControls extends System {
+  // DI Service Constants
+  static DEPS = {
+    rig: 'rig',
+    events: 'events',
+    camera: 'camera',
+  }
+
   constructor(world) {
     super(world)
     this.controls = []
@@ -70,8 +77,13 @@ export class ClientControls extends System {
     this.xrSession = null
   }
 
+  // DI Property Getters
+  get rig() { return this.getService(ClientControls.DEPS.rig) }
+  get events() { return this.getService(ClientControls.DEPS.events) }
+  get camera() { return this.getService(ClientControls.DEPS.camera) }
+
   start() {
-    this.world.on('xrSession', this.onXRSession)
+    this.events.on('xrSession', this.onXRSession)
   }
 
   preFixedUpdate() {
@@ -207,14 +219,14 @@ export class ClientControls extends System {
     for (const control of this.controls) {
       const camera = control.entries.camera
       if (camera?.write && !written) {
-        this.world.rig.position.copy(camera.position)
-        this.world.rig.quaternion.copy(camera.quaternion)
-        this.world.camera.position.z = camera.zoom
+        this.rig.position.copy(camera.position)
+        this.rig.quaternion.copy(camera.quaternion)
+        this.camera.position.z = camera.zoom
         written = true
       } else if (camera) {
-        camera.position.copy(this.world.rig.position)
-        camera.quaternion.copy(this.world.rig.quaternion)
-        camera.zoom = this.world.camera.position.z
+        camera.position.copy(this.rig.position)
+        camera.quaternion.copy(this.rig.quaternion)
+        camera.zoom = this.camera.position.z
       }
     }
     // clear touch deltas
@@ -349,7 +361,7 @@ export class ClientControls extends System {
         }
       }
     }
-    this.world.events.emit('actions', this.actions)
+    this.events.emit('actions', this.actions)
   }
 
   setTouchBtn(prop, down) {
@@ -602,7 +614,7 @@ export class ClientControls extends System {
   onPointerLockStart() {
     if (this.pointer.locked) return
     this.pointer.locked = true
-    this.world.events.emit('pointerLockChanged', true)
+    this.events.emit('pointerLockChanged', true)
     // pointerlock is async so if its no longer meant to be locked, exit
     if (!this.pointer.shouldLock) this.unlockPointer()
   }
@@ -610,7 +622,7 @@ export class ClientControls extends System {
   onPointerLockEnd() {
     if (!this.pointer.locked) return
     this.pointer.locked = false
-    this.world.events.emit('pointerLockChanged', false)
+    this.events.emit('pointerLockChanged', false)
   }
 
   onScroll = e => {
