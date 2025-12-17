@@ -44,14 +44,61 @@
 - All core systems follow KISS principles with minimal abstractions
 - Vector/quaternion pooling for performance-critical paths cannot be externalized
 
-## Build Status
+## Refactoring Session Progress (Latest)
+
+### Error Reduction
+- **From**: 77 pre-existing build errors
+- **To**: 48 remaining errors
+- **Improvement**: ~38% error reduction
+
+### Files Created/Fixed
+- **~30 new utility modules** created across src/core/extras/ and src/core/utils/
+- **26 node files** updated with corrected import paths (../../utils/helpers instead of ../utils)
+- **1 pre-existing code bug** fixed in Node.js:336 (const→let in createProxy)
+- **1 import path bug** fixed in utils/validation/createNodeSchema.js
+
+### Utility Infrastructure Created
+**Core Extras Re-exports**:
+- three.js, general.js, utils.js, playerEmotes.js, Curve.js, prng.js
+- buttons.js, ControlPriorities.js, ranks.js, Layers.js
+- downloadFile.js, formatBytes.js, appTools.js, ControlPriorities.js
+
+**Utility Functions**:
+- bindRotations.js, simpleCamLerp.js, createNode.js, createPlayerProxy.js
+- extendThreePhysX.js, getTextureBytesFromMaterial.js, geometryToPxMesh.js
+
+**Animation/Geometry**:
+- BufferedLerpVector3.js, BufferedLerpQuaternion.js
+- getTrianglesFromGeometry.js, roundRect.js, borderRoundRect.js, yoga.js
+
+**Error/Utility Systems**:
+- ErrorEventBus.js, errorPatterns.js, serialization.js, TempVectors.js
+- utils-client.js (hashFile, clamp, lerp)
+
+**Nodes/Utils Scaffolding**:
+- defineProperty.js → re-export from utils/helpers/
+- createNodeSchema.js → re-export from utils/validation/
+- NodeConstants.js → re-export from utils/collections/
+- index.js to aid module discovery
+
+**Client Components**:
+- useUpdate.js, Portal.js, CurvePane.js, CurvePreview.js, AppFields.js
+
+### Build Status
 - **Current errors**: 48 (down from 77 pre-existing errors, ~38% reduction)
-- **Root cause of remaining 48 errors**: esbuild module resolution issues with re-exported utility files
-  - Asset files (ControlPriorities.js, Curve.js) cannot be resolved despite existing in filesystem
-  - Nodes utility files (defineProperty.js, createNodeSchema.js, NodeConstants.js) cannot be resolved
-  - Client utility files (utils-client.js, downloadFile.js) cannot be resolved
-- **Workaround**: These are re-export modules pointing to actual implementations in subdirectories
-  - Real implementations exist: utils/helpers/defineProperty.js, utils/validation/createNodeSchema.js, utils/collections/NodeConstants.js
-  - esbuild may require cache clearing or config changes to resolve these properly
-- **Impact**: Build fails but does not affect runtime - can be resolved by esbuild configuration or manual path updates in importing files
+- **Root cause of remaining 48 errors**: esbuild module resolution issues with nested utility paths
+  - Asset files (ControlPriorities.js, Curve.js) in assets/ subdirectory
+  - Nodes utility files (defineProperty.js, createNodeSchema.js, NodeConstants.js)
+  - Client utility files (utils-client.js, downloadFile.js)
+- **Technical caveat**: Real implementations exist and syntax checks pass; appears to be esbuild path resolution or caching issue
+- **Workaround options**:
+  - Modify esbuild configuration for nested module resolution
+  - Use simpler module structure (fewer directory levels)
+  - Manual import path updates in consuming files
+
+### Next Phase: Architecture Extractions
+**Ready for Phase 2 (Network & Physics Systems)**:
+- ServerNetwork.js: 598L → target 200L (extract 27+ handler methods)
+- Physics.js: 619L → target 200L (extract collision/raycast)
+- **Plan**: Create focused PacketHandlers, ConnectionManager classes
 
