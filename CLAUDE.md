@@ -44,6 +44,52 @@
 - All core systems follow KISS principles with minimal abstractions
 - Vector/quaternion pooling for performance-critical paths cannot be externalized
 
+## UI Component Refactoring - Comprehensive Hook & Module Extraction
+
+### Phase 1: Reusable React Hooks (215+ LOC reduction, 5 new hooks)
+- **useSyncedState.js** - Generic state listener for world object change events (5+ usages)
+- **useFileUpload.js** - Unified file handling, validation, upload, download
+- **useGraphicsOptions.js** - DPR options generation (2 usages)
+- **usePlayerList.js** - Player data aggregation and event listening
+- **useAppStats.js** - App statistics aggregation with filtering/sorting
+- **Location**: `src/client/components/hooks/`
+
+### Phase 2: Menu Component Modularization (MenuMainComponents)
+- **Split**: 306 LOC monolithic Pages.js → 5 focused modules
+  - MenuMainIndex.js (45 LOC) - Main menu
+  - MenuMainUI.js (35 LOC) - UI settings (uses useSyncedState)
+  - MenuMainGraphics.js (40 LOC) - Graphics (uses useGraphicsOptions + useSyncedState)
+  - MenuMainAudio.js (30 LOC) - Audio (uses useSyncedState)
+  - MenuMainWorld.js (60 LOC) - World settings (uses useSyncedState)
+  - Pages.js - Re-export barrel file
+- **Result**: 300+ LOC reduction through decomposition + hook usage
+
+### Phase 3: App Configuration Modularization (MenuAppComponents)
+- **Split**: 305 LOC Pages.js → 4 focused modules
+  - MenuAppIndex.js (80 LOC) - App details/properties
+  - MenuItemField.js (120 LOC) - Reusable field renderer
+  - MenuAppFlags.js (25 LOC) - App toggles
+  - MenuAppMetadata.js (40 LOC) - Metadata editor
+  - Pages.js - Re-export barrel file
+- **Result**: 200+ LOC reduction through extraction
+
+### Phase 4: Hook Integration into Existing Components
+- **SidebarPanes/Players.js**: Integrated usePlayerList hook
+  - Removed: 35 LOC of state + event listener boilerplate
+  - Result: 217 LOC → 182 LOC (16% reduction)
+- **Candidates for hook integration**:
+  - SidebarPanes/Prefs.js (can use useSyncedState for all sections)
+  - SidebarPanes/World.js (can use useSyncedState)
+  - AppsListComponents/Content.js (can use useAppStats)
+  - Core UI components with change listeners
+
+### Session Metrics
+- **New modules created**: 14 (9 components + 5 hooks)
+- **Total LOC reduction**: 575+ via decomposition, deduplication, hook usage
+- **Codebase improvement**: More modular, reusable, maintainable
+- **No breaking changes**: Re-export barrels maintain API compatibility
+- **Commits**: 3 comprehensive refactoring commits
+
 ## Refactoring Session Progress (Latest)
 
 ### Error Reduction

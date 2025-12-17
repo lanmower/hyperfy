@@ -10,47 +10,18 @@ import {
   Volume2Icon,
 } from 'lucide-react'
 import { cls } from '../cls.js'
-import { useContext, useEffect, useState } from 'react'
+import { useContext } from 'react'
 import { HintContext } from '../Hint.js'
-import { sortBy } from 'lodash-es'
 import { Ranks } from '../../../core/extras/assets/ranks.js'
 import * as THREE from '../../../core/extras/three.js'
 import { Pane } from './Pane.js'
-
-function getPlayers(world) {
-  let players = []
-  world.entities.players.forEach(player => {
-    players.push(player)
-  })
-  players = sortBy(players, player => player.enteredAt)
-  return players
-}
+import { usePlayerList } from '../hooks/usePlayerList.js'
 
 export function Players({ world, hidden }) {
   const { setHint } = useContext(HintContext)
   const localPlayer = world.entities.player
   const isAdmin = localPlayer.isAdmin()
-  const [players, setPlayers] = useState(() => getPlayers(world))
-
-  useEffect(() => {
-    const onChange = () => {
-      setPlayers(getPlayers(world))
-    }
-    world.entities.on('added', onChange)
-    world.entities.on('removed', onChange)
-    world.livekit.on('speaking', onChange)
-    world.livekit.on('muted', onChange)
-    world.on('rank', onChange)
-    world.on('name', onChange)
-    return () => {
-      world.entities.off('added', onChange)
-      world.entities.off('removed', onChange)
-      world.livekit.off('speaking', onChange)
-      world.livekit.off('muted', onChange)
-      world.off('rank', onChange)
-      world.off('name', onChange)
-    }
-  }, [])
+  const players = usePlayerList(world)
 
   const toggleBuilder = player => {
     if (player.data.rank === Ranks.BUILDER) {
