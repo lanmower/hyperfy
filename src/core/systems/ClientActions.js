@@ -18,6 +18,13 @@ const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const m1 = new THREE.Matrix4()
 
 export class ClientActions extends System {
+  // DI Service Constants
+  static DEPS = {
+    rig: 'rig',
+    events: 'events',
+    controls: 'controls',
+  }
+
   constructor(world) {
     super(world)
     this.nodes = []
@@ -29,10 +36,15 @@ export class ClientActions extends System {
     this.action = null
   }
 
+  // DI Property Getters
+  get rig() { return this.getService(ClientActions.DEPS.rig) }
+  get events() { return this.getService(ClientActions.DEPS.events) }
+  get controls() { return this.getService(ClientActions.DEPS.controls) }
+
   start() {
     this.action = createAction(this.world)
     this.btnDown = false
-    this.control = this.world.controls.bind({ priority: ControlPriorities.ACTION })
+    this.control = this.controls.bind({ priority: ControlPriorities.ACTION })
   }
 
   register(node) {
@@ -51,7 +63,7 @@ export class ClientActions extends System {
   }
 
   update(delta) {
-    const cameraPos = this.world.rig.position
+    const cameraPos = this.rig.position
 
     this.btnDown =
       this.control.keyE.down ||
@@ -65,7 +77,7 @@ export class ClientActions extends System {
       if (distance > this.current.node._distance) {
         this.current.node = null
         this.current.distance = Infinity
-        this.world.events.emit('actionChanged', false)
+        this.events.emit('actionChanged', false)
         this.action.stop()
       } else {
         this.current.distance = distance
@@ -92,7 +104,7 @@ export class ClientActions extends System {
     }
     if (didChange) {
       this.action.start(this.current.node)
-      this.world.events.emit('actionChanged', true)
+      this.events.emit('actionChanged', true)
     }
     this.action.update(delta)
   }

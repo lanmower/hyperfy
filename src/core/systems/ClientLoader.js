@@ -23,6 +23,16 @@ import Hls from 'hls.js/dist/hls.js'
  *
  */
 export class ClientLoader extends BaseLoader {
+  // DI Service Constants
+  static DEPS = {
+    stage: 'stage',
+    scripts: 'scripts',
+    audio: 'audio',
+    events: 'events',
+    camera: 'camera',
+    loader: 'loader',
+  }
+
   constructor(world) {
     super(world)
     this.isServer = false
@@ -31,7 +41,18 @@ export class ClientLoader extends BaseLoader {
     this.texLoader = new TextureLoader()
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
+    // Utility method references (not service dependencies)
+    this.resolveURL = world.resolveURL
+    this.setupMaterial = world.setupMaterial
   }
+
+  // DI Property Getters
+  get stage() { return this.getService(ClientLoader.DEPS.stage) }
+  get scripts() { return this.getService(ClientLoader.DEPS.scripts) }
+  get audio() { return this.getService(ClientLoader.DEPS.audio) }
+  get events() { return this.getService(ClientLoader.DEPS.events) }
+  get camera() { return this.getService(ClientLoader.DEPS.camera) }
+  get loader() { return this.getService(ClientLoader.DEPS.loader) }
 
   getTypeHandlers() {
     return {
@@ -48,7 +69,7 @@ export class ClientLoader extends BaseLoader {
   }
 
   handleVideo = (url, file, key) => new Promise(resolve => {
-    const factory = createVideoFactory(this.world, this.world.resolveURL(url))
+    const factory = createVideoFactory(this.world, this.resolveURL(url))
     resolve(factory)
   })
 
@@ -117,7 +138,7 @@ export class ClientLoader extends BaseLoader {
 
   handleAvatar = (url, file, key) => file.arrayBuffer().then(async buffer => {
     const glb = await this.gltfLoader.parseAsync(buffer)
-    const factory = createVRMFactory(glb, this.world.setupMaterial)
+    const factory = createVRMFactory(glb, this.setupMaterial)
     const hooks = this.vrmHooks
     const node = createNode('group', { id: '$root' })
     const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
@@ -143,13 +164,13 @@ export class ClientLoader extends BaseLoader {
   })
 
   handleScript = (url, file, key) => file.text().then(code => {
-    const script = this.world.scripts.evaluate(code)
+    const script = this.scripts.evaluate(code)
     this.results.set(key, script)
     return script
   })
 
   handleAudio = (url, file, key) => file.arrayBuffer().then(buffer =>
-    this.world.audio.ctx.decodeAudioData(buffer)
+    this.audio.ctx.decodeAudioData(buffer)
   ).then(audioBuffer => {
     this.results.set(key, audioBuffer)
     return audioBuffer
@@ -157,11 +178,11 @@ export class ClientLoader extends BaseLoader {
 
   start() {
     this.vrmHooks = {
-      camera: this.world.camera,
-      scene: this.world.stage.scene,
-      octree: this.world.stage.octree,
-      setupMaterial: this.world.setupMaterial,
-      loader: this.world.loader,
+      camera: this.camera,
+      scene: this.stage.scene,
+      octree: this.stage.octree,
+      setupMaterial: this.setupMaterial,
+      loader: this.loader,
     }
   }
 
@@ -173,12 +194,12 @@ export class ClientLoader extends BaseLoader {
       return this.load(item.type, item.url).then(() => {
         loadedItems++
         progress = (loadedItems / totalItems) * 100
-        this.world.events.emit('progress', progress)
+        this.events.emit('progress', progress)
       })
     })
     this.preloader = Promise.allSettled(promises).then(() => {
       this.preloader = null
-      // this.world.emit('ready', true)
+      // this.events.emit('ready', true)
     })
   }
 
@@ -187,12 +208,12 @@ export class ClientLoader extends BaseLoader {
   }
 
   hasFile(url) {
-    url = this.world.resolveURL(url)
+    url = this.resolveURL(url)
     return this.files.has(url)
   }
 
   getFile(url, name) {
-    url = this.world.resolveURL(url)
+    url = this.resolveURL(url)
     const file = this.files.get(url)
     if (!file) return null
     if (name) {
@@ -205,7 +226,7 @@ export class ClientLoader extends BaseLoader {
   }
 
   loadFile = async url => {
-    url = this.world.resolveURL(url)
+    url = this.resolveURL(url)
     if (this.files.has(url)) {
       return this.files.get(url)
     }
@@ -286,7 +307,7 @@ export class ClientLoader extends BaseLoader {
         return emote
       }),
       'avatar': () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const factory = createVRMFactory(glb, this.world.setupMaterial)
+        const factory = createVRMFactory(glb, this.setupMaterial)
         const hooks = this.vrmHooks
         const node = createNode('group', { id: '$root' })
         const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
@@ -313,7 +334,7 @@ export class ClientLoader extends BaseLoader {
       'script': () => new Promise(async (resolve, reject) => {
         try {
           const code = await file.text()
-          const script = this.world.scripts.evaluate(code)
+          const script = this.scripts.evaluate(code)
           this.results.set(key, script)
           resolve(script)
         } catch (err) {
@@ -323,7 +344,7 @@ export class ClientLoader extends BaseLoader {
       'audio': () => new Promise(async (resolve, reject) => {
         try {
           const arrayBuffer = await file.arrayBuffer()
-          const audioBuffer = await this.world.audio.ctx.decodeAudioData(arrayBuffer)
+          const audioBuffer = await this.audio.ctx.decodeAudioData(arrayBuffer)
           this.results.set(key, audioBuffer)
           resolve(audioBuffer)
         } catch (err) {
