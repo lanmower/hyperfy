@@ -32,9 +32,9 @@
  */
 
 import { System } from './System.js'
-import { withHandlerRegistry } from '../mixins/HandlerRegistry.mixin.js'
+import { withHandlerRegistry } from '../mixins/HandlerRegistryMixin.js'
 import { withCacheable } from '../mixins/CacheableMixin.js'
-import { withStateManager } from '../mixins/StateManager.mixin.js'
+import { withStateManager } from '../mixins/StateManagerMixin.js'
 
 // Compose all mixins with System as the base
 const SystemWithMixins = withStateManager(withCacheable(withHandlerRegistry(System)))

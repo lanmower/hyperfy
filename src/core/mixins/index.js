@@ -1,5 +1,5 @@
 // Mixins for common functionality patterns
 
-export { withHandlerRegistry } from './HandlerRegistry.mixin.js'
+export { withHandlerRegistry } from './HandlerRegistryMixin.js'
 export { withCacheable } from './CacheableMixin.js'
-export { withStateManager } from './StateManager.mixin.js'
+export { withStateManager } from './StateManagerMixin.js'
