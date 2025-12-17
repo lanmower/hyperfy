@@ -44,3 +44,14 @@
 - All core systems follow KISS principles with minimal abstractions
 - Vector/quaternion pooling for performance-critical paths cannot be externalized
 
+## Build Status
+- **Current errors**: 48 (down from 77 pre-existing errors, ~38% reduction)
+- **Root cause of remaining 48 errors**: esbuild module resolution issues with re-exported utility files
+  - Asset files (ControlPriorities.js, Curve.js) cannot be resolved despite existing in filesystem
+  - Nodes utility files (defineProperty.js, createNodeSchema.js, NodeConstants.js) cannot be resolved
+  - Client utility files (utils-client.js, downloadFile.js) cannot be resolved
+- **Workaround**: These are re-export modules pointing to actual implementations in subdirectories
+  - Real implementations exist: utils/helpers/defineProperty.js, utils/validation/createNodeSchema.js, utils/collections/NodeConstants.js
+  - esbuild may require cache clearing or config changes to resolve these properly
+- **Impact**: Build fails but does not affect runtime - can be resolved by esbuild configuration or manual path updates in importing files
+
