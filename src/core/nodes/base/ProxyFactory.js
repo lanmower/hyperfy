@@ -1,4 +1,5 @@
 import { getRef, secure } from '../Node.js'
+import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
 
 export class ProxyFactory {
   constructor(node) {
@@ -6,139 +7,65 @@ export class ProxyFactory {
   }
 
   createProxy(customProps = {}) {
-    const node = this.node
-    if (!node.proxy) {
-      const self = node
-      let proxy = customProps
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(this.buildProxy()))
-      node.proxy = proxy
+    if (!this.node.proxy) {
+      this.node.proxy = this.getBuilder().build(customProps)
     }
-    return node.proxy
+    return this.node.proxy
+  }
+
+  getBuilder() {
+    const self = this.node
+    const builder = new ProxyBuilder(self)
+
+    builder.addMultiple({
+      id: { get: () => self.id, set: () => { throw new Error('Setting ID not currently supported') } },
+      name: () => self.name,
+      position: { get: () => self.position, set: () => { throw new Error('Cannot replace node position') } },
+      quaternion: { get: () => self.quaternion, set: () => { throw new Error('Cannot replace node quaternion') } },
+      rotation: { get: () => self.rotation, set: () => { throw new Error('Cannot replace node position') } },
+      scale: { get: () => self.scale, set: () => { throw new Error('Cannot replace node scale') } },
+      matrixWorld: () => self.matrixWorld,
+      active: { get: () => self.active, set: (val) => { self.active = val } },
+      parent: { get: () => self.parent?.getProxy(), set: () => { throw new Error('Cannot set parent directly') } },
+      children: () => self.children.map(child => child.getProxy()),
+      _ref: () => secure.allowRef ? self : null,
+      _isRef: () => true,
+      onPointerEnter: { get: () => self.onPointerEnter, set: (val) => { self.onPointerEnter = val } },
+      onPointerLeave: { get: () => self.onPointerLeave, set: (val) => { self.onPointerLeave = val } },
+      onPointerDown: { get: () => self.onPointerDown, set: (val) => { self.onPointerDown = val } },
+      onPointerUp: { get: () => self.onPointerUp, set: (val) => { self.onPointerUp = val } },
+      cursor: { get: () => self.cursor, set: (val) => { self.cursor = val } },
+    })
+
+    builder.addMethod('get', (id) => {
+      const node = self.get(id)
+      return node?.getProxy() || null
+    })
+    builder.addMethod('getWorldMatrix', (mat) => self.getWorldMatrix(mat))
+    builder.addMethod('add', (pNode) => {
+      const node = getRef(pNode)
+      self.add(node)
+      return this
+    })
+    builder.addMethod('remove', (pNode) => {
+      const node = getRef(pNode)
+      self.remove(node)
+      return this
+    })
+    builder.addMethod('traverse', (callback) => {
+      self.traverse(node => callback(node.getProxy()))
+    })
+    builder.addMethod('clone', (recursive) => {
+      const node = self.clone(recursive)
+      return node.getProxy()
+    })
+    builder.addMethod('clean', () => self.clean())
+
+    return builder
   }
 
   buildProxy() {
-    const self = this.node
-    return {
-      get id() {
-        return self.id
-      },
-      set id(value) {
-        throw new Error('Setting ID not currently supported')
-      },
-      get name() {
-        return self.name
-      },
-      get position() {
-        return self.position
-      },
-      set position(value) {
-        throw new Error('Cannot replace node position')
-      },
-      get quaternion() {
-        return self.quaternion
-      },
-      set quaternion(value) {
-        throw new Error('Cannot replace node quaternion')
-      },
-      get rotation() {
-        return self.rotation
-      },
-      set rotation(value) {
-        throw new Error('Cannot replace node position')
-      },
-      get scale() {
-        return self.scale
-      },
-      set scale(value) {
-        throw new Error('Cannot replace node scale')
-      },
-      get matrixWorld() {
-        return self.matrixWorld
-      },
-      get active() {
-        return self.active
-      },
-      set active(value) {
-        self.active = value
-      },
-      get parent() {
-        return self.parent?.getProxy()
-      },
-      set parent(value) {
-        throw new Error('Cannot set parent directly')
-      },
-      get children() {
-        return self.children.map(child => {
-          return child.getProxy()
-        })
-      },
-      get(id) {
-        const node = self.get(id)
-        return node?.getProxy() || null
-      },
-      getWorldMatrix(mat) {
-        return self.getWorldMatrix(mat)
-      },
-      add(pNode) {
-        const node = getRef(pNode)
-        self.add(node)
-        return this
-      },
-      remove(pNode) {
-        const node = getRef(pNode)
-        self.remove(node)
-        return this
-      },
-      traverse(callback) {
-        self.traverse(node => {
-          callback(node.getProxy())
-        })
-      },
-      clone(recursive) {
-        const node = self.clone(recursive)
-        return node.getProxy()
-      },
-      clean() {
-        self.clean()
-      },
-      get _ref() {
-        if (!secure.allowRef) return null
-        return self
-      },
-      get _isRef() {
-        return true
-      },
-      get onPointerEnter() {
-        return self.onPointerEnter
-      },
-      set onPointerEnter(value) {
-        self.onPointerEnter = value
-      },
-      get onPointerLeave() {
-        return self.onPointerLeave
-      },
-      set onPointerLeave(value) {
-        self.onPointerLeave = value
-      },
-      get onPointerDown() {
-        return self.onPointerDown
-      },
-      set onPointerDown(value) {
-        self.onPointerDown = value
-      },
-      get onPointerUp() {
-        return self.onPointerUp
-      },
-      set onPointerUp(value) {
-        self.onPointerUp = value
-      },
-      get cursor() {
-        return self.cursor
-      },
-      set cursor(value) {
-        self.cursor = value
-      },
-    }
+    return this.getBuilder().build({})
   }
 
   getProxy() {
