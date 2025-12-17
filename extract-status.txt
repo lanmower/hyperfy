@@ -1,0 +1,27 @@
+EXTRACTION STATUS AFTER CLEANUP PHASE
+
+Total LOC Saved: ~3,610 lines (comment removal)
+Core LOC (excluding libs): 29,316
+
+Files >200L Remaining: 20 (excluding vendored libraries)
+- ClientControls: 729L (has managers extracted)
+- ServerNetwork: 598L
+- ClientBuilder: 598L
+- UI: 579L
+- createVRMFactory: 574L
+- Physics: 572L
+- ClientLoader: 511L
+- Video: 496L
+- App: 495L
+- ErrorMonitor: 482L
+- ClientLiveKit: 481L
+- PlayerPhysics: 476L
+- Node: 471L
+
+COMPLETED:
+✓ Comment removal (all files)
+✓ PlayerLocal refactoring (physics state delegation)
+✓ ButtonStateManager extraction
+✓ ControlBindingManager extraction
+
+NEXT PHASE: Targeted module extraction from 10 largest systems
