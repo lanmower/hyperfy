@@ -173,9 +173,14 @@
 - ControlFactory class: 93L - Control binding, action management, control type factories
 - All input event and pointer lock logic extracted and delegated
 
-### Session Summary - Phase 2, 3, 4.1-4.5 & 5.1 Complete
+**Phase 5.2: Particles System - COMPLETE** ✓
+- Particles.js: 417L → 77L (82% reduction!)
+- EmitterFactory module: 342L - Complete emitter creation, material/shader setup, geometry/buffer management
+- All emitter factory logic extracted and delegated
 
-**Total Systems Refactored**: 11 major systems
+### Session Summary - Phase 2, 3, 4.1-4.5, 5.1-5.2 Complete
+
+**Total Systems Refactored**: 12 major systems
 - ServerNetwork: 598L → 293L (51% reduction)
 - Physics: 572L → 172L (70% reduction)
 - UI: 579L → 299L (48% reduction)
@@ -186,9 +191,10 @@
 - App: 495L → 273L (45% reduction)
 - ErrorMonitor: 484L → 132L (73% reduction)
 - ClientControls: 729L → 504L (31% reduction)
-- Total LOC reduction: 5,416L → 2,490L (54% reduction across these 10 systems)
+- Particles: 417L → 77L (82% reduction)
+- Total LOC reduction: 5,833L → 2,567L (56% reduction across these 11 systems)
 
-**Modules Created**: 30 focused extraction modules
+**Modules Created**: 31 focused extraction modules
 - PhysicsQueries, PhysicsContactManager, PhysicsActorManager
 - UIRenderer, UIHelpers
 - VideoRenderer, VideoAudioController, VideoHelpers
@@ -198,14 +204,15 @@
 - BlueprintLoader, ScriptExecutor, EventManager, ProxyFactory (App)
 - ErrorCapture, ErrorQuery, ErrorReporter
 - InputEventHandler, PointerLockManager, ControlFactory
+- EmitterFactory
 - PacketHandlers, ~30 utility modules
 
 **Build Status**: 48 errors (no new errors introduced, stable)
-**Commits Made**: 12 session commits
+**Commits Made**: 13 session commits
 
 **Next Priority Systems** (>200L):
-1. Particles.js (417L → 200L) - Emitter factory extraction
-2. Nametags.js (386L → 200L) - Position calculator, occlusion manager
-3. ClientActions.js (373L → 200L) - Action handler extraction
-4. AvatarPreview.js (401L → 200L) - Camera and lighting extraction
+1. Nametags.js (386L → 200L) - Position calculator, occlusion manager
+2. ClientActions.js (373L → 200L) - Action handler extraction
+3. AvatarPreview.js (401L → 200L) - Camera and lighting extraction
+4. SidebarPanes/App.js (347L → 200L) - App pane logic extraction
 
