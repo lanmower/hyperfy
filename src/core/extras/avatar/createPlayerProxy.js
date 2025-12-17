@@ -1,6 +1,6 @@
-import { getRef } from '../../nodes/Node.js'
 import { clamp, uuid } from '../utils.js'
 import * as THREE from '../three.js'
+import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
 
 const HEALTH_MAX = 100
 
@@ -11,46 +11,26 @@ export function createPlayerProxy(entity, player) {
   const quaternion = new THREE.Quaternion()
   let activeEffectConfig = null
   let voiceMod
-  return {
-    get networkId() {
-      return player.data.userId
-    },
-    get id() {
-      return player.data.id
-    },
-    get local() {
-      return player.data.id === world.network.id
-    },
-    get admin() {
-      return player.isAdmin()
-    },
-    get builder() {
-      return player.isBuilder()
-    },
-    get name() {
-      return player.data.name
-    },
-    get health() {
-      return player.data.health
-    },
-    get position() {
-      return position.copy(player.base.position)
-    },
-    get rotation() {
-      return rotation.copy(player.base.rotation)
-    },
-    get quaternion() {
-      return quaternion.copy(player.base.quaternion)
-    },
-    get height() {
-      return player.avatar?.getHeight()
-    },
-    get headToHeight() {
-      return player.avatar?.getHeadToHeight()
-    },
-    get destroyed() {
-      return !!player.destroyed
-    },
+
+  const builder = new ProxyBuilder(player)
+
+  builder.addMultiple({
+    networkId: () => player.data.userId,
+    id: () => player.data.id,
+    local: () => player.data.id === world.network.id,
+    admin: () => player.isAdmin(),
+    builder: () => player.isBuilder(),
+    name: () => player.data.name,
+    health: () => player.data.health,
+    position: () => position.copy(player.base.position),
+    rotation: () => rotation.copy(player.base.rotation),
+    quaternion: () => quaternion.copy(player.base.quaternion),
+    height: () => player.avatar?.getHeight(),
+    headToHeight: () => player.avatar?.getHeadToHeight(),
+    destroyed: () => !!player.destroyed,
+  })
+
+  return builder.build({
     teleport(position, rotationY) {
       if (player.data.userId === world.network.id) {
         world.network.enqueue('onPlayerTeleport', { position: position.toArray(), rotationY })
@@ -176,5 +156,5 @@ export function createPlayerProxy(entity, player) {
         voiceMod = world.livekit.removeModifier(voiceMod)
       }
     },
-  }
+  })
 }
