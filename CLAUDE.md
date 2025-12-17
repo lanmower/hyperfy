@@ -152,9 +152,17 @@
 - RoomManager class: 83L - Room connection, setup, microphone/screenshare targeting
 - All track and room management logic extracted and delegated
 
-### Session Summary - Phase 2, 3 & 4.1-4.3 Complete
+**Phase 4.4: App.js System - COMPLETE** ✓
+- App.js: 495L → 273L (45% reduction!)
+- BlueprintLoader class: 93L - Blueprint loading, model/script loading, error handling, mode setup
+- ScriptExecutor class: 85L - Script execution, lifecycle event handlers (fixedUpdate/update/lateUpdate)
+- EventManager class: 79L - Event listeners, emission, queue management, world event binding
+- ProxyFactory class: 94L - getWorldProxy(), getAppProxy(), getPlayerProxy() with descriptor caching
+- All blueprint, script, and event logic extracted and delegated
 
-**Total Systems Refactored**: 8 major systems
+### Session Summary - Phase 2, 3 & 4.1-4.4 Complete
+
+**Total Systems Refactored**: 9 major systems
 - ServerNetwork: 598L → 293L (51% reduction)
 - Physics: 572L → 172L (70% reduction)
 - UI: 579L → 299L (48% reduction)
@@ -162,23 +170,25 @@
 - ClientLoader: 511L → 139L (73% reduction)
 - Node: 471L → 250L (47% reduction)
 - ClientLiveKit: 481L → 129L (73% reduction)
-- Total LOC reduction: 3,708L → 1,581L (57% reduction across these 7 systems)
+- App: 495L → 273L (45% reduction)
+- Total LOC reduction: 4,203L → 1,854L (56% reduction across these 8 systems)
 
-**Modules Created**: 20 focused extraction modules
+**Modules Created**: 24 focused extraction modules
 - PhysicsQueries, PhysicsContactManager, PhysicsActorManager
 - UIRenderer, UIHelpers
 - VideoRenderer, VideoAudioController, VideoHelpers
 - VideoFactory, AssetHandlers, FileManager
 - TransformSystem, LifecycleManager, ProxyFactory
 - PlayerVoiceController, TrackManager, ScreenManager, RoomManager
+- BlueprintLoader, ScriptExecutor, EventManager, ProxyFactory (App)
 - PacketHandlers, ~30 utility modules
 
 **Build Status**: 48 errors (no new errors introduced, stable)
-**Commits Made**: 9 session commits
+**Commits Made**: 10 session commits
 
 **Next Priority Systems** (>200L):
-1. App.js (546L → 200L) - Blueprint loader, state manager
-2. ErrorMonitor.js (489L → 200L) - Error formatters, reporters
-3. ClientControls.js (768L → 200L) - Control/input handlers
-4. Particles.js (417L → 200L) - Emitter factory
+1. ErrorMonitor.js (489L → 200L) - Error formatters, reporters
+2. ClientControls.js (768L → 200L) - Control/input handlers
+3. Particles.js (417L → 200L) - Emitter factory
+4. Nametags.js (386L → 200L) - Position calculator, occlusion
 
