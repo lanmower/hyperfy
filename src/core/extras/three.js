@@ -1,1 +1,1 @@
-export * from './utils/three.js'
+export * from 'three'

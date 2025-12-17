@@ -1,10 +1,13 @@
 export const Ranks = {
-  DEFAULT: 0,
-  ADMIN: 1,
-  MODERATOR: 2,
-  VIEWER: 3,
+  ADMIN: 2,
+  BUILDER: 1,
+  VISITOR: 0,
 }
 
-export function hasRank(userRank, requiredRank) {
-  return userRank >= requiredRank
+export const isRank = (playerRank, targetRank) => {
+  return playerRank === targetRank
+}
+
+export const hasRank = (playerRank, minRank) => {
+  return playerRank >= minRank
 }

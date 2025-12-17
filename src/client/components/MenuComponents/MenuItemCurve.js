@@ -1,7 +1,7 @@
 import { useContext, useMemo, useState } from 'react'
 import { css } from '@firebolt-dev/css'
 import { CurvePreview } from '../CurvePreview.js'
-import { Curve } from '../../core/extras/assets/Curve.js'
+import { Curve } from '../../core/extras/Curve.js'
 import { Portal } from '../Portal.js'
 import { CurvePane } from '../CurvePane.js'
 import { MenuContext } from './Menu.js'

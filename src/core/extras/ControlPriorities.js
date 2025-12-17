@@ -1,5 +1,9 @@
-const CONTROL_PRIORITY_SYSTEM = 0
-const CONTROL_PRIORITY_USER = 100
-const CONTROL_PRIORITY_XR = 50
-
-export const ControlPriorities = { CONTROL_PRIORITY_SYSTEM, CONTROL_PRIORITY_USER, CONTROL_PRIORITY_XR }
+export const ControlPriorities = {
+  PLAYER: 0,
+  ENTITY: 1,
+  APP: 2,
+  BUILDER: 3,
+  ACTION: 4,
+  CORE_UI: 5,
+  POINTER: 6,
+}

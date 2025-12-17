@@ -1,7 +1,7 @@
 import { css } from '@firebolt-dev/css'
 import { FieldFile, FieldNumber, FieldSwitch, FieldText, FieldToggle } from '../Fields.js'
 import { useRank } from '../useRank.js'
-import { Ranks } from '../../../core/extras/assets/ranks.js'
+import { Ranks } from '../../../core/extras/ranks.js'
 import { Pane } from './Pane.js'
 import { Group } from './Group.js'
 import { useSyncedState } from '../hooks/index.js'

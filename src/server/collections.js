@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
-import { importApp } from '../core/extras/utils/appTools.js'
+import { importApp } from '../core/extras/appTools.js'
 
 export async function initCollections({ collectionsDir, assetsDir }) {
   let folderNames = fs.readdirSync(collectionsDir)
