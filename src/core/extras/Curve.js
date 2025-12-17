@@ -1,1 +1,1 @@
-export * from './utils/Curve.js'
+export * from './assets/Curve.js'
