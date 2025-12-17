@@ -1,4 +1,3 @@
-// ClientControls XR/VR input handling
 
 const HandednessLeft = 'left'
 const HandednessRight = 'right'
@@ -70,6 +69,5 @@ export class XRHandler {
   }
 
   destroy() {
-    // XR session cleanup handled by world
   }
 }

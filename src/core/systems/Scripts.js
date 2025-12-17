@@ -8,13 +8,6 @@ import { prng } from '../extras/prng.js'
 import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
 import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
 
-/**
- * Script System
- *
- * - Runs on both the server and client.
- * - Executes scripts inside secure compartments
- *
- */
 
 export class Scripts extends System {
   constructor(world) {
@@ -40,7 +33,6 @@ export class Scripts extends System {
       num,
       prng,
       clamp,
-      // Layers,
       Object3D: THREE.Object3D,
       Quaternion: THREE.Quaternion,
       Vector3: THREE.Vector3,
@@ -48,13 +40,10 @@ export class Scripts extends System {
       Matrix4: THREE.Matrix4,
       BufferedLerpVector3,
       BufferedLerpQuaternion,
-      // Material: Material,
       Curve,
-      // Gradient: Gradient,
       DEG2RAD,
       RAD2DEG,
       uuid,
-      // pause: () => this.world.pause(),
     })
   }
 

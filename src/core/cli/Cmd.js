@@ -1,4 +1,3 @@
-// Command decorator factory - reduces CLI registration boilerplate
 
 export const Cmd = {
   build: (handler, opts = {}) => ({

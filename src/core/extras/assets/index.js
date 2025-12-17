@@ -1,4 +1,3 @@
-// Asset definitions, curves, and configuration presets
 
 export { Curve } from './Curve.js'
 export * from './curveManager.js'

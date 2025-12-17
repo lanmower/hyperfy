@@ -72,7 +72,6 @@ export function curveManager({ curve, width, height, xLabel, yLabel, yMin = 0, y
     .attr('stroke-width', 1.5)
     .attr('stroke-linecap', 'round')
 
-  // Updated to use d3.pointer instead of d3.mouse
   svg.on('click', function (event) {
     if (event.defaultPrevented) return
     const pointer = d3.pointer(event, this)
@@ -85,8 +84,6 @@ export function curveManager({ curve, width, height, xLabel, yLabel, yMin = 0, y
   })
 
   function updateValue() {
-    // editor.value = t => curve.evaluate(t)
-    // editor.dispatchEvent(new CustomEvent('input'))
   }
 
   function update(runTransition) {
@@ -189,7 +186,6 @@ export function curveManager({ curve, width, height, xLabel, yLabel, yMin = 0, y
       })
   }
 
-  // Updated drag functions to use D3 v6+ event handling
   function dragstartedKey(event, d) {
     d3.select(this).raise().attr('r', 6)
   }

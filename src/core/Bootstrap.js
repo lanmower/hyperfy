@@ -1,4 +1,3 @@
-// Service bootstrap - unified initialization and lifecycle management
 
 export class Bootstrap {
   constructor(name = 'Bootstrap') {

@@ -18,18 +18,13 @@ export class World extends EventEmitter {
     this.assetsDir = null
     this.hot = new Set()
 
-    // Dependency injection container
     this.di = new ServiceContainer()
-    // Register world itself for injection
     this.di.registerSingleton('world', this)
 
     this.rig = new THREE.Object3D()
-    // NOTE: camera near is slightly smaller than spherecast. far is slightly more than skybox.
-    // this gives us minimal z-fighting without needing logarithmic depth buffers
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
     this.rig.add(this.camera)
 
-    // Load systems dynamically from registry
     this.loadSystemsFromRegistry()
   }
 
@@ -49,7 +44,6 @@ export class World extends EventEmitter {
     const system = new System(this)
     this.systems.push(system)
     this[key] = system
-    // Register system in DI container for dependency injection
     this.di.registerSingleton(key, system)
     return system
   }
@@ -70,9 +64,7 @@ export class World extends EventEmitter {
   }
 
   tick = time => {
-    // begin any stats/performance monitors
     this.preTick()
-    // update time, delta, frame and accumulator
     time /= 1000
     let delta = time - this.time
     if (delta < 0) delta = 0
@@ -82,32 +74,20 @@ export class World extends EventEmitter {
     this.frame++
     this.time = time
     this.accumulator += delta
-    // prepare physics
     const willFixedStep = this.accumulator >= this.fixedDeltaTime
     this.preFixedUpdate(willFixedStep)
-    // run as many fixed updates as we can for this ticks delta
     while (this.accumulator >= this.fixedDeltaTime) {
-      // run all fixed updates
       this.fixedUpdate(this.fixedDeltaTime)
-      // step physics
       this.postFixedUpdate(this.fixedDeltaTime)
-      // decrement accumulator
       this.accumulator -= this.fixedDeltaTime
     }
-    // interpolate physics for remaining delta time
     const alpha = this.accumulator / this.fixedDeltaTime
     this.preUpdate(alpha)
-    // run all updates
     this.update(delta, alpha)
-    // run post updates, eg cleaning all node matrices
     this.postUpdate(delta)
-    // run all late updates
     this.lateUpdate(delta, alpha)
-    // run post late updates, eg cleaning all node matrices
     this.postLateUpdate(delta)
-    // commit all changes, eg render on the client
     this.commit()
-    // end any stats/performance monitors
     this.postTick()
   }
 

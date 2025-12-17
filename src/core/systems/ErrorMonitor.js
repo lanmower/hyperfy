@@ -8,7 +8,6 @@ import { errorObserver } from '../../server/services/ErrorObserver.js'
 import { errorFormatter } from '../../server/utils/ErrorFormatter.js'
 
 export class ErrorMonitor extends System {
-  // DI Service Constants
   static DEPS = {
     network: 'network',
     entities: 'entities',
@@ -30,7 +29,6 @@ export class ErrorMonitor extends System {
     setInterval(() => this.cleanup(), 60000)
   }
 
-  // DI Property Getters
   get network() { return this.getService(ErrorMonitor.DEPS.network) }
   get entities() { return this.getService(ErrorMonitor.DEPS.entities) }
   get events() { return this.getService(ErrorMonitor.DEPS.events) }
@@ -91,7 +89,6 @@ export class ErrorMonitor extends System {
 
   interceptGlobalErrors() {
     if (this.isClient && typeof window !== 'undefined') {
-      // Client-side global error handlers
       window.addEventListener('error', (event) => {
         this.captureError('window.error', {
           message: event.message,
@@ -111,7 +108,6 @@ export class ErrorMonitor extends System {
     }
 
     if (this.isServer && typeof process !== 'undefined') {
-      // Server-side global error handlers
       process.on('uncaughtException', (error) => {
         this.captureError('uncaught.exception', {
           message: error.message,
@@ -181,7 +177,6 @@ export class ErrorMonitor extends System {
       blueprints: this.blueprints?.count || 0
     }
 
-    // Add performance context if available
     if (typeof performance !== 'undefined') {
       context.performance = {
         now: performance.now(),
@@ -233,14 +228,12 @@ export class ErrorMonitor extends System {
   }
 
   sendErrorToServer(errorEntry) {
-    // Send errors to game server via WebSocket for MCP relay
     try {
       this.network.send('errorReport', {
         error: errorEntry,
         realTime: true
       })
     } catch (err) {
-      // Silently fail if network send fails to avoid error loops
     }
   }
 

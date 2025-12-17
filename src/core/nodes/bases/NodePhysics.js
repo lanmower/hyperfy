@@ -17,34 +17,27 @@ export class NodePhysics extends Node {
   constructor(data = {}) {
     super(data)
 
-    // Physics properties
     this.mass = data.mass || 1
     this.isKinematic = data.isKinematic || false
     this.isStatic = data.isStatic || false
     this.gravity = data.gravity !== false
 
-    // Velocity & Forces
     this.linearVelocity = data.linearVelocity || [0, 0, 0]
     this.angularVelocity = data.angularVelocity || [0, 0, 0]
 
-    // Collider properties
     this.shape = data.shape || 'box'
     this.size = data.size || [1, 1, 1]
 
-    // Physics material
     this.friction = data.friction !== undefined ? data.friction : 0.4
     this.restitution = data.restitution !== undefined ? data.restitution : 0.3
     this.density = data.density || 1
 
-    // Collision layers/masks
     this.collisionLayer = data.collisionLayer || 1
     this.collisionMask = data.collisionMask || 0xFFFFFFFF
 
-    // Constraints
     this.locked = data.locked || { x: false, y: false, z: false }
     this.constraints = []
 
-    // Physics body reference (set by physics engine)
     this.physicsBody = null
   }
 

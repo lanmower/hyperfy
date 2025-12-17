@@ -13,7 +13,6 @@ export function glbToNodes(glb, world) {
     for (const object3d of object3ds) {
       const props = object3d.userData || {}
       const isSkinnedMeshRoot = !!object3d.children.find(c => c.isSkinnedMesh)
-      // SkinnedMesh (root)
       if (isSkinnedMeshRoot) {
         const node = registerNode('skinnedmesh', {
           id: object3d.name,
@@ -31,9 +30,7 @@ export function glbToNodes(glb, world) {
         } else {
           parentNode.add(node)
         }
-        // parse(object3d.children, node)
       }
-      // Snap (custom node)
       else if (props.node === 'snap') {
         const node = registerNode('snap', {
           id: object3d.name,
@@ -44,7 +41,6 @@ export function glbToNodes(glb, world) {
         parentNode.add(node)
         parse(object3d.children, node)
       }
-      // LOD (custom node)
       else if (props.node === 'lod') {
         const node = registerNode('lod', {
           id: object3d.name,
@@ -56,7 +52,6 @@ export function glbToNodes(glb, world) {
         parentNode.add(node)
         parse(object3d.children, node)
       }
-      // RigidBody (custom node)
       else if (props.node === 'rigidbody') {
         const node = registerNode('rigidbody', {
           id: object3d.name,
@@ -69,12 +64,7 @@ export function glbToNodes(glb, world) {
         parentNode.add(node)
         parse(object3d.children, node)
       }
-      // Collider (custom node)
       else if (props.node === 'collider' && object3d.isMesh) {
-        // NOTE: in blender if you export a single object with node:collider but it has multiple materials, it converts this into a Group with one Mesh for each material.
-        // but since the Group is the one that has the collider custom property, it won't work as expected. we could hack to fix this, but i think it adds a layer of indirection.
-        // colliders should not have materials on them.
-        // console.error('TODO: glbToNodes collider for box/sphere in blender?')
         const node = registerNode('collider', {
           id: object3d.name,
           type: 'geometry',
@@ -89,13 +79,10 @@ export function glbToNodes(glb, world) {
         parentNode.add(node)
         parse(object3d.children, node)
       }
-      // Mesh
       else if (object3d.type === 'Mesh') {
-        // experimental splatmaps
         if (props.exp_splatmap && !world.network.isServer) {
           setupSplatmap(object3d)
         }
-        // wind effect
         else if (object3d.material.userData.wind) {
           addWind(object3d, world)
         }
@@ -121,11 +108,8 @@ export function glbToNodes(glb, world) {
         }
         parse(object3d.children, node)
       }
-      // SkinnedMesh
       else if (object3d.type === 'SkinnedMesh') {
-        // ...
       }
-      // Object3D / Group / Scene
       else if (groupTypes.includes(object3d.type)) {
         const node = registerNode('group', {
           id: object3d.name,
@@ -142,7 +126,6 @@ export function glbToNodes(glb, world) {
     id: '$root',
   })
   parse(glb.scene.children, root)
-  // console.log('$root', root)
   return root
 }
 
@@ -151,7 +134,6 @@ function addWind(mesh, world) {
   const uniforms = world.wind.uniforms
   if (mesh.material.hasWind) return
   mesh.material.hasWind = true
-  // console.log('added wind to', mesh.name)
   mesh.material.onBeforeCompile = shader => {
     if (!shader.defines) shader.defines = {}
     shader.defines.USE_WIND = 1
@@ -168,11 +150,6 @@ function addWind(mesh, world) {
     shader.uniforms.height = { value: height } // prettier-ignore
     shader.uniforms.stiffness = { value: 0 }
 
-    // BUG: somehow the wind shader code below is added to other meshes
-    // so we wrap it in an ifdef. this might be a bug with CSM because disabling
-    // the prepareMaterial in Stage.js the issues goes away
-    // tbh the wind code should probably be part
-    // of the global shader anyway, same with things like outlines etc.
 
     shader.vertexShader = shader.vertexShader.replace(
       '#include <common>',
@@ -217,9 +194,6 @@ function addWind(mesh, world) {
 }
 
 const snoise = `
-  //	Simplex 3D Noise 
-  //	by Ian McEwan, Stefan Gustavson (https://github.com/stegu/webgl-noise)
-  //
   vec4 permute(vec4 x){
     return mod(((x*34.0)+1.0)*x, 289.0);
   }
@@ -231,30 +205,24 @@ const snoise = `
   const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
   const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
 
-  // First corner
   vec3 i  = floor(v + dot(v, C.yyy) );
   vec3 x0 =   v - i + dot(i, C.xxx) ;
 
-  // Other corners
   vec3 g = step(x0.yzx, x0.xyz);
   vec3 l = 1.0 - g;
   vec3 i1 = min( g.xyz, l.zxy );
   vec3 i2 = max( g.xyz, l.zxy );
 
-  //  x0 = x0 - 0. + 0.0 * C 
   vec3 x1 = x0 - i1 + 1.0 * C.xxx;
   vec3 x2 = x0 - i2 + 2.0 * C.xxx;
   vec3 x3 = x0 - 1. + 3.0 * C.xxx;
 
-  // Permutations
   i = mod(i, 289.0 ); 
   vec4 p = permute( permute( permute( 
       i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
     + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
     + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
 
-  // Gradients
-  // ( N*N points uniformly over a square, mapped onto an octahedron.)
   float n_ = 1.0/7.0; // N=7
   vec3  ns = n_ * D.wyz - D.xzx;
 
@@ -282,14 +250,12 @@ const snoise = `
   vec3 p2 = vec3(a1.xy,h.z);
   vec3 p3 = vec3(a1.zw,h.w);
 
-  //Normalise gradients
   vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
   p0 *= norm.x;
   p1 *= norm.y;
   p2 *= norm.z;
   p3 *= norm.w;
 
-  // Mix final noise value
   vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
   m = m * m;
   return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
@@ -324,16 +290,10 @@ function setupSplatmap(mesh) {
     bScale: { value: mesh.userData.blue_scale || 1 },
     aScale: { value: mesh.userData.alpha_scale || 1 },
   }
-  // if (mesh.geometry.hasAttribute('_color')) {
-  //   terrain.geometry.setAttribute('color', terrain.geometry.attributes._color)
-  //   terrain.geometry.deleteAttribute('_color')
-  //   hasVertexColors = true
-  // }
   mesh.material = new CustomShaderMaterial({
     baseMaterial: THREE.MeshStandardMaterial,
     roughness: 1,
     metalness: 0,
-    // vertexColors: true,
     uniforms,
     vertexShader: `
       varying vec2 vUv;
@@ -382,9 +342,6 @@ function setupSplatmap(mesh) {
           result += splat.r * textureTriplanar(rTex, rScale, vNorm, vPos);
           result += splat.g * textureTriplanar(gTex, gScale, vNorm, vPos);
           result += splat.b * textureTriplanar(bTex, bScale, vNorm, vPos);
-          // result += splat.a * textureTriplanar(aTex, aScale, vNorm, vPos);
-          // result += (1.0 - splat.a) * textureTriplanar(aTex, aScale, vNorm, vPos);
-          // result *= vColor;
           csm_DiffuseColor *= result;
       }
     `,

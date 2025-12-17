@@ -2,13 +2,6 @@ import { System } from './System.js'
 
 const TICK_RATE = 1 / 30
 
-/**
- * Server System
- *
- * - Runs on the server
- * - Ticks!
- *
- */
 export class Server extends System {
   constructor(world) {
     super(world)

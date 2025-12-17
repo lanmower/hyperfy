@@ -114,13 +114,9 @@ export class UI extends Node {
     this.canvas.height = this._height * this._res
     this.canvasCtx = this.canvas.getContext('2d')
     if (this._space === 'world') {
-      // world-space
       this.texture = new THREE.CanvasTexture(this.canvas)
       this.texture.colorSpace = THREE.SRGBColorSpace
       this.texture.anisotropy = this.ctx.world.graphics.maxAnisotropy
-      // this.texture.minFilter = THREE.LinearFilter // or THREE.NearestFilter for pixel-perfect but potentially aliased text
-      // this.texture.magFilter = THREE.LinearFilter
-      // this.texture.generateMipmaps = true
       this.geometry = new THREE.PlaneGeometry(this._width, this._height)
       this.geometry.scale(this._size, this._size, this._size)
       pivotGeometry(this._pivot, this.geometry, this._width * this._size, this._height * this._size)
@@ -143,7 +139,6 @@ export class UI extends Node {
       }
       this.ctx.world.setHot(this, true)
     } else {
-      // screen-space
       this.canvas.style.position = 'absolute'
       this.canvas.style.width = this._width + 'px'
       this.canvas.style.height = this._height + 'px'
@@ -223,7 +218,6 @@ export class UI extends Node {
     const width = this.yogaNode.getComputedWidth()
     const height = this.yogaNode.getComputedHeight()
     if (this._backgroundColor) {
-      // when theres a border, slightly inset to prevent bleeding
       const inset = this._borderColor && this._borderWidth ? 1 * this._res : 0
       const radius = Math.max(0, this._borderRadius * this._res - inset)
       const insetLeft = left + inset
@@ -291,14 +285,6 @@ export class UI extends Node {
       this.draw()
     }
     if (didMove) {
-      // if (this._billboard !== 'none') {
-      //   v[0].setFromMatrixPosition(this.matrixWorld)
-      //   v[1].setFromMatrixScale(this.matrixWorld)
-      //   this.mesh.matrixWorld.compose(v[0], iQuaternion, v[1])
-      // } else {
-      //   this.mesh.matrixWorld.copy(this.matrixWorld)
-      //   this.ctx.world.stage.octree.move(this.sItem)
-      // }
     }
   }
 
@@ -309,7 +295,6 @@ export class UI extends Node {
       const camPosition = v[0].setFromMatrixPosition(camera.matrixWorld)
       const uiPosition = v[1].setFromMatrixPosition(this.matrixWorld)
       const distance = camPosition.distanceTo(uiPosition)
-      // this.mesh.renderOrder = -distance // Same ordering as particles
 
       const pos = v[2]
       const qua = q[0]
@@ -317,19 +302,16 @@ export class UI extends Node {
       this.matrixWorld.decompose(pos, qua, sca)
       if (this._billboard === 'full') {
         if (world.xr.session) {
-          // full in XR means lookAt camera (excludes roll)
           v[4].subVectors(camPosition, pos).normalize()
           qua.setFromUnitVectors(FORWARD, v[4])
           e[0].setFromQuaternion(qua)
           e[0].z = 0
           qua.setFromEuler(e[0])
         } else {
-          // full in desktop/mobile means matching camera rotation
           qua.copy(world.rig.quaternion)
         }
       } else if (this._billboard === 'y') {
         if (world.xr.session) {
-          // full in XR means lookAt camera (only y)
           v[4].subVectors(camPosition, pos).normalize()
           qua.setFromUnitVectors(FORWARD, v[4])
           e[0].setFromQuaternion(qua)
@@ -337,7 +319,6 @@ export class UI extends Node {
           e[0].z = 0
           qua.setFromEuler(e[0])
         } else {
-          // full in desktop/mobile means matching camera y rotation
           e[0].setFromQuaternion(world.rig.quaternion)
           e[0].x = 0
           e[0].z = 0
@@ -348,11 +329,7 @@ export class UI extends Node {
         const worldToScreenFactor = world.graphics.worldToScreenFactor
         const [minDistance, maxDistance, baseScale = 1] = this._scaler
         const clampedDistance = clamp(distance, minDistance, maxDistance)
-        // calculate scale factor based on the distance
-        // When distance is at min, scale is 1.0 (or some other base scale)
-        // When distance is at max, scale adjusts proportionally
         let scaleFactor = (baseScale * (worldToScreenFactor * clampedDistance)) / this._size
-        // if (world.xr.session) scaleFactor *= 0.3 // roughly matches desktop fov etc
         sca.setScalar(scaleFactor)
       }
       this.matrixWorld.compose(pos, qua, sca)
@@ -394,7 +371,6 @@ export class UI extends Node {
   resolveHit(hit) {
     if (hit?.point) {
       const inverseMatrix = m[0].copy(this.mesh.matrixWorld).invert()
-      // convert world hit point to canvas coordinates (0,0 is top left x,y)
       v[0].copy(hit.point)
         .applyMatrix4(inverseMatrix)
         .multiplyScalar(1 / this._size)
@@ -419,7 +395,6 @@ export class UI extends Node {
       if (x < left || x > left + width || y < top || y > top + height) {
         return null
       }
-      // Check children from front to back
       for (let i = node.children.length - 1; i >= 0; i--) {
         const childHit = findHitNode(node.children[i], offsetX, offsetY)
         if (childHit) return childHit
@@ -497,8 +472,6 @@ function pivotGeometry(pivot, geometry, width, height) {
 }
 
 function pivotCanvas(pivot, canvas, width, height) {
-  // const halfWidth = width / 2
-  // const halfHeight = height / 2
   switch (pivot) {
     case 'top-left':
       canvas.style.transform = `translate(0%, 0%)`
@@ -543,11 +516,7 @@ function isSpace(value) {
   return spaces.includes(value)
 }
 
-// pivotOffset == ( - pivotX, - pivotY )
-// i.e., the negative of whatever pivotGeometry just did.
 function getPivotOffset(pivot, width, height) {
-  // The top-left corner is originally (-halfW, +halfH).
-  // Then pivotGeometry adds the following translation:
   const halfW = width / 2
   const halfH = height / 2
   let tx = 0,
@@ -592,9 +561,6 @@ function getPivotOffset(pivot, width, height) {
       break
   }
 
-  // So the final local coordinate of top-left corner is:
-  //   originalTopLeft + pivotTranslation
-  // = (-halfW + tx, +halfH + ty)
   return new THREE.Vector2(-halfW + tx, +halfH + ty)
 }
 

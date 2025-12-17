@@ -1,4 +1,3 @@
-// Request/Response protocol - unified messaging pattern
 
 export class Request {
   constructor(type, payload = {}, options = {}) {

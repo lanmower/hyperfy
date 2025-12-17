@@ -53,17 +53,13 @@ export class LOD extends Node {
       distance = distance / avgScale
     }
     const lod = this.lods.find(lod => distance <= lod.maxDistance)
-    // if this lod hasnt change, stop here
     if (this.lod === lod) return
-    // if we have a new lod, lets activate it immediately
     if (lod) {
       lod.node.active = true
     }
-    // if we have a pre-existing active lod, queue to remove it next frame
     if (this.lod) {
       this.prevLod = this.lod
     }
-    // track the new lod (if any)
     this.lod = lod
   }
 

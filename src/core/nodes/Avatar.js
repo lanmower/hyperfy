@@ -41,7 +41,6 @@ export class Avatar extends Node {
       this.instance.setVisible(this._visible)
       if (this._disableRateCheck) {
         this.instance.disableRateCheck()
-        // this._disableRateCheck = null
       }
       this.ctx.world?.setHot(this.instance, true)
       this.ctx.world?.avatars.add(this.instance)
@@ -98,12 +97,10 @@ export class Avatar extends Node {
   }
 
   setEmote(url) {
-    // DEPRECATED: use .emote
     this.emote = url
   }
 
   get height() {
-    // DEPRECATED: use .getHeight()
     return this.getHeight()
   }
 

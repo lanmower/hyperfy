@@ -1,4 +1,3 @@
-// Structured CLI output system with formatting and levels
 
 const levels = { debug: 0, info: 1, warn: 2, error: 3, success: 4 }
 const colors = {

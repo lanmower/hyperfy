@@ -18,7 +18,6 @@ export class Socket {
   }
 
   send(name, data) {
-    // console.log('->', name, data)
     const packet = writePacket(name, data)
     this.ws.send(packet)
   }
@@ -32,10 +31,6 @@ export class Socket {
     this.ws.ping()
   }
 
-  // end(code) {
-  //   this.send('end', code)
-  //   this.disconnect()
-  // }
 
   onPong = () => {
     this.alive = true
@@ -44,7 +39,6 @@ export class Socket {
   onMessage = packet => {
     const [method, data] = readPacket(packet)
     this.network.enqueue(this, method, data)
-    // console.log('<-', method, data)
   }
 
   onClose = e => {

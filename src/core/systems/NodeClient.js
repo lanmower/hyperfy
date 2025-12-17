@@ -3,13 +3,6 @@ import { System } from './System.js'
 
 const TICK_RATE = 1 / 30
 
-/**
- * Node Client System
- *
- * - Runs on node
- * - Ticks!
- *
- */
 export class NodeClient extends System {
   constructor(world) {
     super(world)

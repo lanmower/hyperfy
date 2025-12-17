@@ -1,4 +1,3 @@
-// Reusable object pool for efficient memory management
 
 export class ObjectPool {
   constructor(Factory, initialSize = 10, maxSize = 100) {

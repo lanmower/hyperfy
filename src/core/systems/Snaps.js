@@ -1,14 +1,6 @@
 import { System } from './System.js'
 import { SnapOctree } from '../extras/SnapOctree.js'
 
-/**
- * Snaps System
- *
- * - Runs on the client
- * - Registers snap points
- * - Allows snap point queries
- *
- */
 
 export class Snaps extends System {
   constructor(world) {

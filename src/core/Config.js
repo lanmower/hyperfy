@@ -1,4 +1,3 @@
-// Configuration system - centralized config management
 
 export class Config {
   constructor(env = process.env) {
@@ -65,7 +64,6 @@ export class Config {
 
 export const config = new Config()
 
-// Environment presets
 export const presets = {
   development: {
     NODE_ENV: 'development',
@@ -88,12 +86,9 @@ export const presets = {
   },
 }
 
-// Server configuration setup
 export function setupServerConfig(env = process.env.NODE_ENV || 'development') {
-  // Apply preset first
   config.applyPreset(presets[env] || presets.development)
 
-  // Define all server configuration keys
   config.set('PORT', 3000, 'number')
   config.set('NODE_ENV', 'development')
   config.set('WORLD', './world')
@@ -112,12 +107,9 @@ export function setupServerConfig(env = process.env.NODE_ENV || 'development') {
   return config
 }
 
-// Client configuration setup
 export function setupClientConfig(env = process.env.NODE_ENV || 'development') {
-  // Apply preset first
   config.applyPreset(presets[env] || presets.development)
 
-  // Define all client configuration keys
   config.set('NODE_ENV', 'development')
   config.set('DEBUG', false, 'boolean')
   config.set('PUBLIC_ASSETS_URL', '')

@@ -1,4 +1,3 @@
-// Centralized error event handling for cross-platform error tracking
 
 import { EventBus } from './EventBus.js'
 import { createErrorEvent, mergeErrorEvents, isSameError, ErrorLevels } from '../schemas/ErrorEvent.schema.js'

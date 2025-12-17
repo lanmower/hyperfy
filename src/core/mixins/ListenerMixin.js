@@ -1,4 +1,3 @@
-// Reusable listener pattern for systems with subscribers
 
 export function ListenerMixin(Base) {
   return class extends Base {

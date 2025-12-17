@@ -69,7 +69,6 @@ export const withStateManager = (Base) => class extends Base {
     const oldState = { ...this.state }
     this.state = { ...this.state, ...updates }
 
-    // Trigger watchers
     for (const [key, watchers] of this.watchers) {
       if (updates.hasOwnProperty(key)) {
         watchers.forEach(cb => cb(this.state[key], oldState[key]))
@@ -98,7 +97,6 @@ export const withStateManager = (Base) => class extends Base {
     }
     this.watchers.get(key).push(callback)
 
-    // Return unwatch function
     return () => {
       const watchers = this.watchers.get(key)
       const index = watchers.indexOf(callback)

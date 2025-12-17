@@ -34,7 +34,6 @@ export class Audio extends Node {
   }
 
   async mount() {
-    // ...
   }
 
   commit(didMove) {

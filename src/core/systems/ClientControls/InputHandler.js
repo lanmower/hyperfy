@@ -1,4 +1,3 @@
-// ClientControls input event handling
 
 import { isTouch } from '../../../client/utils.js'
 import * as THREE from '../../extras/three.js'

@@ -17,19 +17,16 @@ export class Node3D extends Node {
   constructor(data = {}) {
     super(data)
 
-    // 3D-specific properties
     this.visible = data.visible !== false
     this.castShadow = data.castShadow !== false
     this.receiveShadow = data.receiveShadow !== false
     this.frustumCulled = data.frustumCulled !== false
     this.matrixAutoUpdate = true
 
-    // Geometry data (set by subclasses)
     this.geometry = null
     this.material = null
     this.materials = []
 
-    // Cached bounds
     this.boundsBox = null
     this.boundsSphere = null
   }
@@ -39,7 +36,6 @@ export class Node3D extends Node {
    * @returns {THREE.Box3} Bounding box
    */
   getBounds() {
-    // Override in subclasses for specific geometry
     return this.boundsBox
   }
 

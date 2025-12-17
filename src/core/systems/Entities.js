@@ -3,7 +3,6 @@ import { PlayerLocal } from '../entities/PlayerLocal.js'
 import { PlayerRemote } from '../entities/PlayerRemote.js'
 import { System } from './System.js'
 
-// Import validation system to prevent entities with invalid blueprints
 let hyperfyEntityValidation = null
 
 const Types = {
@@ -12,14 +11,6 @@ const Types = {
   playerRemote: PlayerRemote,
 }
 
-/**
- * Entities System
- *
- * - Runs on both the server and client.
- * - Supports inserting entities into the world
- * - Executes entity scripts
- *
- */
 export class Entities extends System {
   constructor(world) {
     super(world)
@@ -30,9 +21,6 @@ export class Entities extends System {
     this.removed = []
   }
 
-  /**
-   * Shortcut accessors for commonly used services (DI pattern)
-   */
   get network() { return this.getService('network') }
   get events() { return this.getService('events') }
 
@@ -45,8 +33,6 @@ export class Entities extends System {
   }
 
   add(data, local) {
-    // CRITICAL FIX: Validate blueprint exists before creating entity
-    // This prevents the core issue where entities persist with invalid blueprint references
     if (hyperfyEntityValidation && data.type === 'app' && data.blueprint) {
       const validation = hyperfyEntityValidation.validateEntityCreation(this.world, data)
       if (!validation.valid) {
@@ -58,7 +44,6 @@ export class Entities extends System {
       }
     }
 
-    // Proceed with entity creation only if validation passed
     let Entity
     if (data.type === 'player') {
       Entity = Types[data.userId === this.network.id ? 'playerLocal' : 'playerRemote']
@@ -69,10 +54,6 @@ export class Entities extends System {
     this.items.set(entity.data.id, entity)
     if (data.type === 'player') {
       this.players.set(entity.data.id, entity)
-      // on the client remote players emit enter events here.
-      // but on the server, enter events is delayed for players entering until after their snapshot is sent
-      // that way they can actually respond correctly to follow-through events.
-      // see ServerNetwork.js -> onConnection
       if (this.network.isClient && data.userId !== this.network.id) {
         this.events.emit('enter', { playerId: entity.data.id })
       }

@@ -1,4 +1,3 @@
-// Efficient caching with TTL and size limits
 
 export class Cache {
   constructor(maxSize = 100, ttl = 60000) {

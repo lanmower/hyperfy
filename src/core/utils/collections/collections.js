@@ -1,4 +1,3 @@
-// Utility functions for common collection operations
 
 export function findById(collection, id) {
   if (collection instanceof Map) return collection.get(id)

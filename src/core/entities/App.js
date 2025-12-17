@@ -51,12 +51,10 @@ export class App extends BaseEntity {
   async build(crashed) {
     this.building = true
     const n = ++this.n
-    // fetch blueprint
     const blueprint = this.world.blueprints.get(this.data.blueprint)
 
     if (!blueprint) {
       console.error(`Blueprint "${this.data.blueprint}" not found`)
-      // Forward to ErrorMonitor if available
       if (this.world.errorMonitor) {
         this.world.errorMonitor.captureError('app.blueprint.missing', [`Blueprint "${this.data.blueprint}" not found`], '')
       }
@@ -72,7 +70,6 @@ export class App extends BaseEntity {
 
     let root
     let script
-    // if someone else is uploading glb, show a loading indicator
     if (this.data.uploader && this.data.uploader !== this.world.network.id) {
       root = createNode('mesh')
       root.type = 'box'
@@ -80,7 +77,6 @@ export class App extends BaseEntity {
       root.height = 1
       root.depth = 1
     }
-    // otherwise we can load the model and script
     else {
       try {
         const type = blueprint && blueprint.model && blueprint.model.endsWith('vrm') ? 'avatar' : 'model'
@@ -89,21 +85,17 @@ export class App extends BaseEntity {
         if (glb) root = glb.toNodes()
       } catch (err) {
         console.error(err)
-        // Forward to ErrorMonitor if available
         if (this.world.errorMonitor) {
           this.world.errorMonitor.captureError('app.model.load', [err.message], err.stack || '')
         }
         crashed = true
-        // no model, will use crash block below
       }
-      // fetch script (if any)
       if (blueprint && blueprint.script) {
         try {
           script = this.world.loader.get('script', blueprint.script)
           if (!script) script = await this.world.loader.load('script', blueprint.script)
         } catch (err) {
           console.error(err)
-          // Forward to ErrorMonitor if available
           if (this.world.errorMonitor) {
             this.world.errorMonitor.captureError('app.script.load', [err.message], err.stack || '')
           }
@@ -111,21 +103,16 @@ export class App extends BaseEntity {
         }
       }
     }
-    // if script crashed (or failed to load model), show crash-block
     if (crashed) {
       let glb = this.world.loader.get('model', 'asset://crash-block.glb')
       if (!glb) glb = await this.world.loader.load('model', 'asset://crash-block.glb')
       root = glb.toNodes()
     }
-    // if a new build happened while we were fetching, stop here
     if (this.n !== n) return
-    // unbuild any previous version
     this.unbuild()
-    // mode
     this.mode = Modes.ACTIVE
     if (this.data.mover) this.mode = Modes.MOVING
     if (this.data.uploader && this.data.uploader !== this.world.network.id) this.mode = Modes.LOADING
-    // setup
     this.blueprint = blueprint
     this.root = root
     if (this.root && (!blueprint || !blueprint.scene)) {
@@ -133,11 +120,9 @@ export class App extends BaseEntity {
       this.root.quaternion.fromArray(this.data.quaternion)
       this.root.scale.fromArray(this.data.scale)
     }
-    // activate
     if (this.root) {
       this.root.activate({ world: this.world, entity: this, moving: !!this.data.mover })
     }
-    // execute script
     const runScript =
       (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
     if (runScript) {
@@ -149,17 +134,14 @@ export class App extends BaseEntity {
       } catch (err) {
         console.error('script crashed')
         console.error(err)
-        // Forward to ErrorMonitor for MCP transmission
         if (this.world.errorMonitor) {
           this.world.errorMonitor.captureError('app.script.execution', [err.message], err.stack || '')
         }
         return this.crash()
       }
     }
-    // if moving we need updates
     if (this.mode === Modes.MOVING) {
       this.world.setHot(this, true)
-      // and we need a list of any snap points
       this.snaps = []
       if (this.root) {
         this.root.traverse(node => {
@@ -169,64 +151,49 @@ export class App extends BaseEntity {
         })
       }
     }
-    // if remote is moving, set up to receive network updates
     if (root) {
       this.networkPos = new BufferedLerpVector3(root.position, this.world.networkRate)
       this.networkQuat = new BufferedLerpQuaternion(root.quaternion, this.world.networkRate)
       this.networkSca = new BufferedLerpVector3(root.scale, this.world.networkRate)
     }
-    // execute any events we collected while building
     while (this.eventQueue.length) {
       const event = this.eventQueue[0]
       if (this.blueprint && event.version > this.blueprint.version) break // ignore future versions
       this.eventQueue.shift()
       this.emit(event.name, event.data, event.networkId)
     }
-    // finished!
     this.building = false
   }
 
   unbuild() {
-    // notify any running script
     this.emit('destroy')
-    // cancel any control
     this.control?.release()
     this.control = null
-    // cancel any effects
     this.playerProxies.forEach(player => {
       player.$cleanup()
     })
-    // deactivate local node
     this.root?.deactivate()
-    // deactivate world nodes
     for (const node of this.worldNodes) {
       node.deactivate()
     }
     this.worldNodes.clear()
-    // clear script event listeners
     this.clearEventListeners()
     this.hotEvents = 0
-    // cancel update tracking
     this.world.setHot(this, false)
-    // abort fetch's etc
     this.abortController?.abort()
     this.abortController = null
-    // mark dead and re-create hook (timers, async etc)
     this.deadHook.dead = true
     this.deadHook = { dead: false }
-    // clear fields
     this.onFields?.([])
   }
 
   fixedUpdate(delta) {
-    // script fixedUpdate()
     if (this.mode === Modes.ACTIVE && this.script) {
       try {
         this.emit('fixedUpdate', delta)
       } catch (err) {
         console.error('script fixedUpdate crashed', this)
         console.error(err)
-        // CRITICAL FIX: Forward to ErrorMonitor for real-time MCP transmission
         if (this.world.errorMonitor) {
           this.world.errorMonitor.captureError('app.script.fixedUpdate', [err.message], err.stack || '')
         }
@@ -237,20 +204,17 @@ export class App extends BaseEntity {
   }
 
   update(delta) {
-    // if someone else is moving the app, interpolate updates
     if (this.data.mover && this.data.mover !== this.world.network.id) {
       this.networkPos.update(delta)
       this.networkQuat.update(delta)
       this.networkSca.update(delta)
     }
-    // script update()
     if (this.mode === Modes.ACTIVE && this.script) {
       try {
         this.emit('update', delta)
       } catch (err) {
         console.error('script update() crashed', this)
         console.error(err)
-        // CRITICAL FIX: Forward to ErrorMonitor for real-time MCP transmission
         if (this.world.errorMonitor) {
           this.world.errorMonitor.captureError('app.script.update', [err.message], err.stack || '')
         }
@@ -267,7 +231,6 @@ export class App extends BaseEntity {
       } catch (err) {
         console.error('script lateUpdate() crashed', this)
         console.error(err)
-        // CRITICAL FIX: Forward to ErrorMonitor for real-time MCP transmission
         if (this.world.errorMonitor) {
           this.world.errorMonitor.captureError('app.script.lateUpdate', [err.message], err.stack || '')
         }
@@ -343,7 +306,6 @@ export class App extends BaseEntity {
     this.unbuild()
 
     this.world.entities.remove(this.data.id)
-    // if removed locally we need to broadcast to server/clients
     if (local) {
       this.world.network.send('entityRemoved', this.data.id)
     }
@@ -389,9 +351,7 @@ export class App extends BaseEntity {
   }
 
   clearEventListeners() {
-    // local
     this.listeners = {}
-    // world
     for (const [callback, name] of this.worldListeners) {
       this.world.events.off(name, callback)
     }
@@ -425,7 +385,6 @@ export class App extends BaseEntity {
       return secureResp
     } catch (err) {
       console.error(err)
-      // this.crash()
     }
   }
 
@@ -443,8 +402,6 @@ export class App extends BaseEntity {
   }
 
   getNodes() {
-    // note: this is currently just used in the nodes tab in the app inspector
-    // to get a clean hierarchy
     if (!this.blueprint || !this.blueprint.model) return
     const type = this.blueprint.model.endsWith('vrm') ? 'avatar' : 'model'
     let glb = this.world.loader.get(type, this.blueprint.model)
@@ -474,11 +431,9 @@ export class App extends BaseEntity {
         {},
         {
           get: (target, prop) => {
-            // getters
             if (prop in getters) {
               return getters[prop](entity)
             }
-            // methods
             if (prop in methods) {
               const method = methods[prop]
               return (...args) => {
@@ -488,7 +443,6 @@ export class App extends BaseEntity {
             return undefined
           },
           set: (target, prop, value) => {
-            // setters
             if (prop in setters) {
               setters[prop](entity, value)
               return true
@@ -511,27 +465,22 @@ export class App extends BaseEntity {
         {},
         {
           get: (target, prop) => {
-            // getters
             if (prop in getters) {
               return getters[prop](entity)
             }
-            // methods
             if (prop in methods) {
               const method = methods[prop]
               return (...args) => {
                 return method(entity, ...args)
               }
             }
-            // root node props
             return entity.root.getProxy()[prop]
           },
           set: (target, prop, value) => {
-            // setters
             if (prop in setters) {
               setters[prop](entity, value)
               return true
             }
-            // root node props
             if (prop in entity.root.getProxy()) {
               entity.root.getProxy()[prop] = value
               return true

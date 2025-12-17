@@ -1,4 +1,3 @@
-// Schema system - unified data validation and serialization
 
 export class Schema {
   constructor(name = 'Schema', fields = {}) {

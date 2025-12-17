@@ -25,7 +25,6 @@ function getWorker() {
 }
 
 export class Particles extends System {
-  // DI Service Constants
   static DEPS = {
     rig: 'rig',
     xr: 'xr',
@@ -43,7 +42,6 @@ export class Particles extends System {
     this.emitters = new Map() // id -> emitter
   }
 
-  // DI Property Getters
   get rig() { return this.getService(Particles.DEPS.rig) }
   get xr() { return this.getService(Particles.DEPS.xr) }
   get stage() { return this.getService(Particles.DEPS.stage) }
@@ -78,7 +76,6 @@ export class Particles extends System {
 
   onMessage = msg => {
     msg = msg.data
-    // console.log('[Particles] onMessage', msg)
     this.emitters.get(msg.emitterId)?.onMessage(msg)
   }
 
@@ -129,7 +126,6 @@ function createEmitter(world, system, node) {
   aUV.setUsage(THREE.DynamicDrawUsage)
   geometry.setAttribute('aUV', aUV)
 
-  // ping-pong buffers
   const next = {
     aPosition: new Float32Array(node._max * 3),
     aRotation: new Float32Array(node._max * 1),
@@ -152,9 +148,6 @@ function createEmitter(world, system, node) {
   system.loader.load('texture', node._image).then(texture => {
     texture.colorSpace = THREE.SRGBColorSpace
     uniforms.uTexture.value = texture
-    // console.log(t)
-    // texture.image = t.image
-    // texture.needsUpdate = true
   })
 
   const material = new CustomShaderMaterial({
@@ -165,7 +158,6 @@ function createEmitter(world, system, node) {
     premultipliedAlpha: true,
     color: 'white',
     side: THREE.DoubleSide,
-    // side: THREE.FrontSide,
     depthWrite: false,
     depthTest: true,
     uniforms,
@@ -191,7 +183,6 @@ function createEmitter(world, system, node) {
       mat3 rotationFromDirection(vec3 dir) {
         vec3 n = normalize(dir);              // target normal (+Z after the rotation)
         vec3 up = vec3(0.0, 1.0, 0.0);
-        // pick a new 'up' if we are too parallel
         if (abs(dot(n, up)) > 0.99) {
           up = vec3(1.0, 0.0, 0.0);
         } 
@@ -211,21 +202,15 @@ function createEmitter(world, system, node) {
       }
 
       void main() {
-        // vUv = uv;
-        // Pass UV coordinates to fragment shader
-        // Map plane UV (0-1) to the frame UV rectangle
         vUv = vec2(
           mix(aUV.x, aUV.z, uv.x),
           mix(aUV.y, aUV.w, uv.y)
         );
 
-        // Start with original position
         vec3 newPosition = position;
 
-        // Apply size
         newPosition.xy *= aSize;
 
-        // Apply rotation
         float rot = aRotation * DEG2RAD;
         float cosRot = cos(rot);
         float sinRot = sin(rot);
@@ -234,25 +219,18 @@ function createEmitter(world, system, node) {
           -newPosition.x * sinRot + newPosition.y * cosRot
         );
 
-        // Apply billboard
         if (uBillboard < 0.1) {
-          // full
           newPosition = applyQuaternion(newPosition, uOrientation);
         } else if (uBillboard < 1.1) {
-          // y
           newPosition = applyQuaternion(newPosition, uOrientation);
         } else {
-          // direction 
           newPosition = rotationFromDirection(aDirection) * newPosition;
         }
         
-        // Apply particle position
         newPosition += aPosition;
         
-        // Set final position
         csm_Position = newPosition;
 
-        // Set color varying for the fragment shader
         vColor = vec4(aColor.rgb, aAlpha);
         vEmissive = aEmissive;
       }
@@ -345,7 +323,6 @@ function createEmitter(world, system, node) {
     const camPosition = v1.setFromMatrixPosition(system.camera.matrixWorld)
     const worldPosition = v2.setFromMatrixPosition(matrixWorld)
 
-    // draw emitter back-to-front
     const distance = camPosition.distanceTo(worldPosition)
     mesh.renderOrder = -distance
 
@@ -363,7 +340,6 @@ function createEmitter(world, system, node) {
       const aEmissive = next.aEmissive
       const aUV = next.aUV
       pending = true
-      // console.log('update', node.matrixWorld.toArray(arr2))
       send(
         {
           op: 'update',
@@ -380,7 +356,6 @@ function createEmitter(world, system, node) {
           aUV,
         },
         [
-          // prettier-ignore
           aPosition.buffer,
           aRotation.buffer,
           aDirection.buffer,

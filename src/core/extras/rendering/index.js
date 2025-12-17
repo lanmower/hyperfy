@@ -1,4 +1,3 @@
-// Rendering, UI, and visual utilities
 
 export * from './buttons.js'
 export { roundRect } from './roundRect.js'

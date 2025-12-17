@@ -1,21 +1,17 @@
-// Game Constants - Single source of truth for all game configuration
 
 export const GameConstants = {
-  // Player & Health
   player: {
     healthMax: 100,
     defaultAvatar: 'asset://avatar.vrm',
     enteredAtTimestamp: true,
   },
 
-  // Network
   network: {
     saveInterval: 60, // seconds
     pingRate: 1, // seconds
     maxUploadSize: 52428800, // 50MB
   },
 
-  // Physics
   physics: {
     gravity: -9.8,
     airDrag: 0.1,
@@ -25,7 +21,6 @@ export const GameConstants = {
     runSpeed: 10,
   },
 
-  // Animation
   animation: {
     defaultMode: 'idle',
     modes: {
@@ -37,7 +32,6 @@ export const GameConstants = {
     },
   },
 
-  // Transform
   transform: {
     position: [0, 0, 0],
     quaternion: [0, 0, 0, 1],
@@ -46,7 +40,6 @@ export const GameConstants = {
     maxScale: 100,
   },
 
-  // Controls
   controls: {
     defaultMode: 'first-person',
     modes: {
@@ -67,14 +60,12 @@ export const GameConstants = {
     },
   },
 
-  // Ranks
   ranks: {
     visitor: 0,
     builder: 10,
     admin: 20,
   },
 
-  // UI & Display
   ui: {
     display: {
       flex: 'flex',
@@ -102,7 +93,6 @@ export const GameConstants = {
     },
   },
 
-  // Graphics
   graphics: {
     defaultPixelRatio: 1,
     maxAnisotropy: 16,
@@ -111,13 +101,11 @@ export const GameConstants = {
     colorSpace: 'SRGBColorSpace',
   },
 
-  // Assets
   assets: {
     defaultAvatar: 'asset://avatar.vrm',
     placeholderModel: 'asset://placeholder.glb',
   },
 
-  // Timestamps
   timestamps: {
     sessionStart: null, // Set at runtime
     lastSave: null,

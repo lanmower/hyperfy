@@ -70,7 +70,6 @@ export class FactoryRegistry {
 
     let result = factory(...args)
 
-    // Apply middleware
     for (const mw of this.middleware) {
       result = mw(result, type, args) || result
     }
@@ -92,7 +91,6 @@ export class FactoryRegistry {
 
     let result = await factory(...args)
 
-    // Apply middleware
     for (const mw of this.middleware) {
       result = (await mw(result, type, args)) || result
     }

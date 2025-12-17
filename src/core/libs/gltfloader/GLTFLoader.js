@@ -75,8 +75,6 @@ import {
 	SRGBColorSpace,
 	InstancedBufferAttribute
 } from 'three';
-// HYP_IMPORT_CHANGE
-// import { toTrianglesDrawMode } from '../utils/BufferGeometryUtils.js';
 import { toTrianglesDrawMode } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 class GLTFLoader extends Loader {
@@ -207,11 +205,6 @@ class GLTFLoader extends Loader {
 
 		} else if ( this.path !== '' ) {
 
-			// If a base path is set, resources will be relative paths from that plus the relative path of the gltf file
-			// Example  path = 'https://my-cnd-server.com/', url = 'assets/models/model.gltf'
-			// resourcePath = 'https://my-cnd-server.com/assets/models/'
-			// referenced resource 'model.bin' will be loaded from 'https://my-cnd-server.com/assets/models/model.bin'
-			// referenced resource '../textures/texture.png' will be loaded from 'https://my-cnd-server.com/assets/textures/texture.png'
 			const relativeUrl = LoaderUtils.extractUrlBase( url );
 			resourcePath = LoaderUtils.resolveURL( relativeUrl, this.path );
 
@@ -221,9 +214,6 @@ class GLTFLoader extends Loader {
 
 		}
 
-		// Tells the LoadingManager to track an extra item, which resolves after
-		// the model is fully loaded. This means the count of items loaded will
-		// be incorrect, but ensures manager.onLoad() does not fire early.
 		this.manager.itemStart( url );
 
 		const _onError = function ( e ) {
@@ -387,10 +377,6 @@ class GLTFLoader extends Loader {
 
 			plugins[ plugin.name ] = plugin;
 
-			// Workaround to avoid determining as unknown extension
-			// in addUnknownExtensionsToUserData().
-			// Remove this workaround if we move all the existing
-			// extension handlers to plugin system
 			extensions[ plugin.name ] = true;
 
 		}
@@ -531,7 +517,6 @@ class GLTFLightsExtension {
 		this.parser = parser;
 		this.name = EXTENSIONS.KHR_LIGHTS_PUNCTUAL;
 
-		// Object3D instance caches
 		this.cache = { refs: {}, uses: {} };
 
 	}
@@ -593,7 +578,6 @@ class GLTFLightsExtension {
 			case 'spot':
 				lightNode = new SpotLight( color );
 				lightNode.distance = range;
-				// Handle spotlight properties.
 				lightDef.spot = lightDef.spot || {};
 				lightDef.spot.innerConeAngle = lightDef.spot.innerConeAngle !== undefined ? lightDef.spot.innerConeAngle : 0;
 				lightDef.spot.outerConeAngle = lightDef.spot.outerConeAngle !== undefined ? lightDef.spot.outerConeAngle : Math.PI / 4.0;
@@ -608,8 +592,6 @@ class GLTFLightsExtension {
 
 		}
 
-		// Some lights (e.g. spot) default to a position other than the origin. Reset the position
-		// here, because node-level parsing will only override position if explicitly specified.
 		lightNode.position.set( 0, 0, 0 );
 
 		assignExtrasToUserData( lightNode, lightDef );
@@ -1424,7 +1406,6 @@ class GLTFTextureBasisUExtension {
 
 			} else {
 
-				// Assumes that the extension is optional and that a fallback texture is present
 				return null;
 
 			}
@@ -1487,7 +1468,6 @@ class GLTFTextureWebPExtension {
 
 			}
 
-			// Fall back to PNG or JPEG.
 			return parser.loadTexture( textureIndex );
 
 		} );
@@ -1500,16 +1480,12 @@ class GLTFTextureWebPExtension {
 
 			this.isSupported = new Promise( function ( resolve, reject ) {
 
-				// HYP_WEBP_NODE
-				// in nodejs we just fake support so the GLTFLoader doesnt fail
 				if (!globalThis.Image) {
 					return resolve(true)
 				}
 
 				const image = new Image();
 
-				// Lossy test image. Support for lossy images doesn't guarantee support for all
-				// WebP images, unfortunately.
 				image.src = 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA';
 
 				image.onload = image.onerror = function () {
@@ -1578,7 +1554,6 @@ class GLTFTextureAVIFExtension {
 
 			}
 
-			// Fall back to PNG or JPEG.
 			return parser.loadTexture( textureIndex );
 
 		} );
@@ -1593,7 +1568,6 @@ class GLTFTextureAVIFExtension {
 
 				const image = new Image();
 
-				// Lossy test image.
 				image.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAABcAAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQAMAAAAABNjb2xybmNseAACAAIABoAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAAB9tZGF0EgAKCBgABogQEDQgMgkQAAAAB8dSLfI=';
 				image.onload = image.onerror = function () {
 
@@ -1645,7 +1619,6 @@ class GLTFMeshoptCompression {
 
 				} else {
 
-					// Assumes that the extension is optional and that fallback buffer data is present
 					return null;
 
 				}
@@ -1672,7 +1645,6 @@ class GLTFMeshoptCompression {
 
 				} else {
 
-					// Support for MeshoptDecoder 0.18 or earlier, without decodeGltfBufferAsync
 					return decoder.ready.then( function () {
 
 						const result = new ArrayBuffer( count * stride );
@@ -1724,7 +1696,6 @@ class GLTFMeshGpuInstancing {
 
 		const meshDef = json.meshes[ nodeDef.mesh ];
 
-		// No Points or Lines + Instancing support yet
 
 		for ( const primitive of meshDef.primitives ) {
 
@@ -1742,7 +1713,6 @@ class GLTFMeshGpuInstancing {
 		const extensionDef = nodeDef.extensions[ this.name ];
 		const attributesDef = extensionDef.attributes;
 
-		// @TODO: Can we support InstancedMesh + SkinnedMesh?
 
 		const pending = [];
 		const attributes = {};
@@ -1775,7 +1745,6 @@ class GLTFMeshGpuInstancing {
 
 			for ( const mesh of meshes ) {
 
-				// Temporal variables
 				const m = new Matrix4();
 				const p = new Vector3();
 				const q = new Quaternion();
@@ -1807,7 +1776,6 @@ class GLTFMeshGpuInstancing {
 
 				}
 
-				// Add instance attributes to the geometry, excluding TRS.
 				for ( const attributeName in attributes ) {
 
 					if ( attributeName === '_COLOR_0' ) {
@@ -1825,7 +1793,6 @@ class GLTFMeshGpuInstancing {
 
 				}
 
-				// Just in case
 				Object3D.prototype.copy.call( instancedMesh, mesh );
 
 				this.parser.assignFinalMaterial( instancedMesh );
@@ -1908,7 +1875,6 @@ class GLTFBinaryExtension {
 
 			}
 
-			// Clients must ignore chunks with unknown types.
 
 			chunkIndex += chunkLength;
 
@@ -2027,7 +1993,6 @@ class GLTFTextureTransformExtension {
 			&& transform.rotation === undefined
 			&& transform.scale === undefined ) {
 
-			// See https://github.com/mrdoob/three.js/issues/21819.
 			return texture;
 
 		}
@@ -2085,8 +2050,6 @@ class GLTFMeshQuantizationExtension {
 /********** INTERPOLATION ********/
 /*********************************/
 
-// Spline Interpolation
-// Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#appendix-c-spline-interpolation
 class GLTFCubicSplineInterpolant extends Interpolant {
 
 	constructor( parameterPositions, sampleValues, sampleSize, resultBuffer ) {
@@ -2097,8 +2060,6 @@ class GLTFCubicSplineInterpolant extends Interpolant {
 
 	copySampleValue_( index ) {
 
-		// Copies a sample value to the result buffer. See description of glTF
-		// CUBICSPLINE values layout in interpolate_() function below.
 
 		const result = this.resultBuffer,
 			values = this.sampleValues,
@@ -2138,8 +2099,6 @@ class GLTFCubicSplineInterpolant extends Interpolant {
 		const s0 = 1 - s2;
 		const s1 = s3 - pp + p;
 
-		// Layout of keyframe output values for CUBICSPLINE animations:
-		//   [ inTangent_1, splineVertex_1, outTangent_1, inTangent_2, splineVertex_2, ... ]
 		for ( let i = 0; i !== stride; i ++ ) {
 
 			const p0 = values[ offset0 + i + stride ]; // splineVertex_k
@@ -2182,7 +2141,6 @@ class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
 
 const WEBGL_CONSTANTS = {
 	FLOAT: 5126,
-	//FLOAT_MAT2: 35674,
 	FLOAT_MAT3: 35675,
 	FLOAT_MAT4: 35676,
 	FLOAT_VEC2: 35664,
@@ -2258,7 +2216,6 @@ const PATH_PROPERTIES = {
 
 const INTERPOLATION = {
 	CUBICSPLINE: undefined, // We use a custom interpolant (GLTFCubicSplineInterpolation) for CUBICSPLINE tracks. Each
-		                        // keyframe track will be initialized with a default interpolation type, then modified.
 	LINEAR: InterpolateLinear,
 	STEP: InterpolateDiscrete
 };
@@ -2297,7 +2254,6 @@ function createDefaultMaterial( cache ) {
 
 function addUnknownExtensionsToUserData( knownExtensions, object, objectDef ) {
 
-	// Add unknown glTF extensions to an object's userData.
 
 	for ( const name in objectDef.extensions ) {
 
@@ -2441,7 +2397,6 @@ function updateMorphTargets( mesh, meshDef ) {
 
 	}
 
-	// .extras has user-defined data, so check that .extras.targetNames is an array.
 	if ( meshDef.extras && Array.isArray( meshDef.extras.targetNames ) ) {
 
 		const targetNames = meshDef.extras.targetNames;
@@ -2516,8 +2471,6 @@ function createAttributesKey( attributes ) {
 
 function getNormalizedComponentScale( constructor ) {
 
-	// Reference:
-	// https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_mesh_quantization#encoding-quantized-data
 
 	switch ( constructor ) {
 
@@ -2563,19 +2516,14 @@ class GLTFParser {
 		this.plugins = {};
 		this.options = options;
 
-		// loader object cache
 		this.cache = new GLTFRegistry();
 
-		// associations between Three.js objects and glTF elements
 		this.associations = new Map();
 
-		// BufferGeometry caching
 		this.primitiveCache = {};
 
-		// Node cache
 		this.nodeCache = {};
 
-		// Object3D instance caches
 		this.meshCache = { refs: {}, uses: {} };
 		this.cameraCache = { refs: {}, uses: {} };
 		this.lightCache = { refs: {}, uses: {} };
@@ -2583,11 +2531,8 @@ class GLTFParser {
 		this.sourceCache = {};
 		this.textureCache = {};
 
-		// Track node names, to ensure no duplicates
 		this.nodeNamesUsed = {};
 
-		// Use an ImageBitmapLoader if imageBitmaps are supported. Moves much of the
-		// expensive work of uploading a texture to the GPU off the main thread.
 
 		let isSafari = false;
 		let safariVersion = - 1;
@@ -2649,11 +2594,9 @@ class GLTFParser {
 		const json = this.json;
 		const extensions = this.extensions;
 
-		// Clear the loader cache
 		this.cache.removeAll();
 		this.nodeCache = {};
 
-		// Mark the special nodes/meshes in json for efficient parse
 		this._invokeAll( function ( ext ) {
 
 			return ext._markDefs && ext._markDefs();
@@ -2719,8 +2662,6 @@ class GLTFParser {
 		const skinDefs = this.json.skins || [];
 		const meshDefs = this.json.meshes || [];
 
-		// Nothing in the node definition indicates whether it is a Bone or an
-		// Object3D. Use the skins' joint references to mark bones.
 		for ( let skinIndex = 0, skinLength = skinDefs.length; skinIndex < skinLength; skinIndex ++ ) {
 
 			const joints = skinDefs[ skinIndex ].joints;
@@ -2733,8 +2674,6 @@ class GLTFParser {
 
 		}
 
-		// Iterate over all nodes, marking references to shared resources,
-		// as well as skeleton joints.
 		for ( let nodeIndex = 0, nodeLength = nodeDefs.length; nodeIndex < nodeLength; nodeIndex ++ ) {
 
 			const nodeDef = nodeDefs[ nodeIndex ];
@@ -2743,9 +2682,6 @@ class GLTFParser {
 
 				this._addNodeRef( this.meshCache, nodeDef.mesh );
 
-				// Nothing in the mesh definition indicates whether it is
-				// a SkinnedMesh or Mesh. Use the node's mesh reference
-				// to mark SkinnedMesh if node has skin.
 				if ( nodeDef.skin !== undefined ) {
 
 					meshDefs[ nodeDef.mesh ].isSkinnedMesh = true;
@@ -2804,8 +2740,6 @@ class GLTFParser {
 
 		const ref = object.clone();
 
-		// Propagates mappings to the cloned object, prevents mappings on the
-		// original object from being lost.
 		const updateMappings = ( original, clone ) => {
 
 			const mappings = this.associations.get( original );
@@ -3019,7 +2953,6 @@ class GLTFParser {
 
 		}
 
-		// If present, GLB container is required to be the first buffer.
 		if ( bufferDef.uri === undefined && bufferIndex === 0 ) {
 
 			return Promise.resolve( this.extensions[ EXTENSIONS.KHR_BINARY_GLTF ].body );
@@ -3108,7 +3041,6 @@ class GLTFParser {
 			const itemSize = WEBGL_TYPE_SIZES[ accessorDef.type ];
 			const TypedArray = WEBGL_COMPONENT_TYPES[ accessorDef.componentType ];
 
-			// For VEC3: itemSize is 3, elementBytes is 4, itemBytes is 12.
 			const elementBytes = TypedArray.BYTES_PER_ELEMENT;
 			const itemBytes = elementBytes * itemSize;
 			const byteOffset = accessorDef.byteOffset || 0;
@@ -3116,11 +3048,8 @@ class GLTFParser {
 			const normalized = accessorDef.normalized === true;
 			let array, bufferAttribute;
 
-			// The buffer is not interleaved if the stride is the item size in bytes.
 			if ( byteStride && byteStride !== itemBytes ) {
 
-				// Each "slice" of the buffer, as defined by 'count' elements of 'byteStride' bytes, gets its own InterleavedBuffer
-				// This makes sure that IBA.count reflects accessor.count properly
 				const ibSlice = Math.floor( byteOffset / byteStride );
 				const ibCacheKey = 'InterleavedBuffer:' + accessorDef.bufferView + ':' + accessorDef.componentType + ':' + ibSlice + ':' + accessorDef.count;
 				let ib = parser.cache.get( ibCacheKey );
@@ -3129,7 +3058,6 @@ class GLTFParser {
 
 					array = new TypedArray( bufferView, ibSlice * byteStride, accessorDef.count * byteStride / elementBytes );
 
-					// Integer parameters to IB/IBA are in array elements, not bytes.
 					ib = new InterleavedBuffer( array, byteStride / elementBytes );
 
 					parser.cache.add( ibCacheKey, ib );
@@ -3154,7 +3082,6 @@ class GLTFParser {
 
 			}
 
-			// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#sparse-accessors
 			if ( accessorDef.sparse !== undefined ) {
 
 				const itemSizeIndices = WEBGL_TYPE_SIZES.SCALAR;
@@ -3168,12 +3095,10 @@ class GLTFParser {
 
 				if ( bufferView !== null ) {
 
-					// Avoid modifying the original ArrayBuffer, if the bufferView wasn't initialized with zeroes.
 					bufferAttribute = new BufferAttribute( bufferAttribute.array.slice(), bufferAttribute.itemSize, bufferAttribute.normalized );
 
 				}
 
-				// Ignore normalized since we copy from sparse
 				bufferAttribute.normalized = false;
 
 				for ( let i = 0, il = sparseIndices.length; i < il; i ++ ) {
@@ -3236,7 +3161,6 @@ class GLTFParser {
 
 		if ( this.textureCache[ cacheKey ] ) {
 
-			// See https://github.com/mrdoob/three.js/issues/21559.
 			return this.textureCache[ cacheKey ];
 
 		}
@@ -3299,7 +3223,6 @@ class GLTFParser {
 
 		if ( sourceDef.bufferView !== undefined ) {
 
-			// Load binary image data from bufferView, if provided.
 
 			sourceURI = parser.getDependency( 'bufferView', sourceDef.bufferView ).then( function ( bufferView ) {
 
@@ -3341,7 +3264,6 @@ class GLTFParser {
 
 		} ).then( function ( texture ) {
 
-			// Clean up resources and configure Texture.
 
 			if ( isObjectURL === true ) {
 
@@ -3477,7 +3399,6 @@ class GLTFParser {
 
 		}
 
-		// Clone the material if it will be modified
 		if ( useDerivativeTangents || useVertexColors || useFlatShading ) {
 
 			let cacheKey = 'ClonedMaterial:' + material.uuid + ':';
@@ -3497,7 +3418,6 @@ class GLTFParser {
 
 				if ( useDerivativeTangents ) {
 
-					// https://github.com/mrdoob/three.js/issues/11438#issuecomment-507003995
 					if ( cachedMaterial.normalScale ) cachedMaterial.normalScale.y *= - 1;
 					if ( cachedMaterial.clearcoatNormalScale ) cachedMaterial.clearcoatNormalScale.y *= - 1;
 
@@ -3549,8 +3469,6 @@ class GLTFParser {
 
 		} else {
 
-			// Specification:
-			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#metallic-roughness-material
 
 			const metallicRoughness = materialDef.pbrMetallicRoughness || {};
 
@@ -3608,7 +3526,6 @@ class GLTFParser {
 
 			materialParams.transparent = true;
 
-			// See: https://github.com/mrdoob/three.js/issues/17706
 			materialParams.depthWrite = false;
 
 		} else {
@@ -3739,12 +3656,10 @@ class GLTFParser {
 			const primitive = primitives[ i ];
 			const cacheKey = createPrimitiveKey( primitive );
 
-			// See if we've already created this geometry
 			const cached = cache[ cacheKey ];
 
 			if ( cached ) {
 
-				// Use the cached geometry if it exists
 				pending.push( cached.promise );
 
 			} else {
@@ -3753,17 +3668,14 @@ class GLTFParser {
 
 				if ( primitive.extensions && primitive.extensions[ EXTENSIONS.KHR_DRACO_MESH_COMPRESSION ] ) {
 
-					// Use DRACO geometry if available
 					geometryPromise = createDracoPrimitive( primitive );
 
 				} else {
 
-					// Otherwise create a new geometry
 					geometryPromise = addPrimitiveAttributes( new BufferGeometry(), primitive, parser );
 
 				}
 
-				// Cache this geometry
 				cache[ cacheKey ] = { primitive: primitive, promise: geometryPromise };
 
 				pending.push( geometryPromise );
@@ -3816,7 +3728,6 @@ class GLTFParser {
 				const geometry = geometries[ i ];
 				const primitive = primitives[ i ];
 
-				// 1. create Mesh
 
 				let mesh;
 
@@ -3827,14 +3738,12 @@ class GLTFParser {
 						primitive.mode === WEBGL_CONSTANTS.TRIANGLE_FAN ||
 						primitive.mode === undefined ) {
 
-					// .isSkinnedMesh isn't in glTF spec. See ._markDefs()
 					mesh = meshDef.isSkinnedMesh === true
 						? new SkinnedMesh( geometry, material )
 						: new Mesh( geometry, material );
 
 					if ( mesh.isSkinnedMesh === true ) {
 
-						// normalize skin weights to fix malformed assets (see #15319)
 						mesh.normalizeSkinWeights();
 
 					}
@@ -3992,8 +3901,6 @@ class GLTFParser {
 			const inverseBindMatrices = results.pop();
 			const jointNodes = results;
 
-			// Note that bones (joint nodes) may or may not be in the
-			// scene graph at this time.
 
 			const bones = [];
 			const boneInverses = [];
@@ -4134,7 +4041,6 @@ class GLTFParser {
 
 			const node = parser._getNodeRef( parser.meshCache, nodeDef.mesh, mesh );
 
-			// if weights are provided on the node, override weights on the mesh.
 			if ( nodeDef.weights !== undefined ) {
 
 				node.traverse( function ( o ) {
@@ -4196,8 +4102,6 @@ class GLTFParser {
 
 			if ( skeleton !== null ) {
 
-				// This full traverse should be fine because
-				// child glTF nodes have not been added to this node yet.
 				node.traverse( function ( mesh ) {
 
 					if ( ! mesh.isSkinnedMesh ) return;
@@ -4220,16 +4124,12 @@ class GLTFParser {
 
 	}
 
-	// ._loadNodeShallow() parses a single node.
-	// skin and child nodes are created and added in .loadNode() (no '_' prefix).
 	_loadNodeShallow( nodeIndex ) {
 
 		const json = this.json;
 		const extensions = this.extensions;
 		const parser = this;
 
-		// This method is called from .loadNode() and .loadSkin().
-		// Cache a node to avoid duplication.
 
 		if ( this.nodeCache[ nodeIndex ] !== undefined ) {
 
@@ -4239,7 +4139,6 @@ class GLTFParser {
 
 		const nodeDef = json.nodes[ nodeIndex ];
 
-		// reserve node's name before its dependencies, so the root has the intended name.
 		const nodeName = nodeDef.name ? parser.createUniqueName( nodeDef.name ) : '';
 
 		const pending = [];
@@ -4280,7 +4179,6 @@ class GLTFParser {
 
 			let node;
 
-			// .isBone isn't in glTF spec. See ._markDefs
 			if ( nodeDef.isBone === true ) {
 
 				node = new Bone();
@@ -4375,8 +4273,6 @@ class GLTFParser {
 		const sceneDef = this.json.scenes[ sceneIndex ];
 		const parser = this;
 
-		// Loader returns Group, not Scene.
-		// See: https://github.com/mrdoob/three.js/issues/18342#issuecomment-578981172
 		const scene = new Group();
 		if ( sceneDef.name ) scene.name = parser.createUniqueName( sceneDef.name );
 
@@ -4402,8 +4298,6 @@ class GLTFParser {
 
 			}
 
-			// Removes dangling associations, associations that reference a node that
-			// didn't make it into the scene.
 			const reduceAssociations = ( node ) => {
 
 				const reducedAssociations = new Map();
@@ -4520,7 +4414,6 @@ class GLTFParser {
 				interpolation
 			);
 
-			// Override interpolation with custom factory method.
 			if ( sampler.interpolation === 'CUBICSPLINE' ) {
 
 				this._createCubicSplineTrackInterpolant( track );
@@ -4562,9 +4455,6 @@ class GLTFParser {
 
 		track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline( result ) {
 
-			// A CUBICSPLINE keyframe in glTF has three output values for each input value,
-			// representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
-			// must be divided by three to get the interpolant's sampleSize argument.
 
 			const interpolantType = ( this instanceof QuaternionKeyframeTrack ) ? GLTFCubicSplineQuaternionInterpolant : GLTFCubicSplineInterpolant;
 
@@ -4572,7 +4462,6 @@ class GLTFParser {
 
 		};
 
-		// Mark as CUBICSPLINE. `track.getInterpolation()` doesn't support custom interpolants.
 		track.createInterpolant.isInterpolantFactoryMethodGLTFCubicSpline = true;
 
 	}
@@ -4597,7 +4486,6 @@ function computeBounds( geometry, primitiveDef, parser ) {
 		const min = accessor.min;
 		const max = accessor.max;
 
-		// glTF requires 'min' and 'max', but VRM (which extends glTF) currently ignores that requirement.
 
 		if ( min !== undefined && max !== undefined ) {
 
@@ -4645,11 +4533,9 @@ function computeBounds( geometry, primitiveDef, parser ) {
 				const min = accessor.min;
 				const max = accessor.max;
 
-				// glTF requires 'min' and 'max', but VRM (which extends glTF) currently ignores that requirement.
 
 				if ( min !== undefined && max !== undefined ) {
 
-					// we need to get max of absolute components because target weight is [-1,1]
 					vector.setX( Math.max( Math.abs( min[ 0 ] ), Math.abs( max[ 0 ] ) ) );
 					vector.setY( Math.max( Math.abs( min[ 1 ] ), Math.abs( max[ 1 ] ) ) );
 					vector.setZ( Math.max( Math.abs( min[ 2 ] ), Math.abs( max[ 2 ] ) ) );
@@ -4662,10 +4548,6 @@ function computeBounds( geometry, primitiveDef, parser ) {
 
 					}
 
-					// Note: this assumes that the sum of all weights is at most 1. This isn't quite correct - it's more conservative
-					// to assume that each target can have a max weight of 1. However, for some use cases - notably, when morph targets
-					// are used to implement key-frame animations and as such only two are active at a time - this results in very large
-					// boxes. So for now we make a box that's sometimes a touch too small but is hopefully mostly of reasonable size.
 					maxDisplacement.max( vector );
 
 				} else {
@@ -4678,7 +4560,6 @@ function computeBounds( geometry, primitiveDef, parser ) {
 
 		}
 
-		// As per comment above this box isn't conservative, but has a reasonable size for a very large number of morph targets.
 		box.expandByVector( maxDisplacement );
 
 	}
@@ -4721,7 +4602,6 @@ function addPrimitiveAttributes( geometry, primitiveDef, parser ) {
 
 		const threeAttributeName = ATTRIBUTES[ gltfAttributeName ] || gltfAttributeName.toLowerCase();
 
-		// Skip attributes already provided by e.g. Draco extension.
 		if ( threeAttributeName in geometry.attributes ) continue;
 
 		pending.push( assignAttributeAccessor( attributes[ gltfAttributeName ], threeAttributeName ) );

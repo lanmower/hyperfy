@@ -39,9 +39,7 @@ export function applyProperties(instance, propertySchema, data = {}) {
       instance[key] = cloneDeep(definition.default)
     }
 
-    // Add change tracking if needed
     if (definition.onChanged) {
-      // Store original setter
       const originalValue = instance[key]
       Object.defineProperty(instance, key, {
         get() {
@@ -113,7 +111,6 @@ export function validateProperties(propertySchema, data) {
     if (key in data && data[key] !== null && data[key] !== undefined) {
       const value = data[key]
 
-      // Validate type if validator provided
       if (definition.validate) {
         const isValid = definition.validate(value)
         if (!isValid) {
@@ -132,7 +129,6 @@ export function validateProperties(propertySchema, data) {
 export function getPropertySchema(nodeClass) {
   const properties = {}
 
-  // Walk up the class hierarchy
   let currentClass = nodeClass
   while (currentClass && currentClass !== Object) {
     if (currentClass.properties) {
@@ -155,7 +151,6 @@ export function serializeProperties(instance, propertySchema) {
       const value = instance[key]
       const definition = propertySchema[key]
 
-      // Skip default values to reduce output size
       if (definition.skipDefaults && JSON.stringify(value) === JSON.stringify(definition.default)) {
         continue
       }

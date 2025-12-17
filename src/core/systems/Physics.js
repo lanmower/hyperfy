@@ -29,16 +29,7 @@ const triggerResult = {
 const overlapHitPool = []
 const overlapHits = []
 
-/**
- * Physics System
- *
- * - Runs on both the server and client.
- * - Allows inserting colliders etc into the world.
- * - Simulates physics and handles fixed timestep interpolation.
- *
- */
 export class Physics extends System {
-  // DI Service Constants
   static DEPS = {
     stage: 'stage',
   }
@@ -48,7 +39,6 @@ export class Physics extends System {
     this.scene = null
   }
 
-  // DI Property Getters
   get stage() { return this.getService(Physics.DEPS.stage) }
 
   async init() {
@@ -225,8 +215,6 @@ export class Physics extends System {
       pairs = PHYSX.wrapPointer(pairs, PHYSX.PxTriggerPair)
       for (let i = 0; i < count; i++) {
         const pair = PHYSX.NativeArrayHelpers.prototype.getTriggerPairAt(pairs, i)
-        // ignore pairs if a shape was deleted.
-        // this prevents an issue where onLeave can get called after rebuilding an object that had entered a trigger
         if (
           pair.flags.isSet(PHYSX.PxTriggerPairFlagEnum.eREMOVED_SHAPE_TRIGGER) ||
           pair.flags.isSet(PHYSX.PxTriggerPairFlagEnum.eREMOVED_SHAPE_OTHER)
@@ -304,10 +292,6 @@ export class Physics extends System {
       const filterData = PHYSX.wrapPointer(filterDataPtr, PHYSX.PxFilterData)
       const shape = PHYSX.wrapPointer(shapePtr, PHYSX.PxShape)
       const shapeFilterData = shape.getQueryFilterData()
-      // if (0 == (filterData.word0 & shapeFilterData.word1) && 0 == (shapeFilterData.word0 & filterData.word1)) {
-      //   return PHYSX.PxQueryHitType.eBLOCK
-      //   return PHYSX.PxQueryHitType.eNONE
-      // }
       if (filterData.word0 & shapeFilterData.word1 && shapeFilterData.word0 & filterData.word1) {
         return PHYSX.PxQueryHitType.eBLOCK
       }
@@ -316,15 +300,12 @@ export class Physics extends System {
     this.controllerFilters.mFilterCallback = filterCallback
     const cctFilterCallback = new PHYSX.PxControllerFilterCallbackImpl()
     cctFilterCallback.filter = (aPtr, bPtr) => {
-      // const a = PHYSX.wrapPointer(aPtr, PHYSX.PxCapsuleController)
-      // const b = PHYSX.wrapPointer(bPtr, PHYSX.PxCapsuleController)
       return true // for now ALL cct's collide
     }
     this.controllerFilters.mCCTFilterCallback = cctFilterCallback
   }
 
   start() {
-    // ...
   }
 
   addActor(actor, handle) {
@@ -379,7 +360,6 @@ export class Physics extends System {
         handle.interpolation.skip = true
       },
       destroy: () => {
-        // end any contacts
         if (handle.contactedHandles.size) {
           const cb = this.getContactCallback().init(false)
           for (const otherHandle of handle.contactedHandles) {
@@ -392,7 +372,6 @@ export class Physics extends System {
             otherHandle.contactedHandles.delete(handle)
           }
         }
-        // end any triggers
         if (handle.triggeredHandles.size) {
           const cb = this.getTriggerCallback()
           for (const triggerHandle of handle.triggeredHandles) {
@@ -404,11 +383,9 @@ export class Physics extends System {
             }
           }
         }
-        // remove from scene
         if (!handle.controller) {
           this.scene.removeActor(actor)
         }
-        // delete data
         this.handles.delete(actor.ptr)
       },
     }
@@ -416,7 +393,6 @@ export class Physics extends System {
 
   preFixedUpdate(willFixedUpdate) {
     if (willFixedUpdate) {
-      // if physics will step, clear active actors so we can repopulate.
       this.active.clear()
     }
   }
@@ -432,8 +408,6 @@ export class Physics extends System {
       const actorPtr = activeActors.get(i).ptr
       const handle = this.handles.get(actorPtr)
       if (!handle) {
-        // todo: addBot vrms do this
-        // console.warn('active actor not found?', actorPtr)
         continue
       }
       const lerp = handle.interpolation
@@ -458,8 +432,6 @@ export class Physics extends System {
       lerp.curr.quaternion.slerpQuaternions(lerp.prev.quaternion, lerp.next.quaternion, alpha)
       handle.onInterpolate(lerp.curr.position, lerp.curr.quaternion)
     }
-    // finalize any physics updates immediately
-    // but don't listen to any loopback commits from those actor moves
     this.ignoreSetGlobalPose = true
     this.stage.clean()
     this.ignoreSetGlobalPose = false
@@ -468,7 +440,6 @@ export class Physics extends System {
   raycast(origin, direction, maxDistance = Infinity, layerMask) {
     origin = origin.toPxVec3(this._pv1)
     direction = direction.toPxVec3(this._pv2)
-    // this.queryFilterData.flags |= PHYSX.PxQueryFlagEnum.ePREFILTER | PHYSX.PxQueryFlagEnum.ePOSTFILTER // prettier-ignore
     this.queryFilterData.data.word0 = layerMask // what to hit, eg Layers.player.group | Layers.environment.group
     this.queryFilterData.data.word1 = 0
     const didHit = this.scene.raycast(
@@ -494,7 +465,6 @@ export class Physics extends System {
       _raycastHit.distance = hit.distance
       return _raycastHit
     }
-    // TODO: this.raycastResult.destroy() on this.destroy()
   }
 
   sweep(geometry, origin, direction, maxDistance, layerMask) {
@@ -526,21 +496,8 @@ export class Physics extends System {
       _sweepHit.distance = hit.distance
       return _sweepHit
     }
-    // TODO: this.sweepResult.destroy() on this.destroy()
   }
 
-  // overlap(geometry, origin, layerMask) {
-  //   origin.toPxVec3(this.overlapPose.p)
-  //   this.queryFilterData.data.word0 = layerMask
-  //   this.queryFilterData.data.word1 = 0
-  //   const didHit = this.scene.overlap(geometry, this.overlapPose, this.overlapResult, this.queryFilterData)
-  //   if (didHit) {
-  //     // const hit = this.overlapResult.getAnyHit(0)
-  //     _overlapHit.actor = hit.actor
-  //     return _overlapHit
-  //   }
-  //   // TODO: this.overlapResult.destroy() on this.destroy()
-  // }
 
   overlapSphere(radius, origin, layerMask) {
     origin.toPxVec3(this.overlapPose.p)
@@ -562,10 +519,6 @@ export class Physics extends System {
   }
 
   getMaterial(staticFriction, dynamicFriction, restitution) {
-    // we cache and re-use material as PhysX has a limit of 64k.
-    // this only works if the materials are not modified by the user, eg
-    // players change friction coefficients etc
-    // cached and re-used because PhysX has a limit of 64k
     const id = `${staticFriction}${dynamicFriction}${restitution}`
     let material = this.materials[id]
     if (!material) {

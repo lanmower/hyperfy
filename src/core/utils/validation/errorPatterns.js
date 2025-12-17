@@ -1,4 +1,3 @@
-// Shared error pattern definitions for error detection and categorization
 
 export const ErrorPatterns = {
   EXPLICIT_ERRORS: [

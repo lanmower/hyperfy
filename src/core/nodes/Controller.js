@@ -116,12 +116,6 @@ export class Controller extends Node {
       this.mesh?.matrix.copy(this.matrix)
       this.mesh?.matrixWorld.copy(this.matrixWorld)
     }
-    // if (this.didMove) {
-    //   console.log('character position change without move() ????')
-    //   const worldPosition = this.getWorldPosition()
-    //   this.controller.setFootPosition(worldPosition.toPxExtVec3())
-    //   this.didMove = false
-    // }
   }
 
   unmount() {
@@ -156,7 +150,6 @@ export class Controller extends Node {
     }
     if (!this.controller) return
     this.moveFlags = this.controller.move(vec3.toPxVec3(), 0, 1 / 60, this.ctx.world.physics.controllerFilters)
-    // this.isGrounded = moveFlags.isSet(PHYSX.PxControllerCollisionFlagEnum.eCOLLISION_DOWN) // prettier-ignore
     const pos = this.controller.getFootPosition()
     this.position.copy(pos)
     this.didMove = true

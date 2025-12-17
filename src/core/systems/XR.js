@@ -7,15 +7,7 @@ const UP = new THREE.Vector3(0, 1, 0)
 const v1 = new THREE.Vector3()
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 
-/**
- * XR System
- *
- * - Runs on the client.
- * - Keeps track of XR sessions
- *
- */
 export class XR extends System {
-  // DI Service Constants
   static DEPS = {
     graphics: 'graphics',
     events: 'events',
@@ -34,7 +26,6 @@ export class XR extends System {
     this.controllerModelFactory = new XRControllerModelFactory()
   }
 
-  // DI Property Getters
   get graphics() { return this.getService(XR.DEPS.graphics) }
   get events() { return this.getService(XR.DEPS.events) }
   get rig() { return this.getService(XR.DEPS.rig) }

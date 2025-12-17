@@ -1,4 +1,3 @@
-// Connection pool - manages multiple client connections (server-side)
 
 import { EventBus } from '../utils/EventBus.js'
 

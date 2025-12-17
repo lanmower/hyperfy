@@ -1,4 +1,3 @@
-// Miscellaneous utility functions
 
 export { bindRotations } from './bindRotations.js'
 export { downloadFile } from './downloadFile.js'

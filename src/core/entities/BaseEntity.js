@@ -1,4 +1,3 @@
-// Base Entity class - eliminates boilerplate across all entity types
 
 import { uuid } from '../utils.js'
 
@@ -16,7 +15,6 @@ export class BaseEntity {
     this.events = new Map()
     this.state = {}
 
-    // if spawned locally we need to broadcast to server/clients
     if (local && world?.network) {
       world.network.send('entityAdded', this.data)
     }
@@ -52,7 +50,6 @@ export class BaseEntity {
   }
 
   onModified(changes) {
-    // Override in subclass
   }
 
   serialize() {
@@ -96,14 +93,12 @@ export class BaseEntity {
   }
 
   onEvent(version, name, data, sourceId) {
-    // Override in subclass for event handling
     this.emit('event', { version, name, data, sourceId })
   }
 
   destroy(local) {
     this.events.clear()
     this.state = {}
-    // if removed locally we need to broadcast to server/clients
     if (local && this.world?.network) {
       this.world.network.send('entityRemoved', this.data.id)
     }

@@ -50,7 +50,6 @@ export class ServiceContainer {
    * @returns {any} Service instance
    */
   get(name) {
-    // Return cached instance if singleton
     if (this.instances.has(name)) {
       return this.instances.get(name)
     }
@@ -60,10 +59,8 @@ export class ServiceContainer {
       throw new Error(`Service '${name}' not registered`)
     }
 
-    // Create instance from factory
     const instance = service.factory ? service.factory(this) : null
 
-    // Cache if singleton
     if (service.singleton && instance) {
       this.instances.set(name, instance)
     }
@@ -109,7 +106,6 @@ export class ServiceContainer {
     const child = new ServiceContainer()
     const parentGet = this.get.bind(this)
 
-    // Override get to check parent first
     const originalGet = child.get.bind(child)
     child.get = (name) => {
       if (child.services.has(name) || child.instances.has(name)) {

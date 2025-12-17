@@ -11,8 +11,6 @@ const csmLevels = {
     shadowMapSize: 1024,
     castShadow: false,
     lightIntensity: 3,
-    // shadowBias: 0.000002,
-    // shadowNormalBias: 0.001,
   },
   low: {
     cascades: 1,
@@ -40,36 +38,18 @@ const csmLevels = {
   },
 }
 
-// fix fog distance calc
-// see: https://github.com/mrdoob/three.js/issues/14601
-// future: https://www.youtube.com/watch?v=k1zGz55EqfU
 THREE.ShaderChunk.fog_vertex = `
 #ifdef USE_FOG
 
-  // original
-  // vFogDepth = - mvPosition.z;
 
-  // radial distance
   vFogDepth = length( mvPosition );
 
-  // cylindrical (ignore altitude)
-  // vFogDepth = length( mvPosition.xz );
 
-  // height-based (eg ground fog)
-  // vFogDepth = abs( mvPosition.y );
 
 #endif
 `
 
-/**
- * Environment System
- *
- * - Runs on the client
- * - Sets up the sky, hdr, sun, shadows, fog etc
- *
- */
 export class ClientEnvironment extends BaseEnvironment {
-  // DI Service Constants
   static DEPS = {
     stage: 'stage',
     rig: 'rig',
@@ -88,7 +68,6 @@ export class ClientEnvironment extends BaseEnvironment {
     this.hdrUrl = null
   }
 
-  // DI Property Getters
   get stage() { return this.getService(ClientEnvironment.DEPS.stage) }
   get rig() { return this.getService(ClientEnvironment.DEPS.rig) }
   get loader() { return this.getService(ClientEnvironment.DEPS.loader) }
@@ -124,7 +103,6 @@ export class ClientEnvironment extends BaseEnvironment {
   }
 
   getSky() {
-    // ...
   }
 
   async updateSky() {
@@ -162,10 +140,8 @@ export class ClientEnvironment extends BaseEnvironment {
     if (n !== this.skyN) return
 
     if (bgTexture) {
-      // bgTexture = bgTexture.clone()
       bgTexture.minFilter = bgTexture.magFilter = THREE.LinearFilter
       bgTexture.mapping = THREE.EquirectangularReflectionMapping
-      // bgTexture.encoding = Encoding[this.encoding]
       bgTexture.colorSpace = THREE.SRGBColorSpace
       this.sky.material.map = bgTexture
       this.sky.visible = true
@@ -174,9 +150,6 @@ export class ClientEnvironment extends BaseEnvironment {
     }
 
     if (hdrTexture) {
-      // hdrTexture.colorSpace = THREE.NoColorSpace
-      // hdrTexture.colorSpace = THREE.SRGBColorSpace
-      // hdrTexture.colorSpace = THREE.LinearSRGBColorSpace
       hdrTexture.mapping = THREE.EquirectangularReflectionMapping
       this.stage.scene.environment = hdrTexture
     }
@@ -220,7 +193,6 @@ export class ClientEnvironment extends BaseEnvironment {
     this.sky.position.x = this.rig.position.x
     this.sky.position.z = this.rig.position.z
     this.sky.matrixWorld.setPosition(this.sky.position)
-    // this.sky.matrixWorld.copyPosition(this.rig.matrixWorld)
   }
 
   buildCSM() {
@@ -239,10 +211,6 @@ export class ClientEnvironment extends BaseEnvironment {
       const camera = this.camera
       this.csm = new CSM({
         mode: 'practical', // uniform, logarithmic, practical, custom
-        // mode: 'custom',
-        // customSplitsCallback: function (cascadeCount, nearDistance, farDistance) {
-        //   return [0.05, 0.2, 0.5]
-        // },
         cascades: 3,
         maxCascades: 3,
         shadowMapSize: 2048,
@@ -252,19 +220,7 @@ export class ClientEnvironment extends BaseEnvironment {
         fade: true,
         parent: scene,
         camera: camera,
-        // note: you can play with bias in console like this:
-        // var csm = world.graphics.csm
-        // csm.shadowBias = 0.00001
-        // csm.shadowNormalBias = 0.002
-        // csm.updateFrustums()
-        // shadowBias: 0.00001,
-        // shadowNormalBias: 0.002,
-        // lightNear: 0.0000001,
-        // lightFar: 5000,
-        // lightMargin: 200,
-        // noLastCascadeCutOff: true,
         ...options,
-        // note: you can test changes in console and then call csm.updateFrustrums() to debug
       })
       if (!options.castShadow) {
         for (const light of this.csm.lights) {

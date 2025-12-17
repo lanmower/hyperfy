@@ -10,9 +10,6 @@ export class Blueprints extends System {
     this.items = new Map()
   }
 
-  /**
-   * Get service from DI container (with fallback to this.world)
-   */
   getService(name) {
     if (this.world.di?.has?.(name)) {
       return this.world.di.get(name)
@@ -20,9 +17,6 @@ export class Blueprints extends System {
     return this.world[name]
   }
 
-  /**
-   * Shortcut accessors for commonly used services
-   */
   get network() { return this.getService('network') }
   get errorMonitor() { return this.getService('errorMonitor') }
   get entities() { return this.getService('entities') }
@@ -114,7 +108,6 @@ export class Blueprints extends System {
     if (!changed) return
     this.items.set(blueprint.id, modified)
 
-    // Monitor for immediate errors during blueprint modification and send response
     const response = await this.executeWithErrorMonitoring(blueprint.id, async () => {
       for (const [_, entity] of this.entities.items) {
         if (entity.data.blueprint === blueprint.id) {

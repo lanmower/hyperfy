@@ -1,11 +1,5 @@
 import { System } from './System.js'
 
-/**
- * Avatars System
- *
- * - Runs rate checks one avatar per frame (amortization)
- *
- */
 export class Avatars extends System {
   constructor(world) {
     super(world)

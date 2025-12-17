@@ -1,12 +1,3 @@
-/**
- * Builder Entity Picker
- *
- * Handles raycasting and entity selection for builder operations.
- * Responsibilities:
- * - Picking entities at reticle (center of screen)
- * - Picking entities at pointer (mouse position)
- * - Raycasting hits at reticle with filtering
- */
 
 export class BuilderEntityPicker {
   constructor(world, builder) {
@@ -15,9 +6,6 @@ export class BuilderEntityPicker {
     this.stage = world.stage
   }
 
-  /**
-   * Get entity at center of screen (reticle)
-   */
   getEntityAtReticle() {
     const hits = this.stage.raycastReticle()
     let entity
@@ -30,9 +18,6 @@ export class BuilderEntityPicker {
     return entity
   }
 
-  /**
-   * Get entity at pointer position (mouse)
-   */
   getEntityAtPointer() {
     const hits = this.stage.raycastPointer(this.builder.control.pointer.position)
     let entity
@@ -45,9 +30,6 @@ export class BuilderEntityPicker {
     return entity
   }
 
-  /**
-   * Get raycast hit at reticle with optional entity filtering
-   */
   getHitAtReticle(ignoreEntity, ignorePlayers) {
     const hits = this.stage.raycastReticle()
     let hit

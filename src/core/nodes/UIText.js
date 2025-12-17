@@ -157,7 +157,6 @@ export class UIText extends Node {
   }
 
   commit(didMove) {
-    // ...
   }
 
   unmount() {

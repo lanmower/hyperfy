@@ -1,4 +1,3 @@
-// ChatFormatter.js - Chat message formatting utilities
 
 const XSS_PATTERNS = [
   /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,

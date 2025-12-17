@@ -11,7 +11,6 @@ const levelPriorities = {
 }
 
 export class ServerLiveKit extends System {
-  // DI Service Constants
   static DEPS = {
     network: 'network',
   }
@@ -28,7 +27,6 @@ export class ServerLiveKit extends System {
     this.muted = new Set()
   }
 
-  // DI Property Getters
   get network() { return this.getService(ServerLiveKit.DEPS.network) }
 
   async serialize(playerId) {
@@ -37,7 +35,6 @@ export class ServerLiveKit extends System {
     data.wsUrl = this.wsUrl
     data.levels = this.levels
     data.muted = this.muted
-    // generate voice access token for the player
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: playerId,
     })

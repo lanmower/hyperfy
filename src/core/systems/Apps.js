@@ -21,13 +21,6 @@ const internalEvents = [
   'health',
 ]
 
-/**
- * Apps System
- *
- * - Runs on both the server and client.
- * - A single place to manage app runtime methods used by all apps
- *
- */
 export class Apps extends System {
   constructor(world) {
     super(world)
@@ -51,7 +44,6 @@ export class Apps extends System {
       },
     }
     this.worldSetters = {
-      // ...
     }
     this.worldMethods = {
       add(entity, pNode) {
@@ -115,7 +107,6 @@ export class Apps extends System {
         return entity.getPlayerProxy(playerId)
       },
       getPlayers(entity) {
-        // tip: probably dont wanna call this every frame
         const players = []
         world.entities.players.forEach(player => {
           players.push(entity.getPlayerProxy(player.data.id))
@@ -279,7 +270,6 @@ export class Apps extends System {
         if (internalEvents.includes(name)) {
           return console.error(`apps cannot send internal events (${name})`)
         }
-        // NOTE: on the client ignoreSocketId is a no-op because it can only send events to the server
         const event = [entity.data.id, entity.blueprint.version, name, data]
         world.network.send('entityEvent', event, ignoreSocketId)
       },
@@ -307,8 +297,6 @@ export class Apps extends System {
       },
       control(entity, options) {
         entity.control?.release()
-        // TODO: only allow on user interaction
-        // TODO: show UI with a button to release()
         entity.control = world.controls.bind({
           ...options,
           priority: ControlPriorities.APP,
@@ -324,9 +312,7 @@ export class Apps extends System {
         }
         const props = entity.blueprint.props
         for (const field of entity.fields) {
-          // apply file shortcuts
           fileRemaps[field.type]?.(field)
-          // apply any initial values
           if (field.initial !== undefined && props[field.key] === undefined) {
             props[field.key] = field.initial
           }

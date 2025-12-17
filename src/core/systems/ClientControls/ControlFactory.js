@@ -1,4 +1,3 @@
-// ClientControls control property factories
 
 import * as THREE from '../../extras/three.js'
 import { bindRotations } from '../../extras/bindRotations.js'
@@ -25,16 +24,13 @@ const controlTypes = {
 }
 
 export function createControlEntry(controls, control, prop) {
-  // existing item
   if (prop in control.entries) {
     return control.entries[prop]
   }
-  // new button item
   if (buttons.has(prop)) {
     control.entries[prop] = createButton(controls, control, prop)
     return control.entries[prop]
   }
-  // new item based on type
   const createType = controlTypes[prop]
   if (createType) {
     control.entries[prop] = createType(controls, control, prop)

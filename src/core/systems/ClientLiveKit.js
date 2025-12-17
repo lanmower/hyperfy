@@ -10,7 +10,6 @@ const v2 = new THREE.Vector3()
 const q1 = new THREE.Quaternion()
 
 export class ClientLiveKit extends System {
-  // DI Service Constants
   static DEPS = {
     settings: 'settings',
     events: 'events',
@@ -38,7 +37,6 @@ export class ClientLiveKit extends System {
     this.screenNodes = new Set() // Video
   }
 
-  // DI Property Getters
   get settings() { return this.getService(ClientLiveKit.DEPS.settings) }
   get events() { return this.getService(ClientLiveKit.DEPS.events) }
   get network() { return this.getService(ClientLiveKit.DEPS.network) }
@@ -156,8 +154,6 @@ export class ClientLiveKit extends System {
     })
     this.room.localParticipant.setMetadata(metadata)
     this.room.localParticipant.setScreenShareEnabled(!!targetId, {
-      // audio: true,
-      // systemAudio: 'include',
     })
   }
 
@@ -208,7 +204,6 @@ export class ClientLiveKit extends System {
   }
 
   onTrackSubscribed = (track, publication, participant) => {
-    // console.log('onTrackSubscribed', track, publication, participant)
     const playerId = participant.identity
     const player = this.entities.getPlayer(playerId)
     if (!player) return console.error('onTrackSubscribed failed: no player')
@@ -228,7 +223,6 @@ export class ClientLiveKit extends System {
   }
 
   onTrackUnsubscribed = (track, publication, participant) => {
-    // console.log('onTrackUnsubscribed todo')
     const playerId = participant.identity
     if (track.source === 'microphone') {
       const voice = this.voices.get(playerId)
@@ -392,21 +386,10 @@ class PlayerVoice {
 }
 
 function createPlayerScreen({ world, playerId, targetId, track, participant }) {
-  // NOTE: this follows the same construct in ClientLoader.js -> createVideoFactory
-  // so that it is automatically compatible with the video node
   const elem = document.createElement('video')
   elem.playsInline = true
   elem.muted = true
-  // elem.style.width = '1px'
-  // elem.style.height = '1px'
-  // elem.style.position = 'absolute'
-  // elem.style.opacity = '0'
-  // elem.style.zIndex = '-1000'
-  // elem.style.pointerEvents = 'none'
-  // elem.style.overflow = 'hidden'
-  // document.body.appendChild(elem)
   track.attach(elem)
-  // elem.play()
   const texture = new THREE.VideoTexture(elem)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.minFilter = THREE.LinearFilter
@@ -417,25 +400,14 @@ function createPlayerScreen({ world, playerId, targetId, track, participant }) {
   let height
   let ready = false
   const prepare = (function () {
-    /**
-     *
-     * A regular video will load data automatically BUT a stream
-     * needs to hit play() before it gets that data.
-     *
-     * The following code handles this for us, and when streaming
-     * will hit play just until we get the data needed, then pause.
-     */
     return new Promise(async resolve => {
       let playing = false
       let data = false
       elem.addEventListener(
         'loadeddata',
         async () => {
-          // if we needed to hit play to fetch data then revert back to paused
-          // console.log('[video] loadeddata', { playing })
           if (playing) elem.pause()
           data = true
-          // await new Promise(resolve => setTimeout(resolve, 2000))
           width = elem.videoWidth
           height = elem.videoHeight
           console.log({ width, height })
@@ -447,15 +419,7 @@ function createPlayerScreen({ world, playerId, targetId, track, participant }) {
       elem.addEventListener(
         'loadedmetadata',
         async () => {
-          // we need a gesture before we can potentially hit play
-          // console.log('[video] ready')
-          // await this.engine.driver.gesture
-          // if we already have data do nothing, we're done!
-          // console.log('[video] gesture', { data })
           if (data) return
-          // otherwise hit play to force data loading for streams
-          // elem.play()
-          // playing = true
         },
         { once: true }
       )
@@ -463,33 +427,18 @@ function createPlayerScreen({ world, playerId, targetId, track, participant }) {
   })()
   function isPlaying() {
     return true
-    // return elem.currentTime > 0 && !elem.paused && !elem.ended && elem.readyState > 2
   }
   function play(restartIfPlaying = false) {
-    // if (restartIfPlaying) elem.currentTime = 0
-    // elem.play()
   }
   function pause() {
-    // elem.pause()
   }
   function stop() {
-    // elem.currentTime = 0
-    // elem.pause()
   }
   function release() {
-    // stop()
-    // audio.disconnect()
-    // track.detach()
-    // texture.dispose()
-    // document.body.removeChild(elem)
   }
   function destroy() {
     console.log('destory')
     texture.dispose()
-    // help to prevent chrome memory leaks
-    // see: https://github.com/facebook/react/issues/15583#issuecomment-490912533
-    // elem.src = ''
-    // elem.load()
   }
   const handle = {
     isScreen: true,
@@ -510,10 +459,8 @@ function createPlayerScreen({ world, playerId, targetId, track, participant }) {
     },
     get loop() {
       return false
-      // return elem.loop
     },
     set loop(value) {
-      // elem.loop = value
     },
     get isPlaying() {
       return isPlaying()

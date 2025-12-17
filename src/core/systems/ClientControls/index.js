@@ -1,4 +1,3 @@
-// ClientControls orchestrator
 
 import * as THREE from '../../extras/three.js'
 import { System } from '../System.js'
@@ -11,7 +10,6 @@ const isBrowser = typeof window !== 'undefined'
 let actionIds = 0
 
 export class ClientControls extends System {
-  // DI Service Constants
   static DEPS = {
     rig: 'rig',
     camera: 'camera',
@@ -42,12 +40,10 @@ export class ClientControls extends System {
     this.lmbDown = false
     this.rmbDown = false
 
-    // Initialize sub-systems
     this.inputHandler = new InputHandler(this)
     this.xrHandler = new XRHandler(this)
   }
 
-  // DI Property Getters
   get rig() { return this.getService(ClientControls.DEPS.rig) }
   get camera() { return this.getService(ClientControls.DEPS.camera) }
   get events() { return this.getService(ClientControls.DEPS.events) }
@@ -57,23 +53,18 @@ export class ClientControls extends System {
   }
 
   preFixedUpdate() {
-    // scroll delta
     for (const control of this.controls) {
       if (control.entries.scrollDelta) {
         control.entries.scrollDelta.value = this.scroll.delta
         if (control.entries.scrollDelta.capture) break
       }
     }
-    // xr input
     this.xrHandler.update()
   }
 
   postLateUpdate() {
-    // clear pointer delta
     this.pointer.delta.set(0, 0, 0)
-    // clear scroll delta
     this.scroll.delta = 0
-    // clear buttons
     for (const control of this.controls) {
       for (const key in control.entries) {
         const value = control.entries[key]
@@ -83,7 +74,6 @@ export class ClientControls extends System {
         }
       }
     }
-    // update camera
     let written
     for (const control of this.controls) {
       const camera = control.entries.camera
@@ -98,7 +88,6 @@ export class ClientControls extends System {
         camera.zoom = this.camera.position.z
       }
     }
-    // clear touch deltas
     for (const [id, info] of this.touches) {
       info.delta.set(0, 0, 0)
     }
@@ -152,14 +141,12 @@ export class ClientControls extends System {
         },
       },
     }
-    // insert at correct priority level
     const idx = this.controls.findIndex(c => c.options.priority <= options.priority)
     if (idx === -1) {
       this.controls.push(control)
     } else {
       this.controls.splice(idx, 0, control)
     }
-    // return proxy api
     return new Proxy(control, {
       get(target, prop) {
         if (prop in target.api) {

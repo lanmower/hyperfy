@@ -7,7 +7,6 @@ export const AlignItems = {}
 export const AlignContent = {}
 export const FlexWrap = {}
 
-// setup globals after Yoga wasm loaded
 export const initYoga = () => {
   Display['flex'] = Yoga.DISPLAY_FLEX
   Display['none'] = Yoga.DISPLAY_NONE

@@ -1,4 +1,3 @@
-// Avatar & player character utilities
 
 export { default as createVRMFactory } from './createVRMFactory.js'
 export { default as createEmoteFactory } from './createEmoteFactory.js'

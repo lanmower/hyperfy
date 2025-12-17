@@ -56,27 +56,20 @@ export class Joint extends Node {
     const frame1 = this.frame1
 
     if (this.type === 'fixed') {
-      // add offsets to transform
       this.offset0.toPxTransform(frame0)
       this.offset1.toPxTransform(frame1)
-      // add orientations to transform (note: dont think fixed joints even need these)
       this.quaternion0.toPxTransform(frame0)
       this.quaternion1.toPxTransform(frame1)
-      // make joint
       this.joint = new PHYSX.FixedJointCreate(this.ctx.world.physics.physics, actor0, frame0, actor1, frame1)
     }
 
     if (this.type === 'socket') {
-      // add offsets to transform
       this.offset0.toPxTransform(frame0)
       this.offset1.toPxTransform(frame1)
-      // create rotation to align X-axis with desired axis and apply (this relates to the limit angles)
       const alignRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), this.axis)
       q[0].copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
       q[1].copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
-      // make joint
       this.joint = new PHYSX.SphericalJointCreate(this.ctx.world.physics.physics, actor0, frame0, actor1, frame1)
-      // apply cone limit
       if (isNumber(this.limitY) && isNumber(this.limitZ)) {
         let spring
         if (isNumber(this.limitStiffness) && isNumber(this.limitDamping)) {
@@ -91,16 +84,12 @@ export class Joint extends Node {
     }
 
     if (this.type === 'hinge') {
-      // add offsets to transform
       this.offset0.toPxTransform(frame0)
       this.offset1.toPxTransform(frame1)
-      // create rotation to align X-axis with desired axis and apply
       const alignRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), this.axis)
       q[0].copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
       q[1].copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
-      // make joint
       this.joint = new PHYSX.RevoluteJointCreate(this.ctx.world.physics.physics, actor0, frame0, actor1, frame1)
-      // apply limits
       if (isNumber(this.limitMin) && isNumber(this.limitMax)) {
         let spring
         if (isNumber(this.limitStiffness) && isNumber(this.limitDamping)) {
@@ -115,16 +104,9 @@ export class Joint extends Node {
     }
 
     if (this.type === 'distance') {
-      // add offsets to transform
       this.offset0.toPxTransform(frame0)
       this.offset1.toPxTransform(frame1)
-      // create rotation to align X-axis with desired axis and apply
-      // const alignRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), this.axis)
-      // _q1.copy(this.quaternion0).multiply(alignRotation).toPxTransform(frame0)
-      // _q2.copy(this.quaternion1).multiply(alignRotation).toPxTransform(frame1)
-      // make joint
       this.joint = new PHYSX.DistanceJointCreate(this.ctx.world.physics.physics, actor0, frame0, actor1, frame1)
-      // apply limits
       this.joint.setMinDistance(this.limitMin)
       this.joint.setMaxDistance(this.limitMax)
       this.joint.setDistanceJointFlag(PHYSX.PxDistanceJointFlagEnum.eMIN_DISTANCE_ENABLED, true)
@@ -150,7 +132,6 @@ export class Joint extends Node {
       return
     }
     if (didMove) {
-      // ...
     }
   }
 

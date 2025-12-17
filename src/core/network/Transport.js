@@ -1,4 +1,3 @@
-// Transport abstraction - WebSocket, Socket, and connection pooling
 
 import { EventBus } from '../utils/EventBus.js'
 

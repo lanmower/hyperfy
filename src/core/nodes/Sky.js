@@ -3,7 +3,6 @@ import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
 import * as THREE from '../extras/three.js'
 import { schema } from '../utils/createNodeSchema.js'
 
-// NOTE: actual defaults bubble up to ClientEnvironment.js
 const rebuild = () => function() { this.needsRebuild = true; this.setDirty() }
 const propertySchema = schema('bg', 'hdr', 'rotationY', 'sunDirection', 'sunIntensity', 'fogNear', 'fogFar', 'fogColor')
   .add('sunColor', { default: null, onSet: rebuild() })

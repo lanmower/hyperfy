@@ -1,4 +1,3 @@
-// Math utilities and interpolation helpers
 
 export { LerpVector3 } from './LerpVector3.js'
 export { LerpQuaternion } from './LerpQuaternion.js'

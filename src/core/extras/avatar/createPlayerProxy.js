@@ -53,13 +53,10 @@ export function createPlayerProxy(entity, player) {
     },
     teleport(position, rotationY) {
       if (player.data.userId === world.network.id) {
-        // if player is local we can set directly
         world.network.enqueue('onPlayerTeleport', { position: position.toArray(), rotationY })
       } else if (world.network.isClient) {
-        // if we're a client we need to notify server
         world.network.send('playerTeleport', { networkId: player.data.userId, position: position.toArray(), rotationY })
       } else {
-        // if we're the server we need to notify the player
         world.network.sendTo(player.data.userId, 'playerTeleport', { position: position.toArray(), rotationY })
       }
     },
@@ -69,13 +66,10 @@ export function createPlayerProxy(entity, player) {
     setSessionAvatar(url) {
       const avatar = url
       if (player.data.userId === world.network.id) {
-        // if player is local we can set directly
         world.network.enqueue('onPlayerSessionAvatar', { avatar })
       } else if (world.network.isClient) {
-        // if we're a client we need to notify server
         world.network.send('playerSessionAvatar', { networkId: player.data.userId, avatar })
       } else {
-        // if we're the server we need to notify the player
         world.network.sendTo(player.data.userId, 'playerSessionAvatar', { avatar })
       }
     },
@@ -101,7 +95,6 @@ export function createPlayerProxy(entity, player) {
     applyEffect(opts) {
       if (!opts) return
       const effect = {}
-      // effect.id = uuid()
       if (opts.anchor) effect.anchorId = opts.anchor.anchorId
       if (opts.emote) effect.emote = opts.emote
       if (opts.snare) effect.snare = opts.snare
@@ -140,15 +133,11 @@ export function createPlayerProxy(entity, player) {
     },
     push(force) {
       force = force.toArray()
-      // player.applyForce(force)
       if (player.data.userId === world.network.id) {
-        // if player is local we can set directly
         player.push(force)
       } else if (world.network.isClient) {
-        // if we're a client we need to notify server
         world.network.send('playerPush', { networkId: player.data.userId, force })
       } else {
-        // if we're the server we need to notify the player
         world.network.sendTo(player.data.userId, 'playerPush', { force })
       }
     },

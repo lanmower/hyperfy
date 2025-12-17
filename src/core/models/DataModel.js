@@ -1,4 +1,3 @@
-// Data Model Factory - unified data structure definitions
 
 export class DataModel {
   static #definitions = new Map()
@@ -75,7 +74,6 @@ export class DataModel {
   }
 }
 
-// Pre-defined core models
 DataModel.define('Player', {
   id: null,
   name: 'Player',

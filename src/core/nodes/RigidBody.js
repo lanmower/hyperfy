@@ -59,14 +59,10 @@ export class RigidBody extends Node {
     } else if (this._type === 'kinematic') {
       this.actor = this.ctx.world.physics.physics.createRigidDynamic(this.transform)
       this.actor.setRigidBodyFlag(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC, true)
-      // this.actor.setMass(this.mass)
       PHYSX.PxRigidBodyExt.prototype.setMassAndUpdateInertia(this.actor, this._mass)
-      // this.untrack = this.ctx.world.physics.track(this.actor, this.onPhysicsMovement)
     } else if (this._type === 'dynamic') {
       this.actor = this.ctx.world.physics.physics.createRigidDynamic(this.transform)
-      // this.actor.setMass(this.mass)
       PHYSX.PxRigidBodyExt.prototype.setMassAndUpdateInertia(this.actor, this._mass)
-      // this.untrack = this.ctx.world.physics.track(this.actor, this.onPhysicsMovement)
       if (this._centerOfMass) {
         const pose = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
         this._centerOfMass.toPxTransform(pose)
@@ -121,20 +117,14 @@ export class RigidBody extends Node {
       m[1].copy(this.parent.matrixWorld).invert()
       m[2].multiplyMatrices(m[1], m[0])
       m[2].decompose(this.position, this.quaternion, v[0])
-      // this.matrix.copy(m[2])
-      // this.matrixWorld.copy(m[0])
     } else {
       this.position.copy(position)
       this.quaternion.copy(quaternion)
-      // this.matrix.compose(this.position, this.quaternion, this.scale)
-      // this.matrixWorld.copy(this.matrix)
     }
   }
 
   unmount() {
     if (this.actor) {
-      // this.untrack?.()
-      // this.untrack = null
       this.actorHandle?.destroy()
       this.actorHandle = null
       this.actor.release()

@@ -6,7 +6,6 @@ import { thickness } from 'three/src/nodes/TSL.js'
 const appPanes = ['app', 'script', 'nodes', 'meta']
 
 export class ClientUI extends System {
-  // DI Service Constants
   static DEPS = {
     controls: 'controls',
     events: 'events',
@@ -25,7 +24,6 @@ export class ClientUI extends System {
     this.control = null
   }
 
-  // DI Property Getters
   get controls() { return this.getService(ClientUI.DEPS.controls) }
   get events() { return this.getService(ClientUI.DEPS.events) }
 
@@ -66,9 +64,6 @@ export class ClientUI extends System {
     if (pane === null || this.state.pane === pane) {
       this.state.pane = null
     } else {
-      // if (appPanes.includes(this.state.pane) && !appPanes.includes(pane)) {
-      //   this.state.app = null
-      // }
       this.state.pane = pane
       if (appPanes.includes(pane)) {
         this.lastAppPane = pane

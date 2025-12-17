@@ -6,7 +6,6 @@
  * without modifying dispatch logic.
  */
 
-// ==================== COMMAND REGISTRY ====================
 /**
  * Maps command names to their handler functions
  * Format: { commandName: handlerFunction }
@@ -19,7 +18,6 @@ export const commandRegistry = {
   server: 'server', // server <command>
 }
 
-// ==================== ASSET TYPE REGISTRY ====================
 /**
  * Defines which asset types are supported and how they're loaded
  * Keyed by environment: client, server
@@ -46,64 +44,51 @@ export const assetTypeRegistry = {
   }
 }
 
-// ==================== MESSAGE HANDLER REGISTRY ====================
 /**
  * Maps network message types to their handler functions
  * Keyed by environment: client, server
  */
 export const messageHandlerRegistry = {
   server: {
-    // Chat & Communication
     'chatAdded': 'chatAdded',
 
-    // Entity Operations
     'entityAdded': 'entityAdded',
     'entityModified': 'entityModified',
     'entityRemoved': 'entityRemoved',
 
-    // Blueprint Management
     'blueprintAdded': 'blueprintAdded',
     'blueprintModified': 'blueprintModified',
     'blueprintRemoved': 'blueprintRemoved',
 
-    // Admin & Moderation
     'modifyRank': 'modifyRank',
     'kick': 'kick',
     'mute': 'mute',
 
-    // File Operations
     'fileUpload': 'fileUpload',
 
-    // Error Handling
     'errorEvent': 'errorEvent',
   },
 
   client: {
-    // World State
     'snapshot': 'snapshot',
 
-    // Chat & Communication
     'chatAdded': 'chatAdded',
 
-    // Entity Operations
     'entityAdded': 'entityAdded',
     'entityModified': 'entityModified',
     'entityRemoved': 'entityRemoved',
 
-    // Blueprint Management
     'blueprintAdded': 'blueprintAdded',
     'blueprintModified': 'blueprintModified',
     'blueprintRemoved': 'blueprintRemoved',
   }
 }
 
-// ==================== SETTING REGISTRY ====================
 /**
  * Defines configurable settings for client/server
  * Format: { settingKey: { type, default, min?, max?, values? } }
  */
 export const settingRegistry = {
-  // Audio Settings
   audio: {
     volume: { type: 'number', default: 1, min: 0, max: 1 },
     muted: { type: 'boolean', default: false },
@@ -111,7 +96,6 @@ export const settingRegistry = {
     masterVolume: { type: 'number', default: 1, min: 0, max: 1 },
   },
 
-  // Graphics Settings
   graphics: {
     quality: { type: 'enum', default: 'medium', values: ['low', 'medium', 'high', 'ultra'] },
     enablePostProcessing: { type: 'boolean', default: true },
@@ -120,14 +104,12 @@ export const settingRegistry = {
     fov: { type: 'number', default: 75, min: 30, max: 120 },
   },
 
-  // Network Settings
   network: {
     tickRate: { type: 'number', default: 8, min: 1, max: 60 },
     bufferSize: { type: 'number', default: 1024, min: 512, max: 8192 },
     compressionEnabled: { type: 'boolean', default: true },
   },
 
-  // Physics Settings
   physics: {
     gravity: { type: 'number', default: -9.81, min: -50, max: 0 },
     fixedTimestep: { type: 'number', default: 0.02, min: 0.001, max: 0.1 },
@@ -135,44 +117,36 @@ export const settingRegistry = {
   },
 }
 
-// ==================== NODE TYPE REGISTRY ====================
 /**
  * Defines available node types and their categories
  */
 export const nodeTypeRegistry = {
-  // 3D Geometry
   mesh: { category: '3D', type: 'geometry' },
   skinnedMesh: { category: '3D', type: 'geometry' },
   group: { category: '3D', type: 'container' },
 
-  // Physics
   rigidBody: { category: 'Physics', type: 'physics' },
   collider: { category: 'Physics', type: 'physics' },
   joint: { category: 'Physics', type: 'physics' },
   particles: { category: 'Physics', type: 'effect' },
 
-  // UI
   ui: { category: 'UI', type: 'interactive' },
   uiText: { category: 'UI', type: 'text' },
   uiImage: { category: 'UI', type: 'visual' },
   uiView: { category: 'UI', type: 'container' },
 
-  // Media
   video: { category: 'Media', type: 'visual' },
   image: { category: 'Media', type: 'visual' },
   audio: { category: 'Media', type: 'audio' },
 
-  // Interaction
   action: { category: 'Interaction', type: 'interactive' },
   avatar: { category: 'Interaction', type: 'character' },
   nametag: { category: 'Interaction', type: 'text' },
 
-  // Rendering
   lod: { category: 'Rendering', type: 'optimization' },
   sky: { category: 'Rendering', type: 'environment' },
 }
 
-// ==================== SYSTEM REGISTRY ====================
 /**
  * Metadata and configurations for systems
  * Enables dynamic system discovery and configuration
@@ -209,7 +183,6 @@ export const systemRegistry = {
   ]
 }
 
-// ==================== LOADER REGISTRY ====================
 /**
  * Defines file type handlers for asset loading
  */
@@ -232,7 +205,6 @@ export const loaderRegistry = {
   },
 }
 
-// ==================== PREFERENCE REGISTRY ====================
 /**
  * User preference keys and their metadata
  */
@@ -245,7 +217,6 @@ export const preferenceRegistry = {
   language: { type: 'enum', values: ['en', 'es', 'fr', 'de', 'ja', 'zh'], description: 'UI language' },
 }
 
-// ==================== ERROR PATTERN REGISTRY ====================
 /**
  * Predefined error patterns for categorization and handling
  */
@@ -260,7 +231,6 @@ export const errorPatternRegistry = {
   validation: /validation|schema|constraint|invalid|required/i,
 }
 
-// ==================== RANK REGISTRY ====================
 /**
  * User ranks and their capabilities
  */
@@ -271,7 +241,6 @@ export const rankRegistry = {
   admin: { level: 3, permissions: ['all'] },
 }
 
-// ==================== EXPORT FACTORY ====================
 /**
  * Factory function to get registries
  */
@@ -294,7 +263,6 @@ export function getRegistry(type, environment = null) {
     throw new Error(`Unknown registry type: ${type}`)
   }
 
-  // Return environment-specific registry if applicable
   if (environment && registry[environment]) {
     return registry[environment]
   }
@@ -302,7 +270,6 @@ export function getRegistry(type, environment = null) {
   return registry
 }
 
-// ==================== REGISTRY EXTENSION ====================
 /**
  * Helper to extend registries at runtime
  */

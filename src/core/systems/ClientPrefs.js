@@ -6,7 +6,6 @@ import { storage } from '../storage.js'
 import { isTouch } from '../../client/utils.js'
 
 export class ClientPrefs extends System {
-  // DI Service Constants
   static DEPS = {
     events: 'events',
   }
@@ -45,7 +44,6 @@ export class ClientPrefs extends System {
     })
   }
 
-  // DI Property Getters
   get events() { return this.getService(ClientPrefs.DEPS.events) }
 
   modify(key, value) {

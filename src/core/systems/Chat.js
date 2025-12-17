@@ -10,20 +10,13 @@ export class Chat extends System {
     this.state = new StateManager({ messages: [] })
   }
 
-  /**
-   * Get service from DI container (with fallback to this.world)
-   */
   getService(name) {
     if (this.world.di?.has?.(name)) {
       return this.world.di.get(name)
     }
-    // Fallback for services that might not be in DI yet
     return this.world[name]
   }
 
-  /**
-   * Shortcut accessors for commonly used services
-   */
   get entities() { return this.getService('entities') }
   get events() { return this.getService('events') }
   get network() { return this.getService('network') }

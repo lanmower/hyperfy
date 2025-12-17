@@ -1,13 +1,3 @@
-/**
- * System Factory
- *
- * Factory pattern for creating system instances with middleware and proxies.
- * Enables:
- * - Middleware wrapping (lifecycle hooks, monitoring, logging)
- * - System proxies (lazy loading, error boundaries)
- * - Performance monitoring
- * - Conditional system creation
- */
 
 export class SystemFactory {
   constructor() {
@@ -16,39 +6,24 @@ export class SystemFactory {
     this.monitors = []
   }
 
-  /**
-   * Add middleware that wraps system instances
-   * Middleware receives (system, world, config) and can return wrapper
-   */
   use(middleware) {
     this.middleware.push(middleware)
     return this
   }
 
-  /**
-   * Add a performance monitor
-   */
   monitor(monitorFn) {
     this.monitors.push(monitorFn)
     return this
   }
 
-  /**
-   * Add a system proxy
-   */
   addProxy(proxy) {
     this.proxies.push(proxy)
     return this
   }
 
-  /**
-   * Create a system instance with all middleware applied
-   */
   create(SystemClass, world, options = {}) {
-    // Create base instance
     let instance = new SystemClass(world)
 
-    // Apply middleware
     for (const middlewareFn of this.middleware) {
       const wrapped = middlewareFn(instance, world, options)
       if (wrapped) {
@@ -56,12 +31,10 @@ export class SystemFactory {
       }
     }
 
-    // Wrap with performance monitoring if needed
     if (this.monitors.length > 0) {
       instance = this.wrapWithMonitoring(instance, this.monitors)
     }
 
-    // Apply proxies
     for (const proxy of this.proxies) {
       instance = proxy(instance)
     }
@@ -69,9 +42,6 @@ export class SystemFactory {
     return instance
   }
 
-  /**
-   * Wrap a system with performance monitoring
-   */
   wrapWithMonitoring(system, monitors) {
     const wrappedSystem = Object.create(Object.getPrototypeOf(system))
 
@@ -105,7 +75,6 @@ export class SystemFactory {
       }
     }
 
-    // Copy properties
     for (const key of Object.keys(system)) {
       wrappedSystem[key] = system[key]
     }
@@ -113,9 +82,6 @@ export class SystemFactory {
     return wrappedSystem
   }
 
-  /**
-   * Create a logger middleware
-   */
   static createLoggerMiddleware(verbose = false) {
     return (system, world, options) => {
       if (verbose) {
@@ -155,9 +121,6 @@ export class SystemFactory {
     }
   }
 
-  /**
-   * Create an error boundary middleware
-   */
   static createErrorBoundaryMiddleware() {
     return (system, world, options) => {
       const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(system))
@@ -172,7 +135,6 @@ export class SystemFactory {
           try {
             const result = original.apply(system, args)
 
-            // Handle promises
             if (result instanceof Promise) {
               return result.catch(err => {
                 console.error(`Error in ${system.constructor.name}.${method}:`, err)
@@ -192,13 +154,9 @@ export class SystemFactory {
     }
   }
 
-  /**
-   * Create a conditional system middleware
-   */
   static createConditionalMiddleware(condition) {
     return (system, world, options) => {
       if (!condition(world, options)) {
-        // Return a no-op proxy
         return createNoOpProxy(system)
       }
       return system
@@ -206,15 +164,11 @@ export class SystemFactory {
   }
 }
 
-/**
- * Create a no-op proxy that silently ignores calls
- */
 function createNoOpProxy(system) {
   return new Proxy(system, {
     get(target, prop) {
       if (typeof target[prop] === 'function') {
         return function (...args) {
-          // Silently do nothing
           return undefined
         }
       }
@@ -223,16 +177,11 @@ function createNoOpProxy(system) {
   })
 }
 
-/**
- * Create a default system factory with standard middleware
- */
 export function createDefaultSystemFactory(options = {}) {
   const factory = new SystemFactory()
 
-  // Add error boundary
   factory.use(SystemFactory.createErrorBoundaryMiddleware())
 
-  // Add logging if verbose
   if (options.verbose) {
     factory.use(SystemFactory.createLoggerMiddleware(true))
   }

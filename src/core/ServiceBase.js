@@ -1,4 +1,3 @@
-// Base class for all services with common functionality
 
 import { EventBus } from './utils/EventBus.js'
 

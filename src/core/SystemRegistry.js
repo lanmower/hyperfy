@@ -1,4 +1,3 @@
-// System Registry - dynamic system discovery and initialization
 
 export class SystemRegistry {
   constructor() {

@@ -6,7 +6,6 @@ import { ClientLoader } from './systems/ClientLoader.js'
 import { ClientControls } from './systems/ClientControls.js'
 import { ClientGraphics } from './systems/ClientGraphics.js'
 import { ClientEnvironment } from './systems/ClientEnvironment.js'
-// import { ClientAudio } from './systems/ClientAudio.js'
 
 export { System } from './systems/System.js'
 
@@ -18,6 +17,5 @@ export function createViewerWorld() {
   world.register('controls', ClientControls)
   world.register('graphics', ClientGraphics)
   world.register('environment', ClientEnvironment)
-  // world.register('audio', ClientAudio)
   return world
 }

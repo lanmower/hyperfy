@@ -1,9 +1,7 @@
 import fs from 'fs-extra'
 import path from 'path'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { GLTFLoader } from '../libs/gltfloader/GLTFLoader.js'
-// import { VRMLoaderPlugin } from '@pixiv/three-vrm'
 
 import { BaseLoader } from './BaseLoader.js'
 import { createVRMFactory } from '../extras/createVRMFactory.js'
@@ -11,15 +9,7 @@ import { glbToNodes } from '../extras/glbToNodes.js'
 import { createNode } from '../extras/createNode.js'
 import { createEmoteFactory } from '../extras/createEmoteFactory.js'
 
-/**
- * Server Loader System
- *
- * - Runs on the server
- * - Basic file loader for many different formats, cached.
- *
- */
 export class ServerLoader extends BaseLoader {
-  // DI Service Constants
   static DEPS = {
     errorMonitor: 'errorMonitor',
     scripts: 'scripts',
@@ -31,7 +21,6 @@ export class ServerLoader extends BaseLoader {
     this.rgbeLoader = new RGBELoader()
     this.gltfLoader = new GLTFLoader()
 
-    // mock globals to allow gltf loader to work in nodejs
     globalThis.self = { URL }
     globalThis.window = {}
     globalThis.document = {
@@ -39,7 +28,6 @@ export class ServerLoader extends BaseLoader {
     }
   }
 
-  // DI Property Getters
   get errorMonitor() { return this.getService(ServerLoader.DEPS.errorMonitor) }
   get scripts() { return this.getService(ServerLoader.DEPS.scripts) }
 

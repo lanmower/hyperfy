@@ -1,4 +1,3 @@
-// Dynamic factory for creating objects without boilerplate using Auto discovery and Props system
 
 import { Auto } from './Auto.js'
 import { Props } from './Props.js'
@@ -10,13 +9,11 @@ export class DynamicFactory {
     this.factories = new Map()
   }
 
-  // Register a class for dynamic creation
   register(name, Class, schema = null) {
     this.classes.set(name, { Class, schema })
     return this
   }
 
-  // Register multiple classes at once
   registerBatch(classes) {
     for (const [name, config] of Object.entries(classes)) {
       const { Class, schema } = config
@@ -25,13 +22,11 @@ export class DynamicFactory {
     return this
   }
 
-  // Register factory function for custom creation logic
   registerFactory(name, factory) {
     this.factories.set(name, factory)
     return this
   }
 
-  // Auto-discover and register classes from directory
   async discover(path, prefix = '') {
     const modules = await Auto.discover(path)
     const mapped = Auto.map(modules, prefix)
@@ -45,7 +40,6 @@ export class DynamicFactory {
     return this
   }
 
-  // Create instance with automatic property initialization
   create(type, data = {}) {
     if (this.factories.has(type)) {
       return this.factories.get(type)(data)
@@ -61,7 +55,6 @@ export class DynamicFactory {
     return new Class(props)
   }
 
-  // Create with fluent API
   createFluid(type) {
     return {
       with: (data) => this.create(type, data),
@@ -69,12 +62,10 @@ export class DynamicFactory {
     }
   }
 
-  // Batch create multiple instances
   createBatch(type, dataArray) {
     return dataArray.map(data => this.create(type, data))
   }
 
-  // Get registered types
   types() {
     return [
       ...this.classes.keys(),

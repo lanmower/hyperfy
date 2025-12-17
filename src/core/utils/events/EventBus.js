@@ -1,4 +1,3 @@
-// Unified event bus for system communication
 
 export class EventBus {
   constructor() {
@@ -55,5 +54,4 @@ export class EventBus {
   }
 }
 
-// Singleton event bus for global communication
 export const globalEvents = new EventBus()

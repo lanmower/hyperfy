@@ -1,4 +1,3 @@
-// Helper functions & utilities exports
 
 export * from './misc.js'
 export { ChatFormatter } from './ChatFormatter.js'

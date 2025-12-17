@@ -1,4 +1,3 @@
-// ChatMessage.schema.js - Unified chat message structure
 
 export const MessageTypes = {
   NORMAL: 'normal',

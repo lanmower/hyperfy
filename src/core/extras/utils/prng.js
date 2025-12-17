@@ -9,25 +9,17 @@ const DEFAULT_SEED = 149304961039362642461
 const REGISTER_LENGTH = 31
 const FLUSH_TIMES = 20
 
-// export a simplified api
-// export function prng(seed) {
-//   const prng = new PRNG(seed)
-//   return (min, max) => prng.rand(min, max)
-// }
 
 export function prng(seed) {
   const generator = new PRNG(seed)
   return (min, max, dp = 0) => {
-    // single-arg → [0..min]
     if (max === undefined) {
       max = min
       min = 0
     }
 
-    // swap if out of order
     if (min > max) [min, max] = [max, min]
 
-    // if decimals requested, scale into integer space
     if (dp > 0) {
       const scale = 10 ** dp
       const intMin = Math.ceil(min * scale)
@@ -36,7 +28,6 @@ export function prng(seed) {
       return rndInt / scale
     }
 
-    // otherwise just integer mode
     return generator.rand(min, max)
   }
 }
@@ -44,19 +35,14 @@ export function prng(seed) {
 class PRNG {
   constructor(seed) {
     this.lfsr = new LFSR(REGISTER_LENGTH, seed || DEFAULT_SEED)
-    // flush initial state of register because thay may produce
-    // weird sequences
     this.lfsr.seq(FLUSH_TIMES * REGISTER_LENGTH)
   }
   rand(min, max) {
-    // if invoked with one value consider min to be 0
-    // rand(16) == rand(0, 16)
     if (!max) {
       max = min
       min = 0
     }
 
-    // swap if min > max
     if (min > max) {
       let t = max
       max = min
@@ -77,10 +63,6 @@ class PRNG {
   }
 }
 
-// Max-length feedback polynomials for shift register
-// e.g.
-// N=19
-// x^19 + x^18 + x^17 + x^15 + 1 will give max length sequence of 524287
 const TAPS = {
   2: [2, 1], // 3
   3: [3, 2], // 7
@@ -112,40 +94,6 @@ const TAPS = {
   29: [29, 27],
   30: [30, 6, 4, 1],
   31: [31, 28],
-  // Out of javascript integer range
-  // 32: [32, 22, 2, 1],
-  // 33: [33, 20],
-  // 34: [34, 27, 2, 1],
-  // 35: [35, 33],
-  // 36: [36, 25],
-  // 37: [37, 5, 4, 3, 2, 1],
-  // 38: [38, 6, 5, 1],
-  // 39: [39, 35],
-  // 40: [40, 38, 21, 19],
-  // 41: [41, 38],
-  // 42: [42, 41, 20, 19],
-  // 43: [43, 42, 38, 37],
-  // 44: [44, 43, 18, 17],
-  // 45: [45, 44, 42, 41],
-  // 46: [46, 45, 26, 25],
-  // 47: [47, 42],
-  // 48: [48, 47, 21, 20],
-  // 49: [49, 40],
-  // 50: [50, 49, 24, 23],
-  // 51: [51, 50, 36, 35],
-  // 52: [52, 49],
-  // 53: [53, 52, 38, 37],
-  // 54: [54, 53, 18, 17],
-  // 55: [55, 31],
-  // 56: [56, 55, 35, 34],
-  // 57: [57, 50],
-  // 58: [58, 39],
-  // 59: [59, 58, 38, 37],
-  // 60: [60, 59],
-  // 61: [61, 60, 46, 45],
-  // 62: [62, 61, 6, 5],
-  // 63: [63, 62],
-  // 64: [64, 63, 61, 60]
 }
 
 const DEFAULT_LENGTH = 31
@@ -155,7 +103,6 @@ class LFSR {
     this.n = n || DEFAULT_LENGTH
     this.taps = TAPS[this.n]
     seed = seed || this._defaultSeed(this.n)
-    // Get last n bit from the seed if it's longer
     const mask = parseInt(Array(this.n + 1).join('1'), 2)
     this.register = seed & mask
   }

@@ -28,23 +28,12 @@ function getRenderer() {
     renderer = new THREE.WebGLRenderer({
       powerPreference: 'high-performance',
       antialias: true,
-      // logarithmicDepthBuffer: true,
-      // reverseDepthBuffer: true,
     })
   }
   return renderer
 }
 
-/**
- * Graphics System
- *
- * - Runs on the client
- * - Supports renderer, shadows, postprocessing, etc
- * - Renders to the viewport
- *
- */
 export class ClientGraphics extends System {
-  // DI Service Constants
   static DEPS = {
     camera: 'camera',
     prefs: 'prefs',
@@ -57,7 +46,6 @@ export class ClientGraphics extends System {
     super(world)
   }
 
-  // DI Property Getters
   get camera() { return this.getService(ClientGraphics.DEPS.camera) }
   get prefs() { return this.getService(ClientGraphics.DEPS.prefs) }
   get events() { return this.getService(ClientGraphics.DEPS.events) }
@@ -187,7 +175,6 @@ export class ClientGraphics extends System {
   }
 
   preTick() {
-    // calc world to screen factor
     const camera = this.camera
     const fovRadians = camera.fov * (Math.PI / 180)
     const rendererHeight = this.xrHeight || this.height
@@ -214,25 +201,16 @@ export class ClientGraphics extends System {
   }
 
   checkXRDimensions = () => {
-    // Get the current XR reference space
     const referenceSpace = this.renderer.xr.getReferenceSpace()
-    // Get frame information
     const frame = this.renderer.xr.getFrame()
     if (frame && referenceSpace) {
-      // Get view information which contains projection matrices
       const views = frame.getViewerPose(referenceSpace)?.views
       if (views && views.length > 0) {
-        // Use the first view's projection matrix
         const projectionMatrix = views[0].projectionMatrix
-        // Extract the relevant factors from the projection matrix
-        // This is a simplified approach
         const fovFactor = projectionMatrix[5] // Approximation of FOV scale
-        // You might need to consider the XR display's physical properties
-        // which can be accessed via session.renderState
         const renderState = this.xrSession.renderState
         const baseLayer = renderState.baseLayer
         if (baseLayer) {
-          // Get the actual resolution being used for rendering
           this.xrWidth = baseLayer.framebufferWidth
           this.xrHeight = baseLayer.framebufferHeight
           this.xrDimensionsNeeded = false

@@ -1,4 +1,3 @@
-// Server world with auto-discovered server-side systems
 
 import { World } from './World.js'
 import { getSystemsAsync } from './SystemFactory.js'

@@ -92,7 +92,6 @@ export class UIView extends Node {
     const width = this.yogaNode.getComputedWidth()
     const height = this.yogaNode.getComputedHeight()
     if (this._backgroundColor) {
-      // when theres a border, slightly inset to prevent bleeding
       const inset = this._borderColor && this._borderWidth ? 0.5 * this.ui._res : 0
       const radius = Math.max(0, this._borderRadius * this.ui._res - inset)
       const insetLeft = left + inset
@@ -106,7 +105,6 @@ export class UIView extends Node {
       const thickness = this._borderWidth * this.ui._res
       ctx.strokeStyle = this._borderColor
       ctx.lineWidth = thickness
-      // todo: migrate to new roundRect { strokeRoundRect }
       if (this._borderRadius) {
         borderRoundRect(ctx, left, top, width, height, radius, thickness)
       } else {
@@ -167,7 +165,6 @@ export class UIView extends Node {
   }
 
   commit(didMove) {
-    // ...
   }
 
   unmount() {

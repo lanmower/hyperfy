@@ -1,4 +1,3 @@
-// Node schema consolidation - dramatically reduce boilerplate via builder pattern
 
 import { Props, propSchema } from '../Props.js'
 import { validators, onSetRebuild, onSetRebuildIf } from './defineProperty.js'
@@ -9,7 +8,6 @@ export class SchemaBuilder {
     this.overrides = {}
   }
 
-  // Override a property with custom validation/behavior
   override(key, { default: def, validate, onSet }) {
     this.overrides[key] = {}
     if (def !== undefined) this.overrides[key].default = def
@@ -18,7 +16,6 @@ export class SchemaBuilder {
     return this
   }
 
-  // Override multiple properties at once
   overrideAll(overridesMap) {
     for (const [key, config] of Object.entries(overridesMap)) {
       this.override(key, config)
@@ -26,7 +23,6 @@ export class SchemaBuilder {
     return this
   }
 
-  // Add extra properties not in Props
   add(key, { default: def, validate, onSet }) {
     if (!this.props[key]) {
       this.props[key] = {}
@@ -37,7 +33,6 @@ export class SchemaBuilder {
     return this
   }
 
-  // Build all properties with auto-rebuild on set
   withRebuild() {
     for (const key of Object.keys(this.props)) {
       if (!this.overrides[key]?.onSet) {
@@ -47,7 +42,6 @@ export class SchemaBuilder {
     return this
   }
 
-  // Build the schema
   build() {
     const schema = {}
     for (const [key, base] of Object.entries(this.props)) {
@@ -61,7 +55,6 @@ export function schema(...propKeys) {
   return new SchemaBuilder(propKeys)
 }
 
-// Convenience functions
 
 export function createMeshSchema(overrides = {}) {
   return schema('type', 'width', 'height', 'depth', 'radius', 'castShadow', 'receiveShadow', 'visible', 'color')

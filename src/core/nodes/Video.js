@@ -57,7 +57,6 @@ export class Video extends Node {
 
     const n = ++this.n
 
-    // when linked can be instanced thousands of times all using the same video element and texture
     let key = ''
     if (this._linked === true) {
       key += 'default'
@@ -82,7 +81,6 @@ export class Video extends Node {
     }
 
     if (this._visible) {
-      // material
       let material
       let vidAspect = this.instance?.width / this.instance?.height || this._aspect
       const uniforms = {
@@ -94,11 +92,9 @@ export class Video extends Node {
         uColor: { value: new THREE.Color(this._color) },
         uOffset: { value: new THREE.Vector2(0, 0) },
       }
-      // const color = this.instance?.ready ? 'white' : this._color
       material = new CustomShaderMaterial({
         baseMaterial: this._lit ? THREE.MeshStandardMaterial : THREE.MeshBasicMaterial,
         ...(this._lit ? { roughness: 1, metalness: 0 } : {}),
-        // color,
         side: this._doubleside ? THREE.DoubleSide : THREE.FrontSide,
         uniforms,
         vertexShader: `
@@ -127,63 +123,40 @@ export class Video extends Node {
           }
           
           void main() {
-            // Calculate aspect ratio relationship between video and geometry
             float aspect = uGeoAspect / uVidAspect;
 
             vec2 uv = vUv;
 
-            // Apply UV offset
             uv = uv + uOffset;
             
-            // COVER MODE (uFit = 1.0)
             if (abs(uFit - 1.0) < 0.01) {
-              // Center the UV coordinates
               uv = uv - 0.5;
               
               if (aspect > 1.0) {
-                // Geometry is wider than video:
-                // - Fill horizontally (maintain x scale)
-                // - Scale vertically to maintain aspect ratio (shrink y)
                 uv.y /= aspect;
               } else {
-                // Geometry is taller than video:
-                // - Fill vertically (maintain y scale)
-                // - Scale horizontally to maintain aspect ratio (shrink x)
                 uv.x *= aspect;
               }
               
-              // Return to 0-1 range
               uv = uv + 0.5;
             }
-            // CONTAIN MODE (uFit = 2.0)
             else if (abs(uFit - 2.0) < 0.01) {
-              // Center the UV coordinates
               uv = uv - 0.5;
               
               if (aspect > 1.0) {
-                // Geometry is wider than video:
-                // - Fill vertically (maintain y scale)
-                // - Scale horizontally to fit entire video (expand x)
                 uv.x *= aspect;
               } else {
-                // Geometry is taller than video:
-                // - Fill horizontally (maintain x scale)
-                // - Scale vertically to fit entire video (expand y)
                 uv.y /= aspect;
               }
               
-              // Return to 0-1 range
               uv = uv + 0.5;
             }
 
-            // pull UV into [0,1] before sampling
             vec2 uvClamped = clamp(uv, 0.0, 1.0);
             vec4 col = texture2D(uMap, uvClamped);
 
-            // outside coloring (for contain mode)
             if (uFit >= 1.5) {
               const float EPS = 0.005;
-              // decide “outside” based on the *raw* uv
               bool outside = uv.x < -EPS || uv.x > 1.0 + EPS || uv.y < -EPS || uv.y > 1.0 + EPS;
               if (outside) {
                 col = vec4(uColor, 1.0);
@@ -197,11 +170,9 @@ export class Video extends Node {
       this.ctx.world.setupMaterial(material)
 
       let geometry
-      // custom
       if (this._geometry) {
         geometry = this._geometry
       }
-      // plane (initial)
       if (!this._geometry) {
         let width = this._width
         let height = this._height
@@ -220,7 +191,6 @@ export class Video extends Node {
         applyPivot(geometry, width, height, this._pivot)
       }
 
-      // mesh
       this.mesh = new THREE.Mesh(geometry, material)
       this.mesh.castShadow = this._castShadow
       this.mesh.receiveShadow = this._receiveShadow
@@ -272,15 +242,11 @@ export class Video extends Node {
       let vidAspect
       let geoAspect
 
-      // custom
       if (this._geometry) {
-        // based on the video dimensions, textures are scaled and repeated to emulate `background-size: cover` from css.
-        // the end result is a video that is scaled up until it "covers" the entire UV square (0,0 to 1,1), centered.
         vidAspect = this.instance.width / this.instance.height
         geoAspect = this._aspect
       }
 
-      // plane
       if (!this._geometry) {
         vidAspect = this.instance.width / this.instance.height
         let width = this._width
@@ -293,15 +259,12 @@ export class Video extends Node {
         } else if (height !== null && width === null) {
           width = height * vidAspect
         }
-        // new geometry if changed
         if (geometry._oWidth !== width || geometry._oHeight !== height) {
           const newGeometry = new THREE.PlaneGeometry(width, height)
           applyPivot(newGeometry, width, height, this._pivot)
           this.mesh.geometry = newGeometry
           geometry.dispose()
         }
-        // if the video aspect is different to the plane aspect we need to ensure the texture is scaled correctly.
-        // this effect is identical to the `background-size: cover` css property.
         geoAspect = width / height
       }
 

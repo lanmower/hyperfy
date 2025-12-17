@@ -1,4 +1,3 @@
-// Entity factory - unified entity creation and registration
 
 import { App } from './entities/App.js'
 import { PlayerLocal } from './entities/PlayerLocal.js'

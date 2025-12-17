@@ -5,23 +5,8 @@ var PhysX = (() => {
   return (
 async function(moduleArg = {}) {
 
-// include: shell.js
-// The Module object: Our interface to the outside world. We import
-// and export values on it. There are various ways Module can be used:
-// 1. Not defined. We create it here
-// 2. A function parameter, function(Module) { ..generated code.. }
-// 3. pre-run appended it, var Module = {}; ..generated code..
-// 4. External script tag defines var Module.
-// We need to check if Module already exists (e.g. case 3 above).
-// Substitution will be replaced with actual code on later stage of the build,
-// this way Closure Compiler will not mangle it (e.g. case 4. above).
-// Note that if you want to run closure, and also to use Module
-// after the generated code, you will need to define   var Module = {};
-// before the code. Then that object will be used in the code, and you
-// can continue to use Module afterwards as well.
 var Module = moduleArg;
 
-// Set up the promise that indicates the Module is initialized
 var readyPromiseResolve, readyPromiseReject;
 Module['ready'] = new Promise((resolve, reject) => {
   readyPromiseResolve = resolve;
@@ -36,15 +21,8 @@ Module['ready'] = new Promise((resolve, reject) => {
   }
 });
 
-// --pre-jses are emitted after the Module integration code, so that they can
-// refer to Module (if they choose; they can also define Module)
 
 
-// Sometimes an existing Module object exists with properties
-// meant to overwrite the default module functionality. Here
-// we collect those properties and reapply _after_ we configure
-// the current environment's defaults to avoid having to be so
-// defensive during initialization.
 var moduleOverrides = Object.assign({}, Module);
 
 var arguments_ = [];
@@ -53,14 +31,9 @@ var quit_ = (status, toThrow) => {
   throw toThrow;
 };
 
-// Determine the runtime environment we are in. You can customize this by
-// setting the ENVIRONMENT setting at compile time (see settings.js).
 
-// Attempt to auto-detect the environment
 var ENVIRONMENT_IS_WEB = typeof window == 'object';
 var ENVIRONMENT_IS_WORKER = typeof importScripts == 'function';
-// N.b. Electron.js environment is simultaneously a NODE-environment, but
-// also a web environment.
 var ENVIRONMENT_IS_NODE = typeof process == 'object' && typeof process.versions == 'object' && typeof process.versions.node == 'string';
 var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
@@ -68,7 +41,6 @@ if (Module['ENVIRONMENT']) {
   throw new Error('Module.ENVIRONMENT has been deprecated. To force the environment, use the ENVIRONMENT compile-time option (for example, -sENVIRONMENT=web or -sENVIRONMENT=node)');
 }
 
-// `/` should be present at the end if `scriptDirectory` is not empty
 var scriptDirectory = '';
 function locateFile(path) {
   if (Module['locateFile']) {
@@ -77,7 +49,6 @@ function locateFile(path) {
   return scriptDirectory + path;
 }
 
-// Hooks that are implemented differently in different runtime environments.
 var read_,
     readAsync,
     readBinary;
@@ -93,31 +64,19 @@ if (ENVIRONMENT_IS_NODE) {
     throw new Error('This emscripten-generated code requires node v16.0.0 (detected v' + nodeVersion + ')');
   }
 
-  // `require()` is no-op in an ESM module, use `createRequire()` to construct
-  // the require()` function.  This is only necessary for multi-environment
-  // builds, `-sENVIRONMENT=node` emits a static import declaration instead.
-  // TODO: Swap all `require()`'s with `import()`'s?
   const { createRequire } = await import('module');
   /** @suppress{duplicate} */
   var require = createRequire(import.meta.url);
-  // These modules will usually be used on Node.js. Load them eagerly to avoid
-  // the complexity of lazy-loading.
   var fs = require('fs');
   var nodePath = require('path');
 
   if (ENVIRONMENT_IS_WORKER) {
     scriptDirectory = nodePath.dirname(scriptDirectory) + '/';
   } else {
-    // EXPORT_ES6 + ENVIRONMENT_IS_NODE always requires use of import.meta.url,
-    // since there's no way getting the current absolute path of the module when
-    // support for that is not available.
     scriptDirectory = require('url').fileURLToPath(new URL('./', import.meta.url)); // includes trailing slash
   }
 
-// include: node_shell_read.js
 read_ = (filename, binary) => {
-  // We need to re-wrap `file://` strings to URLs. Normalizing isn't
-  // necessary in that case, the path should already be absolute.
   filename = isFileURI(filename) ? new URL(filename) : nodePath.normalize(filename);
   return fs.readFileSync(filename, binary ? undefined : 'utf8');
 };
@@ -132,21 +91,18 @@ readBinary = (filename) => {
 };
 
 readAsync = (filename, onload, onerror, binary = true) => {
-  // See the comment in the `read_` function.
   filename = isFileURI(filename) ? new URL(filename) : nodePath.normalize(filename);
   fs.readFile(filename, binary ? undefined : 'utf8', (err, data) => {
     if (err) onerror(err);
     else onload(binary ? data.buffer : data);
   });
 };
-// end include: node_shell_read.js
   if (!Module['thisProgram'] && process.argv.length > 1) {
     thisProgram = process.argv[1].replace(/\\/g, '/');
   }
 
   arguments_ = process.argv.slice(2);
 
-  // MODULARIZE will export the module in the proper place outside, we don't need to export here
 
   quit_ = (status, toThrow) => {
     process.exitCode = status;
@@ -182,7 +138,6 @@ if (ENVIRONMENT_IS_SHELL) {
   }
 
   if (typeof setTimeout == 'undefined') {
-    // spidermonkey lacks setTimeout but we use it above in readAsync.
     globalThis.setTimeout = (f) => (typeof f == 'function') ? f() : abort();
   }
 
@@ -194,15 +149,6 @@ if (ENVIRONMENT_IS_SHELL) {
 
   if (typeof quit == 'function') {
     quit_ = (status, toThrow) => {
-      // Unlike node which has process.exitCode, d8 has no such mechanism. So we
-      // have no way to set the exit code and then let the program exit with
-      // that code when it naturally stops running (say, when all setTimeouts
-      // have completed). For that reason, we must call `quit` - the only way to
-      // set the exit code - but quit also halts immediately.  To increase
-      // consistency with node (and the web) we schedule the actual quit call
-      // using a setTimeout to give the current stack and any exception handlers
-      // a chance to run.  This enables features such as addOnPostRun (which
-      // expected to be able to run code after main returns).
       setTimeout(() => {
         if (!(toThrow instanceof ExitStatus)) {
           let toLog = toThrow;
@@ -218,7 +164,6 @@ if (ENVIRONMENT_IS_SHELL) {
   }
 
   if (typeof print != 'undefined') {
-    // Prefer to use print/printErr where they exist, as they usually work better.
     if (typeof console == 'undefined') console = /** @type{!Console} */({});
     console.log = /** @type{!function(this:Console, ...*): undefined} */ (print);
     console.warn = console.error = /** @type{!function(this:Console, ...*): undefined} */ (typeof printErr != 'undefined' ? printErr : print);
@@ -226,26 +171,15 @@ if (ENVIRONMENT_IS_SHELL) {
 
 } else
 
-// Note that this includes Node.js workers when relevant (pthreads is enabled).
-// Node.js workers are detected as a combination of ENVIRONMENT_IS_WORKER and
-// ENVIRONMENT_IS_NODE.
 if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   if (ENVIRONMENT_IS_WORKER) { // Check worker, not web, since window could be polyfilled
     scriptDirectory = self.location.href;
   } else if (typeof document != 'undefined' && document.currentScript) { // web
     scriptDirectory = document.currentScript.src;
   }
-  // When MODULARIZE, this JS may be executed later, after document.currentScript
-  // is gone, so we saved it, and we use it here instead of any other info.
   if (_scriptDir) {
     scriptDirectory = _scriptDir;
   }
-  // blob urls look like blob:http://site.com/etc/etc and we cannot infer anything from them.
-  // otherwise, slice off the final part of the url to find the script directory.
-  // if scriptDirectory does not contain a slash, lastIndexOf will return -1,
-  // and scriptDirectory will correctly be replaced with an empty string.
-  // If scriptDirectory contains a query (starting with ?) or a fragment (starting with #),
-  // they are removed because they could contain a slash.
   if (scriptDirectory.indexOf('blob:') !== 0) {
     scriptDirectory = scriptDirectory.substr(0, scriptDirectory.replace(/[?#].*/, "").lastIndexOf('/')+1);
   } else {
@@ -254,10 +188,7 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
 
   if (!(typeof window == 'object' || typeof importScripts == 'function')) throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
 
-  // Differentiate the Web Worker from the Node Worker case, as reading must
-  // be done differently.
   {
-// include: web_or_worker_shell_read.js
 read_ = (url) => {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
@@ -290,7 +221,6 @@ read_ = (url) => {
     xhr.send(null);
   }
 
-// end include: web_or_worker_shell_read.js
   }
 } else
 {
@@ -300,17 +230,10 @@ read_ = (url) => {
 var out = Module['print'] || console.log.bind(console);
 var err = Module['printErr'] || console.error.bind(console);
 
-// Merge back in the overrides
 Object.assign(Module, moduleOverrides);
-// Free the object hierarchy contained in the overrides, this lets the GC
-// reclaim data used e.g. in memoryInitializerRequest, which is a large typed array.
 moduleOverrides = null;
 checkIncomingModuleAPI();
 
-// Emit code to handle expected values on the Module object. This applies Module.x
-// to the proper local x. This has two benefits: first, we only emit it if it is
-// expected to arrive, and second, by using a local everywhere else that can be
-// minified.
 
 if (Module['arguments']) arguments_ = Module['arguments'];legacyModuleProp('arguments', 'arguments_');
 
@@ -318,8 +241,6 @@ if (Module['thisProgram']) thisProgram = Module['thisProgram'];legacyModuleProp(
 
 if (Module['quit']) quit_ = Module['quit'];legacyModuleProp('quit', 'quit_');
 
-// perform assertions in shell.js after we set up out() and err(), as otherwise if an assertion fails it cannot print the message
-// Assertions on removed incoming Module JS APIs.
 assert(typeof Module['memoryInitializerPrefixURL'] == 'undefined', 'Module.memoryInitializerPrefixURL option was removed, use Module.locateFile instead');
 assert(typeof Module['pthreadMainPrefixURL'] == 'undefined', 'Module.pthreadMainPrefixURL option was removed, use Module.locateFile instead');
 assert(typeof Module['cdInitializerPrefixURL'] == 'undefined', 'Module.cdInitializerPrefixURL option was removed, use Module.locateFile instead');
@@ -347,17 +268,7 @@ var NODEFS = 'NODEFS is no longer included by default; build with -lnodefs.js';
 assert(!ENVIRONMENT_IS_SHELL, "shell environment detected but not enabled at build time.  Add 'shell' to `-sENVIRONMENT` to enable.");
 
 
-// end include: shell.js
-// include: preamble.js
-// === Preamble library stuff ===
 
-// Documentation for the public APIs defined in this file must be updated in:
-//    site/source/docs/api_reference/preamble.js.rst
-// A prebuilt local version of the documentation is available at:
-//    site/build/text/docs/api_reference/preamble.js.txt
-// You can also build docs locally as HTML or other formats in site/
-// An online HTML version (which may be of a different version of Emscripten)
-//    is up at http://kripken.github.io/emscripten-site/docs/api_reference/preamble.js.html
 
 var wasmBinary; 
 if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];legacyModuleProp('wasmBinary', 'wasmBinary');
@@ -366,27 +277,14 @@ if (typeof WebAssembly != 'object') {
   abort('no native wasm support detected');
 }
 
-// Wasm globals
 
 var wasmMemory;
 
-//========================================
-// Runtime essentials
-//========================================
 
-// whether we are quitting the application. no code should run after this.
-// set in exit() and abort()
 var ABORT = false;
 
-// set by exit() and abort().  Passed to 'onExit' handler.
-// NOTE: This is also used as the process return code code in shell environments
-// but only when noExitRuntime is false.
 var EXITSTATUS;
 
-// In STRICT mode, we only define assert() when ASSERTIONS is set.  i.e. we
-// don't define it at all in release modes.  This matches the behaviour of
-// MINIMAL_RUNTIME.
-// TODO(sbc): Make this the default even without STRICT enabled.
 /** @type {function(*, string=)} */
 function assert(condition, text) {
   if (!condition) {
@@ -394,14 +292,10 @@ function assert(condition, text) {
   }
 }
 
-// We used to include malloc/free by default in the past. Show a helpful error in
-// builds with assertions.
 function _free() {
-  // Show a helpful error since we used to include free by default in the past.
   abort("free() called but not included in the build - add '_free' to EXPORTED_FUNCTIONS");
 }
 
-// Memory management
 
 var HEAP,
 /** @type {!Int8Array} */
@@ -438,34 +332,23 @@ assert(!Module['STACK_SIZE'], 'STACK_SIZE can no longer be set at runtime.  Use 
 assert(typeof Int32Array != 'undefined' && typeof Float64Array !== 'undefined' && Int32Array.prototype.subarray != undefined && Int32Array.prototype.set != undefined,
        'JS engine does not provide full typed array support');
 
-// If memory is defined in wasm, the user can't provide it, or set INITIAL_MEMORY
 assert(!Module['wasmMemory'], 'Use of `wasmMemory` detected.  Use -sIMPORTED_MEMORY to define wasmMemory externally');
 assert(!Module['INITIAL_MEMORY'], 'Detected runtime INITIAL_MEMORY setting.  Use -sIMPORTED_MEMORY to define wasmMemory dynamically');
 
-// include: runtime_stack_check.js
-// Initializes the stack cookie. Called at the startup of main and at the startup of each thread in pthreads mode.
 function writeStackCookie() {
   var max = _emscripten_stack_get_end();
   assert((max & 3) == 0);
-  // If the stack ends at address zero we write our cookies 4 bytes into the
-  // stack.  This prevents interference with SAFE_HEAP and ASAN which also
-  // monitor writes to address zero.
   if (max == 0) {
     max += 4;
   }
-  // The stack grow downwards towards _emscripten_stack_get_end.
-  // We write cookies to the final two words in the stack and detect if they are
-  // ever overwritten.
   HEAPU32[((max)>>2)] = 0x02135467;
   HEAPU32[(((max)+(4))>>2)] = 0x89BACDFE;
-  // Also test the global address 0 for integrity.
   HEAPU32[((0)>>2)] = 1668509029;
 }
 
 function checkStackCookie() {
   if (ABORT) return;
   var max = _emscripten_stack_get_end();
-  // See writeStackCookie().
   if (max == 0) {
     max += 4;
   }
@@ -474,14 +357,10 @@ function checkStackCookie() {
   if (cookie1 != 0x02135467 || cookie2 != 0x89BACDFE) {
     abort(`Stack overflow! Stack cookie has been overwritten at ${ptrToString(max)}, expected hex dwords 0x89BACDFE and 0x2135467, but received ${ptrToString(cookie2)} ${ptrToString(cookie1)}`);
   }
-  // Also test the global address 0 for integrity.
   if (HEAPU32[((0)>>2)] != 0x63736d65 /* 'emsc' */) {
     abort('Runtime error: The application has corrupted its heap memory area (address zero)!');
   }
 }
-// end include: runtime_stack_check.js
-// include: runtime_assertions.js
-// Endianness check
 (function() {
   var h16 = new Int16Array(1);
   var h8 = new Int8Array(h16.buffer);
@@ -489,7 +368,6 @@ function checkStackCookie() {
   if (h8[0] !== 0x73 || h8[1] !== 0x63) throw 'Runtime error: expected the system to be little-endian! (Run with -sSUPPORT_BIG_ENDIAN to bypass)';
 })();
 
-// end include: runtime_assertions.js
 var __ATPRERUN__  = []; // functions called before the runtime is initialized
 var __ATINIT__    = []; // functions called during startup
 var __ATEXIT__    = []; // functions called during shutdown
@@ -545,27 +423,14 @@ function addOnPostRun(cb) {
   __ATPOSTRUN__.unshift(cb);
 }
 
-// include: runtime_math.js
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/imul
 
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/fround
 
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/clz32
 
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/trunc
 
 assert(Math.imul, 'This browser does not support Math.imul(), build with LEGACY_VM_SUPPORT or POLYFILL_OLD_MATH_FUNCTIONS to add in a polyfill');
 assert(Math.fround, 'This browser does not support Math.fround(), build with LEGACY_VM_SUPPORT or POLYFILL_OLD_MATH_FUNCTIONS to add in a polyfill');
 assert(Math.clz32, 'This browser does not support Math.clz32(), build with LEGACY_VM_SUPPORT or POLYFILL_OLD_MATH_FUNCTIONS to add in a polyfill');
 assert(Math.trunc, 'This browser does not support Math.trunc(), build with LEGACY_VM_SUPPORT or POLYFILL_OLD_MATH_FUNCTIONS to add in a polyfill');
-// end include: runtime_math.js
-// A counter of dependencies for calling run(). If we need to
-// do asynchronous work before running, increment this and
-// decrement it. Incrementing must happen in a place like
-// Module.preRun (used by emcc to add file preloading).
-// Note that you can add dependencies in preRun, even though
-// it happens right before run - run will be postponed until
-// the dependencies are met.
 var runDependencies = 0;
 var runDependencyWatcher = null;
 var dependenciesFulfilled = null; // overridden to take different actions when all run dependencies are fulfilled
@@ -588,7 +453,6 @@ function addRunDependency(id) {
     assert(!runDependencyTracking[id]);
     runDependencyTracking[id] = 1;
     if (runDependencyWatcher === null && typeof setInterval != 'undefined') {
-      // Check for missing dependencies every few seconds
       runDependencyWatcher = setInterval(() => {
         if (ABORT) {
           clearInterval(runDependencyWatcher);
@@ -642,39 +506,19 @@ function abort(what) {
   Module['onAbort']?.(what);
 
   what = 'Aborted(' + what + ')';
-  // TODO(sbc): Should we remove printing and leave it up to whoever
-  // catches the exception?
   err(what);
 
   ABORT = true;
   EXITSTATUS = 1;
 
-  // Use a wasm runtime error, because a JS error might be seen as a foreign
-  // exception, which means we'd run destructors on it. We need the error to
-  // simply make the program stop.
-  // FIXME This approach does not work in Wasm EH because it currently does not assume
-  // all RuntimeErrors are from traps; it decides whether a RuntimeError is from
-  // a trap or not based on a hidden field within the object. So at the moment
-  // we don't have a way of throwing a wasm trap from JS. TODO Make a JS API that
-  // allows this in the wasm spec.
 
-  // Suppress closure compiler warning here. Closure compiler's builtin extern
-  // defintion for WebAssembly.RuntimeError claims it takes no arguments even
-  // though it can.
-  // TODO(https://github.com/google/closure-compiler/pull/3913): Remove if/when upstream closure gets fixed.
   /** @suppress {checkTypes} */
   var e = new WebAssembly.RuntimeError(what);
 
   readyPromiseReject(e);
-  // Throw the error whether or not MODULARIZE is set because abort is used
-  // in code paths apart from instantiation where an exception is expected
-  // to be thrown when abort is called.
   throw e;
 }
 
-// include: memoryprofiler.js
-// end include: memoryprofiler.js
-// show errors on likely calls to FS when it was not included
 var FS = {
   error() {
     abort('Filesystem support (FS) was not included. The problem is that you are using files from JS, but files were not used from C/C++, so filesystem support was not auto-included. You can force-include filesystem support with -sFORCE_FILESYSTEM');
@@ -693,8 +537,6 @@ var FS = {
 Module['FS_createDataFile'] = FS.createDataFile;
 Module['FS_createPreloadedFile'] = FS.createPreloadedFile;
 
-// include: URIUtils.js
-// Prefix of data URIs emitted by SINGLE_FILE and related options.
 var dataURIPrefix = 'data:application/octet-stream;base64,';
 
 /**
@@ -708,7 +550,6 @@ var isDataURI = (filename) => filename.startsWith(dataURIPrefix);
  * @noinline
  */
 var isFileURI = (filename) => filename.startsWith('file://');
-// end include: URIUtils.js
 function createExportWrapper(name) {
   return function() {
     assert(runtimeInitialized, `native function \`${name}\` called before runtime initialization`);
@@ -718,8 +559,6 @@ function createExportWrapper(name) {
   };
 }
 
-// include: runtime_exceptions.js
-// end include: runtime_exceptions.js
 var wasmBinaryFile;
 if (Module['locateFile']) {
   wasmBinaryFile = 'physx-js-webidl.wasm';
@@ -727,7 +566,6 @@ if (Module['locateFile']) {
     wasmBinaryFile = locateFile(wasmBinaryFile);
   }
 } else {
-  // Use bundler-friendly `new URL(..., import.meta.url)` pattern; works in browsers too.
   wasmBinaryFile = new URL('physx-js-webidl.wasm', import.meta.url).href;
 }
 
@@ -742,11 +580,6 @@ function getBinarySync(file) {
 }
 
 function getBinaryPromise(binaryFile) {
-  // If we don't have the binary yet, try to load it asynchronously.
-  // Fetch has some additional restrictions over XHR, like it can't be used on a file:// url.
-  // See https://github.com/github/fetch/pull/92#issuecomment-140665932
-  // Cordova or Electron apps are typically loaded from a file:// url.
-  // So use fetch if it is available and the url is not a file, otherwise fall back to XHR.
   if (!wasmBinary
       && (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER)) {
     if (typeof fetch == 'function'
@@ -760,7 +593,6 @@ function getBinaryPromise(binaryFile) {
     }
   }
 
-  // Otherwise, getBinarySync should be able to get it synchronously
   return Promise.resolve().then(() => getBinarySync(binaryFile));
 }
 
@@ -772,7 +604,6 @@ function instantiateArrayBuffer(binaryFile, imports, receiver) {
   }).then(receiver, (reason) => {
     err(`failed to asynchronously prepare wasm: ${reason}`);
 
-    // Warn on some common problems.
     if (isFileURI(wasmBinaryFile)) {
       err(`warning: Loading from a file URI (${wasmBinaryFile}) is not supported in most browsers. See https://emscripten.org/docs/getting_started/FAQ.html#how-do-i-run-a-local-webserver-for-testing-why-does-my-program-stall-in-downloading-or-preparing`);
     }
@@ -784,27 +615,15 @@ function instantiateAsync(binary, binaryFile, imports, callback) {
   if (!binary &&
       typeof WebAssembly.instantiateStreaming == 'function' &&
       !isDataURI(binaryFile) &&
-      // Avoid instantiateStreaming() on Node.js environment for now, as while
-      // Node.js v18.1.0 implements it, it does not have a full fetch()
-      // implementation yet.
-      //
-      // Reference:
-      //   https://github.com/emscripten-core/emscripten/pull/16917
       !ENVIRONMENT_IS_NODE &&
       typeof fetch == 'function') {
     return fetch(binaryFile, { credentials: 'same-origin' }).then((response) => {
-      // Suppress closure warning here since the upstream definition for
-      // instantiateStreaming only allows Promise<Repsponse> rather than
-      // an actual Response.
-      // TODO(https://github.com/google/closure-compiler/pull/3913): Remove if/when upstream closure is fixed.
       /** @suppress {checkTypes} */
       var result = WebAssembly.instantiateStreaming(response, imports);
 
       return result.then(
         callback,
         function(reason) {
-          // We expect the most common failure cause to be a bad MIME type for the binary,
-          // in which case falling back to ArrayBuffer instantiation should work.
           err(`wasm streaming compile failed: ${reason}`);
           err('falling back to ArrayBuffer instantiation');
           return instantiateArrayBuffer(binaryFile, imports, callback);
@@ -814,17 +633,11 @@ function instantiateAsync(binary, binaryFile, imports, callback) {
   return instantiateArrayBuffer(binaryFile, imports, callback);
 }
 
-// Create the wasm instance.
-// Receives the wasm imports, returns the exports.
 function createWasm() {
-  // prepare imports
   var info = {
     'env': wasmImports,
     'wasi_snapshot_preview1': wasmImports,
   };
-  // Load the wasm module and create an instance of using native support in the JS engine.
-  // handle a generated wasm instance, receiving its exports and
-  // performing other necessary setup
   /** @param {WebAssembly.Module=} module*/
   function receiveInstance(instance, module) {
     wasmExports = instance.exports;
@@ -834,10 +647,6 @@ function createWasm() {
     wasmMemory = wasmExports['memory'];
     Module['wasmMemory'] = wasmMemory;
     assert(wasmMemory, "memory not found in wasm exports");
-    // This assertion doesn't hold when emscripten is run in --post-link
-    // mode.
-    // TODO(sbc): Read INITIAL_MEMORY out of the wasm file in post-link mode.
-    //assert(wasmMemory.buffer.byteLength === 16777216);
     updateMemoryViews();
 
     addOnInit(wasmExports['__wasm_call_ctors']);
@@ -845,51 +654,32 @@ function createWasm() {
     removeRunDependency('wasm-instantiate');
     return wasmExports;
   }
-  // wait for the pthread pool (if any)
   addRunDependency('wasm-instantiate');
 
-  // Prefer streaming instantiation if available.
-  // Async compilation can be confusing when an error on the page overwrites Module
-  // (for example, if the order of elements is wrong, and the one defining Module is
-  // later), so we save Module and check it later.
   var trueModule = Module;
   function receiveInstantiationResult(result) {
-    // 'result' is a ResultObject object which has both the module and instance.
-    // receiveInstance() will swap in the exports (to Module.asm) so they can be called
     assert(Module === trueModule, 'the Module object should not be replaced during async compilation - perhaps the order of HTML elements is wrong?');
     trueModule = null;
-    // TODO: Due to Closure regression https://github.com/google/closure-compiler/issues/3193, the above line no longer optimizes out down to the following line.
-    // When the regression is fixed, can restore the above PTHREADS-enabled path.
     receiveInstance(result['instance']);
   }
 
-  // User shell pages can write their own Module.instantiateWasm = function(imports, successCallback) callback
-  // to manually instantiate the Wasm module themselves. This allows pages to
-  // run the instantiation parallel to any other async startup actions they are
-  // performing.
-  // Also pthreads and wasm workers initialize the wasm instance through this
-  // path.
   if (Module['instantiateWasm']) {
 
     try {
       return Module['instantiateWasm'](info, receiveInstance);
     } catch(e) {
       err(`Module.instantiateWasm callback failed with error: ${e}`);
-        // If instantiation fails, reject the module ready promise.
         readyPromiseReject(e);
     }
   }
 
-  // If instantiation fails, reject the module ready promise.
   instantiateAsync(wasmBinary, wasmBinaryFile, info, receiveInstantiationResult).catch(readyPromiseReject);
   return {}; // no exports yet; we'll fill them in later
 }
 
-// Globals used by JS i64 conversions (see makeSetValue)
 var tempDouble;
 var tempI64;
 
-// include: runtime_debug.js
 function legacyModuleProp(prop, newName, incomming=true) {
   if (!Object.getOwnPropertyDescriptor(Module, prop)) {
     Object.defineProperty(Module, prop, {
@@ -909,14 +699,12 @@ function ignoredModuleProp(prop) {
   }
 }
 
-// forcing the filesystem exports a few things by default
 function isExportedByForceFilesystem(name) {
   return name === 'FS_createPath' ||
          name === 'FS_createDataFile' ||
          name === 'FS_createPreloadedFile' ||
          name === 'FS_unlink' ||
          name === 'addRunDependency' ||
-         // The old FS has some functionality that WasmFS lacks.
          name === 'FS_createLazyFile' ||
          name === 'FS_createDevice' ||
          name === 'removeRunDependency';
@@ -942,12 +730,7 @@ function missingLibrarySymbol(sym) {
     Object.defineProperty(globalThis, sym, {
       configurable: true,
       get() {
-        // Can't `abort()` here because it would break code that does runtime
-        // checks.  e.g. `if (typeof SDL === 'undefined')`.
         var msg = `\`${sym}\` is a library symbol and not included by default; add it to your library.js __deps or to DEFAULT_LIBRARY_FUNCS_TO_INCLUDE on the command line`;
-        // DEFAULT_LIBRARY_FUNCS_TO_INCLUDE requires the name as it appears in
-        // library.js, which means $name for a JS name with no prefix, or name
-        // for a JS name like _name.
         var librarySymbol = sym;
         if (!librarySymbol.startsWith('_')) {
           librarySymbol = '$' + sym;
@@ -961,8 +744,6 @@ function missingLibrarySymbol(sym) {
       }
     });
   }
-  // Any symbol that is not included from the JS libary is also (by definition)
-  // not exported on the Module object.
   unexportedRuntimeSymbol(sym);
 }
 
@@ -981,14 +762,9 @@ function unexportedRuntimeSymbol(sym) {
   }
 }
 
-// Used by XXXXX_DEBUG settings to output debug messages.
 function dbg(text) {
-  // TODO(sbc): Make this configurable somehow.  Its not always convenient for
-  // logging to show up as warnings.
   console.warn.apply(console, arguments);
 }
-// end include: runtime_debug.js
-// === Body ===
 
 var ASM_CONSTS = {
   269854: ($0) => { var self = Module['getCache'](Module['CustomSupportImpl'])[$0]; if (!self.hasOwnProperty('getCustomMargin')) throw 'a JSImplementation must implement all functions, you forgot CustomSupportImpl::getCustomMargin.'; return self['getCustomMargin'](); },  
@@ -1017,7 +793,6 @@ var ASM_CONSTS = {
 };
 
 
-// end include: preamble.js
 
   /** @constructor */
   function ExitStatus(status) {
@@ -1028,7 +803,6 @@ var ASM_CONSTS = {
 
   var callRuntimeCallbacks = (callbacks) => {
       while (callbacks.length > 0) {
-        // Pass the module as the first argument.
         callbacks.shift()(Module);
       }
     };
@@ -1057,7 +831,6 @@ var ASM_CONSTS = {
 
   var ptrToString = (ptr) => {
       assert(typeof ptr === 'number');
-      // With CAN_ADDRESS_2GB or MEMORY64, pointers are already unsigned.
       ptr >>>= 0;
       return '0x' + ptr.toString(16).padStart(8, '0');
     };
@@ -1101,25 +874,18 @@ var ASM_CONSTS = {
 
   var readEmAsmArgsArray = [];
   var readEmAsmArgs = (sigPtr, buf) => {
-      // Nobody should have mutated _readEmAsmArgsArray underneath us to be something else than an array.
       assert(Array.isArray(readEmAsmArgsArray));
-      // The input buffer is allocated on the stack, so it must be stack-aligned.
       assert(buf % 16 == 0);
       readEmAsmArgsArray.length = 0;
       var ch;
-      // Most arguments are i32s, so shift the buffer pointer so it is a plain
-      // index into HEAP32.
       while (ch = HEAPU8[sigPtr++]) {
         var chr = String.fromCharCode(ch);
         var validChars = ['d', 'f', 'i', 'p'];
         assert(validChars.includes(chr), `Invalid character ${ch}("${chr}") in readEmAsmArgs! Use only [${validChars}], and do not specify "v" for void return argument.`);
-        // Floats are always passed as doubles, so all types except for 'i'
-        // are 8 bytes and require alignment.
         var wide = (ch != 105);
         wide &= (ch != 112);
         buf += wide && (buf % 8) ? 4 : 0;
         readEmAsmArgsArray.push(
-          // Special case for pointers under wasm64 or CAN_ADDRESS_2GB mode.
           ch == 112 ? HEAPU32[((buf)>>2)] :
           ch == 105 ?
             HEAP32[((buf)>>2)] :
@@ -1145,62 +911,31 @@ var ASM_CONSTS = {
   var _emscripten_date_now = () => Date.now();
 
   var _emscripten_get_now;
-      // Modern environment where performance.now() is supported:
-      // N.B. a shorter form "_emscripten_get_now = performance.now;" is
-      // unfortunately not allowed even in current browsers (e.g. FF Nightly 75).
       _emscripten_get_now = () => performance.now();
   ;
 
   var _emscripten_memcpy_js = (dest, src, num) => HEAPU8.copyWithin(dest, src, src + num);
 
   var getHeapMax = () =>
-      // Stay one Wasm page short of 4GB: while e.g. Chrome is able to allocate
-      // full 4GB Wasm memories, the size will wrap back to 0 bytes in Wasm side
-      // for any code that deals with heap sizes, which would require special
-      // casing all heap size related code to treat 0 specially.
       2147483648;
   
   var growMemory = (size) => {
       var b = wasmMemory.buffer;
       var pages = (size - b.byteLength + 65535) / 65536;
       try {
-        // round size grow request up to wasm page size (fixed 64KB per spec)
         wasmMemory.grow(pages); // .grow() takes a delta compared to the previous size
         updateMemoryViews();
         return 1 /*success*/;
       } catch(e) {
         err(`growMemory: Attempted to grow heap from ${b.byteLength} bytes to ${size} bytes, but got error: ${e}`);
       }
-      // implicit 0 return to save code size (caller will cast "undefined" into 0
-      // anyhow)
     };
   var _emscripten_resize_heap = (requestedSize) => {
       var oldSize = HEAPU8.length;
-      // With CAN_ADDRESS_2GB or MEMORY64, pointers are already unsigned.
       requestedSize >>>= 0;
-      // With multithreaded builds, races can happen (another thread might increase the size
-      // in between), so return a failure, and let the caller retry.
       assert(requestedSize > oldSize);
   
-      // Memory resize rules:
-      // 1.  Always increase heap size to at least the requested size, rounded up
-      //     to next page multiple.
-      // 2a. If MEMORY_GROWTH_LINEAR_STEP == -1, excessively resize the heap
-      //     geometrically: increase the heap size according to
-      //     MEMORY_GROWTH_GEOMETRIC_STEP factor (default +20%), At most
-      //     overreserve by MEMORY_GROWTH_GEOMETRIC_CAP bytes (default 96MB).
-      // 2b. If MEMORY_GROWTH_LINEAR_STEP != -1, excessively resize the heap
-      //     linearly: increase the heap size by at least
-      //     MEMORY_GROWTH_LINEAR_STEP bytes.
-      // 3.  Max size for the heap is capped at 2048MB-WASM_PAGE_SIZE, or by
-      //     MAXIMUM_MEMORY, or by ASAN limit, depending on which is smallest
-      // 4.  If we were unable to allocate as much memory, it may be due to
-      //     over-eager decision to excessively reserve due to (3) above.
-      //     Hence if an allocation fails, cut down on the amount of excess
-      //     growth, in an attempt to succeed to perform a smaller allocation.
   
-      // A limit is set for how much we can grow. We should not exceed that
-      // (the wasm binary specifies it, so if we tried, we'd fail anyhow).
       var maxHeapSize = getHeapMax();
       if (requestedSize > maxHeapSize) {
         err(`Cannot enlarge memory, requested ${requestedSize} bytes, but the limit is ${maxHeapSize} bytes!`);
@@ -1209,12 +944,8 @@ var ASM_CONSTS = {
   
       var alignUp = (x, multiple) => x + (multiple - x % multiple) % multiple;
   
-      // Loop through potential heap size increases. If we attempt a too eager
-      // reservation that fails, cut down on the attempted size and reserve a
-      // smaller bump instead. (max 3 times, chosen somewhat arbitrarily)
       for (var cutDown = 1; cutDown <= 4; cutDown *= 2) {
         var overGrownHeapSize = oldSize * (1 + 0.2 / cutDown); // ensure geometric growth
-        // but limit overreserving (default to capping at +96MB overgrowth at most)
         overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296 );
   
         var newSize = Math.min(maxHeapSize, alignUp(Math.max(requestedSize, overGrownHeapSize), 65536));
@@ -1247,24 +978,13 @@ var ASM_CONSTS = {
   var UTF8ArrayToString = (heapOrArray, idx, maxBytesToRead) => {
       var endIdx = idx + maxBytesToRead;
       var endPtr = idx;
-      // TextDecoder needs to know the byte length in advance, it doesn't stop on
-      // null terminator by itself.  Also, use the length info to avoid running tiny
-      // strings through TextDecoder, since .subarray() allocates garbage.
-      // (As a tiny code save trick, compare endPtr against endIdx using a negation,
-      // so that undefined means Infinity)
       while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
   
       if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
         return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
       }
       var str = '';
-      // If building with TextDecoder, we have already computed the string length
-      // above, so test loop end condition against that
       while (idx < endPtr) {
-        // For UTF8 byte structure, see:
-        // http://en.wikipedia.org/wiki/UTF-8#Description
-        // https://www.ietf.org/rfc/rfc2279.txt
-        // https://tools.ietf.org/html/rfc3629
         var u0 = heapOrArray[idx++];
         if (!(u0 & 0x80)) { str += String.fromCharCode(u0); continue; }
         var u1 = heapOrArray[idx++] & 63;
@@ -1310,7 +1030,6 @@ var ASM_CONSTS = {
   varargs:undefined,
   get() {
         assert(SYSCALLS.varargs != undefined);
-        // the `+` prepended here is necessary to convince the JSCompiler that varargs is indeed a number.
         var ret = HEAP32[((+SYSCALLS.varargs)>>2)];
         SYSCALLS.varargs += 4;
         return ret;
@@ -1337,7 +1056,6 @@ var ASM_CONSTS = {
   
       checkUnflushedContent();
   
-      // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
       if (keepRuntimeAlive() && !implicit) {
         var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
         readyPromiseReject(msg);
@@ -1380,7 +1098,6 @@ var ASM_CONSTS = {
     };
   
   var flush_NO_FILESYSTEM = () => {
-      // flush anything remaining in the buffers during shutdown
       _fflush(0);
       if (printCharBuffers[1].length) printChar(1, 10);
       if (printCharBuffers[2].length) printChar(2, 10);
@@ -1388,7 +1105,6 @@ var ASM_CONSTS = {
   
   
   var _fd_write = (fd, iov, iovcnt, pnum) => {
-      // hack to support printf in SYSCALLS_REQUIRE_FILESYSTEM=0
       var num = 0;
       for (var i = 0; i < iovcnt; i++) {
         var ptr = HEAPU32[((iov)>>2)];
@@ -1406,10 +1122,6 @@ var ASM_CONSTS = {
   var lengthBytesUTF8 = (str) => {
       var len = 0;
       for (var i = 0; i < str.length; ++i) {
-        // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code
-        // unit, not a Unicode code point of the character! So decode
-        // UTF16->UTF32->UTF8.
-        // See http://unicode.org/faq/utf_bom.html#utf16-3
         var c = str.charCodeAt(i); // possibly a lead surrogate
         if (c <= 0x7F) {
           len++;
@@ -1426,21 +1138,12 @@ var ASM_CONSTS = {
   
   var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
       assert(typeof str === 'string', `stringToUTF8Array expects a string (got ${typeof str})`);
-      // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
-      // undefined and false each don't write out any bytes.
       if (!(maxBytesToWrite > 0))
         return 0;
   
       var startIdx = outIdx;
       var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
       for (var i = 0; i < str.length; ++i) {
-        // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code
-        // unit, not a Unicode code point of the character! So decode
-        // UTF16->UTF32->UTF8.
-        // See http://unicode.org/faq/utf_bom.html#utf16-3
-        // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description
-        // and https://www.ietf.org/rfc/rfc2279.txt
-        // and https://tools.ietf.org/html/rfc3629
         var u = str.charCodeAt(i); // possibly a lead surrogate
         if (u >= 0xD800 && u <= 0xDFFF) {
           var u1 = str.charCodeAt(++i);
@@ -1467,7 +1170,6 @@ var ASM_CONSTS = {
           heap[outIdx++] = 0x80 | (u & 63);
         }
       }
-      // Null-terminate the pointer to the buffer.
       heap[outIdx] = 0;
       return outIdx - startIdx;
     };
@@ -5273,8 +4975,6 @@ var dynCall_viiiij = Module['dynCall_viiiij'] = createExportWrapper('dynCall_vii
 var dynCall_jiji = Module['dynCall_jiji'] = createExportWrapper('dynCall_jiji');
 
 
-// include: postamble.js
-// === Auto-generated postamble setup entry stuff ===
 
 Module['wasmMemory'] = wasmMemory;
 var missingLibrarySymbols = [
@@ -5556,17 +5256,12 @@ unexportedSymbols.forEach(unexportedRuntimeSymbol);
 var calledRun;
 
 dependenciesFulfilled = function runCaller() {
-  // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
   if (!calledRun) run();
   if (!calledRun) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
 };
 
 function stackCheckInit() {
-  // This is normally called automatically during __wasm_call_ctors but need to
-  // get these values before even running any of the ctors so we call it redundantly
-  // here.
   _emscripten_stack_init();
-  // TODO(sbc): Move writeStackCookie to native to to avoid this.
   writeStackCookie();
 }
 
@@ -5580,14 +5275,11 @@ function run() {
 
   preRun();
 
-  // a preRun added a dependency, run will be called later
   if (runDependencies > 0) {
     return;
   }
 
   function doRun() {
-    // run may have just been called through dependencies being fulfilled just in this very frame,
-    // or while the async setStatus time below was happening
     if (calledRun) return;
     calledRun = true;
     Module['calledRun'] = true;
@@ -5620,17 +5312,6 @@ function run() {
 }
 
 function checkUnflushedContent() {
-  // Compiler settings do not allow exiting the runtime, so flushing
-  // the streams is not possible. but in ASSERTIONS mode we check
-  // if there was something to flush, and if so tell the user they
-  // should request that the runtime be exitable.
-  // Normally we would not even include flush() at all, but in ASSERTIONS
-  // builds we do so just for this check, and here we see if there is any
-  // content to flush, that is, we check if there would have been
-  // something a non-ASSERTIONS build would have not seen.
-  // How we flush the streams depends on whether we are in SYSCALLS_REQUIRE_FILESYSTEM=0
-  // mode (which has its own special function for this; otherwise, all
-  // the code is inside libc)
   var oldOut = out;
   var oldErr = err;
   var has = false;
@@ -5658,10 +5339,7 @@ if (Module['preInit']) {
 run();
 
 
-// end include: postamble.js
-// include: /src/PhysX/physx/compiler/emscripten-release/sdk_source_bin/glue.js
 
-// Bindings utilities
 
 /** @suppress {duplicate} (TODO: avoid emitting this multiple times, it is redundant) */
 function WrapperObject() {
@@ -5703,7 +5381,6 @@ Module['NULL'] = wrapPointer(0);
 function destroy(obj) {
   if (!obj['__destroy__']) throw 'Error: Cannot destroy object. (Did you create it yourself?)';
   obj['__destroy__']();
-  // Remove from cache, so the object can be GC'd and refs added onto it released
   delete getCache(obj.__class__)[obj.ptr];
 }
 Module['destroy'] = destroy;
@@ -5726,7 +5403,6 @@ function getClass(obj) {
 }
 Module['getClass'] = getClass;
 
-// Converts big (string or array) values into a C-style storage, in temporary space
 
 /** @suppress {duplicate} (TODO: avoid emitting this multiple times, it is redundant) */
 var ensureCache = {
@@ -5738,16 +5414,13 @@ var ensureCache = {
 
   prepare() {
     if (ensureCache.needed) {
-      // clear the temps
       for (var i = 0; i < ensureCache.temps.length; i++) {
         Module['_webidl_free'](ensureCache.temps[i]);
       }
       ensureCache.temps.length = 0;
-      // prepare to allocate a bigger buffer
       Module['_webidl_free'](ensureCache.buffer);
       ensureCache.buffer = 0;
       ensureCache.size += ensureCache.needed;
-      // clean up
       ensureCache.needed = 0;
     }
     if (!ensureCache.buffer) { // happens first time, or when we need to grow
@@ -5764,13 +5437,11 @@ var ensureCache = {
     len = (len + 7) & -8; // keep things aligned to 8 byte boundaries
     var ret;
     if (ensureCache.pos + len >= ensureCache.size) {
-      // we failed to allocate in the buffer, ensureCache time around :(
       assert(len > 0); // null terminator, at least
       ensureCache.needed += len;
       ret = Module['_webidl_malloc'](len);
       ensureCache.temps.push(ret);
     } else {
-      // we can allocate in the buffer
       ret = ensureCache.buffer + ensureCache.pos;
       ensureCache.pos += len;
     }
@@ -5847,7 +5518,6 @@ function ensureFloat64(value) {
 }
 
 
-// PxBase
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBase() { throw "cannot construct a PxBase, no constructor in IDL" }
 PxBase.prototype = Object.create(WrapperObject.prototype);
 PxBase.prototype.constructor = PxBase;
@@ -5893,7 +5563,6 @@ PxBase.prototype['isReleasable'] = PxBase.prototype.isReleasable = /** @suppress
   return !!(_emscripten_bind_PxBase_isReleasable_0(self));
 };;
 
-// PxActor
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxActor() { throw "cannot construct a PxActor, no constructor in IDL" }
 PxActor.prototype = Object.create(PxBase.prototype);
 PxActor.prototype.constructor = PxActor;
@@ -6020,7 +5689,6 @@ PxActor.prototype['isReleasable'] = PxActor.prototype.isReleasable = /** @suppre
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxActor.prototype, 'userData', { get: PxActor.prototype.get_userData, set: PxActor.prototype.set_userData });
-// PxQueryHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxQueryHit() { throw "cannot construct a PxQueryHit, no constructor in IDL" }
 PxQueryHit.prototype = Object.create(WrapperObject.prototype);
 PxQueryHit.prototype.constructor = PxQueryHit;
@@ -6043,7 +5711,6 @@ Module['PxQueryHit'] = PxQueryHit;
   var self = this.ptr;
   _emscripten_bind_PxQueryHit___destroy___0(self);
 };
-// PxControllerBehaviorCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerBehaviorCallback() { throw "cannot construct a PxControllerBehaviorCallback, no constructor in IDL" }
 PxControllerBehaviorCallback.prototype = Object.create(WrapperObject.prototype);
 PxControllerBehaviorCallback.prototype.constructor = PxControllerBehaviorCallback;
@@ -6051,7 +5718,6 @@ PxControllerBehaviorCallback.prototype.__class__ = PxControllerBehaviorCallback;
 PxControllerBehaviorCallback.__cache__ = {};
 Module['PxControllerBehaviorCallback'] = PxControllerBehaviorCallback;
 
-// PxLocationHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxLocationHit() { throw "cannot construct a PxLocationHit, no constructor in IDL" }
 PxLocationHit.prototype = Object.create(PxQueryHit.prototype);
 PxLocationHit.prototype.constructor = PxLocationHit;
@@ -6118,7 +5784,6 @@ Module['PxLocationHit'] = PxLocationHit;
   var self = this.ptr;
   _emscripten_bind_PxLocationHit___destroy___0(self);
 };
-// PxPvdTransport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPvdTransport() { throw "cannot construct a PxPvdTransport, no constructor in IDL" }
 PxPvdTransport.prototype = Object.create(WrapperObject.prototype);
 PxPvdTransport.prototype.constructor = PxPvdTransport;
@@ -6151,7 +5816,6 @@ PxPvdTransport.prototype['flush'] = PxPvdTransport.prototype.flush = /** @suppre
   _emscripten_bind_PxPvdTransport_flush_0(self);
 };;
 
-// PxQueryFilterCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxQueryFilterCallback() { throw "cannot construct a PxQueryFilterCallback, no constructor in IDL" }
 PxQueryFilterCallback.prototype = Object.create(WrapperObject.prototype);
 PxQueryFilterCallback.prototype.constructor = PxQueryFilterCallback;
@@ -6163,7 +5827,6 @@ Module['PxQueryFilterCallback'] = PxQueryFilterCallback;
   var self = this.ptr;
   _emscripten_bind_PxQueryFilterCallback___destroy___0(self);
 };
-// PxRefCounted
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRefCounted() { throw "cannot construct a PxRefCounted, no constructor in IDL" }
 PxRefCounted.prototype = Object.create(PxBase.prototype);
 PxRefCounted.prototype.constructor = PxRefCounted;
@@ -6219,7 +5882,6 @@ PxRefCounted.prototype['isReleasable'] = PxRefCounted.prototype.isReleasable = /
   return !!(_emscripten_bind_PxRefCounted_isReleasable_0(self));
 };;
 
-// PxRigidActor
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidActor() { throw "cannot construct a PxRigidActor, no constructor in IDL" }
 PxRigidActor.prototype = Object.create(PxActor.prototype);
 PxRigidActor.prototype.constructor = PxRigidActor;
@@ -6391,7 +6053,6 @@ PxRigidActor.prototype['isReleasable'] = PxRigidActor.prototype.isReleasable = /
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxRigidActor.prototype, 'userData', { get: PxRigidActor.prototype.get_userData, set: PxRigidActor.prototype.set_userData });
-// PxSceneQuerySystemBase
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSceneQuerySystemBase() { throw "cannot construct a PxSceneQuerySystemBase, no constructor in IDL" }
 PxSceneQuerySystemBase.prototype = Object.create(WrapperObject.prototype);
 PxSceneQuerySystemBase.prototype.constructor = PxSceneQuerySystemBase;
@@ -6474,7 +6135,6 @@ PxSceneQuerySystemBase.prototype['overlap'] = PxSceneQuerySystemBase.prototype.o
   return !!(_emscripten_bind_PxSceneQuerySystemBase_overlap_4(self, geometry, pose, hitCall, filterData));
 };;
 
-// PxSimulationEventCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSimulationEventCallback() { throw "cannot construct a PxSimulationEventCallback, no constructor in IDL" }
 PxSimulationEventCallback.prototype = Object.create(WrapperObject.prototype);
 PxSimulationEventCallback.prototype.constructor = PxSimulationEventCallback;
@@ -6486,7 +6146,6 @@ Module['PxSimulationEventCallback'] = PxSimulationEventCallback;
   var self = this.ptr;
   _emscripten_bind_PxSimulationEventCallback___destroy___0(self);
 };
-// PxSimulationFilterShader
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSimulationFilterShader() { throw "cannot construct a PxSimulationFilterShader, no constructor in IDL" }
 PxSimulationFilterShader.prototype = Object.create(WrapperObject.prototype);
 PxSimulationFilterShader.prototype.constructor = PxSimulationFilterShader;
@@ -6498,7 +6157,6 @@ Module['PxSimulationFilterShader'] = PxSimulationFilterShader;
   var self = this.ptr;
   _emscripten_bind_PxSimulationFilterShader___destroy___0(self);
 };
-// Support
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Support() { throw "cannot construct a Support, no constructor in IDL" }
 Support.prototype = Object.create(WrapperObject.prototype);
 Support.prototype.constructor = Support;
@@ -6521,7 +6179,6 @@ Support.prototype['supportLocal'] = Support.prototype.supportLocal = /** @suppre
   var self = this.ptr;
   _emscripten_bind_Support___destroy___0(self);
 };
-// CustomSupport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function CustomSupport() { throw "cannot construct a CustomSupport, no constructor in IDL" }
 CustomSupport.prototype = Object.create(Support.prototype);
 CustomSupport.prototype.constructor = CustomSupport;
@@ -6556,7 +6213,6 @@ CustomSupport.prototype['supportLocal'] = CustomSupport.prototype.supportLocal =
   var self = this.ptr;
   _emscripten_bind_CustomSupport___destroy___0(self);
 };
-// PassThroughFilterShader
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PassThroughFilterShader() { throw "cannot construct a PassThroughFilterShader, no constructor in IDL" }
 PassThroughFilterShader.prototype = Object.create(PxSimulationFilterShader.prototype);
 PassThroughFilterShader.prototype.constructor = PassThroughFilterShader;
@@ -6594,7 +6250,6 @@ PassThroughFilterShader.prototype['filterShader'] = PassThroughFilterShader.prot
   var self = this.ptr;
   _emscripten_bind_PassThroughFilterShader___destroy___0(self);
 };
-// PxArticulationTendon
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationTendon() { throw "cannot construct a PxArticulationTendon, no constructor in IDL" }
 PxArticulationTendon.prototype = Object.create(PxBase.prototype);
 PxArticulationTendon.prototype.constructor = PxArticulationTendon;
@@ -6695,7 +6350,6 @@ PxArticulationTendon.prototype['isReleasable'] = PxArticulationTendon.prototype.
   var self = this.ptr;
   _emscripten_bind_PxArticulationTendon___destroy___0(self);
 };
-// PxBaseMaterial
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBaseMaterial() { throw "cannot construct a PxBaseMaterial, no constructor in IDL" }
 PxBaseMaterial.prototype = Object.create(PxRefCounted.prototype);
 PxBaseMaterial.prototype.constructor = PxBaseMaterial;
@@ -6755,7 +6409,6 @@ PxBaseMaterial.prototype['acquireReference'] = PxBaseMaterial.prototype.acquireR
   var self = this.ptr;
   _emscripten_bind_PxBaseMaterial___destroy___0(self);
 };
-// PxController
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxController() { throw "cannot construct a PxController, no constructor in IDL" }
 PxController.prototype = Object.create(WrapperObject.prototype);
 PxController.prototype.constructor = PxController;
@@ -6905,7 +6558,6 @@ PxController.prototype['resize'] = PxController.prototype.resize = /** @suppress
   _emscripten_bind_PxController_resize_1(self, height);
 };;
 
-// PxControllerDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerDesc() { throw "cannot construct a PxControllerDesc, no constructor in IDL" }
 PxControllerDesc.prototype = Object.create(WrapperObject.prototype);
 PxControllerDesc.prototype.constructor = PxControllerDesc;
@@ -7099,7 +6751,6 @@ PxControllerDesc.prototype['getType'] = PxControllerDesc.prototype.getType = /**
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxControllerDesc.prototype, 'userData', { get: PxControllerDesc.prototype.get_userData, set: PxControllerDesc.prototype.set_userData });
-// PxControllerFilterCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerFilterCallback() { throw "cannot construct a PxControllerFilterCallback, no constructor in IDL" }
 PxControllerFilterCallback.prototype = Object.create(WrapperObject.prototype);
 PxControllerFilterCallback.prototype.constructor = PxControllerFilterCallback;
@@ -7118,7 +6769,6 @@ PxControllerFilterCallback.prototype['filter'] = PxControllerFilterCallback.prot
   var self = this.ptr;
   _emscripten_bind_PxControllerFilterCallback___destroy___0(self);
 };
-// PxControllerHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerHit() { throw "cannot construct a PxControllerHit, no constructor in IDL" }
 PxControllerHit.prototype = Object.create(WrapperObject.prototype);
 PxControllerHit.prototype.constructor = PxControllerHit;
@@ -7185,7 +6835,6 @@ Module['PxControllerHit'] = PxControllerHit;
   var self = this.ptr;
   _emscripten_bind_PxControllerHit___destroy___0(self);
 };
-// PxCpuDispatcher
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCpuDispatcher() { throw "cannot construct a PxCpuDispatcher, no constructor in IDL" }
 PxCpuDispatcher.prototype = Object.create(WrapperObject.prototype);
 PxCpuDispatcher.prototype.constructor = PxCpuDispatcher;
@@ -7197,7 +6846,6 @@ Module['PxCpuDispatcher'] = PxCpuDispatcher;
   var self = this.ptr;
   _emscripten_bind_PxCpuDispatcher___destroy___0(self);
 };
-// PxErrorCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxErrorCallback() { throw "cannot construct a PxErrorCallback, no constructor in IDL" }
 PxErrorCallback.prototype = Object.create(WrapperObject.prototype);
 PxErrorCallback.prototype.constructor = PxErrorCallback;
@@ -7221,7 +6869,6 @@ PxErrorCallback.prototype['reportError'] = PxErrorCallback.prototype.reportError
   var self = this.ptr;
   _emscripten_bind_PxErrorCallback___destroy___0(self);
 };
-// PxGeomRaycastHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGeomRaycastHit() { throw "cannot construct a PxGeomRaycastHit, no constructor in IDL" }
 PxGeomRaycastHit.prototype = Object.create(PxLocationHit.prototype);
 PxGeomRaycastHit.prototype.constructor = PxGeomRaycastHit;
@@ -7315,7 +6962,6 @@ PxGeomRaycastHit.prototype['hadInitialOverlap'] = PxGeomRaycastHit.prototype.had
   var self = this.ptr;
   _emscripten_bind_PxGeomRaycastHit___destroy___0(self);
 };
-// PxGeomSweepHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGeomSweepHit() { throw "cannot construct a PxGeomSweepHit, no constructor in IDL" }
 PxGeomSweepHit.prototype = Object.create(PxLocationHit.prototype);
 PxGeomSweepHit.prototype.constructor = PxGeomSweepHit;
@@ -7387,7 +7033,6 @@ PxGeomSweepHit.prototype['hadInitialOverlap'] = PxGeomSweepHit.prototype.hadInit
   var self = this.ptr;
   _emscripten_bind_PxGeomSweepHit___destroy___0(self);
 };
-// PxGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGeometry() { throw "cannot construct a PxGeometry, no constructor in IDL" }
 PxGeometry.prototype = Object.create(WrapperObject.prototype);
 PxGeometry.prototype.constructor = PxGeometry;
@@ -7404,7 +7049,6 @@ PxGeometry.prototype['getType'] = PxGeometry.prototype.getType = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxGeometry___destroy___0(self);
 };
-// PxI32ConstPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxI32ConstPtr() { throw "cannot construct a PxI32ConstPtr, no constructor in IDL" }
 PxI32ConstPtr.prototype = Object.create(WrapperObject.prototype);
 PxI32ConstPtr.prototype.constructor = PxI32ConstPtr;
@@ -7416,7 +7060,6 @@ Module['PxI32ConstPtr'] = PxI32ConstPtr;
   var self = this.ptr;
   _emscripten_bind_PxI32ConstPtr___destroy___0(self);
 };
-// PxInputData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxInputData() { throw "cannot construct a PxInputData, no constructor in IDL" }
 PxInputData.prototype = Object.create(WrapperObject.prototype);
 PxInputData.prototype.constructor = PxInputData;
@@ -7428,7 +7071,6 @@ Module['PxInputData'] = PxInputData;
   var self = this.ptr;
   _emscripten_bind_PxInputData___destroy___0(self);
 };
-// PxJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJoint() { throw "cannot construct a PxJoint, no constructor in IDL" }
 PxJoint.prototype = Object.create(PxBase.prototype);
 PxJoint.prototype.constructor = PxJoint;
@@ -7590,7 +7232,6 @@ PxJoint.prototype['isReleasable'] = PxJoint.prototype.isReleasable = /** @suppre
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxJoint.prototype, 'userData', { get: PxJoint.prototype.get_userData, set: PxJoint.prototype.set_userData });
-// PxJointLimitParameters
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJointLimitParameters() { throw "cannot construct a PxJointLimitParameters, no constructor in IDL" }
 PxJointLimitParameters.prototype = Object.create(WrapperObject.prototype);
 PxJointLimitParameters.prototype.constructor = PxJointLimitParameters;
@@ -7652,7 +7293,6 @@ PxJointLimitParameters.prototype['isSoft'] = PxJointLimitParameters.prototype.is
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxJointLimitParameters.prototype, 'damping', { get: PxJointLimitParameters.prototype.get_damping, set: PxJointLimitParameters.prototype.set_damping });
-// PxObstacle
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxObstacle() { throw "cannot construct a PxObstacle, no constructor in IDL" }
 PxObstacle.prototype = Object.create(WrapperObject.prototype);
 PxObstacle.prototype.constructor = PxObstacle;
@@ -7702,7 +7342,6 @@ PxObstacle.prototype['getType'] = PxObstacle.prototype.getType = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxObstacle___destroy___0(self);
 };
-// PxOutputStream
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxOutputStream() { throw "cannot construct a PxOutputStream, no constructor in IDL" }
 PxOutputStream.prototype = Object.create(WrapperObject.prototype);
 PxOutputStream.prototype.constructor = PxOutputStream;
@@ -7714,7 +7353,6 @@ Module['PxOutputStream'] = PxOutputStream;
   var self = this.ptr;
   _emscripten_bind_PxOutputStream___destroy___0(self);
 };
-// PxOverlapCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxOverlapCallback() { throw "cannot construct a PxOverlapCallback, no constructor in IDL" }
 PxOverlapCallback.prototype = Object.create(WrapperObject.prototype);
 PxOverlapCallback.prototype.constructor = PxOverlapCallback;
@@ -7731,7 +7369,6 @@ PxOverlapCallback.prototype['hasAnyHits'] = PxOverlapCallback.prototype.hasAnyHi
   var self = this.ptr;
   _emscripten_bind_PxOverlapCallback___destroy___0(self);
 };
-// PxRaycastCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRaycastCallback() { throw "cannot construct a PxRaycastCallback, no constructor in IDL" }
 PxRaycastCallback.prototype = Object.create(WrapperObject.prototype);
 PxRaycastCallback.prototype.constructor = PxRaycastCallback;
@@ -7748,7 +7385,6 @@ PxRaycastCallback.prototype['hasAnyHits'] = PxRaycastCallback.prototype.hasAnyHi
   var self = this.ptr;
   _emscripten_bind_PxRaycastCallback___destroy___0(self);
 };
-// PxRealConstPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRealConstPtr() { throw "cannot construct a PxRealConstPtr, no constructor in IDL" }
 PxRealConstPtr.prototype = Object.create(WrapperObject.prototype);
 PxRealConstPtr.prototype.constructor = PxRealConstPtr;
@@ -7760,7 +7396,6 @@ Module['PxRealConstPtr'] = PxRealConstPtr;
   var self = this.ptr;
   _emscripten_bind_PxRealConstPtr___destroy___0(self);
 };
-// PxRigidBody
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidBody() { throw "cannot construct a PxRigidBody, no constructor in IDL" }
 PxRigidBody.prototype = Object.create(PxRigidActor.prototype);
 PxRigidBody.prototype.constructor = PxRigidBody;
@@ -8132,7 +7767,6 @@ PxRigidBody.prototype['getNbConstraints'] = PxRigidBody.prototype.getNbConstrain
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxRigidBody.prototype, 'userData', { get: PxRigidBody.prototype.get_userData, set: PxRigidBody.prototype.set_userData });
-// PxSceneSQSystem
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSceneSQSystem() { throw "cannot construct a PxSceneSQSystem, no constructor in IDL" }
 PxSceneSQSystem.prototype = Object.create(PxSceneQuerySystemBase.prototype);
 PxSceneSQSystem.prototype.constructor = PxSceneSQSystem;
@@ -8276,7 +7910,6 @@ PxSceneSQSystem.prototype['overlap'] = PxSceneSQSystem.prototype.overlap = /** @
   return !!(_emscripten_bind_PxSceneSQSystem_overlap_4(self, geometry, pose, hitCall, filterData));
 };;
 
-// PxSimpleTriangleMesh
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSimpleTriangleMesh() {
   this.ptr = _emscripten_bind_PxSimpleTriangleMesh_PxSimpleTriangleMesh_0();
   getCache(PxSimpleTriangleMesh)[this.ptr] = this;
@@ -8334,7 +7967,6 @@ PxSimpleTriangleMesh.prototype['isValid'] = PxSimpleTriangleMesh.prototype.isVal
   var self = this.ptr;
   _emscripten_bind_PxSimpleTriangleMesh___destroy___0(self);
 };
-// PxSpring
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSpring(stiffness, damping) {
   if (stiffness && typeof stiffness === 'object') stiffness = stiffness.ptr;
   if (damping && typeof damping === 'object') damping = damping.ptr;
@@ -8373,7 +8005,6 @@ Module['PxSpring'] = PxSpring;
   var self = this.ptr;
   _emscripten_bind_PxSpring___destroy___0(self);
 };
-// PxStridedData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxStridedData() { throw "cannot construct a PxStridedData, no constructor in IDL" }
 PxStridedData.prototype = Object.create(WrapperObject.prototype);
 PxStridedData.prototype.constructor = PxStridedData;
@@ -8407,7 +8038,6 @@ Module['PxStridedData'] = PxStridedData;
   var self = this.ptr;
   _emscripten_bind_PxStridedData___destroy___0(self);
 };
-// PxSweepCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSweepCallback() { throw "cannot construct a PxSweepCallback, no constructor in IDL" }
 PxSweepCallback.prototype = Object.create(WrapperObject.prototype);
 PxSweepCallback.prototype.constructor = PxSweepCallback;
@@ -8424,7 +8054,6 @@ PxSweepCallback.prototype['hasAnyHits'] = PxSweepCallback.prototype.hasAnyHits =
   var self = this.ptr;
   _emscripten_bind_PxSweepCallback___destroy___0(self);
 };
-// PxU16ConstPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU16ConstPtr() { throw "cannot construct a PxU16ConstPtr, no constructor in IDL" }
 PxU16ConstPtr.prototype = Object.create(WrapperObject.prototype);
 PxU16ConstPtr.prototype.constructor = PxU16ConstPtr;
@@ -8436,7 +8065,6 @@ Module['PxU16ConstPtr'] = PxU16ConstPtr;
   var self = this.ptr;
   _emscripten_bind_PxU16ConstPtr___destroy___0(self);
 };
-// PxU32ConstPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU32ConstPtr() { throw "cannot construct a PxU32ConstPtr, no constructor in IDL" }
 PxU32ConstPtr.prototype = Object.create(WrapperObject.prototype);
 PxU32ConstPtr.prototype.constructor = PxU32ConstPtr;
@@ -8448,7 +8076,6 @@ Module['PxU32ConstPtr'] = PxU32ConstPtr;
   var self = this.ptr;
   _emscripten_bind_PxU32ConstPtr___destroy___0(self);
 };
-// PxU8ConstPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU8ConstPtr() { throw "cannot construct a PxU8ConstPtr, no constructor in IDL" }
 PxU8ConstPtr.prototype = Object.create(WrapperObject.prototype);
 PxU8ConstPtr.prototype.constructor = PxU8ConstPtr;
@@ -8460,7 +8087,6 @@ Module['PxU8ConstPtr'] = PxU8ConstPtr;
   var self = this.ptr;
   _emscripten_bind_PxU8ConstPtr___destroy___0(self);
 };
-// PxUserControllerHitReport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxUserControllerHitReport() { throw "cannot construct a PxUserControllerHitReport, no constructor in IDL" }
 PxUserControllerHitReport.prototype = Object.create(WrapperObject.prototype);
 PxUserControllerHitReport.prototype.constructor = PxUserControllerHitReport;
@@ -8486,7 +8112,6 @@ PxUserControllerHitReport.prototype['onObstacleHit'] = PxUserControllerHitReport
   _emscripten_bind_PxUserControllerHitReport_onObstacleHit_1(self, hit);
 };;
 
-// SimpleControllerBehaviorCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SimpleControllerBehaviorCallback() { throw "cannot construct a SimpleControllerBehaviorCallback, no constructor in IDL" }
 SimpleControllerBehaviorCallback.prototype = Object.create(PxControllerBehaviorCallback.prototype);
 SimpleControllerBehaviorCallback.prototype.constructor = SimpleControllerBehaviorCallback;
@@ -8517,7 +8142,6 @@ SimpleControllerBehaviorCallback.prototype['getObstacleBehaviorFlags'] = SimpleC
   var self = this.ptr;
   _emscripten_bind_SimpleControllerBehaviorCallback___destroy___0(self);
 };
-// SimplePvdTransport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SimplePvdTransport() { throw "cannot construct a SimplePvdTransport, no constructor in IDL" }
 SimplePvdTransport.prototype = Object.create(PxPvdTransport.prototype);
 SimplePvdTransport.prototype.constructor = SimplePvdTransport;
@@ -8561,7 +8185,6 @@ SimplePvdTransport.prototype['flush'] = SimplePvdTransport.prototype.flush = /**
   var self = this.ptr;
   _emscripten_bind_SimplePvdTransport___destroy___0(self);
 };
-// SimpleQueryFilterCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SimpleQueryFilterCallback() { throw "cannot construct a SimpleQueryFilterCallback, no constructor in IDL" }
 SimpleQueryFilterCallback.prototype = Object.create(PxQueryFilterCallback.prototype);
 SimpleQueryFilterCallback.prototype.constructor = SimpleQueryFilterCallback;
@@ -8591,7 +8214,6 @@ SimpleQueryFilterCallback.prototype['simplePostFilter'] = SimpleQueryFilterCallb
   var self = this.ptr;
   _emscripten_bind_SimpleQueryFilterCallback___destroy___0(self);
 };
-// SimpleSimulationEventCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SimpleSimulationEventCallback() { throw "cannot construct a SimpleSimulationEventCallback, no constructor in IDL" }
 SimpleSimulationEventCallback.prototype = Object.create(PxSimulationEventCallback.prototype);
 SimpleSimulationEventCallback.prototype.constructor = SimpleSimulationEventCallback;
@@ -8639,7 +8261,6 @@ SimpleSimulationEventCallback.prototype['onTrigger'] = SimpleSimulationEventCall
   var self = this.ptr;
   _emscripten_bind_SimpleSimulationEventCallback___destroy___0(self);
 };
-// VoidPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function VoidPtr() { throw "cannot construct a VoidPtr, no constructor in IDL" }
 VoidPtr.prototype = Object.create(WrapperObject.prototype);
 VoidPtr.prototype.constructor = VoidPtr;
@@ -8651,7 +8272,6 @@ Module['VoidPtr'] = VoidPtr;
   var self = this.ptr;
   _emscripten_bind_VoidPtr___destroy___0(self);
 };
-// BoxSupport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function BoxSupport(halfExtents, margin) {
   if (halfExtents && typeof halfExtents === 'object') halfExtents = halfExtents.ptr;
   if (margin && typeof margin === 'object') margin = margin.ptr;
@@ -8702,7 +8322,6 @@ BoxSupport.prototype['supportLocal'] = BoxSupport.prototype.supportLocal = /** @
   var self = this.ptr;
   _emscripten_bind_BoxSupport___destroy___0(self);
 };
-// CapsuleSupport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function CapsuleSupport(radius, halfHeight) {
   if (radius && typeof radius === 'object') radius = radius.ptr;
   if (halfHeight && typeof halfHeight === 'object') halfHeight = halfHeight.ptr;
@@ -8752,7 +8371,6 @@ CapsuleSupport.prototype['supportLocal'] = CapsuleSupport.prototype.supportLocal
   var self = this.ptr;
   _emscripten_bind_CapsuleSupport___destroy___0(self);
 };
-// ConvexGeomSupport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function ConvexGeomSupport(geom, margin) {
   if (geom && typeof geom === 'object') geom = geom.ptr;
   if (margin && typeof margin === 'object') margin = margin.ptr;
@@ -8782,7 +8400,6 @@ ConvexGeomSupport.prototype['supportLocal'] = ConvexGeomSupport.prototype.suppor
   var self = this.ptr;
   _emscripten_bind_ConvexGeomSupport___destroy___0(self);
 };
-// ConvexMeshSupport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function ConvexMeshSupport(convexMesh, scale, scaleRotation, margin) {
   if (convexMesh && typeof convexMesh === 'object') convexMesh = convexMesh.ptr;
   if (scale && typeof scale === 'object') scale = scale.ptr;
@@ -8848,7 +8465,6 @@ ConvexMeshSupport.prototype['supportLocal'] = ConvexMeshSupport.prototype.suppor
   var self = this.ptr;
   _emscripten_bind_ConvexMeshSupport___destroy___0(self);
 };
-// CustomSupportImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function CustomSupportImpl() {
   this.ptr = _emscripten_bind_CustomSupportImpl_CustomSupportImpl_0();
   getCache(CustomSupportImpl)[this.ptr] = this;
@@ -8875,7 +8491,6 @@ CustomSupportImpl.prototype['getCustomSupportLocal'] = CustomSupportImpl.prototy
   var self = this.ptr;
   _emscripten_bind_CustomSupportImpl___destroy___0(self);
 };
-// NativeArrayHelpers
 /** @suppress {undefinedVars, duplicate} @this{Object} */function NativeArrayHelpers() { throw "cannot construct a NativeArrayHelpers, no constructor in IDL" }
 NativeArrayHelpers.prototype = Object.create(WrapperObject.prototype);
 NativeArrayHelpers.prototype.constructor = NativeArrayHelpers;
@@ -9082,7 +8697,6 @@ NativeArrayHelpers.prototype['getVec3At'] = NativeArrayHelpers.prototype.getVec3
   var self = this.ptr;
   _emscripten_bind_NativeArrayHelpers___destroy___0(self);
 };
-// PassThroughFilterShaderImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PassThroughFilterShaderImpl() {
   this.ptr = _emscripten_bind_PassThroughFilterShaderImpl_PassThroughFilterShaderImpl_0();
   getCache(PassThroughFilterShaderImpl)[this.ptr] = this;
@@ -9112,7 +8726,6 @@ PassThroughFilterShaderImpl.prototype['filterShader'] = PassThroughFilterShaderI
   var self = this.ptr;
   _emscripten_bind_PassThroughFilterShaderImpl___destroy___0(self);
 };
-// PxActorFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxActorFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxActorFlags_PxActorFlags_1(flags);
@@ -9146,7 +8759,6 @@ PxActorFlags.prototype['clear'] = PxActorFlags.prototype.clear = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxActorFlags___destroy___0(self);
 };
-// PxActorPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxActorPtr() { throw "cannot construct a PxActorPtr, no constructor in IDL" }
 PxActorPtr.prototype = Object.create(WrapperObject.prototype);
 PxActorPtr.prototype.constructor = PxActorPtr;
@@ -9158,7 +8770,6 @@ Module['PxActorPtr'] = PxActorPtr;
   var self = this.ptr;
   _emscripten_bind_PxActorPtr___destroy___0(self);
 };
-// PxActorTypeFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxActorTypeFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxActorTypeFlags_PxActorTypeFlags_1(flags);
@@ -9192,7 +8803,6 @@ PxActorTypeFlags.prototype['clear'] = PxActorTypeFlags.prototype.clear = /** @su
   var self = this.ptr;
   _emscripten_bind_PxActorTypeFlags___destroy___0(self);
 };
-// PxAggregate
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxAggregate() { throw "cannot construct a PxAggregate, no constructor in IDL" }
 PxAggregate.prototype = Object.create(PxBase.prototype);
 PxAggregate.prototype.constructor = PxAggregate;
@@ -9289,7 +8899,6 @@ PxAggregate.prototype['isReleasable'] = PxAggregate.prototype.isReleasable = /**
   return !!(_emscripten_bind_PxAggregate_isReleasable_0(self));
 };;
 
-// PxArray_PxActorPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxActorPtr(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxActorPtr_PxArray_PxActorPtr_0(); getCache(PxArray_PxActorPtr)[this.ptr] = this;return }
@@ -9340,7 +8949,6 @@ PxArray_PxActorPtr.prototype['clear'] = PxArray_PxActorPtr.prototype.clear = /**
   var self = this.ptr;
   _emscripten_bind_PxArray_PxActorPtr___destroy___0(self);
 };
-// PxArray_PxContactPairPoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxContactPairPoint(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxContactPairPoint_PxArray_PxContactPairPoint_0(); getCache(PxArray_PxContactPairPoint)[this.ptr] = this;return }
@@ -9391,7 +8999,6 @@ PxArray_PxContactPairPoint.prototype['clear'] = PxArray_PxContactPairPoint.proto
   var self = this.ptr;
   _emscripten_bind_PxArray_PxContactPairPoint___destroy___0(self);
 };
-// PxArray_PxHeightFieldSample
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxHeightFieldSample(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxHeightFieldSample_PxArray_PxHeightFieldSample_0(); getCache(PxArray_PxHeightFieldSample)[this.ptr] = this;return }
@@ -9442,7 +9049,6 @@ PxArray_PxHeightFieldSample.prototype['clear'] = PxArray_PxHeightFieldSample.pro
   var self = this.ptr;
   _emscripten_bind_PxArray_PxHeightFieldSample___destroy___0(self);
 };
-// PxArray_PxMaterialConst
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxMaterialConst(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxMaterialConst_PxArray_PxMaterialConst_0(); getCache(PxArray_PxMaterialConst)[this.ptr] = this;return }
@@ -9493,7 +9099,6 @@ PxArray_PxMaterialConst.prototype['clear'] = PxArray_PxMaterialConst.prototype.c
   var self = this.ptr;
   _emscripten_bind_PxArray_PxMaterialConst___destroy___0(self);
 };
-// PxArray_PxRaycastHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxRaycastHit(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxRaycastHit_PxArray_PxRaycastHit_0(); getCache(PxArray_PxRaycastHit)[this.ptr] = this;return }
@@ -9544,7 +9149,6 @@ PxArray_PxRaycastHit.prototype['clear'] = PxArray_PxRaycastHit.prototype.clear =
   var self = this.ptr;
   _emscripten_bind_PxArray_PxRaycastHit___destroy___0(self);
 };
-// PxArray_PxReal
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxReal(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxReal_PxArray_PxReal_0(); getCache(PxArray_PxReal)[this.ptr] = this;return }
@@ -9595,7 +9199,6 @@ PxArray_PxReal.prototype['clear'] = PxArray_PxReal.prototype.clear = /** @suppre
   var self = this.ptr;
   _emscripten_bind_PxArray_PxReal___destroy___0(self);
 };
-// PxArray_PxShapePtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxShapePtr(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxShapePtr_PxArray_PxShapePtr_0(); getCache(PxArray_PxShapePtr)[this.ptr] = this;return }
@@ -9646,7 +9249,6 @@ PxArray_PxShapePtr.prototype['clear'] = PxArray_PxShapePtr.prototype.clear = /**
   var self = this.ptr;
   _emscripten_bind_PxArray_PxShapePtr___destroy___0(self);
 };
-// PxArray_PxSweepHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxSweepHit(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxSweepHit_PxArray_PxSweepHit_0(); getCache(PxArray_PxSweepHit)[this.ptr] = this;return }
@@ -9697,7 +9299,6 @@ PxArray_PxSweepHit.prototype['clear'] = PxArray_PxSweepHit.prototype.clear = /**
   var self = this.ptr;
   _emscripten_bind_PxArray_PxSweepHit___destroy___0(self);
 };
-// PxArray_PxU16
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxU16(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxU16_PxArray_PxU16_0(); getCache(PxArray_PxU16)[this.ptr] = this;return }
@@ -9748,7 +9349,6 @@ PxArray_PxU16.prototype['clear'] = PxArray_PxU16.prototype.clear = /** @suppress
   var self = this.ptr;
   _emscripten_bind_PxArray_PxU16___destroy___0(self);
 };
-// PxArray_PxU32
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxU32(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxU32_PxArray_PxU32_0(); getCache(PxArray_PxU32)[this.ptr] = this;return }
@@ -9799,7 +9399,6 @@ PxArray_PxU32.prototype['clear'] = PxArray_PxU32.prototype.clear = /** @suppress
   var self = this.ptr;
   _emscripten_bind_PxArray_PxU32___destroy___0(self);
 };
-// PxArray_PxU8
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxU8(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxU8_PxArray_PxU8_0(); getCache(PxArray_PxU8)[this.ptr] = this;return }
@@ -9850,7 +9449,6 @@ PxArray_PxU8.prototype['clear'] = PxArray_PxU8.prototype.clear = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxArray_PxU8___destroy___0(self);
 };
-// PxArray_PxVec3
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxVec3(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxVec3_PxArray_PxVec3_0(); getCache(PxArray_PxVec3)[this.ptr] = this;return }
@@ -9901,7 +9499,6 @@ PxArray_PxVec3.prototype['clear'] = PxArray_PxVec3.prototype.clear = /** @suppre
   var self = this.ptr;
   _emscripten_bind_PxArray_PxVec3___destroy___0(self);
 };
-// PxArray_PxVec4
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArray_PxVec4(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_PxArray_PxVec4_PxArray_PxVec4_0(); getCache(PxArray_PxVec4)[this.ptr] = this;return }
@@ -9952,7 +9549,6 @@ PxArray_PxVec4.prototype['clear'] = PxArray_PxVec4.prototype.clear = /** @suppre
   var self = this.ptr;
   _emscripten_bind_PxArray_PxVec4___destroy___0(self);
 };
-// PxArticulationAttachment
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationAttachment() { throw "cannot construct a PxArticulationAttachment, no constructor in IDL" }
 PxArticulationAttachment.prototype = Object.create(WrapperObject.prototype);
 PxArticulationAttachment.prototype.constructor = PxArticulationAttachment;
@@ -10044,7 +9640,6 @@ PxArticulationAttachment.prototype['release'] = PxArticulationAttachment.prototy
   var self = this.ptr;
   _emscripten_bind_PxArticulationAttachment___destroy___0(self);
 };
-// PxArticulationCache
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationCache() { throw "cannot construct a PxArticulationCache, no constructor in IDL" }
 PxArticulationCache.prototype = Object.create(WrapperObject.prototype);
 PxArticulationCache.prototype.constructor = PxArticulationCache;
@@ -10237,7 +9832,6 @@ PxArticulationCache.prototype['release'] = PxArticulationCache.prototype.release
   var self = this.ptr;
   _emscripten_bind_PxArticulationCache___destroy___0(self);
 };
-// PxArticulationCacheFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationCacheFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxArticulationCacheFlags_PxArticulationCacheFlags_1(flags);
@@ -10271,7 +9865,6 @@ PxArticulationCacheFlags.prototype['clear'] = PxArticulationCacheFlags.prototype
   var self = this.ptr;
   _emscripten_bind_PxArticulationCacheFlags___destroy___0(self);
 };
-// PxArticulationDrive
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationDrive(stiffness, damping, maxForce, driveType) {
   if (stiffness && typeof stiffness === 'object') stiffness = stiffness.ptr;
   if (damping && typeof damping === 'object') damping = damping.ptr;
@@ -10338,7 +9931,6 @@ Module['PxArticulationDrive'] = PxArticulationDrive;
   var self = this.ptr;
   _emscripten_bind_PxArticulationDrive___destroy___0(self);
 };
-// PxArticulationFixedTendon
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationFixedTendon() { throw "cannot construct a PxArticulationFixedTendon, no constructor in IDL" }
 PxArticulationFixedTendon.prototype = Object.create(PxArticulationTendon.prototype);
 PxArticulationFixedTendon.prototype.constructor = PxArticulationFixedTendon;
@@ -10476,7 +10068,6 @@ PxArticulationFixedTendon.prototype['isReleasable'] = PxArticulationFixedTendon.
   var self = this.ptr;
   _emscripten_bind_PxArticulationFixedTendon___destroy___0(self);
 };
-// PxArticulationFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxArticulationFlags_PxArticulationFlags_1(flags);
@@ -10510,7 +10101,6 @@ PxArticulationFlags.prototype['clear'] = PxArticulationFlags.prototype.clear = /
   var self = this.ptr;
   _emscripten_bind_PxArticulationFlags___destroy___0(self);
 };
-// PxArticulationJointReducedCoordinate
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationJointReducedCoordinate() { throw "cannot construct a PxArticulationJointReducedCoordinate, no constructor in IDL" }
 PxArticulationJointReducedCoordinate.prototype = Object.create(PxBase.prototype);
 PxArticulationJointReducedCoordinate.prototype.constructor = PxArticulationJointReducedCoordinate;
@@ -10727,7 +10317,6 @@ PxArticulationJointReducedCoordinate.prototype['isReleasable'] = PxArticulationJ
   var self = this.ptr;
   _emscripten_bind_PxArticulationJointReducedCoordinate___destroy___0(self);
 };
-// PxArticulationKinematicFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationKinematicFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxArticulationKinematicFlags_PxArticulationKinematicFlags_1(flags);
@@ -10761,7 +10350,6 @@ PxArticulationKinematicFlags.prototype['clear'] = PxArticulationKinematicFlags.p
   var self = this.ptr;
   _emscripten_bind_PxArticulationKinematicFlags___destroy___0(self);
 };
-// PxArticulationLimit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationLimit(low, high) {
   if (low && typeof low === 'object') low = low.ptr;
   if (high && typeof high === 'object') high = high.ptr;
@@ -10802,7 +10390,6 @@ Module['PxArticulationLimit'] = PxArticulationLimit;
   var self = this.ptr;
   _emscripten_bind_PxArticulationLimit___destroy___0(self);
 };
-// PxArticulationLink
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationLink() { throw "cannot construct a PxArticulationLink, no constructor in IDL" }
 PxArticulationLink.prototype = Object.create(PxRigidBody.prototype);
 PxArticulationLink.prototype.constructor = PxArticulationLink;
@@ -11210,7 +10797,6 @@ PxArticulationLink.prototype['getContactSlopCoefficient'] = PxArticulationLink.p
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxArticulationLink.prototype, 'userData', { get: PxArticulationLink.prototype.get_userData, set: PxArticulationLink.prototype.set_userData });
-// PxArticulationReducedCoordinate
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationReducedCoordinate() { throw "cannot construct a PxArticulationReducedCoordinate, no constructor in IDL" }
 PxArticulationReducedCoordinate.prototype = Object.create(PxBase.prototype);
 PxArticulationReducedCoordinate.prototype.constructor = PxArticulationReducedCoordinate;
@@ -11585,7 +11171,6 @@ PxArticulationReducedCoordinate.prototype['isReleasable'] = PxArticulationReduce
   var self = this.ptr;
   _emscripten_bind_PxArticulationReducedCoordinate___destroy___0(self);
 };
-// PxArticulationRootLinkData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationRootLinkData() {
   this.ptr = _emscripten_bind_PxArticulationRootLinkData_PxArticulationRootLinkData_0();
   getCache(PxArticulationRootLinkData)[this.ptr] = this;
@@ -11655,7 +11240,6 @@ Module['PxArticulationRootLinkData'] = PxArticulationRootLinkData;
   var self = this.ptr;
   _emscripten_bind_PxArticulationRootLinkData___destroy___0(self);
 };
-// PxArticulationSpatialTendon
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationSpatialTendon() { throw "cannot construct a PxArticulationSpatialTendon, no constructor in IDL" }
 PxArticulationSpatialTendon.prototype = Object.create(PxArticulationTendon.prototype);
 PxArticulationSpatialTendon.prototype.constructor = PxArticulationSpatialTendon;
@@ -11770,7 +11354,6 @@ PxArticulationSpatialTendon.prototype['isReleasable'] = PxArticulationSpatialTen
   var self = this.ptr;
   _emscripten_bind_PxArticulationSpatialTendon___destroy___0(self);
 };
-// PxArticulationTendonJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationTendonJoint() { throw "cannot construct a PxArticulationTendonJoint, no constructor in IDL" }
 PxArticulationTendonJoint.prototype = Object.create(WrapperObject.prototype);
 PxArticulationTendonJoint.prototype.constructor = PxArticulationTendonJoint;
@@ -11821,7 +11404,6 @@ PxArticulationTendonJoint.prototype['release'] = PxArticulationTendonJoint.proto
   var self = this.ptr;
   _emscripten_bind_PxArticulationTendonJoint___destroy___0(self);
 };
-// PxArticulationTendonLimit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxArticulationTendonLimit() { throw "cannot construct a PxArticulationTendonLimit, no constructor in IDL" }
 PxArticulationTendonLimit.prototype = Object.create(WrapperObject.prototype);
 PxArticulationTendonLimit.prototype.constructor = PxArticulationTendonLimit;
@@ -11855,7 +11437,6 @@ Module['PxArticulationTendonLimit'] = PxArticulationTendonLimit;
   var self = this.ptr;
   _emscripten_bind_PxArticulationTendonLimit___destroy___0(self);
 };
-// PxBVH
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBVH() { throw "cannot construct a PxBVH, no constructor in IDL" }
 PxBVH.prototype = Object.create(PxBase.prototype);
 PxBVH.prototype.constructor = PxBVH;
@@ -11901,7 +11482,6 @@ PxBVH.prototype['isReleasable'] = PxBVH.prototype.isReleasable = /** @suppress {
   return !!(_emscripten_bind_PxBVH_isReleasable_0(self));
 };;
 
-// PxBVH33MidphaseDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBVH33MidphaseDesc() { throw "cannot construct a PxBVH33MidphaseDesc, no constructor in IDL" }
 PxBVH33MidphaseDesc.prototype = Object.create(WrapperObject.prototype);
 PxBVH33MidphaseDesc.prototype.constructor = PxBVH33MidphaseDesc;
@@ -11945,7 +11525,6 @@ PxBVH33MidphaseDesc.prototype['isValid'] = PxBVH33MidphaseDesc.prototype.isValid
   var self = this.ptr;
   _emscripten_bind_PxBVH33MidphaseDesc___destroy___0(self);
 };
-// PxBVH34MidphaseDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBVH34MidphaseDesc() { throw "cannot construct a PxBVH34MidphaseDesc, no constructor in IDL" }
 PxBVH34MidphaseDesc.prototype = Object.create(WrapperObject.prototype);
 PxBVH34MidphaseDesc.prototype.constructor = PxBVH34MidphaseDesc;
@@ -11978,7 +11557,6 @@ PxBVH34MidphaseDesc.prototype['isValid'] = PxBVH34MidphaseDesc.prototype.isValid
   var self = this.ptr;
   _emscripten_bind_PxBVH34MidphaseDesc___destroy___0(self);
 };
-// PxBaseFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBaseFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxBaseFlags_PxBaseFlags_1(flags);
@@ -12012,7 +11590,6 @@ PxBaseFlags.prototype['clear'] = PxBaseFlags.prototype.clear = /** @suppress {un
   var self = this.ptr;
   _emscripten_bind_PxBaseFlags___destroy___0(self);
 };
-// PxBaseTask
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBaseTask() { throw "cannot construct a PxBaseTask, no constructor in IDL" }
 PxBaseTask.prototype = Object.create(WrapperObject.prototype);
 PxBaseTask.prototype.constructor = PxBaseTask;
@@ -12024,7 +11601,6 @@ Module['PxBaseTask'] = PxBaseTask;
   var self = this.ptr;
   _emscripten_bind_PxBaseTask___destroy___0(self);
 };
-// PxBoundedData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBoundedData() {
   this.ptr = _emscripten_bind_PxBoundedData_PxBoundedData_0();
   getCache(PxBoundedData)[this.ptr] = this;
@@ -12072,7 +11648,6 @@ Module['PxBoundedData'] = PxBoundedData;
   var self = this.ptr;
   _emscripten_bind_PxBoundedData___destroy___0(self);
 };
-// PxBounds3
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBounds3(minimum, maximum) {
   if (minimum && typeof minimum === 'object') minimum = minimum.ptr;
   if (maximum && typeof maximum === 'object') maximum = maximum.ptr;
@@ -12208,7 +11783,6 @@ PxBounds3.prototype['isValid'] = PxBounds3.prototype.isValid = /** @suppress {un
   var self = this.ptr;
   _emscripten_bind_PxBounds3___destroy___0(self);
 };
-// PxBoxController
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBoxController() { throw "cannot construct a PxBoxController, no constructor in IDL" }
 PxBoxController.prototype = Object.create(PxController.prototype);
 PxBoxController.prototype.constructor = PxBoxController;
@@ -12391,7 +11965,6 @@ PxBoxController.prototype['resize'] = PxBoxController.prototype.resize = /** @su
   _emscripten_bind_PxBoxController_resize_1(self, height);
 };;
 
-// PxBoxControllerDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBoxControllerDesc() {
   this.ptr = _emscripten_bind_PxBoxControllerDesc_PxBoxControllerDesc_0();
   getCache(PxBoxControllerDesc)[this.ptr] = this;
@@ -12630,7 +12203,6 @@ PxBoxControllerDesc.prototype['getType'] = PxBoxControllerDesc.prototype.getType
   var self = this.ptr;
   _emscripten_bind_PxBoxControllerDesc___destroy___0(self);
 };
-// PxBoxGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBoxGeometry(hx, hy, hz) {
   if (hx && typeof hx === 'object') hx = hx.ptr;
   if (hy && typeof hy === 'object') hy = hy.ptr;
@@ -12664,7 +12236,6 @@ PxBoxGeometry.prototype['getType'] = PxBoxGeometry.prototype.getType = /** @supp
   var self = this.ptr;
   _emscripten_bind_PxBoxGeometry___destroy___0(self);
 };
-// PxBoxObstacle
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBoxObstacle() {
   this.ptr = _emscripten_bind_PxBoxObstacle_PxBoxObstacle_0();
   getCache(PxBoxObstacle)[this.ptr] = this;
@@ -12728,7 +12299,6 @@ PxBoxObstacle.prototype['getType'] = PxBoxObstacle.prototype.getType = /** @supp
   var self = this.ptr;
   _emscripten_bind_PxBoxObstacle___destroy___0(self);
 };
-// PxBroadPhaseCaps
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBroadPhaseCaps() {
   this.ptr = _emscripten_bind_PxBroadPhaseCaps_PxBroadPhaseCaps_0();
   getCache(PxBroadPhaseCaps)[this.ptr] = this;
@@ -12754,7 +12324,6 @@ Module['PxBroadPhaseCaps'] = PxBroadPhaseCaps;
   var self = this.ptr;
   _emscripten_bind_PxBroadPhaseCaps___destroy___0(self);
 };
-// PxBroadPhaseRegion
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBroadPhaseRegion() {
   this.ptr = _emscripten_bind_PxBroadPhaseRegion_PxBroadPhaseRegion_0();
   getCache(PxBroadPhaseRegion)[this.ptr] = this;
@@ -12791,7 +12360,6 @@ Module['PxBroadPhaseRegion'] = PxBroadPhaseRegion;
   var self = this.ptr;
   _emscripten_bind_PxBroadPhaseRegion___destroy___0(self);
 };
-// PxBroadPhaseRegionInfo
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxBroadPhaseRegionInfo() {
   this.ptr = _emscripten_bind_PxBroadPhaseRegionInfo_PxBroadPhaseRegionInfo_0();
   getCache(PxBroadPhaseRegionInfo)[this.ptr] = this;
@@ -12861,7 +12429,6 @@ Module['PxBroadPhaseRegionInfo'] = PxBroadPhaseRegionInfo;
   var self = this.ptr;
   _emscripten_bind_PxBroadPhaseRegionInfo___destroy___0(self);
 };
-// PxCapsuleController
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCapsuleController() { throw "cannot construct a PxCapsuleController, no constructor in IDL" }
 PxCapsuleController.prototype = Object.create(PxController.prototype);
 PxCapsuleController.prototype.constructor = PxCapsuleController;
@@ -13044,7 +12611,6 @@ PxCapsuleController.prototype['resize'] = PxCapsuleController.prototype.resize =
   _emscripten_bind_PxCapsuleController_resize_1(self, height);
 };;
 
-// PxCapsuleControllerDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCapsuleControllerDesc() {
   this.ptr = _emscripten_bind_PxCapsuleControllerDesc_PxCapsuleControllerDesc_0();
   getCache(PxCapsuleControllerDesc)[this.ptr] = this;
@@ -13283,7 +12849,6 @@ PxCapsuleControllerDesc.prototype['getType'] = PxCapsuleControllerDesc.prototype
   var self = this.ptr;
   _emscripten_bind_PxCapsuleControllerDesc___destroy___0(self);
 };
-// PxCapsuleGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCapsuleGeometry(radius, halfHeight) {
   if (radius && typeof radius === 'object') radius = radius.ptr;
   if (halfHeight && typeof halfHeight === 'object') halfHeight = halfHeight.ptr;
@@ -13327,7 +12892,6 @@ PxCapsuleGeometry.prototype['getType'] = PxCapsuleGeometry.prototype.getType = /
   var self = this.ptr;
   _emscripten_bind_PxCapsuleGeometry___destroy___0(self);
 };
-// PxCapsuleObstacle
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCapsuleObstacle() {
   this.ptr = _emscripten_bind_PxCapsuleObstacle_PxCapsuleObstacle_0();
   getCache(PxCapsuleObstacle)[this.ptr] = this;
@@ -13402,7 +12966,6 @@ PxCapsuleObstacle.prototype['getType'] = PxCapsuleObstacle.prototype.getType = /
   var self = this.ptr;
   _emscripten_bind_PxCapsuleObstacle___destroy___0(self);
 };
-// PxCollection
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCollection() { throw "cannot construct a PxCollection, no constructor in IDL" }
 PxCollection.prototype = Object.create(WrapperObject.prototype);
 PxCollection.prototype.constructor = PxCollection;
@@ -13476,7 +13039,6 @@ PxCollection.prototype['release'] = PxCollection.prototype.release = /** @suppre
   _emscripten_bind_PxCollection_release_0(self);
 };;
 
-// PxCollectionExt
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCollectionExt() { throw "cannot construct a PxCollectionExt, no constructor in IDL" }
 PxCollectionExt.prototype = Object.create(WrapperObject.prototype);
 PxCollectionExt.prototype.constructor = PxCollectionExt;
@@ -13511,7 +13073,6 @@ PxCollectionExt.prototype['createCollection'] = PxCollectionExt.prototype.create
   var self = this.ptr;
   _emscripten_bind_PxCollectionExt___destroy___0(self);
 };
-// PxConstraint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConstraint() { throw "cannot construct a PxConstraint, no constructor in IDL" }
 PxConstraint.prototype = Object.create(PxBase.prototype);
 PxConstraint.prototype.constructor = PxConstraint;
@@ -13622,7 +13183,6 @@ PxConstraint.prototype['isReleasable'] = PxConstraint.prototype.isReleasable = /
   return !!(_emscripten_bind_PxConstraint_isReleasable_0(self));
 };;
 
-// PxConstraintConnector
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConstraintConnector() { throw "cannot construct a PxConstraintConnector, no constructor in IDL" }
 PxConstraintConnector.prototype = Object.create(WrapperObject.prototype);
 PxConstraintConnector.prototype.constructor = PxConstraintConnector;
@@ -13682,7 +13242,6 @@ PxConstraintConnector.prototype['connectToConstraint'] = PxConstraintConnector.p
   var self = this.ptr;
   _emscripten_bind_PxConstraintConnector___destroy___0(self);
 };
-// PxConstraintFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConstraintFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxConstraintFlags_PxConstraintFlags_1(flags);
@@ -13716,7 +13275,6 @@ PxConstraintFlags.prototype['clear'] = PxConstraintFlags.prototype.clear = /** @
   var self = this.ptr;
   _emscripten_bind_PxConstraintFlags___destroy___0(self);
 };
-// PxConstraintInfo
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConstraintInfo() { throw "cannot construct a PxConstraintInfo, no constructor in IDL" }
 PxConstraintInfo.prototype = Object.create(WrapperObject.prototype);
 PxConstraintInfo.prototype.constructor = PxConstraintInfo;
@@ -13761,7 +13319,6 @@ Module['PxConstraintInfo'] = PxConstraintInfo;
   var self = this.ptr;
   _emscripten_bind_PxConstraintInfo___destroy___0(self);
 };
-// PxConstraintSolverPrep
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConstraintSolverPrep() { throw "cannot construct a PxConstraintSolverPrep, no constructor in IDL" }
 PxConstraintSolverPrep.prototype = Object.create(WrapperObject.prototype);
 PxConstraintSolverPrep.prototype.constructor = PxConstraintSolverPrep;
@@ -13773,7 +13330,6 @@ Module['PxConstraintSolverPrep'] = PxConstraintSolverPrep;
   var self = this.ptr;
   _emscripten_bind_PxConstraintSolverPrep___destroy___0(self);
 };
-// PxContactBuffer
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactBuffer() { throw "cannot construct a PxContactBuffer, no constructor in IDL" }
 PxContactBuffer.prototype = Object.create(WrapperObject.prototype);
 PxContactBuffer.prototype.constructor = PxContactBuffer;
@@ -13844,7 +13400,6 @@ PxContactBuffer.prototype['contact'] = PxContactBuffer.prototype.contact = /** @
   var self = this.ptr;
   _emscripten_bind_PxContactBuffer___destroy___0(self);
 };
-// PxContactPair
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactPair() { throw "cannot construct a PxContactPair, no constructor in IDL" }
 PxContactPair.prototype = Object.create(WrapperObject.prototype);
 PxContactPair.prototype.constructor = PxContactPair;
@@ -13921,7 +13476,6 @@ PxContactPair.prototype['extractContacts'] = PxContactPair.prototype.extractCont
   var self = this.ptr;
   _emscripten_bind_PxContactPair___destroy___0(self);
 };
-// PxContactPairFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactPairFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxContactPairFlags_PxContactPairFlags_1(flags);
@@ -13955,7 +13509,6 @@ PxContactPairFlags.prototype['clear'] = PxContactPairFlags.prototype.clear = /**
   var self = this.ptr;
   _emscripten_bind_PxContactPairFlags___destroy___0(self);
 };
-// PxContactPairHeader
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactPairHeader() { throw "cannot construct a PxContactPairHeader, no constructor in IDL" }
 PxContactPairHeader.prototype = Object.create(WrapperObject.prototype);
 PxContactPairHeader.prototype.constructor = PxContactPairHeader;
@@ -14014,7 +13567,6 @@ Module['PxContactPairHeader'] = PxContactPairHeader;
   var self = this.ptr;
   _emscripten_bind_PxContactPairHeader___destroy___0(self);
 };
-// PxContactPairHeaderFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactPairHeaderFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxContactPairHeaderFlags_PxContactPairHeaderFlags_1(flags);
@@ -14048,7 +13600,6 @@ PxContactPairHeaderFlags.prototype['clear'] = PxContactPairHeaderFlags.prototype
   var self = this.ptr;
   _emscripten_bind_PxContactPairHeaderFlags___destroy___0(self);
 };
-// PxContactPairPoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactPairPoint() { throw "cannot construct a PxContactPairPoint, no constructor in IDL" }
 PxContactPairPoint.prototype = Object.create(WrapperObject.prototype);
 PxContactPairPoint.prototype.constructor = PxContactPairPoint;
@@ -14126,7 +13677,6 @@ Module['PxContactPairPoint'] = PxContactPairPoint;
   var self = this.ptr;
   _emscripten_bind_PxContactPairPoint___destroy___0(self);
 };
-// PxContactPoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxContactPoint() {
   this.ptr = _emscripten_bind_PxContactPoint_PxContactPoint_0();
   getCache(PxContactPoint)[this.ptr] = this;
@@ -14262,7 +13812,6 @@ Module['PxContactPoint'] = PxContactPoint;
   var self = this.ptr;
   _emscripten_bind_PxContactPoint___destroy___0(self);
 };
-// PxControllerBehaviorCallbackImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerBehaviorCallbackImpl() {
   this.ptr = _emscripten_bind_PxControllerBehaviorCallbackImpl_PxControllerBehaviorCallbackImpl_0();
   getCache(PxControllerBehaviorCallbackImpl)[this.ptr] = this;
@@ -14296,7 +13845,6 @@ PxControllerBehaviorCallbackImpl.prototype['getObstacleBehaviorFlags'] = PxContr
   var self = this.ptr;
   _emscripten_bind_PxControllerBehaviorCallbackImpl___destroy___0(self);
 };
-// PxControllerBehaviorFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerBehaviorFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxControllerBehaviorFlags_PxControllerBehaviorFlags_1(flags);
@@ -14330,7 +13878,6 @@ PxControllerBehaviorFlags.prototype['clear'] = PxControllerBehaviorFlags.prototy
   var self = this.ptr;
   _emscripten_bind_PxControllerBehaviorFlags___destroy___0(self);
 };
-// PxControllerCollisionFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerCollisionFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxControllerCollisionFlags_PxControllerCollisionFlags_1(flags);
@@ -14364,7 +13911,6 @@ PxControllerCollisionFlags.prototype['clear'] = PxControllerCollisionFlags.proto
   var self = this.ptr;
   _emscripten_bind_PxControllerCollisionFlags___destroy___0(self);
 };
-// PxControllerFilterCallbackImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerFilterCallbackImpl() {
   this.ptr = _emscripten_bind_PxControllerFilterCallbackImpl_PxControllerFilterCallbackImpl_0();
   getCache(PxControllerFilterCallbackImpl)[this.ptr] = this;
@@ -14386,7 +13932,6 @@ PxControllerFilterCallbackImpl.prototype['filter'] = PxControllerFilterCallbackI
   var self = this.ptr;
   _emscripten_bind_PxControllerFilterCallbackImpl___destroy___0(self);
 };
-// PxControllerFilters
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerFilters(filterData) {
   if (filterData && typeof filterData === 'object') filterData = filterData.ptr;
   if (filterData === undefined) { this.ptr = _emscripten_bind_PxControllerFilters_PxControllerFilters_0(); getCache(PxControllerFilters)[this.ptr] = this;return }
@@ -14447,7 +13992,6 @@ Module['PxControllerFilters'] = PxControllerFilters;
   var self = this.ptr;
   _emscripten_bind_PxControllerFilters___destroy___0(self);
 };
-// PxControllerManager
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerManager() { throw "cannot construct a PxControllerManager, no constructor in IDL" }
 PxControllerManager.prototype = Object.create(WrapperObject.prototype);
 PxControllerManager.prototype.constructor = PxControllerManager;
@@ -14540,7 +14084,6 @@ PxControllerManager.prototype['shiftOrigin'] = PxControllerManager.prototype.shi
   _emscripten_bind_PxControllerManager_shiftOrigin_1(self, shift);
 };;
 
-// PxControllerObstacleHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerObstacleHit() { throw "cannot construct a PxControllerObstacleHit, no constructor in IDL" }
 PxControllerObstacleHit.prototype = Object.create(PxControllerHit.prototype);
 PxControllerObstacleHit.prototype.constructor = PxControllerObstacleHit;
@@ -14618,7 +14161,6 @@ Module['PxControllerObstacleHit'] = PxControllerObstacleHit;
   var self = this.ptr;
   _emscripten_bind_PxControllerObstacleHit___destroy___0(self);
 };
-// PxControllerShapeHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerShapeHit() { throw "cannot construct a PxControllerShapeHit, no constructor in IDL" }
 PxControllerShapeHit.prototype = Object.create(PxControllerHit.prototype);
 PxControllerShapeHit.prototype.constructor = PxControllerShapeHit;
@@ -14718,7 +14260,6 @@ Module['PxControllerShapeHit'] = PxControllerShapeHit;
   var self = this.ptr;
   _emscripten_bind_PxControllerShapeHit___destroy___0(self);
 };
-// PxControllerState
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerState() {
   this.ptr = _emscripten_bind_PxControllerState_PxControllerState_0();
   getCache(PxControllerState)[this.ptr] = this;
@@ -14821,7 +14362,6 @@ Module['PxControllerState'] = PxControllerState;
   var self = this.ptr;
   _emscripten_bind_PxControllerState___destroy___0(self);
 };
-// PxControllerStats
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllerStats() { throw "cannot construct a PxControllerStats, no constructor in IDL" }
 PxControllerStats.prototype = Object.create(WrapperObject.prototype);
 PxControllerStats.prototype.constructor = PxControllerStats;
@@ -14877,7 +14417,6 @@ Module['PxControllerStats'] = PxControllerStats;
   var self = this.ptr;
   _emscripten_bind_PxControllerStats___destroy___0(self);
 };
-// PxControllersHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxControllersHit() { throw "cannot construct a PxControllersHit, no constructor in IDL" }
 PxControllersHit.prototype = Object.create(PxControllerHit.prototype);
 PxControllersHit.prototype.constructor = PxControllersHit;
@@ -14955,7 +14494,6 @@ Module['PxControllersHit'] = PxControllersHit;
   var self = this.ptr;
   _emscripten_bind_PxControllersHit___destroy___0(self);
 };
-// PxConvexFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConvexFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxConvexFlags_PxConvexFlags_1(flags);
@@ -14989,7 +14527,6 @@ PxConvexFlags.prototype['clear'] = PxConvexFlags.prototype.clear = /** @suppress
   var self = this.ptr;
   _emscripten_bind_PxConvexFlags___destroy___0(self);
 };
-// PxConvexMesh
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConvexMesh() { throw "cannot construct a PxConvexMesh, no constructor in IDL" }
 PxConvexMesh.prototype = Object.create(PxRefCounted.prototype);
 PxConvexMesh.prototype.constructor = PxConvexMesh;
@@ -15082,7 +14619,6 @@ PxConvexMesh.prototype['acquireReference'] = PxConvexMesh.prototype.acquireRefer
   _emscripten_bind_PxConvexMesh_acquireReference_0(self);
 };;
 
-// PxConvexMeshDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConvexMeshDesc() {
   this.ptr = _emscripten_bind_PxConvexMeshDesc_PxConvexMeshDesc_0();
   getCache(PxConvexMeshDesc)[this.ptr] = this;
@@ -15119,7 +14655,6 @@ Module['PxConvexMeshDesc'] = PxConvexMeshDesc;
   var self = this.ptr;
   _emscripten_bind_PxConvexMeshDesc___destroy___0(self);
 };
-// PxConvexMeshGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConvexMeshGeometry(mesh, scaling, flags) {
   if (mesh && typeof mesh === 'object') mesh = mesh.ptr;
   if (scaling && typeof scaling === 'object') scaling = scaling.ptr;
@@ -15177,7 +14712,6 @@ PxConvexMeshGeometry.prototype['getType'] = PxConvexMeshGeometry.prototype.getTy
   var self = this.ptr;
   _emscripten_bind_PxConvexMeshGeometry___destroy___0(self);
 };
-// PxConvexMeshGeometryFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxConvexMeshGeometryFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxConvexMeshGeometryFlags_PxConvexMeshGeometryFlags_1(flags);
@@ -15211,7 +14745,6 @@ PxConvexMeshGeometryFlags.prototype['clear'] = PxConvexMeshGeometryFlags.prototy
   var self = this.ptr;
   _emscripten_bind_PxConvexMeshGeometryFlags___destroy___0(self);
 };
-// PxCookingParams
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxCookingParams(sc) {
   if (sc && typeof sc === 'object') sc = sc.ptr;
   this.ptr = _emscripten_bind_PxCookingParams_PxCookingParams_1(sc);
@@ -15348,7 +14881,6 @@ Module['PxCookingParams'] = PxCookingParams;
   var self = this.ptr;
   _emscripten_bind_PxCookingParams___destroy___0(self);
 };
-// PxD6Joint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxD6Joint() { throw "cannot construct a PxD6Joint, no constructor in IDL" }
 PxD6Joint.prototype = Object.create(PxJoint.prototype);
 PxD6Joint.prototype.constructor = PxD6Joint;
@@ -15613,7 +15145,6 @@ PxD6Joint.prototype['getScene'] = PxD6Joint.prototype.getScene = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxD6Joint___destroy___0(self);
 };
-// PxD6JointDrive
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxD6JointDrive(driveStiffness, driveDamping, driveForceLimit, isAcceleration) {
   if (driveStiffness && typeof driveStiffness === 'object') driveStiffness = driveStiffness.ptr;
   if (driveDamping && typeof driveDamping === 'object') driveDamping = driveDamping.ptr;
@@ -15680,7 +15211,6 @@ Module['PxD6JointDrive'] = PxD6JointDrive;
   var self = this.ptr;
   _emscripten_bind_PxD6JointDrive___destroy___0(self);
 };
-// PxD6JointDriveFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxD6JointDriveFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxD6JointDriveFlags_PxD6JointDriveFlags_1(flags);
@@ -15714,7 +15244,6 @@ PxD6JointDriveFlags.prototype['clear'] = PxD6JointDriveFlags.prototype.clear = /
   var self = this.ptr;
   _emscripten_bind_PxD6JointDriveFlags___destroy___0(self);
 };
-// PxDebugLine
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDebugLine() { throw "cannot construct a PxDebugLine, no constructor in IDL" }
 PxDebugLine.prototype = Object.create(WrapperObject.prototype);
 PxDebugLine.prototype.constructor = PxDebugLine;
@@ -15766,7 +15295,6 @@ Module['PxDebugLine'] = PxDebugLine;
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxDebugLine.prototype, 'color1', { get: PxDebugLine.prototype.get_color1, set: PxDebugLine.prototype.set_color1 });
-// PxDebugPoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDebugPoint() { throw "cannot construct a PxDebugPoint, no constructor in IDL" }
 PxDebugPoint.prototype = Object.create(WrapperObject.prototype);
 PxDebugPoint.prototype.constructor = PxDebugPoint;
@@ -15796,7 +15324,6 @@ Module['PxDebugPoint'] = PxDebugPoint;
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxDebugPoint.prototype, 'color', { get: PxDebugPoint.prototype.get_color, set: PxDebugPoint.prototype.set_color });
-// PxDebugTriangle
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDebugTriangle() { throw "cannot construct a PxDebugTriangle, no constructor in IDL" }
 PxDebugTriangle.prototype = Object.create(WrapperObject.prototype);
 PxDebugTriangle.prototype.constructor = PxDebugTriangle;
@@ -15870,7 +15397,6 @@ Module['PxDebugTriangle'] = PxDebugTriangle;
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxDebugTriangle.prototype, 'color2', { get: PxDebugTriangle.prototype.get_color2, set: PxDebugTriangle.prototype.set_color2 });
-// PxDefaultAllocator
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDefaultAllocator() {
   this.ptr = _emscripten_bind_PxDefaultAllocator_PxDefaultAllocator_0();
   getCache(PxDefaultAllocator)[this.ptr] = this;
@@ -15885,7 +15411,6 @@ Module['PxDefaultAllocator'] = PxDefaultAllocator;
   var self = this.ptr;
   _emscripten_bind_PxDefaultAllocator___destroy___0(self);
 };
-// PxDefaultCpuDispatcher
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDefaultCpuDispatcher() { throw "cannot construct a PxDefaultCpuDispatcher, no constructor in IDL" }
 PxDefaultCpuDispatcher.prototype = Object.create(PxCpuDispatcher.prototype);
 PxDefaultCpuDispatcher.prototype.constructor = PxDefaultCpuDispatcher;
@@ -15897,7 +15422,6 @@ Module['PxDefaultCpuDispatcher'] = PxDefaultCpuDispatcher;
   var self = this.ptr;
   _emscripten_bind_PxDefaultCpuDispatcher___destroy___0(self);
 };
-// PxDefaultErrorCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDefaultErrorCallback() {
   this.ptr = _emscripten_bind_PxDefaultErrorCallback_PxDefaultErrorCallback_0();
   getCache(PxDefaultErrorCallback)[this.ptr] = this;
@@ -15924,7 +15448,6 @@ PxDefaultErrorCallback.prototype['reportError'] = PxDefaultErrorCallback.prototy
   var self = this.ptr;
   _emscripten_bind_PxDefaultErrorCallback___destroy___0(self);
 };
-// PxDefaultMemoryInputData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDefaultMemoryInputData(data, length) {
   if (data && typeof data === 'object') data = data.ptr;
   if (length && typeof length === 'object') length = length.ptr;
@@ -15964,7 +15487,6 @@ PxDefaultMemoryInputData.prototype['tell'] = PxDefaultMemoryInputData.prototype.
   var self = this.ptr;
   _emscripten_bind_PxDefaultMemoryInputData___destroy___0(self);
 };
-// PxDefaultMemoryOutputStream
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDefaultMemoryOutputStream() {
   this.ptr = _emscripten_bind_PxDefaultMemoryOutputStream_PxDefaultMemoryOutputStream_0();
   getCache(PxDefaultMemoryOutputStream)[this.ptr] = this;
@@ -15996,7 +15518,6 @@ PxDefaultMemoryOutputStream.prototype['getData'] = PxDefaultMemoryOutputStream.p
   var self = this.ptr;
   _emscripten_bind_PxDefaultMemoryOutputStream___destroy___0(self);
 };
-// PxDistanceJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDistanceJoint() { throw "cannot construct a PxDistanceJoint, no constructor in IDL" }
 PxDistanceJoint.prototype = Object.create(PxJoint.prototype);
 PxDistanceJoint.prototype.constructor = PxDistanceJoint;
@@ -16240,7 +15761,6 @@ PxDistanceJoint.prototype['getScene'] = PxDistanceJoint.prototype.getScene = /**
   var self = this.ptr;
   _emscripten_bind_PxDistanceJoint___destroy___0(self);
 };
-// PxDistanceJointFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDistanceJointFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxDistanceJointFlags_PxDistanceJointFlags_1(flags);
@@ -16274,7 +15794,6 @@ PxDistanceJointFlags.prototype['clear'] = PxDistanceJointFlags.prototype.clear =
   var self = this.ptr;
   _emscripten_bind_PxDistanceJointFlags___destroy___0(self);
 };
-// PxDominanceGroupPair
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxDominanceGroupPair(a, b) {
   if (a && typeof a === 'object') a = a.ptr;
   if (b && typeof b === 'object') b = b.ptr;
@@ -16313,7 +15832,6 @@ Module['PxDominanceGroupPair'] = PxDominanceGroupPair;
   var self = this.ptr;
   _emscripten_bind_PxDominanceGroupPair___destroy___0(self);
 };
-// PxErrorCallbackImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxErrorCallbackImpl() {
   this.ptr = _emscripten_bind_PxErrorCallbackImpl_PxErrorCallbackImpl_0();
   getCache(PxErrorCallbackImpl)[this.ptr] = this;
@@ -16340,7 +15858,6 @@ PxErrorCallbackImpl.prototype['reportError'] = PxErrorCallbackImpl.prototype.rep
   var self = this.ptr;
   _emscripten_bind_PxErrorCallbackImpl___destroy___0(self);
 };
-// PxExtendedVec3
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxExtendedVec3(x, y, z) {
   if (x && typeof x === 'object') x = x.ptr;
   if (y && typeof y === 'object') y = y.ptr;
@@ -16394,7 +15911,6 @@ Module['PxExtendedVec3'] = PxExtendedVec3;
   var self = this.ptr;
   _emscripten_bind_PxExtendedVec3___destroy___0(self);
 };
-// PxExtensionTopLevelFunctions
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxExtensionTopLevelFunctions() { throw "cannot construct a PxExtensionTopLevelFunctions, no constructor in IDL" }
 PxExtensionTopLevelFunctions.prototype = Object.create(WrapperObject.prototype);
 PxExtensionTopLevelFunctions.prototype.constructor = PxExtensionTopLevelFunctions;
@@ -16411,7 +15927,6 @@ PxExtensionTopLevelFunctions.prototype['CreatePlane'] = PxExtensionTopLevelFunct
   return wrapPointer(_emscripten_bind_PxExtensionTopLevelFunctions_CreatePlane_4(self, sdk, plane, material, filterData), PxRigidStatic);
 };;
 
-// PxFilterData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxFilterData(w0, w1, w2, w3) {
   if (w0 && typeof w0 === 'object') w0 = w0.ptr;
   if (w1 && typeof w1 === 'object') w1 = w1.ptr;
@@ -16478,7 +15993,6 @@ Module['PxFilterData'] = PxFilterData;
   var self = this.ptr;
   _emscripten_bind_PxFilterData___destroy___0(self);
 };
-// PxFixedJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxFixedJoint() { throw "cannot construct a PxFixedJoint, no constructor in IDL" }
 PxFixedJoint.prototype = Object.create(PxJoint.prototype);
 PxFixedJoint.prototype.constructor = PxFixedJoint;
@@ -16644,7 +16158,6 @@ PxFixedJoint.prototype['getScene'] = PxFixedJoint.prototype.getScene = /** @supp
   var self = this.ptr;
   _emscripten_bind_PxFixedJoint___destroy___0(self);
 };
-// PxFoundation
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxFoundation() { throw "cannot construct a PxFoundation, no constructor in IDL" }
 PxFoundation.prototype = Object.create(WrapperObject.prototype);
 PxFoundation.prototype.constructor = PxFoundation;
@@ -16657,7 +16170,6 @@ PxFoundation.prototype['release'] = PxFoundation.prototype.release = /** @suppre
   _emscripten_bind_PxFoundation_release_0(self);
 };;
 
-// PxGeometryHolder
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGeometryHolder(geometry) {
   if (geometry && typeof geometry === 'object') geometry = geometry.ptr;
   if (geometry === undefined) { this.ptr = _emscripten_bind_PxGeometryHolder_PxGeometryHolder_0(); getCache(PxGeometryHolder)[this.ptr] = this;return }
@@ -16720,7 +16232,6 @@ PxGeometryHolder.prototype['storeAny'] = PxGeometryHolder.prototype.storeAny = /
   var self = this.ptr;
   _emscripten_bind_PxGeometryHolder___destroy___0(self);
 };
-// PxGeometryQuery
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGeometryQuery() { throw "cannot construct a PxGeometryQuery, no constructor in IDL" }
 PxGeometryQuery.prototype = Object.create(WrapperObject.prototype);
 PxGeometryQuery.prototype.constructor = PxGeometryQuery;
@@ -16796,7 +16307,6 @@ PxGeometryQuery.prototype['isValid'] = PxGeometryQuery.prototype.isValid = /** @
   var self = this.ptr;
   _emscripten_bind_PxGeometryQuery___destroy___0(self);
 };
-// PxGjkQuery
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGjkQuery() { throw "cannot construct a PxGjkQuery, no constructor in IDL" }
 PxGjkQuery.prototype = Object.create(WrapperObject.prototype);
 PxGjkQuery.prototype.constructor = PxGjkQuery;
@@ -16852,7 +16362,6 @@ PxGjkQuery.prototype['sweep'] = PxGjkQuery.prototype.sweep = /** @suppress {unde
   var self = this.ptr;
   _emscripten_bind_PxGjkQuery___destroy___0(self);
 };
-// PxGjkQueryExt
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGjkQueryExt() { throw "cannot construct a PxGjkQueryExt, no constructor in IDL" }
 PxGjkQueryExt.prototype = Object.create(WrapperObject.prototype);
 PxGjkQueryExt.prototype.constructor = PxGjkQueryExt;
@@ -16876,7 +16385,6 @@ PxGjkQueryExt.prototype['generateContacts'] = PxGjkQueryExt.prototype.generateCo
   var self = this.ptr;
   _emscripten_bind_PxGjkQueryExt___destroy___0(self);
 };
-// PxGjkQueryProximityInfoResult
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGjkQueryProximityInfoResult() {
   this.ptr = _emscripten_bind_PxGjkQueryProximityInfoResult_PxGjkQueryProximityInfoResult_0();
   getCache(PxGjkQueryProximityInfoResult)[this.ptr] = this;
@@ -16946,7 +16454,6 @@ Module['PxGjkQueryProximityInfoResult'] = PxGjkQueryProximityInfoResult;
   var self = this.ptr;
   _emscripten_bind_PxGjkQueryProximityInfoResult___destroy___0(self);
 };
-// PxGjkQueryRaycastResult
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGjkQueryRaycastResult() {
   this.ptr = _emscripten_bind_PxGjkQueryRaycastResult_PxGjkQueryRaycastResult_0();
   getCache(PxGjkQueryRaycastResult)[this.ptr] = this;
@@ -17005,7 +16512,6 @@ Module['PxGjkQueryRaycastResult'] = PxGjkQueryRaycastResult;
   var self = this.ptr;
   _emscripten_bind_PxGjkQueryRaycastResult___destroy___0(self);
 };
-// PxGjkQuerySweepResult
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxGjkQuerySweepResult() {
   this.ptr = _emscripten_bind_PxGjkQuerySweepResult_PxGjkQuerySweepResult_0();
   getCache(PxGjkQuerySweepResult)[this.ptr] = this;
@@ -17064,7 +16570,6 @@ Module['PxGjkQuerySweepResult'] = PxGjkQuerySweepResult;
   var self = this.ptr;
   _emscripten_bind_PxGjkQuerySweepResult___destroy___0(self);
 };
-// PxHeightField
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHeightField() { throw "cannot construct a PxHeightField, no constructor in IDL" }
 PxHeightField.prototype = Object.create(PxRefCounted.prototype);
 PxHeightField.prototype.constructor = PxHeightField;
@@ -17198,7 +16703,6 @@ PxHeightField.prototype['acquireReference'] = PxHeightField.prototype.acquireRef
   _emscripten_bind_PxHeightField_acquireReference_0(self);
 };;
 
-// PxHeightFieldDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHeightFieldDesc() {
   this.ptr = _emscripten_bind_PxHeightFieldDesc_PxHeightFieldDesc_0();
   getCache(PxHeightFieldDesc)[this.ptr] = this;
@@ -17289,7 +16793,6 @@ PxHeightFieldDesc.prototype['isValid'] = PxHeightFieldDesc.prototype.isValid = /
   var self = this.ptr;
   _emscripten_bind_PxHeightFieldDesc___destroy___0(self);
 };
-// PxHeightFieldFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHeightFieldFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxHeightFieldFlags_PxHeightFieldFlags_1(flags);
@@ -17323,7 +16826,6 @@ PxHeightFieldFlags.prototype['clear'] = PxHeightFieldFlags.prototype.clear = /**
   var self = this.ptr;
   _emscripten_bind_PxHeightFieldFlags___destroy___0(self);
 };
-// PxHeightFieldGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHeightFieldGeometry(hf, flags, heightScale, rowScale, columnScale) {
   if (hf && typeof hf === 'object') hf = hf.ptr;
   if (flags && typeof flags === 'object') flags = flags.ptr;
@@ -17413,7 +16915,6 @@ PxHeightFieldGeometry.prototype['getType'] = PxHeightFieldGeometry.prototype.get
   var self = this.ptr;
   _emscripten_bind_PxHeightFieldGeometry___destroy___0(self);
 };
-// PxHeightFieldSample
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHeightFieldSample() {
   this.ptr = _emscripten_bind_PxHeightFieldSample_PxHeightFieldSample_0();
   getCache(PxHeightFieldSample)[this.ptr] = this;
@@ -17476,7 +16977,6 @@ PxHeightFieldSample.prototype['setTessFlag'] = PxHeightFieldSample.prototype.set
   var self = this.ptr;
   _emscripten_bind_PxHeightFieldSample___destroy___0(self);
 };
-// PxHitFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHitFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxHitFlags_PxHitFlags_1(flags);
@@ -17510,7 +17010,6 @@ PxHitFlags.prototype['clear'] = PxHitFlags.prototype.clear = /** @suppress {unde
   var self = this.ptr;
   _emscripten_bind_PxHitFlags___destroy___0(self);
 };
-// PxHullPolygon
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxHullPolygon() {
   this.ptr = _emscripten_bind_PxHullPolygon_PxHullPolygon_0();
   getCache(PxHullPolygon)[this.ptr] = this;
@@ -17561,7 +17060,6 @@ Module['PxHullPolygon'] = PxHullPolygon;
   var self = this.ptr;
   _emscripten_bind_PxHullPolygon___destroy___0(self);
 };
-// PxI32Ptr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxI32Ptr() { throw "cannot construct a PxI32Ptr, no constructor in IDL" }
 PxI32Ptr.prototype = Object.create(PxI32ConstPtr.prototype);
 PxI32Ptr.prototype.constructor = PxI32Ptr;
@@ -17573,7 +17071,6 @@ Module['PxI32Ptr'] = PxI32Ptr;
   var self = this.ptr;
   _emscripten_bind_PxI32Ptr___destroy___0(self);
 };
-// PxInsertionCallback
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxInsertionCallback() { throw "cannot construct a PxInsertionCallback, no constructor in IDL" }
 PxInsertionCallback.prototype = Object.create(WrapperObject.prototype);
 PxInsertionCallback.prototype.constructor = PxInsertionCallback;
@@ -17581,7 +17078,6 @@ PxInsertionCallback.prototype.__class__ = PxInsertionCallback;
 PxInsertionCallback.__cache__ = {};
 Module['PxInsertionCallback'] = PxInsertionCallback;
 
-// PxJointAngularLimitPair
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJointAngularLimitPair(lowerLimit, upperLimit, spring) {
   if (lowerLimit && typeof lowerLimit === 'object') lowerLimit = lowerLimit.ptr;
   if (upperLimit && typeof upperLimit === 'object') upperLimit = upperLimit.ptr;
@@ -17675,7 +17171,6 @@ PxJointAngularLimitPair.prototype['isSoft'] = PxJointAngularLimitPair.prototype.
   var self = this.ptr;
   _emscripten_bind_PxJointAngularLimitPair___destroy___0(self);
 };
-// PxJointLimitCone
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJointLimitCone(yLimitAngle, zLimitAngle, spring) {
   if (yLimitAngle && typeof yLimitAngle === 'object') yLimitAngle = yLimitAngle.ptr;
   if (zLimitAngle && typeof zLimitAngle === 'object') zLimitAngle = zLimitAngle.ptr;
@@ -17769,7 +17264,6 @@ PxJointLimitCone.prototype['isSoft'] = PxJointLimitCone.prototype.isSoft = /** @
   var self = this.ptr;
   _emscripten_bind_PxJointLimitCone___destroy___0(self);
 };
-// PxJointLimitPyramid
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJointLimitPyramid(yLimitAngleMin, yLimitAngleMax, zLimitAngleMin, zLimitAngleMax, spring) {
   if (yLimitAngleMin && typeof yLimitAngleMin === 'object') yLimitAngleMin = yLimitAngleMin.ptr;
   if (yLimitAngleMax && typeof yLimitAngleMax === 'object') yLimitAngleMax = yLimitAngleMax.ptr;
@@ -17887,7 +17381,6 @@ PxJointLimitPyramid.prototype['isSoft'] = PxJointLimitPyramid.prototype.isSoft =
   var self = this.ptr;
   _emscripten_bind_PxJointLimitPyramid___destroy___0(self);
 };
-// PxJointLinearLimit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJointLinearLimit(extent, spring) {
   if (extent && typeof extent === 'object') extent = extent.ptr;
   if (spring && typeof spring === 'object') spring = spring.ptr;
@@ -17969,7 +17462,6 @@ PxJointLinearLimit.prototype['isSoft'] = PxJointLinearLimit.prototype.isSoft = /
   var self = this.ptr;
   _emscripten_bind_PxJointLinearLimit___destroy___0(self);
 };
-// PxJointLinearLimitPair
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxJointLinearLimitPair(lowerLimit, upperLimit, spring) {
   if (lowerLimit && typeof lowerLimit === 'object') lowerLimit = lowerLimit.ptr;
   if (upperLimit && typeof upperLimit === 'object') upperLimit = upperLimit.ptr;
@@ -18063,7 +17555,6 @@ PxJointLinearLimitPair.prototype['isSoft'] = PxJointLinearLimitPair.prototype.is
   var self = this.ptr;
   _emscripten_bind_PxJointLinearLimitPair___destroy___0(self);
 };
-// PxMassProperties
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMassProperties(m, inertiaT, com) {
   if (m && typeof m === 'object') m = m.ptr;
   if (inertiaT && typeof inertiaT === 'object') inertiaT = inertiaT.ptr;
@@ -18161,7 +17652,6 @@ PxMassProperties.prototype['sum'] = PxMassProperties.prototype.sum = /** @suppre
   var self = this.ptr;
   _emscripten_bind_PxMassProperties___destroy___0(self);
 };
-// PxMat33
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMat33(r) {
   if (r && typeof r === 'object') r = r.ptr;
   if (r === undefined) { this.ptr = _emscripten_bind_PxMat33_PxMat33_0(); getCache(PxMat33)[this.ptr] = this;return }
@@ -18211,7 +17701,6 @@ Module['PxMat33'] = PxMat33;
   var self = this.ptr;
   _emscripten_bind_PxMat33___destroy___0(self);
 };
-// PxMaterial
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMaterial() { throw "cannot construct a PxMaterial, no constructor in IDL" }
 PxMaterial.prototype = Object.create(PxBaseMaterial.prototype);
 PxMaterial.prototype.constructor = PxMaterial;
@@ -18351,7 +17840,6 @@ PxMaterial.prototype['acquireReference'] = PxMaterial.prototype.acquireReference
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxMaterial.prototype, 'userData', { get: PxMaterial.prototype.get_userData, set: PxMaterial.prototype.set_userData });
-// PxMaterialConstPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMaterialConstPtr() { throw "cannot construct a PxMaterialConstPtr, no constructor in IDL" }
 PxMaterialConstPtr.prototype = Object.create(WrapperObject.prototype);
 PxMaterialConstPtr.prototype.constructor = PxMaterialConstPtr;
@@ -18363,7 +17851,6 @@ Module['PxMaterialConstPtr'] = PxMaterialConstPtr;
   var self = this.ptr;
   _emscripten_bind_PxMaterialConstPtr___destroy___0(self);
 };
-// PxMaterialFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMaterialFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxMaterialFlags_PxMaterialFlags_1(flags);
@@ -18397,7 +17884,6 @@ PxMaterialFlags.prototype['clear'] = PxMaterialFlags.prototype.clear = /** @supp
   var self = this.ptr;
   _emscripten_bind_PxMaterialFlags___destroy___0(self);
 };
-// PxMaterialPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMaterialPtr() { throw "cannot construct a PxMaterialPtr, no constructor in IDL" }
 PxMaterialPtr.prototype = Object.create(WrapperObject.prototype);
 PxMaterialPtr.prototype.constructor = PxMaterialPtr;
@@ -18409,7 +17895,6 @@ Module['PxMaterialPtr'] = PxMaterialPtr;
   var self = this.ptr;
   _emscripten_bind_PxMaterialPtr___destroy___0(self);
 };
-// PxMeshFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMeshFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxMeshFlags_PxMeshFlags_1(flags);
@@ -18443,7 +17928,6 @@ PxMeshFlags.prototype['clear'] = PxMeshFlags.prototype.clear = /** @suppress {un
   var self = this.ptr;
   _emscripten_bind_PxMeshFlags___destroy___0(self);
 };
-// PxMeshGeometryFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMeshGeometryFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxMeshGeometryFlags_PxMeshGeometryFlags_1(flags);
@@ -18477,7 +17961,6 @@ PxMeshGeometryFlags.prototype['clear'] = PxMeshGeometryFlags.prototype.clear = /
   var self = this.ptr;
   _emscripten_bind_PxMeshGeometryFlags___destroy___0(self);
 };
-// PxMeshOverlapUtil
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMeshOverlapUtil() {
   this.ptr = _emscripten_bind_PxMeshOverlapUtil_PxMeshOverlapUtil_0();
   getCache(PxMeshOverlapUtil)[this.ptr] = this;
@@ -18511,7 +17994,6 @@ PxMeshOverlapUtil.prototype['getNbResults'] = PxMeshOverlapUtil.prototype.getNbR
   var self = this.ptr;
   _emscripten_bind_PxMeshOverlapUtil___destroy___0(self);
 };
-// PxMeshPreprocessingFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMeshPreprocessingFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxMeshPreprocessingFlags_PxMeshPreprocessingFlags_1(flags);
@@ -18545,7 +18027,6 @@ PxMeshPreprocessingFlags.prototype['clear'] = PxMeshPreprocessingFlags.prototype
   var self = this.ptr;
   _emscripten_bind_PxMeshPreprocessingFlags___destroy___0(self);
 };
-// PxMeshScale
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMeshScale(s, r) {
   if (s && typeof s === 'object') s = s.ptr;
   if (r && typeof r === 'object') r = r.ptr;
@@ -18564,7 +18045,6 @@ Module['PxMeshScale'] = PxMeshScale;
   var self = this.ptr;
   _emscripten_bind_PxMeshScale___destroy___0(self);
 };
-// PxMidphaseDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxMidphaseDesc() {
   this.ptr = _emscripten_bind_PxMidphaseDesc_PxMidphaseDesc_0();
   getCache(PxMidphaseDesc)[this.ptr] = this;
@@ -18617,7 +18097,6 @@ PxMidphaseDesc.prototype['isValid'] = PxMidphaseDesc.prototype.isValid = /** @su
   var self = this.ptr;
   _emscripten_bind_PxMidphaseDesc___destroy___0(self);
 };
-// PxObstacleContext
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxObstacleContext() { throw "cannot construct a PxObstacleContext, no constructor in IDL" }
 PxObstacleContext.prototype = Object.create(WrapperObject.prototype);
 PxObstacleContext.prototype.constructor = PxObstacleContext;
@@ -18675,7 +18154,6 @@ PxObstacleContext.prototype['getObstacleByHandle'] = PxObstacleContext.prototype
   var self = this.ptr;
   _emscripten_bind_PxObstacleContext___destroy___0(self);
 };
-// PxOmniPvd
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxOmniPvd() { throw "cannot construct a PxOmniPvd, no constructor in IDL" }
 PxOmniPvd.prototype = Object.create(WrapperObject.prototype);
 PxOmniPvd.prototype.constructor = PxOmniPvd;
@@ -18697,7 +18175,6 @@ PxOmniPvd.prototype['release'] = PxOmniPvd.prototype.release = /** @suppress {un
   var self = this.ptr;
   _emscripten_bind_PxOmniPvd___destroy___0(self);
 };
-// PxOverlapBuffer10
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxOverlapBuffer10() {
   this.ptr = _emscripten_bind_PxOverlapBuffer10_PxOverlapBuffer10_0();
   getCache(PxOverlapBuffer10)[this.ptr] = this;
@@ -18771,7 +18248,6 @@ PxOverlapBuffer10.prototype['hasAnyHits'] = PxOverlapBuffer10.prototype.hasAnyHi
   var self = this.ptr;
   _emscripten_bind_PxOverlapBuffer10___destroy___0(self);
 };
-// PxOverlapHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxOverlapHit() { throw "cannot construct a PxOverlapHit, no constructor in IDL" }
 PxOverlapHit.prototype = Object.create(PxQueryHit.prototype);
 PxOverlapHit.prototype.constructor = PxOverlapHit;
@@ -18816,7 +18292,6 @@ Module['PxOverlapHit'] = PxOverlapHit;
   var self = this.ptr;
   _emscripten_bind_PxOverlapHit___destroy___0(self);
 };
-// PxOverlapResult
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxOverlapResult() {
   this.ptr = _emscripten_bind_PxOverlapResult_PxOverlapResult_0();
   getCache(PxOverlapResult)[this.ptr] = this;
@@ -18880,7 +18355,6 @@ PxOverlapResult.prototype['hasAnyHits'] = PxOverlapResult.prototype.hasAnyHits =
   var self = this.ptr;
   _emscripten_bind_PxOverlapResult___destroy___0(self);
 };
-// PxPairFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPairFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxPairFlags_PxPairFlags_1(flags);
@@ -18914,7 +18388,6 @@ PxPairFlags.prototype['clear'] = PxPairFlags.prototype.clear = /** @suppress {un
   var self = this.ptr;
   _emscripten_bind_PxPairFlags___destroy___0(self);
 };
-// PxPhysics
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPhysics() { throw "cannot construct a PxPhysics, no constructor in IDL" }
 PxPhysics.prototype = Object.create(WrapperObject.prototype);
 PxPhysics.prototype.constructor = PxPhysics;
@@ -19013,7 +18486,6 @@ PxPhysics.prototype['getPhysicsInsertionCallback'] = PxPhysics.prototype.getPhys
   var self = this.ptr;
   _emscripten_bind_PxPhysics___destroy___0(self);
 };
-// PxPlane
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPlane(nx, ny, nz, distance) {
   if (nx && typeof nx === 'object') nx = nx.ptr;
   if (ny && typeof ny === 'object') ny = ny.ptr;
@@ -19098,7 +18570,6 @@ PxPlane.prototype['inverseTransform'] = PxPlane.prototype.inverseTransform = /**
   var self = this.ptr;
   _emscripten_bind_PxPlane___destroy___0(self);
 };
-// PxPlaneGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPlaneGeometry() {
   this.ptr = _emscripten_bind_PxPlaneGeometry_PxPlaneGeometry_0();
   getCache(PxPlaneGeometry)[this.ptr] = this;
@@ -19118,7 +18589,6 @@ PxPlaneGeometry.prototype['getType'] = PxPlaneGeometry.prototype.getType = /** @
   var self = this.ptr;
   _emscripten_bind_PxPlaneGeometry___destroy___0(self);
 };
-// PxPrismaticJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPrismaticJoint() { throw "cannot construct a PxPrismaticJoint, no constructor in IDL" }
 PxPrismaticJoint.prototype = Object.create(PxJoint.prototype);
 PxPrismaticJoint.prototype.constructor = PxPrismaticJoint;
@@ -19318,7 +18788,6 @@ PxPrismaticJoint.prototype['getScene'] = PxPrismaticJoint.prototype.getScene = /
   var self = this.ptr;
   _emscripten_bind_PxPrismaticJoint___destroy___0(self);
 };
-// PxPrismaticJointFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPrismaticJointFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxPrismaticJointFlags_PxPrismaticJointFlags_1(flags);
@@ -19352,7 +18821,6 @@ PxPrismaticJointFlags.prototype['clear'] = PxPrismaticJointFlags.prototype.clear
   var self = this.ptr;
   _emscripten_bind_PxPrismaticJointFlags___destroy___0(self);
 };
-// PxPvd
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPvd() { throw "cannot construct a PxPvd, no constructor in IDL" }
 PxPvd.prototype = Object.create(WrapperObject.prototype);
 PxPvd.prototype.constructor = PxPvd;
@@ -19372,7 +18840,6 @@ PxPvd.prototype['release'] = PxPvd.prototype.release = /** @suppress {undefinedV
   _emscripten_bind_PxPvd_release_0(self);
 };;
 
-// PxPvdInstrumentationFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxPvdInstrumentationFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxPvdInstrumentationFlags_PxPvdInstrumentationFlags_1(flags);
@@ -19406,7 +18873,6 @@ PxPvdInstrumentationFlags.prototype['clear'] = PxPvdInstrumentationFlags.prototy
   var self = this.ptr;
   _emscripten_bind_PxPvdInstrumentationFlags___destroy___0(self);
 };
-// PxQuat
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxQuat(x, y, z, w) {
   if (x && typeof x === 'object') x = x.ptr;
   if (y && typeof y === 'object') y = y.ptr;
@@ -19563,7 +19029,6 @@ PxQuat.prototype['rotateInv'] = PxQuat.prototype.rotateInv = /** @suppress {unde
   var self = this.ptr;
   _emscripten_bind_PxQuat___destroy___0(self);
 };
-// PxQueryFilterCallbackImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxQueryFilterCallbackImpl() {
   this.ptr = _emscripten_bind_PxQueryFilterCallbackImpl_PxQueryFilterCallbackImpl_0();
   getCache(PxQueryFilterCallbackImpl)[this.ptr] = this;
@@ -19596,7 +19061,6 @@ PxQueryFilterCallbackImpl.prototype['simplePostFilter'] = PxQueryFilterCallbackI
   var self = this.ptr;
   _emscripten_bind_PxQueryFilterCallbackImpl___destroy___0(self);
 };
-// PxQueryFilterData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxQueryFilterData(fd, f) {
   if (fd && typeof fd === 'object') fd = fd.ptr;
   if (f && typeof f === 'object') f = f.ptr;
@@ -19637,7 +19101,6 @@ Module['PxQueryFilterData'] = PxQueryFilterData;
   var self = this.ptr;
   _emscripten_bind_PxQueryFilterData___destroy___0(self);
 };
-// PxQueryFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxQueryFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxQueryFlags_PxQueryFlags_1(flags);
@@ -19671,7 +19134,6 @@ PxQueryFlags.prototype['clear'] = PxQueryFlags.prototype.clear = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxQueryFlags___destroy___0(self);
 };
-// PxRaycastBuffer10
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRaycastBuffer10() {
   this.ptr = _emscripten_bind_PxRaycastBuffer10_PxRaycastBuffer10_0();
   getCache(PxRaycastBuffer10)[this.ptr] = this;
@@ -19745,7 +19207,6 @@ PxRaycastBuffer10.prototype['hasAnyHits'] = PxRaycastBuffer10.prototype.hasAnyHi
   var self = this.ptr;
   _emscripten_bind_PxRaycastBuffer10___destroy___0(self);
 };
-// PxRaycastHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRaycastHit() {
   this.ptr = _emscripten_bind_PxRaycastHit_PxRaycastHit_0();
   getCache(PxRaycastHit)[this.ptr] = this;
@@ -19864,7 +19325,6 @@ PxRaycastHit.prototype['hadInitialOverlap'] = PxRaycastHit.prototype.hadInitialO
   var self = this.ptr;
   _emscripten_bind_PxRaycastHit___destroy___0(self);
 };
-// PxRaycastResult
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRaycastResult() {
   this.ptr = _emscripten_bind_PxRaycastResult_PxRaycastResult_0();
   getCache(PxRaycastResult)[this.ptr] = this;
@@ -19928,7 +19388,6 @@ PxRaycastResult.prototype['hasAnyHits'] = PxRaycastResult.prototype.hasAnyHits =
   var self = this.ptr;
   _emscripten_bind_PxRaycastResult___destroy___0(self);
 };
-// PxRealPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRealPtr() { throw "cannot construct a PxRealPtr, no constructor in IDL" }
 PxRealPtr.prototype = Object.create(PxRealConstPtr.prototype);
 PxRealPtr.prototype.constructor = PxRealPtr;
@@ -19940,7 +19399,6 @@ Module['PxRealPtr'] = PxRealPtr;
   var self = this.ptr;
   _emscripten_bind_PxRealPtr___destroy___0(self);
 };
-// PxRenderBuffer
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRenderBuffer() { throw "cannot construct a PxRenderBuffer, no constructor in IDL" }
 PxRenderBuffer.prototype = Object.create(WrapperObject.prototype);
 PxRenderBuffer.prototype.constructor = PxRenderBuffer;
@@ -20030,7 +19488,6 @@ PxRenderBuffer.prototype['empty'] = PxRenderBuffer.prototype.empty = /** @suppre
   return !!(_emscripten_bind_PxRenderBuffer_empty_0(self));
 };;
 
-// PxRevoluteJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRevoluteJoint() { throw "cannot construct a PxRevoluteJoint, no constructor in IDL" }
 PxRevoluteJoint.prototype = Object.create(PxJoint.prototype);
 PxRevoluteJoint.prototype.constructor = PxRevoluteJoint;
@@ -20265,7 +19722,6 @@ PxRevoluteJoint.prototype['getScene'] = PxRevoluteJoint.prototype.getScene = /**
   var self = this.ptr;
   _emscripten_bind_PxRevoluteJoint___destroy___0(self);
 };
-// PxRevoluteJointFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRevoluteJointFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxRevoluteJointFlags_PxRevoluteJointFlags_1(flags);
@@ -20299,7 +19755,6 @@ PxRevoluteJointFlags.prototype['clear'] = PxRevoluteJointFlags.prototype.clear =
   var self = this.ptr;
   _emscripten_bind_PxRevoluteJointFlags___destroy___0(self);
 };
-// PxRigidActorExt
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidActorExt() { throw "cannot construct a PxRigidActorExt, no constructor in IDL" }
 PxRigidActorExt.prototype = Object.create(WrapperObject.prototype);
 PxRigidActorExt.prototype.constructor = PxRigidActorExt;
@@ -20321,7 +19776,6 @@ PxRigidActorExt.prototype['createExclusiveShape'] = PxRigidActorExt.prototype.cr
   var self = this.ptr;
   _emscripten_bind_PxRigidActorExt___destroy___0(self);
 };
-// PxRigidBodyExt
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidBodyExt() { throw "cannot construct a PxRigidBodyExt, no constructor in IDL" }
 PxRigidBodyExt.prototype = Object.create(WrapperObject.prototype);
 PxRigidBodyExt.prototype.constructor = PxRigidBodyExt;
@@ -20453,7 +19907,6 @@ PxRigidBodyExt.prototype['computeLinearAngularImpulse'] = PxRigidBodyExt.prototy
   var self = this.ptr;
   _emscripten_bind_PxRigidBodyExt___destroy___0(self);
 };
-// PxRigidBodyFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidBodyFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxRigidBodyFlags_PxRigidBodyFlags_1(flags);
@@ -20487,7 +19940,6 @@ PxRigidBodyFlags.prototype['clear'] = PxRigidBodyFlags.prototype.clear = /** @su
   var self = this.ptr;
   _emscripten_bind_PxRigidBodyFlags___destroy___0(self);
 };
-// PxRigidDynamic
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidDynamic() { throw "cannot construct a PxRigidDynamic, no constructor in IDL" }
 PxRigidDynamic.prototype = Object.create(PxRigidBody.prototype);
 PxRigidDynamic.prototype.constructor = PxRigidDynamic;
@@ -20972,7 +20424,6 @@ PxRigidDynamic.prototype['getContactSlopCoefficient'] = PxRigidDynamic.prototype
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxRigidDynamic.prototype, 'userData', { get: PxRigidDynamic.prototype.get_userData, set: PxRigidDynamic.prototype.set_userData });
-// PxRigidDynamicLockFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidDynamicLockFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxRigidDynamicLockFlags_PxRigidDynamicLockFlags_1(flags);
@@ -21006,7 +20457,6 @@ PxRigidDynamicLockFlags.prototype['clear'] = PxRigidDynamicLockFlags.prototype.c
   var self = this.ptr;
   _emscripten_bind_PxRigidDynamicLockFlags___destroy___0(self);
 };
-// PxRigidStatic
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxRigidStatic() { throw "cannot construct a PxRigidStatic, no constructor in IDL" }
 PxRigidStatic.prototype = Object.create(PxRigidActor.prototype);
 PxRigidStatic.prototype.constructor = PxRigidStatic;
@@ -21178,7 +20628,6 @@ PxRigidStatic.prototype['getNbConstraints'] = PxRigidStatic.prototype.getNbConst
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxRigidStatic.prototype, 'userData', { get: PxRigidStatic.prototype.get_userData, set: PxRigidStatic.prototype.set_userData });
-// PxScene
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxScene() { throw "cannot construct a PxScene, no constructor in IDL" }
 PxScene.prototype = Object.create(PxSceneSQSystem.prototype);
 PxScene.prototype.constructor = PxScene;
@@ -21841,7 +21290,6 @@ PxScene.prototype['fetchQueries'] = PxScene.prototype.fetchQueries = /** @suppre
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxScene.prototype, 'userData', { get: PxScene.prototype.get_userData, set: PxScene.prototype.set_userData });
-// PxSceneDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSceneDesc(scale) {
   if (scale && typeof scale === 'object') scale = scale.ptr;
   this.ptr = _emscripten_bind_PxSceneDesc_PxSceneDesc_1(scale);
@@ -22319,7 +21767,6 @@ PxSceneDesc.prototype['isValid'] = PxSceneDesc.prototype.isValid = /** @suppress
   var self = this.ptr;
   _emscripten_bind_PxSceneDesc___destroy___0(self);
 };
-// PxSceneFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSceneFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxSceneFlags_PxSceneFlags_1(flags);
@@ -22353,7 +21800,6 @@ PxSceneFlags.prototype['clear'] = PxSceneFlags.prototype.clear = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxSceneFlags___destroy___0(self);
 };
-// PxSceneLimits
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSceneLimits() {
   this.ptr = _emscripten_bind_PxSceneLimits_PxSceneLimits_0();
   getCache(PxSceneLimits)[this.ptr] = this;
@@ -22466,7 +21912,6 @@ PxSceneLimits.prototype['isValid'] = PxSceneLimits.prototype.isValid = /** @supp
   var self = this.ptr;
   _emscripten_bind_PxSceneLimits___destroy___0(self);
 };
-// PxSerialization
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSerialization() { throw "cannot construct a PxSerialization, no constructor in IDL" }
 PxSerialization.prototype = Object.create(WrapperObject.prototype);
 PxSerialization.prototype.constructor = PxSerialization;
@@ -22554,7 +21999,6 @@ PxSerialization.prototype['createSerializationRegistry'] = PxSerialization.proto
   var self = this.ptr;
   _emscripten_bind_PxSerialization___destroy___0(self);
 };
-// PxSerializationRegistry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSerializationRegistry() { throw "cannot construct a PxSerializationRegistry, no constructor in IDL" }
 PxSerializationRegistry.prototype = Object.create(WrapperObject.prototype);
 PxSerializationRegistry.prototype.constructor = PxSerializationRegistry;
@@ -22567,7 +22011,6 @@ PxSerializationRegistry.prototype['release'] = PxSerializationRegistry.prototype
   _emscripten_bind_PxSerializationRegistry_release_0(self);
 };;
 
-// PxShape
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxShape() { throw "cannot construct a PxShape, no constructor in IDL" }
 PxShape.prototype = Object.create(PxRefCounted.prototype);
 PxShape.prototype.constructor = PxShape;
@@ -22789,7 +22232,6 @@ PxShape.prototype['acquireReference'] = PxShape.prototype.acquireReference = /**
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxShape.prototype, 'userData', { get: PxShape.prototype.get_userData, set: PxShape.prototype.set_userData });
-// PxShapeExt
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxShapeExt() { throw "cannot construct a PxShapeExt, no constructor in IDL" }
 PxShapeExt.prototype = Object.create(WrapperObject.prototype);
 PxShapeExt.prototype.constructor = PxShapeExt;
@@ -22852,7 +22294,6 @@ PxShapeExt.prototype['getWorldBounds'] = PxShapeExt.prototype.getWorldBounds = /
   var self = this.ptr;
   _emscripten_bind_PxShapeExt___destroy___0(self);
 };
-// PxShapeFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxShapeFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxShapeFlags_PxShapeFlags_1(flags);
@@ -22886,7 +22327,6 @@ PxShapeFlags.prototype['clear'] = PxShapeFlags.prototype.clear = /** @suppress {
   var self = this.ptr;
   _emscripten_bind_PxShapeFlags___destroy___0(self);
 };
-// PxShapePtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxShapePtr() { throw "cannot construct a PxShapePtr, no constructor in IDL" }
 PxShapePtr.prototype = Object.create(WrapperObject.prototype);
 PxShapePtr.prototype.constructor = PxShapePtr;
@@ -22898,7 +22338,6 @@ Module['PxShapePtr'] = PxShapePtr;
   var self = this.ptr;
   _emscripten_bind_PxShapePtr___destroy___0(self);
 };
-// PxSimulationEventCallbackImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSimulationEventCallbackImpl() {
   this.ptr = _emscripten_bind_PxSimulationEventCallbackImpl_PxSimulationEventCallbackImpl_0();
   getCache(PxSimulationEventCallbackImpl)[this.ptr] = this;
@@ -22949,7 +22388,6 @@ PxSimulationEventCallbackImpl.prototype['onTrigger'] = PxSimulationEventCallback
   var self = this.ptr;
   _emscripten_bind_PxSimulationEventCallbackImpl___destroy___0(self);
 };
-// PxSimulationStatistics
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSimulationStatistics() { throw "cannot construct a PxSimulationStatistics, no constructor in IDL" }
 PxSimulationStatistics.prototype = Object.create(WrapperObject.prototype);
 PxSimulationStatistics.prototype.constructor = PxSimulationStatistics;
@@ -23217,7 +22655,6 @@ Module['PxSimulationStatistics'] = PxSimulationStatistics;
   var self = this.ptr;
   _emscripten_bind_PxSimulationStatistics___destroy___0(self);
 };
-// PxSpatialForce
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSpatialForce() { throw "cannot construct a PxSpatialForce, no constructor in IDL" }
 PxSpatialForce.prototype = Object.create(WrapperObject.prototype);
 PxSpatialForce.prototype.constructor = PxSpatialForce;
@@ -23251,7 +22688,6 @@ Module['PxSpatialForce'] = PxSpatialForce;
   var self = this.ptr;
   _emscripten_bind_PxSpatialForce___destroy___0(self);
 };
-// PxSpatialVelocity
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSpatialVelocity() { throw "cannot construct a PxSpatialVelocity, no constructor in IDL" }
 PxSpatialVelocity.prototype = Object.create(WrapperObject.prototype);
 PxSpatialVelocity.prototype.constructor = PxSpatialVelocity;
@@ -23285,7 +22721,6 @@ Module['PxSpatialVelocity'] = PxSpatialVelocity;
   var self = this.ptr;
   _emscripten_bind_PxSpatialVelocity___destroy___0(self);
 };
-// PxSphereGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSphereGeometry(ir) {
   if (ir && typeof ir === 'object') ir = ir.ptr;
   this.ptr = _emscripten_bind_PxSphereGeometry_PxSphereGeometry_1(ir);
@@ -23317,7 +22752,6 @@ PxSphereGeometry.prototype['getType'] = PxSphereGeometry.prototype.getType = /**
   var self = this.ptr;
   _emscripten_bind_PxSphereGeometry___destroy___0(self);
 };
-// PxSphericalJoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSphericalJoint() { throw "cannot construct a PxSphericalJoint, no constructor in IDL" }
 PxSphericalJoint.prototype = Object.create(PxJoint.prototype);
 PxSphericalJoint.prototype.constructor = PxSphericalJoint;
@@ -23517,7 +22951,6 @@ PxSphericalJoint.prototype['getScene'] = PxSphericalJoint.prototype.getScene = /
   var self = this.ptr;
   _emscripten_bind_PxSphericalJoint___destroy___0(self);
 };
-// PxSphericalJointFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSphericalJointFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxSphericalJointFlags_PxSphericalJointFlags_1(flags);
@@ -23551,7 +22984,6 @@ PxSphericalJointFlags.prototype['clear'] = PxSphericalJointFlags.prototype.clear
   var self = this.ptr;
   _emscripten_bind_PxSphericalJointFlags___destroy___0(self);
 };
-// PxSweepBuffer10
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSweepBuffer10() {
   this.ptr = _emscripten_bind_PxSweepBuffer10_PxSweepBuffer10_0();
   getCache(PxSweepBuffer10)[this.ptr] = this;
@@ -23625,7 +23057,6 @@ PxSweepBuffer10.prototype['hasAnyHits'] = PxSweepBuffer10.prototype.hasAnyHits =
   var self = this.ptr;
   _emscripten_bind_PxSweepBuffer10___destroy___0(self);
 };
-// PxSweepHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSweepHit() {
   this.ptr = _emscripten_bind_PxSweepHit_PxSweepHit_0();
   getCache(PxSweepHit)[this.ptr] = this;
@@ -23722,7 +23153,6 @@ PxSweepHit.prototype['hadInitialOverlap'] = PxSweepHit.prototype.hadInitialOverl
   var self = this.ptr;
   _emscripten_bind_PxSweepHit___destroy___0(self);
 };
-// PxSweepResult
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxSweepResult() {
   this.ptr = _emscripten_bind_PxSweepResult_PxSweepResult_0();
   getCache(PxSweepResult)[this.ptr] = this;
@@ -23786,7 +23216,6 @@ PxSweepResult.prototype['hasAnyHits'] = PxSweepResult.prototype.hasAnyHits = /**
   var self = this.ptr;
   _emscripten_bind_PxSweepResult___destroy___0(self);
 };
-// PxTetMaker
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetMaker() { throw "cannot construct a PxTetMaker, no constructor in IDL" }
 PxTetMaker.prototype = Object.create(WrapperObject.prototype);
 PxTetMaker.prototype.constructor = PxTetMaker;
@@ -23913,7 +23342,6 @@ PxTetMaker.prototype['findLargestIslandId'] = PxTetMaker.prototype.findLargestIs
   return _emscripten_bind_PxTetMaker_findLargestIslandId_2(self, islandIndexPerTriangle, numTriangles);
 };;
 
-// PxTetrahedronMesh
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetrahedronMesh() { throw "cannot construct a PxTetrahedronMesh, no constructor in IDL" }
 PxTetrahedronMesh.prototype = Object.create(PxRefCounted.prototype);
 PxTetrahedronMesh.prototype.constructor = PxTetrahedronMesh;
@@ -24004,7 +23432,6 @@ PxTetrahedronMesh.prototype['acquireReference'] = PxTetrahedronMesh.prototype.ac
   _emscripten_bind_PxTetrahedronMesh_acquireReference_0(self);
 };;
 
-// PxTetrahedronMeshAnalysisResults
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetrahedronMeshAnalysisResults(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxTetrahedronMeshAnalysisResults_PxTetrahedronMeshAnalysisResults_1(flags);
@@ -24038,7 +23465,6 @@ PxTetrahedronMeshAnalysisResults.prototype['clear'] = PxTetrahedronMeshAnalysisR
   var self = this.ptr;
   _emscripten_bind_PxTetrahedronMeshAnalysisResults___destroy___0(self);
 };
-// PxTetrahedronMeshDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetrahedronMeshDesc(meshVertices, meshTetIndices, meshFormat, numberOfTetsPerHexElement) {
   if (meshVertices && typeof meshVertices === 'object') meshVertices = meshVertices.ptr;
   if (meshTetIndices && typeof meshTetIndices === 'object') meshTetIndices = meshTetIndices.ptr;
@@ -24121,7 +23547,6 @@ PxTetrahedronMeshDesc.prototype['isValid'] = PxTetrahedronMeshDesc.prototype.isV
   var self = this.ptr;
   _emscripten_bind_PxTetrahedronMeshDesc___destroy___0(self);
 };
-// PxTetrahedronMeshExt
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetrahedronMeshExt() { throw "cannot construct a PxTetrahedronMeshExt, no constructor in IDL" }
 PxTetrahedronMeshExt.prototype = Object.create(WrapperObject.prototype);
 PxTetrahedronMeshExt.prototype.constructor = PxTetrahedronMeshExt;
@@ -24167,7 +23592,6 @@ PxTetrahedronMeshExt.prototype['extractTetMeshSurface'] = PxTetrahedronMeshExt.p
   _emscripten_bind_PxTetrahedronMeshExt_extractTetMeshSurface_4(self, mesh, surfaceTriangles, surfaceTriangleToTet, flipTriangleOrientation);
 };;
 
-// PxTetrahedronMeshFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetrahedronMeshFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxTetrahedronMeshFlags_PxTetrahedronMeshFlags_1(flags);
@@ -24201,7 +23625,6 @@ PxTetrahedronMeshFlags.prototype['clear'] = PxTetrahedronMeshFlags.prototype.cle
   var self = this.ptr;
   _emscripten_bind_PxTetrahedronMeshFlags___destroy___0(self);
 };
-// PxTetrahedronMeshGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTetrahedronMeshGeometry(mesh) {
   if (mesh && typeof mesh === 'object') mesh = mesh.ptr;
   this.ptr = _emscripten_bind_PxTetrahedronMeshGeometry_PxTetrahedronMeshGeometry_1(mesh);
@@ -24234,7 +23657,6 @@ PxTetrahedronMeshGeometry.prototype['getType'] = PxTetrahedronMeshGeometry.proto
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxTetrahedronMeshGeometry.prototype, 'tetrahedronMesh', { get: PxTetrahedronMeshGeometry.prototype.get_tetrahedronMesh, set: PxTetrahedronMeshGeometry.prototype.set_tetrahedronMesh });
-// PxTolerancesScale
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTolerancesScale() {
   this.ptr = _emscripten_bind_PxTolerancesScale_PxTolerancesScale_0();
   getCache(PxTolerancesScale)[this.ptr] = this;
@@ -24249,7 +23671,6 @@ Module['PxTolerancesScale'] = PxTolerancesScale;
   var self = this.ptr;
   _emscripten_bind_PxTolerancesScale___destroy___0(self);
 };
-// PxTopLevelFunctions
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTopLevelFunctions() { throw "cannot construct a PxTopLevelFunctions, no constructor in IDL" }
 PxTopLevelFunctions.prototype = Object.create(WrapperObject.prototype);
 PxTopLevelFunctions.prototype.constructor = PxTopLevelFunctions;
@@ -24422,7 +23843,6 @@ PxTopLevelFunctions.prototype['CookConvexMesh'] = PxTopLevelFunctions.prototype.
 };
     /** @suppress {checkTypes} */
     Object.defineProperty(PxTopLevelFunctions.prototype, 'PHYSICS_VERSION', { get: PxTopLevelFunctions.prototype.get_PHYSICS_VERSION });
-// PxTransform
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTransform(p0, q0) {
   if (p0 && typeof p0 === 'object') p0 = p0.ptr;
   if (q0 && typeof q0 === 'object') q0 = q0.ptr;
@@ -24463,7 +23883,6 @@ Module['PxTransform'] = PxTransform;
   var self = this.ptr;
   _emscripten_bind_PxTransform___destroy___0(self);
 };
-// PxTriangle
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriangle(p0, p1, p2) {
   if (p0 && typeof p0 === 'object') p0 = p0.ptr;
   if (p1 && typeof p1 === 'object') p1 = p1.ptr;
@@ -24508,7 +23927,6 @@ PxTriangle.prototype['pointFromUV'] = PxTriangle.prototype.pointFromUV = /** @su
   var self = this.ptr;
   _emscripten_bind_PxTriangle___destroy___0(self);
 };
-// PxTriangleMesh
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriangleMesh() { throw "cannot construct a PxTriangleMesh, no constructor in IDL" }
 PxTriangleMesh.prototype = Object.create(PxRefCounted.prototype);
 PxTriangleMesh.prototype.constructor = PxTriangleMesh;
@@ -24615,7 +24033,6 @@ PxTriangleMesh.prototype['acquireReference'] = PxTriangleMesh.prototype.acquireR
   _emscripten_bind_PxTriangleMesh_acquireReference_0(self);
 };;
 
-// PxTriangleMeshAnalysisResults
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriangleMeshAnalysisResults(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxTriangleMeshAnalysisResults_PxTriangleMeshAnalysisResults_1(flags);
@@ -24649,7 +24066,6 @@ PxTriangleMeshAnalysisResults.prototype['clear'] = PxTriangleMeshAnalysisResults
   var self = this.ptr;
   _emscripten_bind_PxTriangleMeshAnalysisResults___destroy___0(self);
 };
-// PxTriangleMeshDesc
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriangleMeshDesc() {
   this.ptr = _emscripten_bind_PxTriangleMeshDesc_PxTriangleMeshDesc_0();
   getCache(PxTriangleMeshDesc)[this.ptr] = this;
@@ -24718,7 +24134,6 @@ PxTriangleMeshDesc.prototype['isValid'] = PxTriangleMeshDesc.prototype.isValid =
   var self = this.ptr;
   _emscripten_bind_PxTriangleMeshDesc___destroy___0(self);
 };
-// PxTriangleMeshFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriangleMeshFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxTriangleMeshFlags_PxTriangleMeshFlags_1(flags);
@@ -24752,7 +24167,6 @@ PxTriangleMeshFlags.prototype['clear'] = PxTriangleMeshFlags.prototype.clear = /
   var self = this.ptr;
   _emscripten_bind_PxTriangleMeshFlags___destroy___0(self);
 };
-// PxTriangleMeshGeometry
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriangleMeshGeometry(mesh, scaling, flags) {
   if (mesh && typeof mesh === 'object') mesh = mesh.ptr;
   if (scaling && typeof scaling === 'object') scaling = scaling.ptr;
@@ -24815,7 +24229,6 @@ PxTriangleMeshGeometry.prototype['getType'] = PxTriangleMeshGeometry.prototype.g
   var self = this.ptr;
   _emscripten_bind_PxTriangleMeshGeometry___destroy___0(self);
 };
-// PxTriggerPair
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriggerPair() { throw "cannot construct a PxTriggerPair, no constructor in IDL" }
 PxTriggerPair.prototype = Object.create(WrapperObject.prototype);
 PxTriggerPair.prototype.constructor = PxTriggerPair;
@@ -24893,7 +24306,6 @@ Module['PxTriggerPair'] = PxTriggerPair;
   var self = this.ptr;
   _emscripten_bind_PxTriggerPair___destroy___0(self);
 };
-// PxTriggerPairFlags
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTriggerPairFlags(flags) {
   if (flags && typeof flags === 'object') flags = flags.ptr;
   this.ptr = _emscripten_bind_PxTriggerPairFlags_PxTriggerPairFlags_1(flags);
@@ -24927,7 +24339,6 @@ PxTriggerPairFlags.prototype['clear'] = PxTriggerPairFlags.prototype.clear = /**
   var self = this.ptr;
   _emscripten_bind_PxTriggerPairFlags___destroy___0(self);
 };
-// PxTypedStridedData_PxU16
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxTypedStridedData_PxU16() { throw "cannot construct a PxTypedStridedData_PxU16, no constructor in IDL" }
 PxTypedStridedData_PxU16.prototype = Object.create(WrapperObject.prototype);
 PxTypedStridedData_PxU16.prototype.constructor = PxTypedStridedData_PxU16;
@@ -24961,7 +24372,6 @@ Module['PxTypedStridedData_PxU16'] = PxTypedStridedData_PxU16;
   var self = this.ptr;
   _emscripten_bind_PxTypedStridedData_PxU16___destroy___0(self);
 };
-// PxU16Ptr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU16Ptr() { throw "cannot construct a PxU16Ptr, no constructor in IDL" }
 PxU16Ptr.prototype = Object.create(PxU16ConstPtr.prototype);
 PxU16Ptr.prototype.constructor = PxU16Ptr;
@@ -24973,7 +24383,6 @@ Module['PxU16Ptr'] = PxU16Ptr;
   var self = this.ptr;
   _emscripten_bind_PxU16Ptr___destroy___0(self);
 };
-// PxU16StridedData
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU16StridedData() { throw "cannot construct a PxU16StridedData, no constructor in IDL" }
 PxU16StridedData.prototype = Object.create(WrapperObject.prototype);
 PxU16StridedData.prototype.constructor = PxU16StridedData;
@@ -25007,7 +24416,6 @@ Module['PxU16StridedData'] = PxU16StridedData;
   var self = this.ptr;
   _emscripten_bind_PxU16StridedData___destroy___0(self);
 };
-// PxU32Ptr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU32Ptr() { throw "cannot construct a PxU32Ptr, no constructor in IDL" }
 PxU32Ptr.prototype = Object.create(PxU32ConstPtr.prototype);
 PxU32Ptr.prototype.constructor = PxU32Ptr;
@@ -25019,7 +24427,6 @@ Module['PxU32Ptr'] = PxU32Ptr;
   var self = this.ptr;
   _emscripten_bind_PxU32Ptr___destroy___0(self);
 };
-// PxU8Ptr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxU8Ptr() { throw "cannot construct a PxU8Ptr, no constructor in IDL" }
 PxU8Ptr.prototype = Object.create(PxU8ConstPtr.prototype);
 PxU8Ptr.prototype.constructor = PxU8Ptr;
@@ -25031,7 +24438,6 @@ Module['PxU8Ptr'] = PxU8Ptr;
   var self = this.ptr;
   _emscripten_bind_PxU8Ptr___destroy___0(self);
 };
-// PxUserControllerHitReportImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxUserControllerHitReportImpl() {
   this.ptr = _emscripten_bind_PxUserControllerHitReportImpl_PxUserControllerHitReportImpl_0();
   getCache(PxUserControllerHitReportImpl)[this.ptr] = this;
@@ -25064,7 +24470,6 @@ PxUserControllerHitReportImpl.prototype['onObstacleHit'] = PxUserControllerHitRe
   var self = this.ptr;
   _emscripten_bind_PxUserControllerHitReportImpl___destroy___0(self);
 };
-// PxVec3
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxVec3(x, y, z) {
   if (x && typeof x === 'object') x = x.ptr;
   if (y && typeof y === 'object') y = y.ptr;
@@ -25208,7 +24613,6 @@ PxVec3.prototype['abs'] = PxVec3.prototype.abs = /** @suppress {undefinedVars, d
   var self = this.ptr;
   _emscripten_bind_PxVec3___destroy___0(self);
 };
-// PxVec4
 /** @suppress {undefinedVars, duplicate} @this{Object} */function PxVec4(x, y, z, w) {
   if (x && typeof x === 'object') x = x.ptr;
   if (y && typeof y === 'object') y = y.ptr;
@@ -25339,7 +24743,6 @@ PxVec4.prototype['getXYZ'] = PxVec4.prototype.getXYZ = /** @suppress {undefinedV
   var self = this.ptr;
   _emscripten_bind_PxVec4___destroy___0(self);
 };
-// SimplPvdTransportImpl
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SimplPvdTransportImpl() {
   this.ptr = _emscripten_bind_SimplPvdTransportImpl_SimplPvdTransportImpl_0();
   getCache(SimplPvdTransportImpl)[this.ptr] = this;
@@ -25381,7 +24784,6 @@ SimplPvdTransportImpl.prototype['flush'] = SimplPvdTransportImpl.prototype.flush
   var self = this.ptr;
   _emscripten_bind_SimplPvdTransportImpl___destroy___0(self);
 };
-// SphereSupport
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SphereSupport(radius) {
   if (radius && typeof radius === 'object') radius = radius.ptr;
   this.ptr = _emscripten_bind_SphereSupport_SphereSupport_1(radius);
@@ -25419,7 +24821,6 @@ SphereSupport.prototype['supportLocal'] = SphereSupport.prototype.supportLocal =
   var self = this.ptr;
   _emscripten_bind_SphereSupport___destroy___0(self);
 };
-// SupportFunctions
 /** @suppress {undefinedVars, duplicate} @this{Object} */function SupportFunctions() { throw "cannot construct a SupportFunctions, no constructor in IDL" }
 SupportFunctions.prototype = Object.create(WrapperObject.prototype);
 SupportFunctions.prototype.constructor = SupportFunctions;
@@ -25456,7 +24857,6 @@ SupportFunctions.prototype['PxArticulationReducedCoordinate_getMinSolverVelocity
   var self = this.ptr;
   _emscripten_bind_SupportFunctions___destroy___0(self);
 };
-// Vector_PxActorPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxActorPtr(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxActorPtr_Vector_PxActorPtr_0(); getCache(Vector_PxActorPtr)[this.ptr] = this;return }
@@ -25500,7 +24900,6 @@ Vector_PxActorPtr.prototype['clear'] = Vector_PxActorPtr.prototype.clear = /** @
   var self = this.ptr;
   _emscripten_bind_Vector_PxActorPtr___destroy___0(self);
 };
-// Vector_PxContactPairPoint
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxContactPairPoint(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxContactPairPoint_Vector_PxContactPairPoint_0(); getCache(Vector_PxContactPairPoint)[this.ptr] = this;return }
@@ -25544,7 +24943,6 @@ Vector_PxContactPairPoint.prototype['clear'] = Vector_PxContactPairPoint.prototy
   var self = this.ptr;
   _emscripten_bind_Vector_PxContactPairPoint___destroy___0(self);
 };
-// Vector_PxHeightFieldSample
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxHeightFieldSample(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxHeightFieldSample_Vector_PxHeightFieldSample_0(); getCache(Vector_PxHeightFieldSample)[this.ptr] = this;return }
@@ -25588,7 +24986,6 @@ Vector_PxHeightFieldSample.prototype['clear'] = Vector_PxHeightFieldSample.proto
   var self = this.ptr;
   _emscripten_bind_Vector_PxHeightFieldSample___destroy___0(self);
 };
-// Vector_PxMaterialConst
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxMaterialConst(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxMaterialConst_Vector_PxMaterialConst_0(); getCache(Vector_PxMaterialConst)[this.ptr] = this;return }
@@ -25632,7 +25029,6 @@ Vector_PxMaterialConst.prototype['clear'] = Vector_PxMaterialConst.prototype.cle
   var self = this.ptr;
   _emscripten_bind_Vector_PxMaterialConst___destroy___0(self);
 };
-// Vector_PxRaycastHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxRaycastHit(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxRaycastHit_Vector_PxRaycastHit_0(); getCache(Vector_PxRaycastHit)[this.ptr] = this;return }
@@ -25676,7 +25072,6 @@ Vector_PxRaycastHit.prototype['clear'] = Vector_PxRaycastHit.prototype.clear = /
   var self = this.ptr;
   _emscripten_bind_Vector_PxRaycastHit___destroy___0(self);
 };
-// Vector_PxReal
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxReal(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxReal_Vector_PxReal_0(); getCache(Vector_PxReal)[this.ptr] = this;return }
@@ -25720,7 +25115,6 @@ Vector_PxReal.prototype['clear'] = Vector_PxReal.prototype.clear = /** @suppress
   var self = this.ptr;
   _emscripten_bind_Vector_PxReal___destroy___0(self);
 };
-// Vector_PxSweepHit
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxSweepHit(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxSweepHit_Vector_PxSweepHit_0(); getCache(Vector_PxSweepHit)[this.ptr] = this;return }
@@ -25764,7 +25158,6 @@ Vector_PxSweepHit.prototype['clear'] = Vector_PxSweepHit.prototype.clear = /** @
   var self = this.ptr;
   _emscripten_bind_Vector_PxSweepHit___destroy___0(self);
 };
-// Vector_PxU16
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxU16(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxU16_Vector_PxU16_0(); getCache(Vector_PxU16)[this.ptr] = this;return }
@@ -25815,7 +25208,6 @@ Vector_PxU16.prototype['setFromBuffer'] = Vector_PxU16.prototype.setFromBuffer =
   var self = this.ptr;
   _emscripten_bind_Vector_PxU16___destroy___0(self);
 };
-// Vector_PxU32
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxU32(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxU32_Vector_PxU32_0(); getCache(Vector_PxU32)[this.ptr] = this;return }
@@ -25866,7 +25258,6 @@ Vector_PxU32.prototype['setFromBuffer'] = Vector_PxU32.prototype.setFromBuffer =
   var self = this.ptr;
   _emscripten_bind_Vector_PxU32___destroy___0(self);
 };
-// Vector_PxU8
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxU8(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxU8_Vector_PxU8_0(); getCache(Vector_PxU8)[this.ptr] = this;return }
@@ -25917,7 +25308,6 @@ Vector_PxU8.prototype['setFromBuffer'] = Vector_PxU8.prototype.setFromBuffer = /
   var self = this.ptr;
   _emscripten_bind_Vector_PxU8___destroy___0(self);
 };
-// Vector_PxVec3
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxVec3(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxVec3_Vector_PxVec3_0(); getCache(Vector_PxVec3)[this.ptr] = this;return }
@@ -25968,7 +25358,6 @@ Vector_PxVec3.prototype['setFromBuffer'] = Vector_PxVec3.prototype.setFromBuffer
   var self = this.ptr;
   _emscripten_bind_Vector_PxVec3___destroy___0(self);
 };
-// Vector_PxVec4
 /** @suppress {undefinedVars, duplicate} @this{Object} */function Vector_PxVec4(size) {
   if (size && typeof size === 'object') size = size.ptr;
   if (size === undefined) { this.ptr = _emscripten_bind_Vector_PxVec4_Vector_PxVec4_0(); getCache(Vector_PxVec4)[this.ptr] = this;return }
@@ -26015,7 +25404,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
 (function() {
   function setupEnums() {
     
-// $PxActorFlagEnum
 
     Module['eVISUALIZATION'] = _emscripten_enum_PxActorFlagEnum_eVISUALIZATION();
 
@@ -26026,7 +25414,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eDISABLE_SIMULATION'] = _emscripten_enum_PxActorFlagEnum_eDISABLE_SIMULATION();
 
     
-// $PxActorTypeEnum
 
     Module['eRIGID_STATIC'] = _emscripten_enum_PxActorTypeEnum_eRIGID_STATIC();
 
@@ -26043,14 +25430,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eHAIRSYSTEM'] = _emscripten_enum_PxActorTypeEnum_eHAIRSYSTEM();
 
     
-// $PxActorTypeFlagEnum
 
     Module['eRIGID_STATIC'] = _emscripten_enum_PxActorTypeFlagEnum_eRIGID_STATIC();
 
     Module['eRIGID_DYNAMIC'] = _emscripten_enum_PxActorTypeFlagEnum_eRIGID_DYNAMIC();
 
     
-// $PxArticulationAxisEnum
 
     Module['eTWIST'] = _emscripten_enum_PxArticulationAxisEnum_eTWIST();
 
@@ -26065,7 +25450,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eZ'] = _emscripten_enum_PxArticulationAxisEnum_eZ();
 
     
-// $PxArticulationCacheFlagEnum
 
     Module['eVELOCITY'] = _emscripten_enum_PxArticulationCacheFlagEnum_eVELOCITY();
 
@@ -26092,7 +25476,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eALL'] = _emscripten_enum_PxArticulationCacheFlagEnum_eALL();
 
     
-// $PxArticulationDriveTypeEnum
 
     Module['eFORCE'] = _emscripten_enum_PxArticulationDriveTypeEnum_eFORCE();
 
@@ -26105,7 +25488,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eNONE'] = _emscripten_enum_PxArticulationDriveTypeEnum_eNONE();
 
     
-// $PxArticulationFlagEnum
 
     Module['eFIX_BASE'] = _emscripten_enum_PxArticulationFlagEnum_eFIX_BASE();
 
@@ -26114,7 +25496,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eDISABLE_SELF_COLLISION'] = _emscripten_enum_PxArticulationFlagEnum_eDISABLE_SELF_COLLISION();
 
     
-// $PxArticulationJointTypeEnum
 
     Module['eFIX'] = _emscripten_enum_PxArticulationJointTypeEnum_eFIX();
 
@@ -26127,14 +25508,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eUNDEFINED'] = _emscripten_enum_PxArticulationJointTypeEnum_eUNDEFINED();
 
     
-// $PxArticulationKinematicFlagEnum
 
     Module['ePOSITION'] = _emscripten_enum_PxArticulationKinematicFlagEnum_ePOSITION();
 
     Module['eVELOCITY'] = _emscripten_enum_PxArticulationKinematicFlagEnum_eVELOCITY();
 
     
-// $PxArticulationMotionEnum
 
     Module['eLOCKED'] = _emscripten_enum_PxArticulationMotionEnum_eLOCKED();
 
@@ -26143,7 +25522,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eFREE'] = _emscripten_enum_PxArticulationMotionEnum_eFREE();
 
     
-// $PxBVHBuildStrategyEnum
 
     Module['eFAST'] = _emscripten_enum_PxBVHBuildStrategyEnum_eFAST();
 
@@ -26152,14 +25530,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eSAH'] = _emscripten_enum_PxBVHBuildStrategyEnum_eSAH();
 
     
-// $PxBaseFlagEnum
 
     Module['eOWNS_MEMORY'] = _emscripten_enum_PxBaseFlagEnum_eOWNS_MEMORY();
 
     Module['eIS_RELEASABLE'] = _emscripten_enum_PxBaseFlagEnum_eIS_RELEASABLE();
 
     
-// $PxBroadPhaseTypeEnum
 
     Module['eSAP'] = _emscripten_enum_PxBroadPhaseTypeEnum_eSAP();
 
@@ -26172,14 +25548,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eGPU'] = _emscripten_enum_PxBroadPhaseTypeEnum_eGPU();
 
     
-// $PxCapsuleClimbingModeEnum
 
     Module['eEASY'] = _emscripten_enum_PxCapsuleClimbingModeEnum_eEASY();
 
     Module['eCONSTRAINED'] = _emscripten_enum_PxCapsuleClimbingModeEnum_eCONSTRAINED();
 
     
-// $PxCombineModeEnum
 
     Module['eAVERAGE'] = _emscripten_enum_PxCombineModeEnum_eAVERAGE();
 
@@ -26190,7 +25564,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eMAX'] = _emscripten_enum_PxCombineModeEnum_eMAX();
 
     
-// $PxConstraintFlagEnum
 
     Module['eBROKEN'] = _emscripten_enum_PxConstraintFlagEnum_eBROKEN();
 
@@ -26213,7 +25586,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eDISABLE_CONSTRAINT'] = _emscripten_enum_PxConstraintFlagEnum_eDISABLE_CONSTRAINT();
 
     
-// $PxContactPairFlagEnum
 
     Module['eREMOVED_SHAPE_0'] = _emscripten_enum_PxContactPairFlagEnum_eREMOVED_SHAPE_0();
 
@@ -26228,14 +25600,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eINTERNAL_CONTACTS_ARE_FLIPPED'] = _emscripten_enum_PxContactPairFlagEnum_eINTERNAL_CONTACTS_ARE_FLIPPED();
 
     
-// $PxContactPairHeaderFlagEnum
 
     Module['eREMOVED_ACTOR_0'] = _emscripten_enum_PxContactPairHeaderFlagEnum_eREMOVED_ACTOR_0();
 
     Module['eREMOVED_ACTOR_1'] = _emscripten_enum_PxContactPairHeaderFlagEnum_eREMOVED_ACTOR_1();
 
     
-// $PxControllerBehaviorFlagEnum
 
     Module['eCCT_CAN_RIDE_ON_OBJECT'] = _emscripten_enum_PxControllerBehaviorFlagEnum_eCCT_CAN_RIDE_ON_OBJECT();
 
@@ -26244,7 +25614,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eCCT_USER_DEFINED_RIDE'] = _emscripten_enum_PxControllerBehaviorFlagEnum_eCCT_USER_DEFINED_RIDE();
 
     
-// $PxControllerCollisionFlagEnum
 
     Module['eCOLLISION_SIDES'] = _emscripten_enum_PxControllerCollisionFlagEnum_eCOLLISION_SIDES();
 
@@ -26253,21 +25622,18 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eCOLLISION_DOWN'] = _emscripten_enum_PxControllerCollisionFlagEnum_eCOLLISION_DOWN();
 
     
-// $PxControllerNonWalkableModeEnum
 
     Module['ePREVENT_CLIMBING'] = _emscripten_enum_PxControllerNonWalkableModeEnum_ePREVENT_CLIMBING();
 
     Module['ePREVENT_CLIMBING_AND_FORCE_SLIDING'] = _emscripten_enum_PxControllerNonWalkableModeEnum_ePREVENT_CLIMBING_AND_FORCE_SLIDING();
 
     
-// $PxControllerShapeTypeEnum
 
     Module['eBOX'] = _emscripten_enum_PxControllerShapeTypeEnum_eBOX();
 
     Module['eCAPSULE'] = _emscripten_enum_PxControllerShapeTypeEnum_eCAPSULE();
 
     
-// $PxConvexFlagEnum
 
     Module['e16_BIT_INDICES'] = _emscripten_enum_PxConvexFlagEnum_e16_BIT_INDICES();
 
@@ -26288,17 +25654,14 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eSHIFT_VERTICES'] = _emscripten_enum_PxConvexFlagEnum_eSHIFT_VERTICES();
 
     
-// $PxConvexMeshCookingTypeEnum
 
     Module['eQUICKHULL'] = _emscripten_enum_PxConvexMeshCookingTypeEnum_eQUICKHULL();
 
     
-// $PxConvexMeshGeometryFlagEnum
 
     Module['eTIGHT_BOUNDS'] = _emscripten_enum_PxConvexMeshGeometryFlagEnum_eTIGHT_BOUNDS();
 
     
-// $PxD6AxisEnum
 
     Module['eX'] = _emscripten_enum_PxD6AxisEnum_eX();
 
@@ -26313,7 +25676,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eSWING2'] = _emscripten_enum_PxD6AxisEnum_eSWING2();
 
     
-// $PxD6DriveEnum
 
     Module['eX'] = _emscripten_enum_PxD6DriveEnum_eX();
 
@@ -26328,12 +25690,10 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eSLERP'] = _emscripten_enum_PxD6DriveEnum_eSLERP();
 
     
-// $PxD6JointDriveFlagEnum
 
     Module['eACCELERATION'] = _emscripten_enum_PxD6JointDriveFlagEnum_eACCELERATION();
 
     
-// $PxD6MotionEnum
 
     Module['eLOCKED'] = _emscripten_enum_PxD6MotionEnum_eLOCKED();
 
@@ -26342,7 +25702,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eFREE'] = _emscripten_enum_PxD6MotionEnum_eFREE();
 
     
-// $PxDebugColorEnum
 
     Module['eARGB_BLACK'] = _emscripten_enum_PxDebugColorEnum_eARGB_BLACK();
 
@@ -26369,7 +25728,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eARGB_DARKBLUE'] = _emscripten_enum_PxDebugColorEnum_eARGB_DARKBLUE();
 
     
-// $PxDistanceJointFlagEnum
 
     Module['eMAX_DISTANCE_ENABLED'] = _emscripten_enum_PxDistanceJointFlagEnum_eMAX_DISTANCE_ENABLED();
 
@@ -26378,7 +25736,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eSPRING_ENABLED'] = _emscripten_enum_PxDistanceJointFlagEnum_eSPRING_ENABLED();
 
     
-// $PxDynamicTreeSecondaryPrunerEnum
 
     Module['eNONE'] = _emscripten_enum_PxDynamicTreeSecondaryPrunerEnum_eNONE();
 
@@ -26389,7 +25746,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eBVH'] = _emscripten_enum_PxDynamicTreeSecondaryPrunerEnum_eBVH();
 
     
-// $PxErrorCodeEnum
 
     Module['eNO_ERROR'] = _emscripten_enum_PxErrorCodeEnum_eNO_ERROR();
 
@@ -26412,7 +25768,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eMASK_ALL'] = _emscripten_enum_PxErrorCodeEnum_eMASK_ALL();
 
     
-// $PxFilterFlagEnum
 
     Module['eKILL'] = _emscripten_enum_PxFilterFlagEnum_eKILL();
 
@@ -26425,14 +25780,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eDEFAULT'] = _emscripten_enum_PxFilterFlagEnum_eDEFAULT();
 
     
-// $PxFilterObjectFlagEnum
 
     Module['eKINEMATIC'] = _emscripten_enum_PxFilterObjectFlagEnum_eKINEMATIC();
 
     Module['eTRIGGER'] = _emscripten_enum_PxFilterObjectFlagEnum_eTRIGGER();
 
     
-// $PxForceModeEnum
 
     Module['eFORCE'] = _emscripten_enum_PxForceModeEnum_eFORCE();
 
@@ -26443,7 +25796,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eACCELERATION'] = _emscripten_enum_PxForceModeEnum_eACCELERATION();
 
     
-// $PxFrictionTypeEnum
 
     Module['ePATCH'] = _emscripten_enum_PxFrictionTypeEnum_ePATCH();
 
@@ -26454,7 +25806,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eFRICTION_COUNT'] = _emscripten_enum_PxFrictionTypeEnum_eFRICTION_COUNT();
 
     
-// $PxGeometryTypeEnum
 
     Module['eSPHERE'] = _emscripten_enum_PxGeometryTypeEnum_eSPHERE();
 
@@ -26473,17 +25824,14 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eCUSTOM'] = _emscripten_enum_PxGeometryTypeEnum_eCUSTOM();
 
     
-// $PxHeightFieldFlagEnum
 
     Module['eNO_BOUNDARY_EDGES'] = _emscripten_enum_PxHeightFieldFlagEnum_eNO_BOUNDARY_EDGES();
 
     
-// $PxHeightFieldFormatEnum
 
     Module['eS16_TM'] = _emscripten_enum_PxHeightFieldFormatEnum_eS16_TM();
 
     
-// $PxHitFlagEnum
 
     Module['ePOSITION'] = _emscripten_enum_PxHitFlagEnum_ePOSITION();
 
@@ -26510,7 +25858,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eMODIFIABLE_FLAGS'] = _emscripten_enum_PxHitFlagEnum_eMODIFIABLE_FLAGS();
 
     
-// $PxQueryHitType
 
     Module['eNONE'] = _emscripten_enum_PxQueryHitType_eNONE();
 
@@ -26519,19 +25866,16 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eTOUCH'] = _emscripten_enum_PxQueryHitType_eTOUCH();
 
     
-// $PxIDENTITYEnum
 
     Module['PxIdentity'] = _emscripten_enum_PxIDENTITYEnum_PxIdentity();
 
     
-// $PxJointActorIndexEnum
 
     Module['eACTOR0'] = _emscripten_enum_PxJointActorIndexEnum_eACTOR0();
 
     Module['eACTOR1'] = _emscripten_enum_PxJointActorIndexEnum_eACTOR1();
 
     
-// $PxMaterialFlagEnum
 
     Module['eDISABLE_FRICTION'] = _emscripten_enum_PxMaterialFlagEnum_eDISABLE_FRICTION();
 
@@ -26540,33 +25884,28 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eIMPROVED_PATCH_FRICTION'] = _emscripten_enum_PxMaterialFlagEnum_eIMPROVED_PATCH_FRICTION();
 
     
-// $PxMeshCookingHintEnum
 
     Module['eSIM_PERFORMANCE'] = _emscripten_enum_PxMeshCookingHintEnum_eSIM_PERFORMANCE();
 
     Module['eCOOKING_PERFORMANCE'] = _emscripten_enum_PxMeshCookingHintEnum_eCOOKING_PERFORMANCE();
 
     
-// $PxMeshFlagEnum
 
     Module['eFLIPNORMALS'] = _emscripten_enum_PxMeshFlagEnum_eFLIPNORMALS();
 
     Module['e16_BIT_INDICES'] = _emscripten_enum_PxMeshFlagEnum_e16_BIT_INDICES();
 
     
-// $PxMeshGeometryFlagEnum
 
     Module['eDOUBLE_SIDED'] = _emscripten_enum_PxMeshGeometryFlagEnum_eDOUBLE_SIDED();
 
     
-// $PxMeshMidPhaseEnum
 
     Module['eBVH33'] = _emscripten_enum_PxMeshMidPhaseEnum_eBVH33();
 
     Module['eBVH34'] = _emscripten_enum_PxMeshMidPhaseEnum_eBVH34();
 
     
-// $PxMeshPreprocessingFlagEnum
 
     Module['eWELD_VERTICES'] = _emscripten_enum_PxMeshPreprocessingFlagEnum_eWELD_VERTICES();
 
@@ -26577,7 +25916,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eFORCE_32BIT_INDICES'] = _emscripten_enum_PxMeshPreprocessingFlagEnum_eFORCE_32BIT_INDICES();
 
     
-// $PxPairFilteringModeEnum
 
     Module['eKEEP'] = _emscripten_enum_PxPairFilteringModeEnum_eKEEP();
 
@@ -26588,7 +25926,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eDEFAULT'] = _emscripten_enum_PxPairFilteringModeEnum_eDEFAULT();
 
     
-// $PxPairFlagEnum
 
     Module['eSOLVE_CONTACT'] = _emscripten_enum_PxPairFlagEnum_eSOLVE_CONTACT();
 
@@ -26627,12 +25964,10 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eTRIGGER_DEFAULT'] = _emscripten_enum_PxPairFlagEnum_eTRIGGER_DEFAULT();
 
     
-// $PxPrismaticJointFlagEnum
 
     Module['eLIMIT_ENABLED'] = _emscripten_enum_PxPrismaticJointFlagEnum_eLIMIT_ENABLED();
 
     
-// $PxPruningStructureTypeEnum
 
     Module['eNONE'] = _emscripten_enum_PxPruningStructureTypeEnum_eNONE();
 
@@ -26641,7 +25976,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eSTATIC_AABB_TREE'] = _emscripten_enum_PxPruningStructureTypeEnum_eSTATIC_AABB_TREE();
 
     
-// $PxPvdInstrumentationFlagEnum
 
     Module['eDEBUG'] = _emscripten_enum_PxPvdInstrumentationFlagEnum_eDEBUG();
 
@@ -26652,7 +25986,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eALL'] = _emscripten_enum_PxPvdInstrumentationFlagEnum_eALL();
 
     
-// $PxQueryFlagEnum
 
     Module['eSTATIC'] = _emscripten_enum_PxQueryFlagEnum_eSTATIC();
 
@@ -26667,7 +26000,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eNO_BLOCK'] = _emscripten_enum_PxQueryFlagEnum_eNO_BLOCK();
 
     
-// $PxRevoluteJointFlagEnum
 
     Module['eLIMIT_ENABLED'] = _emscripten_enum_PxRevoluteJointFlagEnum_eLIMIT_ENABLED();
 
@@ -26676,7 +26008,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eDRIVE_FREESPIN'] = _emscripten_enum_PxRevoluteJointFlagEnum_eDRIVE_FREESPIN();
 
     
-// $PxRigidBodyFlagEnum
 
     Module['eKINEMATIC'] = _emscripten_enum_PxRigidBodyFlagEnum_eKINEMATIC();
 
@@ -26695,7 +26026,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eRETAIN_ACCELERATIONS'] = _emscripten_enum_PxRigidBodyFlagEnum_eRETAIN_ACCELERATIONS();
 
     
-// $PxRigidDynamicLockFlagEnum
 
     Module['eLOCK_LINEAR_X'] = _emscripten_enum_PxRigidDynamicLockFlagEnum_eLOCK_LINEAR_X();
 
@@ -26710,7 +26040,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eLOCK_ANGULAR_Z'] = _emscripten_enum_PxRigidDynamicLockFlagEnum_eLOCK_ANGULAR_Z();
 
     
-// $PxSceneFlagEnum
 
     Module['eENABLE_ACTIVE_ACTORS'] = _emscripten_enum_PxSceneFlagEnum_eENABLE_ACTIVE_ACTORS();
 
@@ -26743,7 +26072,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eMUTABLE_FLAGS'] = _emscripten_enum_PxSceneFlagEnum_eMUTABLE_FLAGS();
 
     
-// $PxSceneQueryUpdateModeEnum
 
     Module['eBUILD_ENABLED_COMMIT_ENABLED'] = _emscripten_enum_PxSceneQueryUpdateModeEnum_eBUILD_ENABLED_COMMIT_ENABLED();
 
@@ -26752,7 +26080,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eBUILD_DISABLED_COMMIT_DISABLED'] = _emscripten_enum_PxSceneQueryUpdateModeEnum_eBUILD_DISABLED_COMMIT_DISABLED();
 
     
-// $PxShapeFlagEnum
 
     Module['eSIMULATION_SHAPE'] = _emscripten_enum_PxShapeFlagEnum_eSIMULATION_SHAPE();
 
@@ -26763,19 +26090,16 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eVISUALIZATION'] = _emscripten_enum_PxShapeFlagEnum_eVISUALIZATION();
 
     
-// $PxSolverTypeEnum
 
     Module['ePGS'] = _emscripten_enum_PxSolverTypeEnum_ePGS();
 
     Module['eTGS'] = _emscripten_enum_PxSolverTypeEnum_eTGS();
 
     
-// $PxSphericalJointFlagEnum
 
     Module['eLIMIT_ENABLED'] = _emscripten_enum_PxSphericalJointFlagEnum_eLIMIT_ENABLED();
 
     
-// $PxTetrahedronMeshAnalysisResultEnum
 
     Module['eVALID'] = _emscripten_enum_PxTetrahedronMeshAnalysisResultEnum_eVALID();
 
@@ -26786,19 +26110,16 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eMESH_IS_INVALID'] = _emscripten_enum_PxTetrahedronMeshAnalysisResultEnum_eMESH_IS_INVALID();
 
     
-// $PxTetrahedronMeshFlagEnum
 
     Module['e16_BIT_INDICES'] = _emscripten_enum_PxTetrahedronMeshFlagEnum_e16_BIT_INDICES();
 
     
-// $PxTetrahedronMeshFormatEnum
 
     Module['eTET_MESH'] = _emscripten_enum_PxTetrahedronMeshFormatEnum_eTET_MESH();
 
     Module['eHEX_MESH'] = _emscripten_enum_PxTetrahedronMeshFormatEnum_eHEX_MESH();
 
     
-// $PxTriangleMeshAnalysisResultEnum
 
     Module['eVALID'] = _emscripten_enum_PxTriangleMeshAnalysisResultEnum_eVALID();
 
@@ -26827,14 +26148,12 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eMESH_IS_INVALID'] = _emscripten_enum_PxTriangleMeshAnalysisResultEnum_eMESH_IS_INVALID();
 
     
-// $PxTriangleMeshFlagEnum
 
     Module['e16_BIT_INDICES'] = _emscripten_enum_PxTriangleMeshFlagEnum_e16_BIT_INDICES();
 
     Module['eADJACENCY_INFO'] = _emscripten_enum_PxTriangleMeshFlagEnum_eADJACENCY_INFO();
 
     
-// $PxTriggerPairFlagEnum
 
     Module['eREMOVED_SHAPE_TRIGGER'] = _emscripten_enum_PxTriggerPairFlagEnum_eREMOVED_SHAPE_TRIGGER();
 
@@ -26843,7 +26162,6 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
     Module['eNEXT_FREE'] = _emscripten_enum_PxTriggerPairFlagEnum_eNEXT_FREE();
 
     
-// $PxVisualizationParameterEnum
 
     Module['eSCALE'] = _emscripten_enum_PxVisualizationParameterEnum_eSCALE();
 
@@ -26904,28 +26222,23 @@ Vector_PxVec4.prototype['clear'] = Vector_PxVec4.prototype.clear = /** @suppress
   else addOnInit(setupEnums);
 })();
 
-// end include: /src/PhysX/physx/compiler/emscripten-release/sdk_source_bin/glue.js
-// include: /src/PhysX/physx/source/webidlbindings/src/wasm/onload.js
 /**
  * Makes the API a little less verbose
  */
 Object.defineProperty(Module, 'PHYSICS_VERSION', { get() { return Module.PxTopLevelFunctions.prototype.PHYSICS_VERSION; }});
 
-//Move PxTopLevelFunctions to PhysX object
 for(const prop in Module.PxTopLevelFunctions.prototype) {
     if(prop !== 'constructor' && !prop.startsWith('get_') && !prop.startsWith('__')) {
         Object.defineProperty(Module, prop, { get() { return Module.PxTopLevelFunctions.prototype[prop]; }});
     }
 }
 
-//Move NativeArrayHelpers to PhysX object
 for(const prop in Module.NativeArrayHelpers.prototype) {
     if(prop !== 'constructor' && !prop.startsWith('get_') && !prop.startsWith('__')) {
         Object.defineProperty(Module, prop, { get() { return Module.NativeArrayHelpers.prototype[prop]; }});
     }
 }
 
-//Group enums
 const regex = /_emscripten_enum_(.*?)_(.*)/;
 const enums = Object.keys(Module).filter(key => key.includes('_emscripten_enum_')).map(emscript => emscript.match(regex));
 
@@ -26933,7 +26246,6 @@ for (const [emscript, enumName, entryName] of enums) {
     Module[enumName] ??= {};
     Object.defineProperty(Module[enumName], entryName, { get() { return Module[emscript](); }});
 }
-// end include: /src/PhysX/physx/source/webidlbindings/src/wasm/onload.js
 
 
   return moduleArg.ready

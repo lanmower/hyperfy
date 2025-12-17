@@ -102,23 +102,19 @@ export class UIImage extends Node {
     } else {
       this.yogaNode.setMargin(Yoga.EDGE_ALL, this._margin * this.ui._res)
     }
-    // measure function
     this.yogaNode.setMeasureFunc((width, widthMode, height, heightMode) => {
-      // handle explicitly set dimensions first
       if (this._width !== null && this._height !== null) {
         return {
           width: this._width * this.ui._res,
           height: this._height * this.ui._res,
         }
       }
-      // no image? zero size
       if (!this.img) {
         return { width: 0, height: 0 }
       }
       const imgAspectRatio = this.img.width / this.img.height
       let finalWidth
       let finalHeight
-      // handle cases where one dimension is specified
       if (this._width !== null) {
         finalWidth = this._width * this.ui._res
         finalHeight = finalWidth / imgAspectRatio
@@ -126,7 +122,6 @@ export class UIImage extends Node {
         finalHeight = this._height * this.ui._res
         finalWidth = finalHeight * imgAspectRatio
       } else {
-        // neither dimension specified - use natural size with constraints
         if (widthMode === Yoga.MEASURE_MODE_EXACTLY) {
           finalWidth = width
           finalHeight = width / imgAspectRatio
@@ -134,11 +129,9 @@ export class UIImage extends Node {
           finalWidth = Math.min(this.img.width * this.ui._res, width)
           finalHeight = finalWidth / imgAspectRatio
         } else {
-          // use natural size
           finalWidth = this.img.width * this.ui._res
           finalHeight = this.img.height * this.ui._res
         }
-        // apply height constraints if any
         if (heightMode === Yoga.MEASURE_MODE_EXACTLY) {
           finalHeight = height
           if (this._objectFit === 'contain') {
@@ -159,7 +152,6 @@ export class UIImage extends Node {
   }
 
   commit() {
-    // ...
   }
 
   unmount() {
@@ -190,7 +182,6 @@ export class UIImage extends Node {
     const aspectRatio = imgWidth / imgHeight
     switch (this._objectFit) {
       case 'cover': {
-        // Scale to cover entire container while maintaining aspect ratio
         if (containerWidth / containerHeight > aspectRatio) {
           const width = containerWidth
           const height = width / aspectRatio
@@ -212,7 +203,6 @@ export class UIImage extends Node {
         }
       }
       case 'contain': {
-        // Scale to fit within container while maintaining aspect ratio
         if (containerWidth / containerHeight > aspectRatio) {
           const height = containerHeight
           const width = height * aspectRatio
@@ -235,7 +225,6 @@ export class UIImage extends Node {
       }
       case 'fill':
       default:
-        // Stretch to fill container
         return {
           width: containerWidth,
           height: containerHeight,

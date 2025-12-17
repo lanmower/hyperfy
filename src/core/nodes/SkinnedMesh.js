@@ -187,12 +187,9 @@ export class SkinnedMesh extends Node {
     return handle
   }
 
-  // deprecated: use getBone(name).matrixWorld
   getBoneTransform(name) {
     const bone = this.readBone(name)
     if (!bone) return null
-    // combine the skinned mesh's world matrix with the bone's world matrix
-    // return m[0].multiplyMatrices(this.matrixWorld, bone.matrixWorld)
     bone.updateMatrixWorld(true)
     return m[0].copy(bone.matrixWorld)
   }

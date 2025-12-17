@@ -20,7 +20,6 @@ function add(group, hits) {
     if (!otherGroup) continue
     ensure(otherGroup)
     Masks[group] |= Groups[otherGroup]
-    // Masks[otherGroup] |= Groups[group]
   }
 }
 
@@ -39,4 +38,3 @@ for (const key in Groups) {
   }
 }
 
-// console.log('Layers', Layers)

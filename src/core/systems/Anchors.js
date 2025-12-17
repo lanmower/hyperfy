@@ -1,12 +1,5 @@
 import { System } from './System.js'
 
-/**
- * Anchor System
- *
- * - Runs on both the server and client.
- * - Keeps track of anchors for easy access by player entities
- *
- */
 export class Anchors extends System {
   constructor(world) {
     super(world)

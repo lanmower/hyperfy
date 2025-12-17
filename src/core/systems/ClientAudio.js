@@ -6,7 +6,6 @@ import { v } from '../utils/TempVectors.js'
 const up = new THREE.Vector3(0, 1, 0)
 
 export class ClientAudio extends System {
-  // DI Service Constants
   static DEPS = {
     events: 'events',
     rig: 'rig',
@@ -101,7 +100,6 @@ export class ClientAudio extends System {
       } catch (err) {
         console.error(err)
       } finally {
-        // either way, mark the system as unlocked
         complete()
       }
     }
@@ -111,7 +109,6 @@ export class ClientAudio extends System {
     console.log('[audio] suspended, waiting for interact...')
   }
 
-  // DI Property Getters
   get events() { return this.getService(ClientAudio.DEPS.events) }
   get rig() { return this.getService(ClientAudio.DEPS.rig) }
   get prefs() { return this.getService(ClientAudio.DEPS.prefs) }
@@ -121,15 +118,12 @@ export class ClientAudio extends System {
   }
 
   start() {
-    // ...
   }
 
   lateUpdate(delta) {
     const target = this.rig
     const dir = v[0].set(0, 0, -1).applyQuaternion(target.quaternion)
     if (this.listener.positionX) {
-      // https://github.com/mrdoob/three.js/blob/master/src/audio/AudioListener.js
-      // code path for Chrome (see three#14393)
       const endTime = this.ctx.currentTime + delta * 2
       this.listener.positionX.linearRampToValueAtTime(target.position.x, endTime)
       this.listener.positionY.linearRampToValueAtTime(target.position.y, endTime)

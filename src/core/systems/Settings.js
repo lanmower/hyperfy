@@ -16,7 +16,6 @@ const DEFAULT_CONFIG = {
 }
 
 export class Settings extends System {
-  // DI Service Constants
   static DEPS = {
     events: 'events',
     network: 'network',
@@ -27,7 +26,6 @@ export class Settings extends System {
     this.state = new StateManager({ ...DEFAULT_CONFIG })
   }
 
-  // DI Property Getters
   get events() { return this.getService(Settings.DEPS.events) }
   get network() { return this.getService(Settings.DEPS.network) }
 

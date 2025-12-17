@@ -1,4 +1,3 @@
-// Unified network implementation consolidating ClientNetwork and ServerNetwork
 
 import { BaseNetwork } from './BaseNetwork.js'
 import { NetworkProtocol } from '../network/NetworkProtocol.js'
@@ -15,7 +14,6 @@ export class UnifiedNetwork extends BaseNetwork {
     this.tickInterval = null
   }
 
-  // Initialize network
   async init(options = {}) {
     this.options = { ...this.options, ...options }
     
@@ -26,7 +24,6 @@ export class UnifiedNetwork extends BaseNetwork {
     }
   }
 
-  // Server initialization
   async initServer(options) {
     this.isServer = true
     this.protocol.isServer = true
@@ -34,7 +31,6 @@ export class UnifiedNetwork extends BaseNetwork {
     return this
   }
 
-  // Client initialization
   async initClient(options) {
     this.isServer = false
     this.protocol.isClient = true
@@ -80,12 +76,10 @@ export class UnifiedNetwork extends BaseNetwork {
     })
   }
 
-  // Tick/flush for protocol updates
   preFixedUpdate() {
     this.protocol.flush()
   }
 
-  // Send message (overrides BaseNetwork for binary packets)
   send(type, data, connectionId = null) {
     if (this.isServer && connectionId) {
       const connection = this.connections.get(connectionId)
@@ -97,31 +91,24 @@ export class UnifiedNetwork extends BaseNetwork {
     }
   }
 
-  // Send binary packet
   sendPacket(target, type, data) {
-    // Expects writePacket from packets.js
     if (typeof window === 'undefined') {
-      // Server-side: use actual packet writing
       return target.send(JSON.stringify({ type, data }))
     } else {
-      // Client-side: use binary if available
       return target.send(JSON.stringify({ type, data }))
     }
   }
 
-  // Broadcast to all connections (server-only)
   broadcast(type, data, exclude = null) {
     if (!this.isServer) return
     super.broadcast(type, data, exclude)
   }
 
-  // Register connection (server-only)
   registerConnection(id, connection) {
     if (!this.isServer) return
     super.registerConnection(id, connection)
   }
 
-  // Check for dead connections
   checkConnections() {
     if (!this.isServer) return
     
@@ -142,17 +129,14 @@ export class UnifiedNetwork extends BaseNetwork {
     }
   }
 
-  // Enqueue message (for protocol batching)
   enqueue(target, method, data) {
     this.protocol.enqueue(target, method, data)
   }
 
-  // Get network time
   getTime() {
     return this.protocol.getTime()
   }
 
-  // Cleanup
   async destroy() {
     if (this.tickInterval) {
       clearInterval(this.tickInterval)

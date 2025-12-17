@@ -1,4 +1,3 @@
-// Unified network protocol handler - eliminates Client/Server duplication
 
 import { EventBus } from '../utils/EventBus.js'
 import { writePacket, readPacket } from '../packets.js'
@@ -113,7 +112,6 @@ export class NetworkProtocol {
   }
 
   async broadcast(packetName, data, exclude = null) {
-    // Override in subclass
     return this.send(packetName, data)
   }
 
@@ -174,7 +172,6 @@ export class NetworkProtocol {
     return this
   }
 
-  // Override in subclass
   async _doConnect(options) {
     throw new Error('_doConnect must be implemented')
   }

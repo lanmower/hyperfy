@@ -1,4 +1,3 @@
-// Base persistence layer for unified database operations
 
 export class PersistenceBase {
   constructor(db) {

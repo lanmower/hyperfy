@@ -5,15 +5,7 @@ import { initYoga } from '../extras/yoga.js'
 
 let worker
 
-/**
- * Client System
- *
- * - Runs on the client
- *
- *
- */
 export class Client extends System {
-  // DI Service Constants
   static DEPS = {
     graphics: 'graphics',
     tick: 'tick',
@@ -27,7 +19,6 @@ export class Client extends System {
     this.setupDebugGlobals()
   }
 
-  // DI Property Getters
   get graphics() { return this.getService(Client.DEPS.graphics) }
   get tick() { return this.getService(Client.DEPS.tick) }
   get events() { return this.getService(Client.DEPS.events) }
@@ -89,14 +80,6 @@ export class Client extends System {
   }
 
   onVisibilityChange = () => {
-    // if the tab is no longer active, browsers stop triggering requestAnimationFrame.
-    // this is obviously bad because physics stop running and we stop processing websocket messages etc.
-    // instead, we stop using requestAnimationFrame and get a worker to tick at a slower rate using setInterval
-    // and notify us.
-    // this allows us to keep everything running smoothly.
-    // See: https://gamedev.stackexchange.com/a/200503 (kinda fucking genius)
-    //
-    // spawn worker if we haven't yet
     if (!worker) {
       const script = `
         const rate = 1000 / 5 // 5 FPS
@@ -123,14 +106,10 @@ export class Client extends System {
       }
     }
     if (document.hidden) {
-      // stop rAF
       this.graphics.renderer.setAnimationLoop(null)
-      // tell the worker to start
       worker.postMessage('start')
     } else {
-      // tell the worker to stop
       worker.postMessage('stop')
-      // resume rAF
       this.graphics.renderer.setAnimationLoop(this.tick)
     }
   }

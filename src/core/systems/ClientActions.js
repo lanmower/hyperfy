@@ -18,7 +18,6 @@ const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const m1 = new THREE.Matrix4()
 
 export class ClientActions extends System {
-  // DI Service Constants
   static DEPS = {
     rig: 'rig',
     events: 'events',
@@ -36,7 +35,6 @@ export class ClientActions extends System {
     this.action = null
   }
 
-  // DI Property Getters
   get rig() { return this.getService(ClientActions.DEPS.rig) }
   get events() { return this.getService(ClientActions.DEPS.events) }
   get controls() { return this.getService(ClientActions.DEPS.controls) }
@@ -71,7 +69,6 @@ export class ClientActions extends System {
       this.control.xrLeftTrigger.down ||
       this.control.xrRightTrigger.down
 
-    // clear current action if its no longer in distance
     if (this.current.node) {
       const distance = this.current.node.worldPos.distanceTo(cameraPos)
       if (distance > this.current.node._distance) {
@@ -84,7 +81,6 @@ export class ClientActions extends System {
       }
     }
 
-    // continually check nodes[] in batches to find the one that should be active
     let didChange
     const size = Math.min(this.nodes.length, BATCH_SIZE)
     for (let i = 0; i < size; i++) {
@@ -123,7 +119,6 @@ function createAction(world) {
   const board = createBoard(widthPx, heightPx, pxToMeters, world)
 
   const draw = (label, ratio) => {
-    // console.time('draw')
     const text = board.measureText(47, heightPx / 2, label, '#ffffff', 18, 400)
     const pillWidth = 6 + 4 + 24 + 4 + 6 + 9 + text.width + 13
     const left = (widthPx - pillWidth) / 2
@@ -135,21 +130,16 @@ function createAction(world) {
     if (!isTouch) board.drawText(left + 16, 14, 'E', '#ffffff', 18, 400) // E
     board.drawText(left + 47, 14, label, '#ffffff', 18, 400) // label
     board.commit()
-    // console.timeEnd('draw')
   }
 
   const mesh = board.getMesh()
 
-  // debug
-  // board.canvas.style = 'position:absolute; top:70px; left:30px; z-index:999; pointer-events:none; transform:scale(1); transform-origin:top left;' // prettier-ignore
-  // document.body.appendChild(board.canvas)
 
   let node = null
   let cancelled = false
 
   return {
     start(_node) {
-      // if (node) console.error('erm node already set')
       node = _node
       world.actions.btnDown = false
       node.progress = 0
@@ -183,9 +173,6 @@ function createAction(world) {
       const worldToScreenFactor = world.graphics.worldToScreenFactor
       const [minDistance, maxDistance, baseScale = 1] = [3, 5, 1]
       const clampedDistance = clamp(distance, minDistance, maxDistance)
-      // calculate scale factor based on the distance
-      // When distance is at min, scale is 1.0 (or some other base scale)
-      // When distance is at max, scale adjusts proportionally
       let scaleFactor = baseScale * (worldToScreenFactor * clampedDistance) * 100
       if (world.xr.session) scaleFactor *= 0.2 // shrink because its HUGE in VR
       mesh.scale.setScalar(scaleFactor)
@@ -241,7 +228,6 @@ function createBoard(width, height, pxToMeters, world) {
   const canvas = document.createElement('canvas')
   canvas.width = size * pr
   canvas.height = size * pr
-  // console.log('board', canvas.width, canvas.height)
   const ctx = canvas.getContext('2d')
 
   let texture
@@ -302,7 +288,6 @@ function createBoard(width, height, pxToMeters, world) {
     drawText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') {
       x *= pr
       y *= pr
-      // y -= fontSize / 2 // no idea why but yup
       fontSize *= pr
       ctx.fillStyle = color
       ctx.font = `${fontWeight} ${fontSize}px ${font}`
@@ -317,14 +302,11 @@ function createBoard(width, height, pxToMeters, world) {
       texture = new THREE.CanvasTexture(canvas)
       texture.colorSpace = THREE.SRGBColorSpace
       texture.anisotropy = world.graphics.maxAnisotropy
-      // texture.minFilter = texture.magFilter = THREE.LinearFilter
       texture.minFilter = THREE.LinearFilter
       texture.magFilter = THREE.LinearFilter
-      // texture.generateMipmaps = false
       const geometry = new THREE.BufferGeometry()
       const halfWidth = (width * pxToMeters) / 2
       const halfHeight = (height * pxToMeters) / 2
-      // prettier-ignore
       const vertices = new Float32Array([
         halfWidth, -halfHeight, 0,  // vertex 3 (bottom right)
         halfWidth, halfHeight, 0,   // vertex 2 (top right)
@@ -336,7 +318,6 @@ function createBoard(width, height, pxToMeters, world) {
       const uvY1 = 1 - offsetY / size
       const uvX2 = (offsetX + width) / size
       const uvY2 = 1 - (offsetY + height) / size
-      // prettier-ignore
       const uvs = new Float32Array([
         uvX2, uvY2,  // UV for vertex 3
         uvX2, uvY1,  // UV for vertex 2
@@ -344,7 +325,6 @@ function createBoard(width, height, pxToMeters, world) {
         uvX1, uvY2,  // UV for vertex 0
       ])
       geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
-      // prettier-ignore
       const indices = new Uint16Array([
         0, 1, 2,  // First triangle
         2, 3, 0   // Second triangle
@@ -352,10 +332,7 @@ function createBoard(width, height, pxToMeters, world) {
       geometry.setIndex(new THREE.BufferAttribute(indices, 1))
       const material = new THREE.MeshBasicMaterial({ map: texture })
       material.toneMapped = false
-      // create mesh
       mesh = new THREE.Mesh(geometry, material)
-      // console.log(mesh)
-      // always on top
       material.depthTest = false
       material.depthWrite = false
       material.transparent = true

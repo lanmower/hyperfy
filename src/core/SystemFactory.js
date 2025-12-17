@@ -1,4 +1,3 @@
-// System factory - unified auto-discovery of systems by platform
 
 import { Auto } from './Auto.js'
 import path from 'path'
@@ -32,7 +31,6 @@ export async function discoverSystems() {
   return { serverSystems, clientSystems }
 }
 
-// Cached results
 let _cached = null
 
 export async function getSystemsAsync() {

@@ -1,4 +1,3 @@
-// Shared serialization utilities for robust data handling
 
 export const Serialization = {
   serializeError(arg) {

@@ -38,12 +38,6 @@ export class PlayerRemote extends BaseEntity {
     })
     this.body.add(this.collider)
 
-    // this.caps = createNode('mesh', {
-    //   type: 'geometry',
-    //   geometry: capsuleGeometry,
-    //   material: new THREE.MeshStandardMaterial({ color: 'white' }),
-    // })
-    // this.base.add(this.caps)
 
     this.aura = createNode('group')
     this.nametag = createNode('nametag', { label: this.data.name, health: this.data.health, active: false })
@@ -260,7 +254,6 @@ export class PlayerRemote extends BaseEntity {
     this.aura = null
 
     this.world.entities.remove(this.data.id)
-    // if removed locally we need to broadcast to server/clients
     if (local) {
       this.world.network.send('entityRemoved', this.data.id)
     }

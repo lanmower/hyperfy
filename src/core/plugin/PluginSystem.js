@@ -1,4 +1,3 @@
-// Plugin System - dynamic extension of core functionality
 
 export class PluginSystem {
   constructor(world) {

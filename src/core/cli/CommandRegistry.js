@@ -1,4 +1,3 @@
-// Command Registry - unified CLI command system
 
 import { Output } from './Output.js'
 import { Metrics } from './Metrics.js'

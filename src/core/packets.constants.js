@@ -1,4 +1,3 @@
-// Packet type constants - eliminates magic strings
 
 export const PacketTypes = {
   SNAPSHOT: 'snapshot',
@@ -39,5 +38,4 @@ export const PacketTypes = {
   FILE_UPLOAD_STATS: 'fileUploadStats',
 }
 
-// Reverse mapping for validation
 export const PACKET_NAMES = Object.values(PacketTypes)

@@ -1,4 +1,3 @@
-// Client world with auto-discovered client-side systems
 
 import { World } from './World.js'
 import { clientSystems } from './initClientSystems.js'

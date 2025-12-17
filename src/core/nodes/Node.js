@@ -68,8 +68,6 @@ export class Node {
       this.setTransformed()
     })
     this.scale._onChange(() => {
-      // scale set to exactly zero on any axis causes matrices to have NaN values.
-      // this causes our octrees to fail into an infinite loop
       if (this.scale.x === 0 || this.scale.y === 0 || this.scale.z === 0) {
         return this.scale.set(this.scale.x || EPSILON, this.scale.y || EPSILON, this.scale.z || EPSILON)
       }
@@ -81,7 +79,6 @@ export class Node {
     this._onPointerUp = data.onPointerUp
     this._cursor = data.cursor
     this._active = isBoolean(data.active) ? data.active : defaults.active
-    // this.scale._onChange?
     this.isDirty = false
     this.isTransformed = true
     this.mounted = false
@@ -90,7 +87,6 @@ export class Node {
   activate(ctx) {
     if (ctx) this.ctx = ctx
     if (!this._active) return
-    // top down mount
     if (this.mounted) return
     this.updateTransform()
     this.mounted = true
@@ -103,7 +99,6 @@ export class Node {
 
   deactivate() {
     if (!this.mounted) return
-    // bottom up unmount
     const children = this.children
     for (let i = 0, l = children.length; i < l; i++) {
       children[i].deactivate()
@@ -136,34 +131,14 @@ export class Node {
     return this
   }
 
-  // detach(node) {
-  //   if (node) {
-  //     const idx = this.children.indexOf(node)
-  //     if (idx === -1) return
-  //     this.project()
-  //     node.parent = null
-  //     this.children.splice(idx, 1)
-  //     node.matrix.copy(node.matrixWorld)
-  //     node.matrix.decompose(node.position, node.quaternion, node.scale)
-  //     node.project()
-  //     node.update()
-  //   } else {
-  //     this.parent?.detach(this)
-  //   }
-  // }
 
   setTransformed() {
-    // - ensure this is marked as transformed
-    // - ensure this and all descendants are dirty
-    // - ensure only this node is tracked dirty
     if (this.isTransformed) return
     this.traverse(node => {
       if (node === this) {
         node.isTransformed = true
         node.setDirty()
       } else if (node.isDirty) {
-        // if we come across an already dirty node we must ensure its not tracked
-        // as we will clean it via this one
         this.ctx.world.stage.dirtyNodes.delete(node)
       } else {
         node.isDirty = true
@@ -172,9 +147,7 @@ export class Node {
   }
 
   setDirty() {
-    // if we haven't mounted no track
     if (!this.mounted) return
-    // if already dirty, either this or a parent is being tracked so we're good
     if (this.isDirty) return
     this.isDirty = true
     this.ctx.world.stage.dirtyNodes.add(this)
@@ -218,16 +191,12 @@ export class Node {
   }
 
   mount() {
-    // called when transforms are ready and this thing should be added to the scene
   }
 
   commit(didTransform) {
-    // called when dirty (either transform changed or node-specific)
-    // if the transform changed it should be moved in the same (this.matrixWorld)
   }
 
   unmount() {
-    // called when this thing should be removed from scene
   }
 
   updateTransform() {
@@ -240,10 +209,6 @@ export class Node {
     } else {
       this.matrixWorld.copy(this.matrix)
     }
-    // const children = this.children
-    // for (let i = 0, l = children.length; i < l; i++) {
-    //   children[i].project()
-    // }
   }
 
   traverse(callback) {
@@ -295,7 +260,6 @@ export class Node {
     return null
   }
 
-  // todo: getWorldQuaternion etc
   getWorldPosition(vec3 = v[0]) {
     this.matrixWorld.decompose(vec3, q[0], v[1])
     return vec3
@@ -324,7 +288,6 @@ export class Node {
   }
 
   applyStats(stats) {
-    // nodes should override this and add their stats
   }
 
   get onPointerEnter() {
@@ -456,9 +419,6 @@ export class Node {
             callback(node.getProxy())
           })
         },
-        // detach(node) {
-        //   self.detach(node)
-        // },
         clone(recursive) {
           const node = self.clone(recursive)
           return node.getProxy()

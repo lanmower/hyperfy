@@ -4,14 +4,6 @@ import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { uuid } from '../utils.js'
 import { System } from './System.js'
 
-/**
- * Nametags System
- *
- * - Runs on the client
- * - Utilizes a single atlas to draw names on, and a single instanced mesh to retain 1 draw call at all times
- * - Provides a hook to register and unregister nametag instances which can be moved around independently
- *
- */
 
 const RES = 2
 const NAMETAG_WIDTH = 200 * RES
@@ -37,7 +29,6 @@ const defaultScale = new THREE.Vector3(1, 1, 1)
 const v1 = new THREE.Vector3()
 
 export class Nametags extends System {
-  // DI Service Constants
   static DEPS = {
     rig: 'rig',
     stage: 'stage',
@@ -50,11 +41,7 @@ export class Nametags extends System {
     this.canvas = document.createElement('canvas')
     this.canvas.width = NAMETAG_WIDTH * PER_ROW
     this.canvas.height = NAMETAG_HEIGHT * PER_COLUMN
-    // console.log(`nametags: atlas is ${this.canvas.width} x ${this.canvas.height}`)
 
-    // DEBUG: show on screen
-    // document.body.appendChild(this.canvas)
-    // this.canvas.style = `position:absolute;top:0;left:0;z-index:9999;border:1px solid red;transform:scale(${1 / RES});transform-origin:top left;pointer-events:none;`
 
     this.ctx = this.canvas.getContext('2d')
     this.texture = new THREE.CanvasTexture(this.canvas)
@@ -68,9 +55,6 @@ export class Nametags extends System {
     }
     this.material = new CustomShaderMaterial({
       baseMaterial: THREE.MeshBasicMaterial,
-      // all nametags are drawn on top of everything
-      // this isn't perfect but we should be improve.
-      // also note mesh.renderOrder=9999
       transparent: true,
       depthWrite: false,
       depthTest: false,
@@ -91,7 +75,6 @@ export class Nametags extends System {
           vec3 up = vec3(0.0, 1.0, 0.0);
           vec3 forward = normalize(cameraPosition - instancePos);
           
-          // Handle degenerate cases
           if(length(forward) < 0.001) {
             return vec4(0.0, 0.0, 0.0, 1.0);
           }
@@ -152,7 +135,6 @@ export class Nametags extends System {
         void main() {
           vec3 newPosition = position;
           if (uXR > 0.5) {
-            // XR looks at camera
             vec3 instancePos = vec3(
               instanceMatrix[3][0],
               instanceMatrix[3][1],
@@ -161,12 +143,10 @@ export class Nametags extends System {
             vec4 lookAtQuat = lookAtQuaternion(instancePos);
             newPosition = applyQuaternion(newPosition, lookAtQuat);
           } else {
-            // non-XR matches camera rotation
             newPosition = applyQuaternion(newPosition, uOrientation);
           }
           csm_Position = newPosition;
           
-          // use uvs just for this slot
           vec2 atlasUV = uv; // original UVs are 0-1 for the plane
           atlasUV.y = 1.0 - atlasUV.y;
           atlasUV /= vec2(${PER_ROW}, ${PER_COLUMN});
@@ -194,7 +174,6 @@ export class Nametags extends System {
     this.mesh.count = 0
   }
 
-  // DI Property Getters
   get rig() { return this.getService(Nametags.DEPS.rig) }
   get stage() { return this.getService(Nametags.DEPS.stage) }
   get events() { return this.getService(Nametags.DEPS.events) }
@@ -208,16 +187,13 @@ export class Nametags extends System {
     const idx = this.nametags.length
     if (idx >= MAX_INSTANCES) return console.error('nametags: reached max')
 
-    // inc instances
     this.mesh.count++
     this.mesh.instanceMatrix.needsUpdate = true
-    // set coords
     const row = Math.floor(idx / PER_ROW)
     const col = idx % PER_ROW
     const coords = this.mesh.geometry.attributes.coords
     coords.setXY(idx, col / PER_ROW, row / PER_COLUMN)
     coords.needsUpdate = true
-    // make nametag
     const matrix = new THREE.Matrix4()
     matrix.compose(new THREE.Vector3(), defaultQuaternion, defaultScale)
     const nametag = {
@@ -226,7 +202,6 @@ export class Nametags extends System {
       health,
       matrix,
       move: newMatrix => {
-        // copy over just position
         matrix.elements[12] = newMatrix.elements[12] // x position
         matrix.elements[13] = newMatrix.elements[13] // y position
         matrix.elements[14] = newMatrix.elements[14] // z position
@@ -249,7 +224,6 @@ export class Nametags extends System {
       },
     }
     this.nametags[idx] = nametag
-    // draw it
     this.draw(nametag)
     return nametag
   }
@@ -261,24 +235,17 @@ export class Nametags extends System {
     const last = this.nametags[this.nametags.length - 1]
     const isLast = nametag === last
     if (isLast) {
-      // this is the last instance in the buffer, pop it off the end
       this.nametags.pop()
-      // clear slot
       this.undraw(nametag)
     } else {
-      // there are other instances after this one in the buffer...
-      // so we move the last one into this slot
       this.undraw(last)
-      // move last to this slot
       last.idx = nametag.idx
       this.draw(last)
-      // update coords for swapped instance
       const coords = this.mesh.geometry.attributes.coords
       const row = Math.floor(nametag.idx / PER_ROW)
       const col = nametag.idx % PER_ROW
       coords.setXY(nametag.idx, col / PER_ROW, row / PER_COLUMN)
       coords.needsUpdate = true
-      // swap nametag references and update matrix
       this.mesh.setMatrixAt(last.idx, last.matrix)
       this.nametags[last.idx] = last
       this.nametags.pop()
@@ -293,18 +260,9 @@ export class Nametags extends System {
     const col = idx % PER_ROW
     const x = col * NAMETAG_WIDTH
     const y = row * NAMETAG_HEIGHT
-    // clear any previously drawn stuff
     this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
 
-    // debug border
-    // this.ctx.strokeStyle = 'red'
-    // this.ctx.lineWidth = 2
-    // this.ctx.strokeRect(x + 2, y + 2, NAMETAG_WIDTH - 2, NAMETAG_HEIGHT - 2)
 
-    // draw background
-    // this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-    // fillRoundRect(this.ctx, x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT, NAMETAG_BORDER_RADIUS)
-    // draw name
     this.ctx.font = `800 ${NAME_FONT_SIZE}px Rubik`
     this.ctx.fillStyle = 'white'
     this.ctx.textAlign = 'center'
@@ -318,9 +276,7 @@ export class Nametags extends System {
     this.ctx.strokeText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2) // extra 2 on y to prevent bleeding into nametag above it
     this.ctx.restore()
     this.ctx.fillText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2)
-    // draw health
     if (nametag.health < HEALTH_MAX) {
-      // bar
       {
         const fillStyle = 'rgba(0, 0, 0, 0.6)'
         const width = HEALTH_WIDTH
@@ -330,7 +286,6 @@ export class Nametags extends System {
         const borderRadius = HEALTH_BORDER_RADIUS
         fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
       }
-      // health
       {
         const fillStyle = '#229710'
         const maxWidth = HEALTH_WIDTH - HEALTH_BORDER * 2
@@ -343,17 +298,14 @@ export class Nametags extends System {
         fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
       }
     }
-    // update texture
     this.texture.needsUpdate = true
   }
 
   fitText(text, maxWidth) {
-    // try full text
     const width = this.ctx.measureText(text).width
     if (width <= maxWidth) {
       return text
     }
-    // if too long, truncate with ellipsis
     const ellipsis = '...'
     let truncated = text
     const ellipsisWidth = this.ctx.measureText(ellipsis).width
@@ -364,7 +316,6 @@ export class Nametags extends System {
         return truncated + ellipsis
       }
     }
-    // fallback
     return ellipsis
   }
 
@@ -374,9 +325,7 @@ export class Nametags extends System {
     const col = idx % PER_ROW
     const x = col * NAMETAG_WIDTH
     const y = row * NAMETAG_HEIGHT
-    // clear any previously drawn stuff
     this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
-    // update texture
     this.texture.needsUpdate = true
   }
 

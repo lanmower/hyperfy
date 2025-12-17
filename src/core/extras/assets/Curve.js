@@ -30,8 +30,6 @@ export class Curve {
   add(opts) {
     const keyframe = new Keyframe().set(opts)
     const foundIndex = this.keyframes.findIndex(k => k.time === keyframe.time)
-    // if (foundIndex === 0) return console.warn('cant replace first keyframe')
-    // if (foundIndex === this.keyframes.length -1) return console.warn('cant replace end keyframe') // prettier-ignore
     if (foundIndex === -1) {
       this.keyframes.push(keyframe)
     } else {
@@ -80,7 +78,6 @@ export class Curve {
     }
 
     for (let i = 0; i < this.keyframes.length - 1; i++) {
-      // prettier-ignore
       if (time >= this.keyframes[i].time && time <= this.keyframes[i + 1].time) { 
         const t = (time - this.keyframes[i].time) / (this.keyframes[i + 1].time - this.keyframes[i].time) // prettier-ignore
         const p0 = this.keyframes[i].value;
@@ -100,73 +97,18 @@ export class Curve {
     }
   }
 
-  // evaluate(time) {
-  //   if (time <= this.keyframes[0].time) {
-  //     return this.keyframes[0].value
-  //   }
 
-  //   if (time >= this.keyframes[this.keyframes.length - 1].time) {
-  //     return this.keyframes[this.keyframes.length - 1].value
-  //   }
 
-  //   for (let i = 0; i < this.keyframes.length - 1; i++) {
-  //     // prettier-ignore
-  //     if (time >= this.keyframes[i].time && time <= this.keyframes[i + 1].time) {
-  //       const t = (time - this.keyframes[i].time) / (this.keyframes[i + 1].time - this.keyframes[i].time) // prettier-ignore
-  //       const p0 = this.keyframes[i].value
-  //       const p1 = this.keyframes[i + 1].value
-  //       const m0 = this.keyframes[i].outMagnitude * (this.keyframes[i + 1].time - this.keyframes[i].time) // prettier-ignore
-  //       const m1 = this.keyframes[i + 1].inMagnitude * (this.keyframes[i + 1].time - this.keyframes[i].time) // prettier-ignore
-  //       const t2 = t * t
-  //       const t3 = t2 * t
 
-  //       const a = 2 * t3 - 3 * t2 + 1
-  //       const b = t3 - 2 * t2 + t
-  //       const c = -2 * t3 + 3 * t2
-  //       const d = t3 - t2
 
-  //       return a * p0 + b * m0 + c * p1 + d * m1
-  //     }
-  //   }
-  // }
 
-  //   evaluate(t) {
-  //     const keyframes = this.keyframes
-  //     const n = keyframes.length
-  //     const lo = this.getClosest(t)[0]
-  //     let i0 = lo
-  //     let i1 = i0 + 1
 
-  //     if (i0 > n - 1) throw new Error('Out of bounds')
-  //     if (i0 === n - 1) i1 = i0
 
-  //     let scale = keyframes[i1].time - keyframes[i0].time
 
-  //     t = (t - keyframes[i0].time) / scale
 
-  //     let t2 = t * t
-  //     let it = 1 - t
-  //     let it2 = it * it
-  //     let tt = 2 * t
-  //     let h00 = (1 + tt) * it2
-  //     let h10 = t * it2
-  //     let h01 = t2 * (3 - tt)
-  //     let h11 = t2 * (t - 1)
 
-  //     const x =
-  //       h00 * keyframes[i0].time +
-  //       h10 * keyframes[i0].outTangent * scale +
-  //       h01 * keyframes[i1].time +
-  //       h11 * keyframes[i1].inTangent * scale
 
-  //     const y =
-  //       h00 * keyframes[i0].value +
-  //       h10 * keyframes[i0].outTangent * scale +
-  //       h01 * keyframes[i1].value +
-  //       h11 * keyframes[i1].inTangent * scale
 
-  //     return y
-  //   }
 
   ogEvaluate(t) {
     return this.hermite(t, this.keyframes).y

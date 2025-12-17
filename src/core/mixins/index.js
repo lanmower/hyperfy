@@ -1,4 +1,3 @@
-// Mixins for common functionality patterns
 
 export { withHandlerRegistry } from './HandlerRegistryMixin.js'
 export { withCacheable } from './CacheableMixin.js'

@@ -3,7 +3,6 @@ import { cloneDeep } from 'lodash-es'
 export async function exportApp(blueprint, resolveFile) {
   blueprint = cloneDeep(blueprint)
 
-  // get all asset urls
   const assets = []
   if (blueprint.model) {
     assets.push({
@@ -46,7 +45,6 @@ export async function exportApp(blueprint, resolveFile) {
 
   const filename = `${blueprint.name || 'app'}.hyp`
 
-  // create header
   const header = {
     blueprint,
     assets: assets.map(asset => {
@@ -59,17 +57,13 @@ export async function exportApp(blueprint, resolveFile) {
     }),
   }
 
-  // convert header to Uint8Array
   const headerBytes = new TextEncoder().encode(JSON.stringify(header))
 
-  // create header size prefix (4 bytes)
   const headerSize = new Uint8Array(4)
   new DataView(headerSize.buffer).setUint32(0, headerBytes.length, true)
 
-  // combine all file data
   const fileBlobs = await Promise.all(assets.map(asset => asset.file.arrayBuffer()))
 
-  // create final blob with header size + header + files
   const file = new File([headerSize, headerBytes, ...fileBlobs], filename, {
     type: 'application/octet-stream',
   })
@@ -78,18 +72,14 @@ export async function exportApp(blueprint, resolveFile) {
 }
 
 export async function importApp(file) {
-  // read as ArrayBuffer
   const buffer = await file.arrayBuffer()
   const view = new DataView(buffer)
 
-  // read header size (first 4 bytes)
   const headerSize = view.getUint32(0, true)
 
-  // read header
   const bytes = new Uint8Array(buffer.slice(4, 4 + headerSize))
   const header = JSON.parse(new TextDecoder().decode(bytes))
 
-  // extract files
   let position = 4 + headerSize
   const assets = []
 

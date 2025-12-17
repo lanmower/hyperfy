@@ -1,9 +1,3 @@
-// three-custom-shader-material vanilla v6.0.10
-// to upgrade:
-// - go to npm
-// - go to code/vanilla/three-custom-shader-material.es.js
-// - copy paste in here
-// - update version ref above
 
 import * as T from 'three'
 
@@ -16,7 +10,6 @@ const D =
     vec4 csm_PositionRaw;
     vec3 csm_Normal;
 
-    // csm_PointSize
     #ifdef IS_POINTSMATERIAL
         float csm_PointSize;
     #endif
@@ -25,7 +18,6 @@ const D =
     vec4 csm_FragColor;
     float csm_UnlitFac;
 
-    // csm_Emissive, csm_Roughness, csm_Metalness
     #if defined IS_MESHSTANDARDMATERIAL || defined IS_MESHPHYSICALMATERIAL
         vec3 csm_Emissive;
         float csm_Roughness;
@@ -41,12 +33,10 @@ const D =
         #endif
     #endif
 
-    // csm_AO
     #if defined IS_MESHSTANDARDMATERIAL || defined IS_MESHPHYSICALMATERIAL || defined IS_MESHBASICMATERIAL || defined IS_MESHLAMBERTMATERIAL || defined IS_MESHPHONGMATERIAL || defined IS_MESHTOONMATERIAL
         float csm_AO;
     #endif
 
-    // csm_Bump
     #if defined IS_MESHLAMBERTMATERIAL || defined IS_MESHMATCAPMATERIAL || defined IS_MESHNORMALMATERIAL || defined IS_MESHPHONGMATERIAL || defined IS_MESHPHYSICALMATERIAL || defined IS_MESHSTANDARDMATERIAL || defined IS_MESHTOONMATERIAL || defined IS_SHADOWMATERIAL 
         vec3 csm_Bump;
         vec3 csm_FragNormal;
@@ -60,7 +50,6 @@ const D =
     `
 
 #ifdef IS_VERTEX
-    // csm_Position & csm_PositionRaw
     #ifdef IS_UNKNOWN
         csm_Position = vec3(0.0);
         csm_PositionRaw = vec4(0.0);
@@ -71,14 +60,12 @@ const D =
         csm_Normal = normal;
     #endif
 
-    // csm_PointSize
     #ifdef IS_POINTSMATERIAL
         csm_PointSize = size;
     #endif
 #else
     csm_UnlitFac = 0.0;
 
-    // csm_DiffuseColor & csm_FragColor
     #if defined IS_UNKNOWN || defined IS_SHADERMATERIAL || defined IS_MESHDEPTHMATERIAL || defined IS_MESHDISTANCEMATERIAL || defined IS_MESHNORMALMATERIAL || defined IS_SHADOWMATERIAL
         csm_DiffuseColor = vec4(1.0, 0.0, 1.0, 1.0);
         csm_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
@@ -87,7 +74,6 @@ const D =
             vec4 _csm_sampledDiffuseColor = texture2D(map, vMapUv);
 
             #ifdef DECODE_VIDEO_TEXTURE
-            // inline sRGB decode (TODO: Remove this code when https://crbug.com/1256340 is solved)
             _csm_sampledDiffuseColor = vec4(mix(pow(_csm_sampledDiffuseColor.rgb * 0.9478672986 + vec3(0.0521327014), vec3(2.4)), _csm_sampledDiffuseColor.rgb * 0.0773993808, vec3(lessThanEqual(_csm_sampledDiffuseColor.rgb, vec3(0.04045)))), _csm_sampledDiffuseColor.w);
             #endif
 
@@ -99,7 +85,6 @@ const D =
         #endif
     #endif
 
-    // csm_Emissive, csm_Roughness, csm_Metalness
     #if defined IS_MESHSTANDARDMATERIAL || defined IS_MESHPHYSICALMATERIAL
         csm_Emissive = emissive;
         csm_Roughness = roughness;
@@ -130,12 +115,10 @@ const D =
         #endif
     #endif
 
-    // csm_AO
     #if defined IS_MESHSTANDARDMATERIAL || defined IS_MESHPHYSICALMATERIAL || defined IS_MESHBASICMATERIAL || defined IS_MESHLAMBERTMATERIAL || defined IS_MESHPHONGMATERIAL || defined IS_MESHTOONMATERIAL
         csm_AO = 0.0;
     #endif
 
-    // csm_Bump
     #if defined IS_MESHLAMBERTMATERIAL || defined IS_MESHMATCAPMATERIAL || defined IS_MESHNORMALMATERIAL || defined IS_MESHPHONGMATERIAL || defined IS_MESHPHYSICALMATERIAL || defined IS_MESHSTANDARDMATERIAL || defined IS_MESHTOONMATERIAL || defined IS_SHADOWMATERIAL 
         csm_Bump = vec3(0.0);
         #ifdef FLAT_SHADED
@@ -174,49 +157,26 @@ const D =
     
 `,
   e = {
-    // PBR (frag)
     diffuse: 'csm_DiffuseColor',
-    // Color + alpha
     roughness: 'csm_Roughness',
-    // Roughness
     metalness: 'csm_Metalness',
-    // Metalness
     emissive: 'csm_Emissive',
-    // Emissive
     ao: 'csm_AO',
-    // AO
     bump: 'csm_Bump',
-    // Bump
     fragNormal: 'csm_FragNormal',
-    // Fragment Normal
     clearcoat: 'csm_Clearcoat',
-    // Clearcoat factor
     clearcoatRoughness: 'csm_ClearcoatRoughness',
-    // Clearcoat roughness
     clearcoatNormal: 'csm_ClearcoatNormal',
-    // Clearcoat normals
     transmission: 'csm_Transmission',
-    // Transmission
     thickness: 'csm_Thickness',
-    // Thickness
     iridescence: 'csm_Iridescence',
-    // Iridescence
-    // Extras
     pointSize: 'csm_PointSize',
-    // gl_PointSize (Frag)
     fragColor: 'csm_FragColor',
-    // gl_FragColor (Frag)
     depthAlpha: 'csm_DepthAlpha',
-    // Depth (MeshDepthMaterial)
     unlitFac: 'csm_UnlitFac',
-    // Unlit factor (mix between csm_FragColor and csm_DiffuseColor)
-    // Vert
     position: 'csm_Position',
-    // gl_Position
     positionRaw: 'csm_PositionRaw',
-    // gl_Position (without projection)
     normal: 'csm_Normal',
-    // Vertex Normal
   },
   O = {
     [`${e.position}`]: '*',
@@ -257,7 +217,6 @@ const D =
     [`${e.thickness}`]: ['MeshPhysicalMaterial'],
   },
   b = {
-    // VERT
     '*': {
       '#include <lights_physical_fragment>': T.ShaderChunk.lights_physical_fragment,
       '#include <transmission_fragment>': T.ShaderChunk.transmission_fragment,
@@ -291,7 +250,6 @@ const D =
     gl_PointSize = ${e.pointSize};
     `,
     },
-    // FRAG
     [`${e.diffuse}`]: {
       '#include <color_fragment>': `
     #include <color_fragment>
@@ -473,7 +431,6 @@ class B extends T.Material {
           a = a.replace(
             'void main() {',
             `
-          // THREE-CustomShaderMaterial by Faraz Shaikh: https://github.com/FarazzShaikh/THREE-CustomShaderMaterial
   
           ${d}
           
@@ -484,7 +441,6 @@ class B extends T.Material {
           if (l !== -1) {
             const v = `
             ${s ? `${s}` : ''}
-            //~CSM_MAIN_END
           `
             a = a.slice(0, l) + v + a.slice(l)
           }
@@ -493,9 +449,7 @@ class B extends T.Material {
           a = a.replace(
             l,
             `
-          // THREE-CustomShaderMaterial by Faraz Shaikh: https://github.com/FarazzShaikh/THREE-CustomShaderMaterial
   
-          //~CSM_DEFAULTS
           ${_ ? y : H}
           ${D}
   
@@ -508,7 +462,6 @@ class B extends T.Material {
             ${_ ? F : x}
 
             ${s ? `${s}` : ''}
-            //~CSM_MAIN_END
           `
           )
         }

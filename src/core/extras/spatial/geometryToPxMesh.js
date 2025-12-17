@@ -17,7 +17,6 @@ class PMeshHandle {
     if (this.item.refs === 0) {
       this.item.pmesh.release()
       cache.delete(this.item.id)
-      // console.log('DESTROY', this.item.id)
     }
     this.released = true
     this.value = null
@@ -27,7 +26,6 @@ class PMeshHandle {
 export function geometryToPxMesh(world, geometry, convex) {
   const id = `${geometry.uuid}_${convex ? 'convex' : 'triangles'}`
 
-  // check and return cached if already cooked
   let item = cache.get(id)
   if (item) {
     return new PMeshHandle(item)
@@ -35,24 +33,16 @@ export function geometryToPxMesh(world, geometry, convex) {
 
   const cookingParams = world.physics.cookingParams
 
-  // geometry = BufferGeometryUtils.mergeVertices(geometry)
-  // geometry = geometry.toNonIndexed()
-  // geometry.computeVertexNormals()
 
-  // console.log('geometry', geometry)
-  // console.log('convex', convex)
 
   let position = geometry.attributes.position
   const index = geometry.index
 
   if (position.isInterleavedBufferAttribute) {
-    // deinterleave!
     position = BufferGeometryUtils.deinterleaveAttribute(position)
     position = new THREE.BufferAttribute(new Float32Array(position.array), position.itemSize, false)
   }
 
-  // console.log('position', position)
-  // console.log('index', index)
 
   const positions = position.array
   const floatBytes = positions.length * positions.BYTES_PER_ELEMENT
@@ -76,13 +66,9 @@ export function geometryToPxMesh(world, geometry, convex) {
     desc.points.stride = 12
     desc.points.data = pointsPtr
 
-    // console.log('points.count', desc.points.count)
-    // console.log('points.stride', desc.points.stride)
 
     let indices = index.array // Uint16Array or Uint32Array
 
-    // for some reason i'm seeing Uint8Arrays in some glbs, specifically the vipe rooms.
-    // so we just coerce these up to u16
     if (indices instanceof Uint8Array) {
       indices = new Uint16Array(index.array.length)
       for (let i = 0; i < index.array.length; i++) {
@@ -97,19 +83,13 @@ export function geometryToPxMesh(world, geometry, convex) {
       desc.triangles.stride = 6 // 3 × 2 bytes per triangle
       desc.flags.raise(PHYSX.PxTriangleMeshFlagEnum.e16_BIT_INDICES)
     } else {
-      // note: this is here for brevity but no longer used as we force everything to 16 bit
       PHYSX.HEAPU32.set(indices, indexPtr >> 2)
       desc.triangles.stride = 12 // 3 × 4 bytes per triangle
     }
     desc.triangles.count = indices.length / 3
     desc.triangles.data = indexPtr
 
-    // console.log('triangles.count', desc.triangles.count)
-    // console.log('triangles.stride', desc.triangles.stride)
 
-    // if (!desc.isValid()) {
-    //   throw new Error('Invalid mesh description')
-    // }
 
     try {
       pmesh = PHYSX.CreateTriangleMesh(cookingParams, desc)

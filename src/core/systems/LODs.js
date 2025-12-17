@@ -2,13 +2,6 @@ import { System } from './System.js'
 
 const BATCH_SIZE = 1000
 
-/**
- * LOD System
- *
- * - Runs on both the server and client.
- * - Uses a cursor to iterate and switch a maximum of X lods per frame
- *
- */
 export class LODs extends System {
   constructor(world) {
     super(world)
@@ -27,7 +20,6 @@ export class LODs extends System {
   }
 
   update(delta) {
-    // check if lods need to switch (batched over multiple frames)
     const size = Math.min(this.nodes.length, BATCH_SIZE)
     for (let i = 0; i < size; i++) {
       const idx = (this.cursor + i) % this.nodes.length

@@ -13,17 +13,8 @@ import { formatBytes } from '../extras/formatBytes.js'
 import { emoteUrls } from '../extras/playerEmotes.js'
 import Hls from 'hls.js/dist/hls.js'
 
-// THREE.Cache.enabled = true
 
-/**
- * Client Loader System
- *
- * - Runs on the client
- * - Basic file loader for many different formats, cached.
- *
- */
 export class ClientLoader extends BaseLoader {
-  // DI Service Constants
   static DEPS = {
     stage: 'stage',
     scripts: 'scripts',
@@ -41,12 +32,10 @@ export class ClientLoader extends BaseLoader {
     this.texLoader = new TextureLoader()
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
-    // Utility method references (not service dependencies)
     this.resolveURL = world.resolveURL
     this.setupMaterial = world.setupMaterial
   }
 
-  // DI Property Getters
   get stage() { return this.getService(ClientLoader.DEPS.stage) }
   get scripts() { return this.getService(ClientLoader.DEPS.scripts) }
   get audio() { return this.getService(ClientLoader.DEPS.audio) }
@@ -199,7 +188,6 @@ export class ClientLoader extends BaseLoader {
     })
     this.preloader = Promise.allSettled(promises).then(() => {
       this.preloader = null
-      // this.events.emit('ready', true)
     })
   }
 
@@ -402,7 +390,6 @@ function createVideoFactory(world, url) {
       if (dead) return
       elem.muted = false
     })
-    // set linked=false to have a separate source (and texture)
     const texture = new THREE.VideoTexture(elem)
     texture.colorSpace = THREE.SRGBColorSpace
     texture.minFilter = THREE.LinearFilter
@@ -410,25 +397,14 @@ function createVideoFactory(world, url) {
     texture.anisotropy = world.graphics.maxAnisotropy
     if (!prepare) {
       prepare = (function () {
-        /**
-         *
-         * A regular video will load data automatically BUT a stream
-         * needs to hit play() before it gets that data.
-         *
-         * The following code handles this for us, and when streaming
-         * will hit play just until we get the data needed, then pause.
-         */
         return new Promise(async resolve => {
           let playing = false
           let data = false
           elem.addEventListener(
             'loadeddata',
             async () => {
-              // if we needed to hit play to fetch data then revert back to paused
-              // console.log('[video] loadeddata', { playing })
               if (playing) elem.pause()
               data = true
-              // await new Promise(resolve => setTimeout(resolve, 2000))
               width = elem.videoWidth
               height = elem.videoHeight
               duration = elem.duration
@@ -440,13 +416,7 @@ function createVideoFactory(world, url) {
           elem.addEventListener(
             'loadedmetadata',
             async () => {
-              // we need a gesture before we can potentially hit play
-              // console.log('[video] ready')
-              // await this.engine.driver.gesture
-              // if we already have data do nothing, we're done!
-              // console.log('[video] gesture', { data })
               if (data) return
-              // otherwise hit play to force data loading for streams
               elem.play()
               playing = true
             },
@@ -477,8 +447,6 @@ function createVideoFactory(world, url) {
         texture.dispose()
         document.body.removeChild(elem)
         delete sources[key]
-        // help to prevent chrome memory leaks
-        // see: https://github.com/facebook/react/issues/15583#issuecomment-490912533
         elem.src = ''
         elem.load()
       }

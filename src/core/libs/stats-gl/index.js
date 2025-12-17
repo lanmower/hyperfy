@@ -28,7 +28,6 @@ class Stats {
   queryCreated
   isRunningCPUProfiling
   fpsPanel
-  // static Panel
   msPanel
   gpuPanel
   gpuPanelCompute
@@ -130,17 +129,13 @@ class Stats {
   }
 
   patchThreeRenderer(renderer) {
-    // Store the original render method
     const originalRenderMethod = renderer.render
 
-    // Reference to the stats instance
     const statsInstance = this
 
-    // Override the render method on the prototype
     renderer.render = function (scene, camera) {
       statsInstance.begin() // Start tracking for this render call
 
-      // Call the original render method
       originalRenderMethod.call(this, scene, camera)
 
       statsInstance.end() // End tracking for this render call
@@ -150,7 +145,6 @@ class Stats {
   }
 
   resizePanel(panel, offset) {
-    // panel.canvas.style.position = 'absolute'
 
     if (this.minimal) {
       panel.canvas.style.display = 'none'
@@ -192,12 +186,6 @@ class Stats {
       return
     }
 
-    // if ((canvasOrGL as any).isWebGPURenderer && !this.threeRendererPatched) {
-    // TODO Color GPU Analytic in another color than yellow to know webgpu or webgl context (blue)
-    //   const canvas: any = canvasOrGL
-    //   this.patchThreeRenderer(canvas as any);
-    //   this.gl = canvas.getContext();
-    // } else
     if (canvasOrGL.isWebGLRenderer && !this.threeRendererPatched) {
       const canvas = canvasOrGL
       if (patch) {
@@ -218,9 +206,7 @@ class Stats {
       }
       return
     }
-    // Check if canvasOrGL is already a WebGL2RenderingContext
 
-    // Handle HTMLCanvasElement and OffscreenCanvas
     else if ((!this.gl && canvasOrGL instanceof HTMLCanvasElement) || canvasOrGL instanceof OffscreenCanvas) {
       this.gl = canvasOrGL.getContext('webgl2')
       if (!this.gl) {
@@ -234,7 +220,6 @@ class Stats {
       return
     }
 
-    // Get the extension
     this.ext = this.gl.getExtension('EXT_disjoint_timer_query_webgl2')
     if (this.ext) {
       this.gpuPanel = this.addPanel(new Panel('GPU', '#ff0', '#220'), 2)
@@ -250,7 +235,6 @@ class Stats {
 
     if (this.gl && this.ext) {
       if (this.activeQuery) {
-        // End the previous query if it's still active
         this.gl.endQuery(this.ext.TIME_ELAPSED_EXT)
       }
 
@@ -262,12 +246,10 @@ class Stats {
   }
 
   end() {
-    // Increase render count
     this.renderCount++
 
     if (this.gl && this.ext && this.activeQuery) {
       this.gl.endQuery(this.ext.TIME_ELAPSED_EXT)
-      // Add the active query to the gpuQueries array and reset it
       this.gpuQueries.push({ query: this.activeQuery })
       this.activeQuery = null
     }
@@ -305,13 +287,11 @@ class Stats {
 
     this.endProfiling('cpu-started', 'cpu-finished', 'cpu-duration')
 
-    // Calculate the total duration of CPU and GPU work for this frame
     this.addToAverage(this.totalCpuDuration, this.averageCpu)
     this.addToAverage(this.totalGpuDuration, this.averageGpu)
 
     this.renderCount = 0
 
-    // If this.totalCpuDuration is 0, it means that the CPU query was not created and stats.begin() never called/overrided
     if (this.totalCpuDuration === 0) {
       this.beginProfiling('cpu-started')
     }
@@ -414,12 +394,10 @@ class Stats {
   }
 
   get domElement() {
-    // patch for some use case in threejs
     return this.dom
   }
 
   get container() {
-    // @deprecated
 
     console.warn('Stats: Deprecated! this.container as been replaced to this.dom ')
     return this.dom

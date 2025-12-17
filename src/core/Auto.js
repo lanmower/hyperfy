@@ -1,10 +1,8 @@
-// Automatic module discovery and registration system for zero-config initialization
 
 import fs from 'fs-extra'
 import path from 'path'
 
 export class Auto {
-  // Discover modules from directory with optional pattern matching
   static async discover(dirPath, pattern = /\.js$/) {
     const modules = {}
     const files = await fs.readdir(dirPath)
@@ -23,7 +21,6 @@ export class Auto {
     return modules
   }
 
-  // Auto-map module names by removing common prefix
   static map(modules, prefix = '') {
     const mapped = {}
     for (const [name, module] of Object.entries(modules)) {
@@ -33,7 +30,6 @@ export class Auto {
     return mapped
   }
 
-  // Auto-register modules into world or registry
   static register(target, modules, registerer = null) {
     for (const [key, module] of Object.entries(modules)) {
       if (registerer) {
@@ -46,7 +42,6 @@ export class Auto {
     }
   }
 
-  // Type-safe environment variable access
   static env(key, type = 'string', fallback = null) {
     const value = process.env[key]
     if (value === undefined) return fallback
@@ -59,7 +54,6 @@ export class Auto {
     }
   }
 
-  // Get environment with prefix filter
   static envFiltered(prefix) {
     const filtered = {}
     for (const [key, value] of Object.entries(process.env)) {

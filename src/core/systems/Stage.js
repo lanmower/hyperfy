@@ -6,17 +6,7 @@ import { LooseOctree } from '../extras/LooseOctree.js'
 
 const vec2 = new THREE.Vector2()
 
-/**
- * Stage System
- *
- * - Runs on both the server and client.
- * - Allows inserting meshes etc into the world, and providing a handle back.
- * - Automatically handles instancing/batching.
- * - This is a logical scene graph, no rendering etc is handled here.
- *
- */
 export class Stage extends System {
-  // DI Service Constants
   static DEPS = {
     rig: 'rig',
     camera: 'camera',
@@ -41,7 +31,6 @@ export class Stage extends System {
     this.setupMaterial = world.setupMaterial
   }
 
-  // DI Property Getters
   get rig() { return this.getService(Stage.DEPS.rig) }
   get camera() { return this.getService(Stage.DEPS.camera) }
 
@@ -217,10 +206,6 @@ export class Stage extends System {
         raw.fog = value
         raw.needsUpdate = true
       },
-      // TODO: not yet
-      // clone() {
-      //   return self.createMaterial(options).proxy
-      // },
       get _ref() {
         if (world._allowMaterial) return material
       },
@@ -274,18 +259,8 @@ class Model {
 
     if (!this.geometry.boundsTree) this.geometry.computeBoundsTree()
 
-    // this.mesh = mesh.clone()
-    // this.mesh.geometry.computeBoundsTree() // three-mesh-bvh
-    // // this.mesh.geometry.computeBoundingBox() // spatial octree
-    // // this.mesh.geometry.computeBoundingSphere() // spatial octree
-    // this.mesh.material.shadowSide = THREE.BackSide // fix csm shadow banding
-    // this.mesh.castShadow = true
-    // this.mesh.receiveShadow = true
-    // this.mesh.matrixAutoUpdate = false
-    // this.mesh.matrixWorldAutoUpdate = false
 
     this.iMesh = new THREE.InstancedMesh(this.geometry, this.material.raw, 10)
-    // this.iMesh.name = this.mesh.name
     this.iMesh.castShadow = this.castShadow
     this.iMesh.receiveShadow = this.receiveShadow
     this.iMesh.matrixAutoUpdate = false
@@ -301,7 +276,6 @@ class Model {
       idx: this.items.length,
       node,
       matrix,
-      // octree
     }
     this.items.push(item)
     this.iMesh.setMatrixAt(item.idx, item.matrix) // silently fails if too small, gets increased in clean()
@@ -341,11 +315,9 @@ class Model {
       this.items = []
       this.dirty = true
     } else if (isLast) {
-      // this is the last instance in the buffer, pop it off the end
       this.items.pop()
       this.dirty = true
     } else {
-      // there are other instances after this one in the buffer, swap it with the last one and pop it off the end
       this.iMesh.setMatrixAt(item.idx, last.matrix)
       last.idx = item.idx
       this.items[item.idx] = last
@@ -360,7 +332,6 @@ class Model {
     const count = this.items.length
     if (size < this.items.length) {
       const newSize = count + 100
-      // console.log('increase', this.mesh.name, 'from', size, 'to', newSize)
       this.iMesh.resize(newSize)
       for (let i = size; i < count; i++) {
         this.iMesh.setMatrixAt(i, this.items[i].matrix)
@@ -376,7 +347,6 @@ class Model {
       this.stage.scene.add(this.iMesh)
     }
     this.iMesh.instanceMatrix.needsUpdate = true
-    // this.iMesh.computeBoundingSphere()
     this.dirty = false
   }
 

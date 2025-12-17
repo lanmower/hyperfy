@@ -98,12 +98,9 @@ IncidentLight directLight;
 		getDirectionalLightInfo( directionalLight, directLight );
 
 	  	#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
-			// NOTE: Depth gets larger away from the camera.
-			// cascade.x is closer, cascade.y is further
 
 				#if ( UNROLLED_LOOP_INDEX < ${cascades} )
 
-					// NOTE: Apply CSM shadows
 
 					cascade = CSM_cascades[ i ];
 					cascadeCenter = ( cascade.x + cascade.y ) / 2.0;
@@ -138,7 +135,6 @@ IncidentLight directLight;
 
 				#else
 
-					// NOTE: Apply the reminder of directional lights
 
 					directionalLightShadow = directionalLightShadows[ i ];
 					directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
@@ -163,7 +159,6 @@ IncidentLight directLight;
 
 				#if ( UNROLLED_LOOP_INDEX < ${cascades} )
 
-					// NOTE: Apply CSM shadows
 
 					directionalLightShadow = directionalLightShadows[ i ];
 					if(linearDepth >= CSM_cascades[UNROLLED_LOOP_INDEX].x && linearDepth < CSM_cascades[UNROLLED_LOOP_INDEX].y) directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
@@ -172,7 +167,6 @@ IncidentLight directLight;
 
 				#else
 
-					// NOTE: Apply the reminder of directional lights
 
 					directionalLightShadow = directionalLightShadows[ i ];
 					directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
@@ -189,7 +183,6 @@ IncidentLight directLight;
 	#endif
 
 	#if ( NUM_DIR_LIGHTS > NUM_DIR_LIGHT_SHADOWS)
-		// compute the lights not casting shadows (if any)
 
 		#pragma unroll_loop_start
 		for ( int i = NUM_DIR_LIGHT_SHADOWS; i < NUM_DIR_LIGHTS; i ++ ) {
@@ -422,10 +415,6 @@ class CSMFrustum {
   setFromProjectionMatrix(projectionMatrix, maxFar) {
     const isOrthographic = projectionMatrix.elements[2 * 4 + 3] === 0
     inverseProjectionMatrix.copy(projectionMatrix).invert()
-    // 3 --- 0  vertices.near/far order
-    // |     |
-    // 2 --- 1
-    // clip space spans from [-1, 1]
     this.vertices.near[0].set(1, 1, -1)
     this.vertices.near[1].set(1, -1, -1)
     this.vertices.near[2].set(-1, -1, -1)
@@ -557,7 +546,6 @@ export class CSM {
       this.parent.add(light.target)
       this.lights.push(light)
     }
-    // NOTE: Prepend lights to the parent as we assume CSM shadows come from first light sources in the world
     for (let i = this.lights.length - 1; i >= 0; i--) {
       const light = this.lights[i]
       light.parent = this.parent
@@ -574,9 +562,6 @@ export class CSM {
       const light = this.lights[i]
       const shadowCam = light.shadow.camera
       const frustum = this.frustums[i]
-      // Get the two points that represent that furthest points on the frustum assuming
-      // that's either the diagonal across the far plane or the diagonal across the whole
-      // frustum itself.
       const nearVerts = frustum.vertices.near
       const farVerts = frustum.vertices.far
       const point1 = farVerts[0]
@@ -588,7 +573,6 @@ export class CSM {
       }
       let squaredBBWidth = point1.distanceTo(point2)
       if (this.fade) {
-        // expand the shadow extents by the fade margin if fade is enabled.
         const camera = this.camera
         const far = Math.max(camera.far, this.maxFar)
         const linearDepth = frustum.vertices.far[0].z / (far - camera.near)
@@ -634,12 +618,9 @@ export class CSM {
       const shadowCam = light.shadow.camera
       const texelWidth = (shadowCam.right - shadowCam.left) / this.shadowMapSize
       const texelHeight = (shadowCam.top - shadowCam.bottom) / this.shadowMapSize
-      // This matrix only represents sun orientation, origin is zero
       _lightOrientationMatrix.lookAt(_origin, this.lightDirection, this.lightDirectionUp)
       _lightOrientationMatrixInverse.copy(_lightOrientationMatrix).invert()
-      // Go from camera space to world space using camera.matrixWorld, then go to parent space using inverse of parent.matrixWorld
       _cameraToLightParentMatrix.copy(this.parent.matrixWorld).invert().multiply(this.camera.matrixWorld)
-      // Go from camera space to light parent space, then apply light orientation
       _cameraToLightMatrix.multiplyMatrices(_lightOrientationMatrixInverse, _cameraToLightParentMatrix)
       this.frustums[i].toSpace(_cameraToLightMatrix, _lightSpaceFrustum)
       const nearVerts = _lightSpaceFrustum.vertices.near
@@ -651,12 +632,9 @@ export class CSM {
       }
       _bbox.getCenter(_center)
       _center.z = _bbox.max.z + this.lightMargin
-      // Round X and Y to avoid shadow shimmering when moving or rotating the camera
       _center.x = Math.floor(_center.x / texelWidth) * texelWidth
       _center.y = Math.floor(_center.y / texelHeight) * texelHeight
-      // Center is currently in light space, so we need to go back to light parent space
       _center.applyMatrix4(_lightOrientationMatrix)
-      // New positions are relative to this.parent
       light.position.copy(_center)
       light.target.position.copy(_center)
       light.target.position.x += this.lightDirection.x
@@ -756,8 +734,6 @@ export class CSM {
       light.shadow.mapSize.width = size
       light.shadow.mapSize.height = size
       if (light.shadow.map) {
-        // Dispose old shadow map so that three.js automatically creates a new one using the updated
-        // mapSize dimensions. See https://stackoverflow.com/a/31858963/8886455
         light.shadow.map.dispose()
         light.shadow.map = null
       }
@@ -780,7 +756,6 @@ export class CSM {
     for (let i = 0; i < this.lights.length; i++) {
       const light = this.lights[i]
       this.parent.remove(light)
-      // this.parent.remove(light.target)
       light.dispose()
     }
   }

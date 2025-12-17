@@ -7,15 +7,7 @@ import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
 
-/**
- * Client Network System
- *
- * - runs on the client
- * - provides abstract network methods matching ServerNetwork
- *
- */
 export class ClientNetwork extends BaseNetwork {
-  // DI Service Constants
   static DEPS = {
     loader: 'loader',
     entities: 'entities',
@@ -38,11 +30,9 @@ export class ClientNetwork extends BaseNetwork {
     this.serverTimeOffset = 0
     this.protocol.isClient = true
     this.protocol.flushTarget = this
-    // Utility reference
     this.assetsUrl = world.assetsUrl
   }
 
-  // DI Property Getters
   get loader() { return this.getService(ClientNetwork.DEPS.loader) }
   get entities() { return this.getService(ClientNetwork.DEPS.entities) }
   get chat() { return this.getService(ClientNetwork.DEPS.chat) }
@@ -77,7 +67,6 @@ export class ClientNetwork extends BaseNetwork {
 
   async upload(file) {
     {
-      // first check if we even need to upload it
       const hash = await hashFile(file)
       const ext = file.name.split('.').pop().toLowerCase()
       const filename = `${hash}.${ext}`
@@ -86,7 +75,6 @@ export class ClientNetwork extends BaseNetwork {
       const data = await resp.json()
       if (data.exists) return // console.log('already uploaded:', filename)
     }
-    // then upload it
     const form = new FormData()
     form.append('file', file)
     const url = `${this.apiUrl}/upload`
@@ -115,14 +103,9 @@ export class ClientNetwork extends BaseNetwork {
     this.maxUploadSize = data.maxUploadSize
     this.assetsUrl = data.assetsUrl
 
-    // preload environment model and avatar
-    // if (this.environment.base) {
-    //   this.loader.preload('model', this.environment.base.model)
-    // }
     if (data.settings.avatar) {
       this.loader.preload('avatar', data.settings.avatar.url)
     }
-    // preload some blueprints
     for (const item of data.blueprints) {
       if (item.preload && !item.disabled) {
         if (item.model) {
@@ -138,11 +121,9 @@ export class ClientNetwork extends BaseNetwork {
         }
       }
     }
-    // preload emotes
     for (const url of emoteUrls) {
       this.loader.preload('emote', url)
     }
-    // preload local player avatar
     for (const item of data.entities) {
       if (item.type === 'player' && item.userId === this.id) {
         const url = item.sessionAvatar || item.avatar
@@ -235,16 +216,13 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onErrors = (data) => {
-    // Received error data from server
     this.events.emit('errors', data)
   }
 
-  // Helper method to request errors from server
   requestErrors(options = {}) {
     this.send('getErrors', options)
   }
 
-  // Helper method to clear server errors (admin only)
   clearErrors() {
     this.send('clearErrors')
   }

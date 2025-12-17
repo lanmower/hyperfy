@@ -3,16 +3,8 @@ import { ControlPriorities } from '../extras/ControlPriorities.js'
 
 import { System } from './System.js'
 
-/**
- *
- * This system handles pointer events.
- * It handles pointer events while the pointer is locked via reticle raycasting.
- * It handles pointer events while the cursor is being used, via world UI.
- *
- */
 
 export class ClientPointer extends System {
-  // DI Service Constants
   static DEPS = {
     controls: 'controls',
     stage: 'stage',
@@ -23,7 +15,6 @@ export class ClientPointer extends System {
     this.pointerState = new PointerState()
   }
 
-  // DI Property Getters
   get controls() { return this.getService(ClientPointer.DEPS.controls) }
   get stage() { return this.getService(ClientPointer.DEPS.stage) }
 
@@ -44,7 +35,6 @@ export class ClientPointer extends System {
 
   setScreenHit(screenHit) {
     this.screenHit = screenHit
-    // capture all mouse click events if our pointer is interacting with world UI
     this.control.mouseLeft.capture = !!screenHit
   }
 
@@ -91,11 +81,9 @@ class PointerState {
     const newPath = hit ? this.getAncestorPath(hit) : []
     const oldPath = Array.from(this.activePath)
 
-    // find divergence point
     let i = 0
     while (i < newPath.length && i < oldPath.length && newPath[i] === oldPath[i]) i++
 
-    // pointer leave events bubble up from leaf
     for (let j = oldPath.length - 1; j >= i; j--) {
       if (oldPath[j].onPointerLeave) {
         this.event.set(PointerEvents.LEAVE)
@@ -104,12 +92,10 @@ class PointerState {
         } catch (err) {
           console.error(err)
         }
-        // if (this.event._propagationStopped) break
       }
       this.activePath.delete(oldPath[j])
     }
 
-    // pointer enter events bubble down from divergence
     for (let j = i; j < newPath.length; j++) {
       if (newPath[j].onPointerEnter) {
         this.event.set(PointerEvents.ENTER)
@@ -123,7 +109,6 @@ class PointerState {
       this.activePath.add(newPath[j])
     }
 
-    // set cursor - check from leaf to root for first defined cursor
     let cursor = CURSOR_DEFAULT
     if (newPath.length > 0) {
       for (let i = newPath.length - 1; i >= 0; i--) {
@@ -138,7 +123,6 @@ class PointerState {
       this.cursor = cursor
     }
 
-    // handle pointer down events
     if (pointerPressed) {
       for (let i = newPath.length - 1; i >= 0; i--) {
         const node = newPath[i]
@@ -155,7 +139,6 @@ class PointerState {
       }
     }
 
-    // handle pointer up events
     if (pointerReleased) {
       for (const node of this.pressedNodes) {
         if (node.onPointerUp) {

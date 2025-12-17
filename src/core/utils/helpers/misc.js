@@ -1,4 +1,3 @@
-// Miscellaneous utility functions (uuid, random, math)
 
 import { some } from 'lodash-es'
 import { customAlphabet } from 'nanoid'

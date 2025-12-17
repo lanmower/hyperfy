@@ -10,7 +10,6 @@ const _mesh = new THREE.Mesh()
 
 const MIN_RADIUS = 0.2
 
-// https://anteru.net/blog/2008/loose-octrees/
 
 export class LooseOctree {
   constructor({ scene, center, size }) {
@@ -36,23 +35,18 @@ export class LooseOctree {
 
   move(item) {
     if (!item._node) {
-      // console.error('octree item move called but there is no _node')
       return
     }
-    // update bounding sphere
     item.sphere.copy(item.geometry.boundingSphere).applyMatrix4(item.matrix)
-    // if it still fits inside its current node that's cool
     if (item._node.canContain(item)) {
       return
     }
-    // if it doesn't fit, re-insert it into its new node
     const prevNode = item._node
     this.remove(item)
     const added = this.insert(item)
     if (!added) {
       console.error('octree item moved but was not re-added. did it move outside octree bounds?')
     }
-    // check if we can collapse the previous node
     prevNode.checkCollapse()
   }
 
@@ -61,9 +55,6 @@ export class LooseOctree {
   }
 
   expand() {
-    // console.log('expand')
-    // when we expand we do it twice so that it expands in both directions.
-    // first goes positive, second goes back negative
     let prevRoot
     let size
     let center
@@ -102,26 +93,10 @@ export class LooseOctree {
   raycast(raycaster, intersects = []) {
     this.root.raycast(raycaster, intersects)
     intersects.sort(sortAscending)
-    // console.log('octree.raycast', intersects)
     return intersects
   }
 
-  // spherecast(sphere, intersects = []) {
-  //   // console.time('spherecast')
-  //   this.root.spherecast(sphere, intersects)
-  //   intersects.sort(sortAscending)
-  //   // console.timeEnd('spherecast')
-  //   // console.log('octree.spherecast', intersects)
-  //   return intersects
-  // }
 
-  // prune() {
-  //   console.time('prune')
-  //   this.pruneCount = 0
-  //   this.root.prune()
-  //   console.timeEnd('prune')
-  //   console.log('pruned:', this.pruneCount)
-  // }
 
   toggleHelper(enabled) {
     enabled = isBoolean(enabled) ? enabled : !this.helper
@@ -182,10 +157,7 @@ class LooseOctreeNode {
         return true
       }
     }
-    // this should never happen
     console.error('octree insert fail')
-    // this.items.push(item)
-    // item._node = this
     return false
   }
 
@@ -217,7 +189,6 @@ class LooseOctreeNode {
   }
 
   checkCollapse() {
-    // a node can collapse if it has children to collapse AND has no items in any descendants
     let match
     let node = this
     while (node) {
@@ -280,61 +251,7 @@ class LooseOctreeNode {
     return intersects
   }
 
-  // spherecast(sphere, intersects) {
-  //   if (!sphere.intersectsBox(this.outer)) {
-  //     return intersects
-  //   }
-  //   for (const item of this.items) {
-  //     if (sphere.intersectsSphere(item.sphere)) {
-  //       // just sphere-to-sphere is good enough for now
-  //       const centerToCenterDistance = sphere.center.distanceTo(
-  //         item.sphere.center
-  //       )
-  //       const overlapDistance =
-  //         item.sphere.radius + sphere.radius - centerToCenterDistance
-  //       const distance = Math.max(0, overlapDistance)
-  //       const intersect = {
-  //         distance: distance,
-  //         point: null,
-  //         object: null,
-  //         getEntity: item.getEntity,
-  //       }
-  //       intersects.push(intersect)
-  //       // _mesh.geometry = item.geometry
-  //       // _mesh.material = item.material
-  //       // _mesh.matrixWorld = item.matrix
-  //       // _mesh.raycast(raycaster, _intersects)
-  //       // for (let i = 0, l = _intersects.length; i < l; i++) {
-  //       //   const intersect = _intersects[i]
-  //       //   intersect.getEntity = item.getEntity
-  //       //   intersects.push(intersect)
-  //       // }
-  //       // _intersects.length = 0
-  //     }
-  //   }
-  //   for (const child of this.children) {
-  //     child.spherecast(sphere, intersects)
-  //   }
-  //   return intersects
-  // }
 
-  // prune() {
-  //   let empty = true
-  //   for (const child of this.children) {
-  //     const canPrune = !child.items.length && child.prune()
-  //     if (!canPrune) {
-  //       empty = false
-  //     }
-  //   }
-  //   if (empty) {
-  //     for (const child of this.children) {
-  //       this.octree.helper?.remove(child)
-  //     }
-  //     this.children.length = 0
-  //     this.octree.pruneCount++
-  //   }
-  //   return empty
-  // }
 
   getDepth() {
     if (this.children.length === 0) {
@@ -368,14 +285,6 @@ function sortAscending(a, b) {
   return a.distance - b.distance
 }
 
-// function getRandomHexColor() {
-//   // Generate a random integer between 0 and 0xFFFFFF (16777215 in decimal)
-//   const randomInt = Math.floor(Math.random() * 16777216);
-//   // Convert the integer to a hexadecimal string and pad with leading zeros if necessary
-//   const hexColor = randomInt.toString(16).padStart(6, '0');
-//   // Prefix with '#' to form a valid hex color code
-//   return '#' + hexColor;
-// }
 
 function createHelper(octree) {
   const boxes = new THREE.BoxGeometry(1, 1, 1)
@@ -422,7 +331,6 @@ function createHelper(octree) {
     iMatrix.needsUpdate = true
     node._helperItem = { idx, matrix }
     items.push(node._helperItem)
-    // console.log('add', items.length)
   }
   function remove(node) {
     const item = node._helperItem
@@ -443,7 +351,6 @@ function createHelper(octree) {
           items.indexOf(item),
           last,
           items.length,
-          // items[items.length - 1]
           mesh.geometry.instanceCount,
           items
         )

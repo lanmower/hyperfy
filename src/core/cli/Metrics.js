@@ -1,4 +1,3 @@
-// System metrics and performance observability
 
 export class Metrics {
   constructor(name = 'Metrics') {

@@ -1,4 +1,3 @@
-// note: buffer rule of thumb should be >= one update per interval, eg 1 / sendRate, example: 5Hz = 1 / 5 = 0.2s buffer + jitter
 export class BufferedLerpVector3 {
   constructor(value, buffer = 0.2) {
     this.value = value // this gets written-to each update
@@ -7,7 +6,6 @@ export class BufferedLerpVector3 {
     this.snapToken = null
     this.lastPush = 0
 
-    // fixed‐size ring of 3 { time, value } samples:
     this.samples = []
     for (let i = 0; i < 3; i++) {
       this.samples.push({
@@ -19,7 +17,6 @@ export class BufferedLerpVector3 {
   }
 
   push(inV, snapToken = null) {
-    // if snapshot changed, reset all three to new value
     if (this.snapToken !== snapToken) {
       this.snapToken = snapToken
       for (let samp of this.samples) {
@@ -32,7 +29,6 @@ export class BufferedLerpVector3 {
       }
       this.writeIndex = 0
     } else {
-      // rotate to next slot
       this.writeIndex = (this.writeIndex + 1) % 3
       const samp = this.samples[this.writeIndex]
       if (Array.isArray(inV)) {
@@ -51,7 +47,6 @@ export class BufferedLerpVector3 {
     this.localTime += delta
     const tRender = this.localTime - this.buffer
 
-    // find the two samples that straddle tRender:
     let older = null,
       newer = null
     let tOlder = -Infinity,
@@ -74,10 +69,8 @@ export class BufferedLerpVector3 {
       alpha = Math.min(Math.max(alpha, 0), 1)
       this.value.lerpVectors(older.value, newer.value, alpha)
     } else if (older) {
-      // too far in the past → hold at oldest
       this.value.copy(older.value)
     } else if (newer) {
-      // too far in the future → snap to newest
       this.value.copy(newer.value)
     }
 
@@ -88,7 +81,6 @@ export class BufferedLerpVector3 {
    * Instantly jump your localTime to latest+buffer
    */
   snap() {
-    // find the sample with max time
     let latest = this.samples[0]
     for (let samp of this.samples) {
       if (samp.time > latest.time) latest = samp

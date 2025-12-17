@@ -6,15 +6,7 @@ import { isBoolean } from 'lodash-es'
 
 const PING_RATE = 1 / 2
 
-/**
- * Stats System
- *
- * - runs on the client
- * - attaches stats to the ui to see fps/cpu/gpu
- *
- */
 export class ClientStats extends System {
-  // DI Service Constants
   static DEPS = {
     events: 'events',
     prefs: 'prefs',
@@ -33,7 +25,6 @@ export class ClientStats extends System {
     this.maxPing = 0.01 // Starting value for max (will be updated)
   }
 
-  // DI Property Getters
   get events() { return this.getService(ClientStats.DEPS.events) }
   get prefs() { return this.getService(ClientStats.DEPS.prefs) }
   get graphics() { return this.getService(ClientStats.DEPS.graphics) }
@@ -132,24 +123,6 @@ export class ClientStats extends System {
         0 // number of decimal places (0 for ping)
       )
     }
-    // emit an event so other systems can use ping information
-    // if (this.pingHistory.length > 0) {
-    //   let sum = 0
-    //   let min = Infinity
-    //   let max = 0
-    //   for (let i = 0; i < this.pingHistory.length; i++) {
-    //     const value = this.pingHistory[i]
-    //     sum += value
-    //     if (value < min) min = value
-    //     if (value > max) max = value
-    //   }
-    //   this.world.emit('ping-update', {
-    //     current: rttMs,
-    //     average: Math.round(sum / this.pingHistory.length),
-    //     min: min,
-    //     max: max,
-    //   })
-    // }
   }
 
   onPrefChanged = ({ key, value }) => {

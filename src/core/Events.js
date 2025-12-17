@@ -1,4 +1,3 @@
-// Typed event system - typed event declarations and handling
 
 import { EventBus } from './utils/EventBus.js'
 
@@ -74,10 +73,8 @@ export function emit(bus, event, data) {
   bus.emit(event, data)
 }
 
-// Global events system
 export const sys = new Events('system')
 
-// Predefined system events
 sys.defineBatch({
   'world:init': { world: 'object' },
   'world:start': { world: 'object' },

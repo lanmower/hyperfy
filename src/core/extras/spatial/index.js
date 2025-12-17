@@ -1,4 +1,3 @@
-// Spatial acceleration structures and geometry utilities
 
 export { LooseOctree } from './LooseOctree.js'
 export { SnapOctree } from './SnapOctree.js'

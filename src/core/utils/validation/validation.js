@@ -1,4 +1,3 @@
-// Data validation utilities
 
 export function isValidId(id) {
   return typeof id === 'string' && id.length > 0

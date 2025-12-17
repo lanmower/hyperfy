@@ -37,12 +37,9 @@ export function imageRoundRect(ctx, x, y, width, height, radius, img, imgX, imgY
   ctx.beginPath()
   roundRect(ctx, x, y, width, height, radius)
   ctx.clip()
-  // If optional image dimensions are provided, use them
-  // This allows for handling objectFit cases where the image dimensions differ from container
   if (imgX !== undefined && imgY !== undefined && imgWidth !== undefined && imgHeight !== undefined) {
     ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight)
   } else {
-    // Original behavior - draw image at the same position and size as the container
     ctx.drawImage(img, x, y, width, height)
   }
   ctx.restore()

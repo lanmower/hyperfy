@@ -42,7 +42,6 @@ export const withHandlerRegistry = (Base) => class extends Base {
       if (typeof handler === 'function') {
         this.handlers.set(name, handler.bind(this))
       } else if (typeof handler === 'string') {
-        // Support string references to methods
         const method = this[handler]
         if (typeof method === 'function') {
           this.handlers.set(name, method.bind(this))

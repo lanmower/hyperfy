@@ -1,10 +1,8 @@
-// Define properties on a class with automatic getters/setters
 export function defineProps(target, schema, defaults = {}, data = {}) {
   for (const [key, config] of Object.entries(schema)) {
     const privateKey = `_${key}`
     const initialValue = data[key] !== undefined ? data[key] : defaults[key] ?? config.default ?? null
 
-    // Getter
     Object.defineProperty(target, key, {
       get() {
         return this[privateKey]
@@ -14,7 +12,6 @@ export function defineProps(target, schema, defaults = {}, data = {}) {
           value = defaults[key] ?? config.default
         }
 
-        // Validation
         if (config.validate) {
           const error = config.validate(value)
           if (error) throw new Error(error)
@@ -22,7 +19,6 @@ export function defineProps(target, schema, defaults = {}, data = {}) {
 
         this[privateKey] = value
 
-        // Side effects
         if (config.onSet) {
           config.onSet.call(this, value)
         }
@@ -31,14 +27,12 @@ export function defineProps(target, schema, defaults = {}, data = {}) {
       enumerable: false,
     })
 
-    // Initialize private property
     if (!target.hasOwnProperty(privateKey)) {
       target[privateKey] = initialValue
     }
   }
 }
 
-// Common onSet handlers
 export function onSetRebuild() {
   return function() {
     this.needsRebuild = true
@@ -55,15 +49,11 @@ export function onSetRebuildIf(condition) {
   }
 }
 
-// Proxy generator for schema-based properties
-// Supports both underscore-prefixed (_prop) and non-prefixed (prop) property schemas
 export function createPropertyProxy(instance, propertySchema, superProxy, customMethods = {}, customProperties = {}) {
   const self = instance
   const proxy = {}
 
-  // Create getter/setter pairs for all schema properties
   for (const key in propertySchema) {
-    // Auto-detect if property uses underscore prefix (e.g., _src or src)
     const propKey = `_${key}` in self ? `_${key}` : key
 
     Object.defineProperty(proxy, key, {
@@ -78,18 +68,14 @@ export function createPropertyProxy(instance, propertySchema, superProxy, custom
     })
   }
 
-  // Add custom properties (getters/setters)
-  // Format: { propName: { get: fn, set: fn } } or { propName: fn } for read-only
   for (const [name, prop] of Object.entries(customProperties)) {
     if (typeof prop === 'function') {
-      // Read-only getter
       Object.defineProperty(proxy, name, {
         get: prop.bind(self),
         enumerable: true,
         configurable: true,
       })
     } else {
-      // Custom getter/setter pair
       Object.defineProperty(proxy, name, {
         get: prop.get ? prop.get.bind(self) : undefined,
         set: prop.set ? prop.set.bind(self) : undefined,
@@ -99,16 +85,13 @@ export function createPropertyProxy(instance, propertySchema, superProxy, custom
     }
   }
 
-  // Add custom methods
   for (const [name, method] of Object.entries(customMethods)) {
     proxy[name] = method.bind(self)
   }
 
-  // Inherit Node properties from superProxy
   return Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(superProxy))
 }
 
-// Validator factories
 export const validators = {
   string: (value) => (!value || typeof value === 'string') ? null : 'must be string',
   number: (value) => (typeof value === 'number') ? null : 'must be number',

@@ -104,60 +104,38 @@ export class Image extends Node {
         }
         
         void main() {
-          // Calculate aspect ratio relationship between image and geometry
           float aspect = uGeoAspect / uImgAspect;
 
           vec2 uv = vUv;
           
-          // COVER MODE (uFit = 1.0)
           if (abs(uFit - 1.0) < 0.01) {
-            // Center the UV coordinates
             uv = uv - 0.5;
             
             if (aspect > 1.0) {
-              // Geometry is wider than video:
-              // - Fill horizontally (maintain x scale)
-              // - Scale vertically to maintain aspect ratio (shrink y)
               uv.y /= aspect;
             } else {
-              // Geometry is taller than video:
-              // - Fill vertically (maintain y scale)
-              // - Scale horizontally to maintain aspect ratio (shrink x)
               uv.x *= aspect;
             }
             
-            // Return to 0-1 range
             uv = uv + 0.5;
           }
-          // CONTAIN MODE (uFit = 2.0)
           else if (abs(uFit - 2.0) < 0.01) {
-            // Center the UV coordinates
             uv = uv - 0.5;
             
             if (aspect > 1.0) {
-              // Geometry is wider than video:
-              // - Fill vertically (maintain y scale)
-              // - Scale horizontally to fit entire video (expand x)
               uv.x *= aspect;
             } else {
-              // Geometry is taller than video:
-              // - Fill horizontally (maintain x scale)
-              // - Scale vertically to fit entire video (expand y)
               uv.y /= aspect;
             }
             
-            // Return to 0-1 range
             uv = uv + 0.5;
           }
           
-          // pull UV into [0,1] before sampling
           vec2 uvClamped = clamp(uv, 0.0, 1.0);
           vec4 col = texture2D(uMap, uvClamped);
 
-          // outside coloring (for contain mode)
           if (uFit >= 1.5) {
             const float EPS = 0.005;
-            // decide “outside” based on the *raw* uv
             bool outside = uv.x < -EPS || uv.x > 1.0 + EPS || uv.y < -EPS || uv.y > 1.0 + EPS;
             if (outside) {
               col = uTransparent > 0.5 ? vec4(0.0, 0.0, 0.0, 0.0) : vec4(uColor, 1.0);
@@ -229,38 +207,25 @@ function applyPivot(geometry, width, height, pivot) {
 
 function applyFit(texture, width, height, fit) {
   if (fit === 'none') return
-  // calc aspect ratios
   const containerAspect = width / height
   const imageAspect = texture.image.width / texture.image.height
-  // contain: the entire image should be visible inside the container
-  // cover: the image should cover the entire container (may crop)
   let scaleX = 1
   let scaleY = 1
   if (fit === 'contain') {
-    // if image is wider than container proportionally
     if (imageAspect > containerAspect) {
-      // scale Y to maintain aspect ratio
       scaleY = containerAspect / imageAspect
-      // center vertically
       texture.offset.y = (1 - scaleY) / 2
     } else {
-      // scale X to maintain aspect ratio
       scaleX = imageAspect / containerAspect
-      // center horizontally
       texture.offset.x = (1 - scaleX) / 2
     }
   } else if (fit === 'cover') {
-    // if image is wider than container proportionally
     if (imageAspect > containerAspect) {
-      // scale X to fill container height
       scaleX = containerAspect / imageAspect
-      // center horizontally with overflow
       texture.offset.x = (1 - 1 / scaleX) / 2
       scaleX = 1 / scaleX
     } else {
-      // scale Y to fill container width
       scaleY = imageAspect / containerAspect
-      // center vertically with overflow
       texture.offset.y = (1 - 1 / scaleY) / 2
       scaleY = 1 / scaleY
     }

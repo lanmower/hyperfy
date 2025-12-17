@@ -16,7 +16,6 @@
  */
 
 export const EventTopics = {
-  // System Lifecycle
   System: {
     READY: 'system:ready',
     SHUTDOWN: 'system:shutdown',
@@ -24,7 +23,6 @@ export const EventTopics = {
     TICK: 'system:tick',
   },
 
-  // World Events
   World: {
     LOADED: 'world:loaded',
     UNLOADED: 'world:unloaded',
@@ -32,7 +30,6 @@ export const EventTopics = {
     SPAWN_POINT_CHANGED: 'world:spawnPointChanged',
   },
 
-  // Entity Events
   Entity: {
     ADDED: 'entity:added',
     REMOVED: 'entity:removed',
@@ -42,7 +39,6 @@ export const EventTopics = {
     DEACTIVATED: 'entity:deactivated',
   },
 
-  // Player Events
   Player: {
     JOINED: 'player:joined',
     LEFT: 'player:left',
@@ -53,7 +49,6 @@ export const EventTopics = {
     CHAT_MESSAGE: 'player:chatMessage',
   },
 
-  // Network Events
   Network: {
     CONNECTED: 'network:connected',
     DISCONNECTED: 'network:disconnected',
@@ -64,7 +59,6 @@ export const EventTopics = {
     HOT_RELOAD: 'network:hotReload',
   },
 
-  // App/Blueprint Events
   App: {
     CREATED: 'app:created',
     DESTROYED: 'app:destroyed',
@@ -75,41 +69,35 @@ export const EventTopics = {
     CUSTOM: 'app:custom', // For custom app-emitted events
   },
 
-  // Blueprint Events
   Blueprint: {
     ADDED: 'blueprint:added',
     MODIFIED: 'blueprint:modified',
     REMOVED: 'blueprint:removed',
   },
 
-  // Chat/Communication
   Chat: {
     MESSAGE_ADDED: 'chat:messageAdded',
     MESSAGE_CLEARED: 'chat:messageCleared',
   },
 
-  // Error/Debug Events
   Error: {
     OCCURRED: 'error:occurred',
     CLEARED: 'error:cleared',
     REPORTED: 'error:reported',
   },
 
-  // Admin/Moderation
   Admin: {
     RANK_MODIFIED: 'admin:rankModified',
     MUTED: 'admin:muted',
     COMMAND_EXECUTED: 'admin:commandExecuted',
   },
 
-  // UI/Client Events
   UI: {
     PROGRESS: 'ui:progress',
     LOADING: 'ui:loading',
     READY: 'ui:ready',
   },
 
-  // Persistence
   Persistence: {
     SAVE_START: 'persistence:saveStart',
     SAVE_COMPLETE: 'persistence:saveComplete',
@@ -118,7 +106,6 @@ export const EventTopics = {
   },
 }
 
-// Create a registry of event topic strings for easy lookup
 export const eventTopicStrings = new Set()
 
 function registerTopics(obj) {

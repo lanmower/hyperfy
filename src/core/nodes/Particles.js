@@ -10,33 +10,10 @@ const spaces = ['local', 'world']
 const blendings = ['additive', 'normal']
 const billboards = ['full', 'y', 'direction']
 
-// shape types
-// -------------
-// ['point']
-// ['sphere', radius, thickness]
-// ['hemisphere', radius, thickness]
-// ['cone', radius, thickness, angle]
-// ['box', width, height, depth, thickness, origin(volume|edge), spherize(bool)]
-// ['circle', radius, thickness, spherize]
-// ['rectangle', width, depth, thickness, spherize]
 
-// start format
-// ------------
-// fixed: 1
-// linear: 1-3
-// random: 1~3
 
-// lifetime format
-// ---------------
-// multipliers applied over particle lifetime –
-// `${time},${value}|${time},${value}` etc
-// time = ratio from start of life to end (0 to 1)
-// value = size, rotate, color, alpha, emissive etc
-// eg: `0,1|0.5,2|1,1`
 
-// prettier-ignore
 const defaults = {
-  // emitter
   emitting: true,
   shape: ['cone', 1, 1, 25],
   direction: 0,                       // 0 = no direction randomization, 1 = completely randomize direction
@@ -47,7 +24,6 @@ const defaults = {
   max: 1000,                          // maximum number of particles before oldest start being used
   timescale: 1,                       // override to increase/decrease emitter time scale
 
-  // initial values (see start format)
   life: '5',                          // particle lifetime
   speed: '1',                         // particle start speed
   size: '1',                          // particle start size
@@ -56,7 +32,6 @@ const defaults = {
   alpha: '1',                         // particle start alpha
   emissive: '1',                      // particle start emissive intensity (bloom)
 
-  // rendering
   image: '/particle.png',
   spritesheet: null,                  // [rows, cols, frameRate, loops]
   blending: 'normal',                 // additive or normal (normal requires sorting)
@@ -64,7 +39,6 @@ const defaults = {
   billboard: 'full',
   space: 'world',                     // world or local space
 
-  // simulation
   force: null,                        // vector3 for gravity, levitation, wind etc
   velocityLinear: null,               // [x,y,z]
   velocityOrbital: null,              // [x,y,z]
@@ -139,7 +113,6 @@ export class Particles extends Node {
       return
     }
     if (didMove) {
-      // emitter tracks matrixWorld automatically
     }
   }
 

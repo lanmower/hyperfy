@@ -1,6 +1,4 @@
-// Cryptographic utilities
 
-// ==================== Client (Browser) ====================
 export async function hashFileClient(file) {
   const buf = await file.arrayBuffer()
   const hashBuf = await crypto.subtle.digest('SHA-256', buf)
@@ -10,7 +8,6 @@ export async function hashFileClient(file) {
   return hash
 }
 
-// ==================== Server (Node.js) ====================
 export async function hashFileServer(file) {
   const nodeCrypto = await import('crypto')
   const hash = nodeCrypto.createHash('sha256')
@@ -18,10 +15,8 @@ export async function hashFileServer(file) {
   return hash.digest('hex')
 }
 
-// Platform-agnostic wrapper
 export const hashFile = typeof window !== 'undefined' ? hashFileClient : hashFileServer
 
-// ==================== JWT (Server-only) ====================
 let jwt = null
 
 async function getJWT() {

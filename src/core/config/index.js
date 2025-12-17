@@ -1,4 +1,3 @@
-// Configuration module - centralized registries and dynamic configuration
 
 export {
   commandRegistry,

@@ -9,23 +9,14 @@ export function createEmoteFactory(glb, url) {
 
   const scale = glb.scene.children[0].scale.x // armature should be here?
 
-  // no matter what vrm/emote combo we use for some reason avatars
-  // levitate roughly 5cm above ground. this is a hack but it works.
   const yOffset = -0.05 / scale
 
-  // we only keep tracks that are:
-  // 1. the root position
-  // 2. the quaternions
-  // scale and other positions are rejected.
-  // NOTE: there is a risk that the first position track is not the root but
-  // i haven't been able to find one so far.
   let haveRoot
 
   clip.tracks = clip.tracks.filter(track => {
     if (track instanceof THREE.VectorKeyframeTrack) {
       const [name, type] = track.name.split('.')
       if (type !== 'position') return
-      // we need both root and hip bones
       if (name === 'Root') {
         haveRoot = true
         return true
@@ -38,10 +29,7 @@ export function createEmoteFactory(glb, url) {
     return true
   })
 
-  // if (!haveRoot) console.warn(`emote missing root bone: ${url}`)
 
-  // fix new mixamo update normalized bones
-  // see: https://github.com/pixiv/three-vrm/pull/1032/files
   clip.tracks.forEach(track => {
     const trackSplitted = track.name.split('.')
     const mixamoRigName = trackSplitted[0]
@@ -49,11 +37,9 @@ export function createEmoteFactory(glb, url) {
     mixamoRigNode.getWorldQuaternion(restRotationInverse).invert()
     mixamoRigNode.parent.getWorldQuaternion(parentRestWorldRotation)
     if (track instanceof THREE.QuaternionKeyframeTrack) {
-      // Retarget rotation of mixamoRig to NormalizedBone.
       for (let i = 0; i < track.values.length; i += 4) {
         const flatQuaternion = track.values.slice(i, i + 4)
         q1.fromArray(flatQuaternion)
-        // 親のレスト時ワールド回転 * トラックの回転 * レスト時ワールド回転の逆
         q1.premultiply(parentRestWorldRotation).multiply(restRotationInverse)
         q1.toArray(flatQuaternion)
         flatQuaternion.forEach((v, index) => {
@@ -76,7 +62,6 @@ export function createEmoteFactory(glb, url) {
 
   return {
     toClip({ rootToHips, version, getBoneName }) {
-      // we're going to resize animation to match vrm height
       const height = rootToHips
 
       const tracks = []
@@ -87,13 +72,6 @@ export function createEmoteFactory(glb, url) {
         const vrmBoneName = normalizedBoneNames[ogBoneName]
         const vrmNodeName = getBoneName(vrmBoneName)
 
-        // animations come from mixamo X Bot character
-        // and we scale based on height of our VRM.
-        // usually this would 0.01 if our VRM was for example the X Bot
-        // but since we're applying this to any arbitrary sized VRM we
-        // need to scale it by height too.
-        // i found that feet-to-hips height scales animations almost perfectly
-        // and ensures feet stay on the ground
         const scaler = height * scale
 
         if (vrmNodeName !== undefined) {
@@ -131,7 +109,6 @@ export function createEmoteFactory(glb, url) {
 }
 
 const normalizedBoneNames = {
-  // vrm standard
   hips: 'hips',
   spine: 'spine',
   chest: 'chest',
@@ -184,8 +161,6 @@ const normalizedBoneNames = {
   rightLowerLeg: 'rightLowerLeg',
   rightFoot: 'rightFoot',
   rightToes: 'rightToes',
-  // vrm uploaded to mixamo
-  // these are latest mixamo bone names
   Hips: 'hips',
   Spine: 'spine',
   Spine1: 'chest',
@@ -238,7 +213,6 @@ const normalizedBoneNames = {
   RightLeg: 'rightLowerLeg',
   RightFoot: 'rightFoot',
   RightToeBase: 'rightToes',
-  // additional variations to above, eg unity fbx
   Chest: 'chest',
   UpperChest: 'upperChest',
   LeftUpperLeg: 'leftUpperLeg',
@@ -249,7 +223,6 @@ const normalizedBoneNames = {
   RightLowerLeg: 'rightLowerLeg',
   RightUpperArm: 'rightUpperArm',
   RightLowerArm: 'rightLowerArm',
-  // these must be old mixamo names, prefixed with "mixamo"
   mixamorigHips: 'hips',
   mixamorigSpine: 'spine',
   mixamorigSpine1: 'chest',

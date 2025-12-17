@@ -337,17 +337,14 @@ export class Vector3Enhanced {
 
 	applyQuaternion( q ) {
 
-		// quaternion q is assumed to have unit length
 
 		const vx = this._x, vy = this._y, vz = this._z;
 		const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
 
-		// t = 2 * cross( q.xyz, v );
 		const tx = 2 * ( qy * vz - qz * vy );
 		const ty = 2 * ( qz * vx - qx * vz );
 		const tz = 2 * ( qx * vy - qy * vx );
 
-		// v + q.w * t + cross( q.xyz, t );
 		this._x = vx + qw * tx + qy * tz - qz * ty;
 		this._y = vy + qw * ty + qz * tx - qx * tz;
 		this._z = vz + qw * tz + qx * ty - qy * tx;
@@ -372,8 +369,6 @@ export class Vector3Enhanced {
 
 	transformDirection( m ) {
 
-		// input: THREE.Matrix4 affine matrix
-		// vector interpreted as a direction
 
 		const x = this._x, y = this._y, z = this._z;
 		const e = m.elements;
@@ -382,8 +377,6 @@ export class Vector3Enhanced {
 		this._y = e[ 1 ] * x + e[ 5 ] * y + e[ 9 ] * z;
 		this._z = e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z;
 
-        // called by normalize?
-        // this._onChangeCallback();
 
 		return this.normalize();
 
@@ -433,7 +426,6 @@ export class Vector3Enhanced {
 
 	clamp( min, max ) {
 
-		// assumes min < max, componentwise
 
 		this._x = Math.max( min.x, Math.min( max.x, this._x ) );
 		this._y = Math.max( min.y, Math.min( max.y, this._y ) );
@@ -531,7 +523,6 @@ export class Vector3Enhanced {
 
 	}
 
-	// TODO lengthSquared?
 
 	lengthSq() {
 
@@ -630,8 +621,6 @@ export class Vector3Enhanced {
 
 	reflect( normal ) {
 
-		// reflect incident vector off plane orthogonal to normal
-		// normal is assumed to have unit length
 
 		return this.sub( _vector.copy( normal ).multiplyScalar( 2 * this.dot( normal ) ) );
 
@@ -645,7 +634,6 @@ export class Vector3Enhanced {
 
 		const theta = this.dot( v ) / denominator;
 
-		// clamp, to handle numerical problems
 
 		return Math.acos( MathUtils.clamp( theta, - 1, 1 ) );
 
@@ -829,7 +817,6 @@ export class Vector3Enhanced {
 
 	randomDirection() {
 
-		// https://mathworld.wolfram.com/SpherePointPicking.html
 
 		const theta = Math.random() * Math.PI * 2;
 		const u = Math.random() * 2 - 1;
@@ -868,4 +855,3 @@ export class Vector3Enhanced {
 const _vector = /*@__PURE__*/ new Vector3Enhanced();
 const _quaternion = /*@__PURE__*/ new Quaternion();
 
-// export { Vector3 };

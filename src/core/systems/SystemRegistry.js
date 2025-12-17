@@ -1,21 +1,3 @@
-/**
- * System Registry
- *
- * Centralized registry for system definitions and lifecycle.
- * Enables dynamic system loading based on platform and configuration.
- *
- * Usage:
- * ```javascript
- * const registry = new SystemRegistry()
- * registry.register({
- *   name: 'physics',
- *   class: Physics,
- *   platforms: ['server', 'client'],
- *   priority: 50
- * })
- * const systems = registry.getSystemsForPlatform('client')
- * ```
- */
 
 import { ErrorMonitor } from './ErrorMonitor.js'
 import { Settings } from './Settings.js'
@@ -31,7 +13,6 @@ import { Entities } from './Entities.js'
 import { Physics } from './Physics.js'
 import { Stage } from './Stage.js'
 
-// Platform detection
 const isServer = typeof process !== 'undefined' && typeof window === 'undefined'
 const isClient = typeof window !== 'undefined'
 
@@ -41,11 +22,7 @@ export class SystemRegistry {
     this.registerDefaultSystems()
   }
 
-  /**
-   * Register all default Hyperfy systems
-   */
   registerDefaultSystems() {
-    // Core systems (both platforms)
     this.register({
       name: 'errorMonitor',
       class: ErrorMonitor,
@@ -134,7 +111,6 @@ export class SystemRegistry {
       priority: 30,
     })
 
-    // Client-only systems
     this.register({
       name: 'stage',
       class: Stage,
@@ -143,9 +119,6 @@ export class SystemRegistry {
     })
   }
 
-  /**
-   * Register a system
-   */
   register(config) {
     const {
       name,
@@ -166,16 +139,10 @@ export class SystemRegistry {
     })
   }
 
-  /**
-   * Unregister a system
-   */
   unregister(name) {
     this.systems.delete(name)
   }
 
-  /**
-   * Enable/disable a system by name
-   */
   setEnabled(name, enabled) {
     const system = this.systems.get(name)
     if (system) {
@@ -183,10 +150,6 @@ export class SystemRegistry {
     }
   }
 
-  /**
-   * Get systems for a specific platform
-   * Returns array sorted by priority (highest first)
-   */
   getSystemsForPlatform(platform) {
     const matched = []
 
@@ -202,43 +165,29 @@ export class SystemRegistry {
       })
     }
 
-    // Sort by priority (highest first)
     matched.sort((a, b) => b.priority - a.priority)
 
     return matched
   }
 
-  /**
-   * Get all registered system names
-   */
   getAllSystemNames() {
     return Array.from(this.systems.keys())
   }
 
-  /**
-   * Get system configuration by name
-   */
   getSystem(name) {
     return this.systems.get(name)
   }
 
-  /**
-   * Detect current platform
-   */
   static getCurrentPlatform() {
     if (isServer) return 'server'
     if (isClient) return 'client'
     return 'unknown'
   }
 
-  /**
-   * Get current platform systems
-   */
   getCurrentPlatformSystems() {
     const platform = SystemRegistry.getCurrentPlatform()
     return this.getSystemsForPlatform(platform)
   }
 }
 
-// Export singleton instance
 export const systemRegistry = new SystemRegistry()

@@ -28,11 +28,9 @@ export class SnapOctree {
     if (!point._node) {
       return false
     }
-    // if point still fits in current node, we good!
     if (point._node.canContain(point.position)) {
       return
     }
-    // otherwise remove and reinsert
     const prevNode = point._node
     this.remove(point)
     const added = this.insert(point)
@@ -40,7 +38,6 @@ export class SnapOctree {
       console.error('octree point moved but was not re-added. did it move outside octree bounds?')
       return false
     }
-    // check if we can collapse the previous node
     prevNode.checkCollapse()
     return true
   }
@@ -117,8 +114,6 @@ class SnapOctreeNode {
       return false
     }
 
-    // If this node is small enough relative to our snap point precision needs
-    // or if it has no children yet, store the point here
     if (this.size < 1 || !this.children.length) {
       this.points.push(point)
       point._node = this
@@ -126,7 +121,6 @@ class SnapOctreeNode {
       return true
     }
 
-    // Otherwise, subdivide if needed and try to insert into children
     if (!this.children.length) {
       this.subdivide()
     }
@@ -137,11 +131,7 @@ class SnapOctreeNode {
       }
     }
 
-    // If it doesn't fit in children, store it here
     console.error('snap octree insert fail')
-    // this.points.push(point)
-    // point._node = this
-    // return true
   }
 
   remove(point) {
@@ -172,7 +162,6 @@ class SnapOctreeNode {
   }
 
   checkCollapse() {
-    // a node can collapse if it has children to collapse AND has no items in any descendants
     let match
     let node = this
     while (node) {
@@ -210,12 +199,10 @@ class SnapOctreeNode {
   }
 
   query(sphere, results) {
-    // first check if the search sphere intersects this node
     if (!sphere.intersectsBox(this.inner)) {
       return
     }
 
-    // check points in this node
     for (const point of this.points) {
       if (!point.active) continue
       const distance = sphere.center.distanceTo(point.position)
@@ -227,7 +214,6 @@ class SnapOctreeNode {
       }
     }
 
-    // recursively check children
     for (const child of this.children) {
       child.query(sphere, results)
     }

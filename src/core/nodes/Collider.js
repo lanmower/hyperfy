@@ -38,7 +38,6 @@ export class Collider extends Node {
     } else if (this._type === 'sphere') {
       geometry = new PHYSX.PxSphereGeometry(this._radius)
     } else if (this._type === 'geometry') {
-      // note: triggers MUST be convex according to PhysX/Unity
       const isConvex = this._trigger || this._convex
       pmesh = geometryToPxMesh(this.ctx.world, this._geometry, isConvex)
       if (!pmesh) return console.error('failed to generate collider pmesh')
@@ -47,8 +46,6 @@ export class Collider extends Node {
       if (isConvex) {
         geometry = new PHYSX.PxConvexMeshGeometry(pmesh.value, scale)
       } else {
-        // const flags = new PHYSX.PxMeshGeometryFlags()
-        // flags.raise(PHYSX.PxMeshGeometryFlagEnum.eDOUBLE_SIDED)
         geometry = new PHYSX.PxTriangleMeshGeometry(pmesh.value, scale)
       }
       PHYSX.destroy(scale)
@@ -72,7 +69,6 @@ export class Collider extends Node {
     } catch (err) {
       console.error('[collider] failed to create shape')
       console.error(err)
-      // cleanup
       if (geometry) {
         PHYSX.destroy(geometry)
       }
@@ -84,16 +80,12 @@ export class Collider extends Node {
     }
     this.shape.setQueryFilterData(filterData)
     this.shape.setSimulationFilterData(filterData)
-    // const parentWorldScale = v[1]
-    // this.parent.matrixWorld.decompose(v[0], q[0], parentWorldScale)
     const position = v[0].copy(this.position).multiply(this.parent.scale)
     const pose = new PHYSX.PxTransform()
     position.toPxTransform(pose)
     this.quaternion.toPxTransform(pose)
     this.shape.setLocalPose(pose)
     this.parent?.addShape?.(this.shape)
-    // console.log('geometry', geometry)
-    // this._geometry = geometry
     PHYSX.destroy(geometry)
     this.needsRebuild = false
   }
@@ -105,15 +97,10 @@ export class Collider extends Node {
       return
     }
     if (didMove) {
-      // ...
     }
   }
 
   unmount() {
-    // if (this.type === 'geometry' && pxMeshes[this.geometry.uuid]) {
-    //   pxMeshes[this.geometry.uuid].release()
-    //   delete pxMeshes[this.geometry.uuid]
-    // }
     this.parent?.removeShape?.(this.shape)
     this.shape?.release()
     this.shape = null

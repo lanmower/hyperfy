@@ -1,4 +1,3 @@
-// Unified error event schema for cross-platform error tracking
 
 export const ErrorLevels = {
   ERROR: 'error',

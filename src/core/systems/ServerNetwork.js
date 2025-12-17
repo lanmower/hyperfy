@@ -21,15 +21,7 @@ const defaultSpawn = '{ "position": [0, 0, 0], "quaternion": [0, 0, 0, 1] }'
 
 const HEALTH_MAX = 100
 
-/**
- * Server Network System
- *
- * - runs on the server
- * - provides abstract network methods matching ClientNetwork
- *
- */
 export class ServerNetwork extends BaseNetwork {
-  // DI Service Constants
   static DEPS = {
     errorMonitor: 'errorMonitor',
     entities: 'entities',
@@ -56,7 +48,6 @@ export class ServerNetwork extends BaseNetwork {
     this.setupHotReload()
   }
 
-  // DI Property Getters
   get errorMonitor() { return this.getService(ServerNetwork.DEPS.errorMonitor) }
   get entities() { return this.getService(ServerNetwork.DEPS.entities) }
   get settings() { return this.getService(ServerNetwork.DEPS.settings) }
@@ -103,9 +94,7 @@ export class ServerNetwork extends BaseNetwork {
     } catch (err) {
       console.error(err)
     }
-    // watch settings changes
     this.events.on('settingChanged', this.saveSettings)
-    // queue first save
     if (SAVE_INTERVAL) {
       this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
     }
@@ -190,7 +179,6 @@ export class ServerNetwork extends BaseNetwork {
 
   async onConnection(ws, params) {
     try {
-      // check player limit
       const playerLimit = this.settings.playerLimit
       if (isNumber(playerLimit) && playerLimit > 0 && this.sockets.size >= playerLimit) {
         const packet = writePacket('kick', 'player_limit')
@@ -199,12 +187,10 @@ export class ServerNetwork extends BaseNetwork {
         return
       }
 
-      // check connection params
       let authToken = params.authToken
       let name = params.name
       let avatar = params.avatar
 
-      // get or create user
       let user
       if (authToken) {
         try {
@@ -226,7 +212,6 @@ export class ServerNetwork extends BaseNetwork {
         authToken = await createJWT({ userId: user.id })
       }
 
-      // disconnect if user already in this world
       if (this.sockets.has(user.id)) {
         const packet = writePacket('kick', 'duplicate_user')
         ws.send(packet)
@@ -234,13 +219,10 @@ export class ServerNetwork extends BaseNetwork {
         return
       }
 
-      // livekit options
       const livekit = await this.livekit.serialize(user.id)
 
-      // create socket
       const socket = new Socket({ id: user.id, ws, network: this })
 
-      // spawn player
       socket.player = this.entities.add(
         {
           id: user.id,
@@ -258,7 +240,6 @@ export class ServerNetwork extends BaseNetwork {
         true
       )
 
-      // send snapshot
       socket.send('snapshot', {
         id: socket.id,
         serverTime: performance.now(),
@@ -277,8 +258,6 @@ export class ServerNetwork extends BaseNetwork {
 
       this.sockets.set(socket.id, socket)
 
-      // enter events on the server are sent after the snapshot.
-      // on the client these are sent during PlayerRemote.js entity instantiation!
       this.events.emit('enter', { playerId: socket.player.data.id })
     } catch (err) {
       console.error(err)
@@ -309,9 +288,6 @@ export class ServerNetwork extends BaseNetwork {
   onKick = (socket, playerId) => {
     const player = this.entities.get(playerId)
     if (!player) return
-    // admins can kick builders + visitors
-    // builders can kick visitors
-    // visitors cannot kick anyone
     if (socket.player.data.rank <= player.data.rank) return
     const tSocket = this.sockets.get(playerId)
     tSocket.send('kick', 'moderation')
@@ -321,9 +297,6 @@ export class ServerNetwork extends BaseNetwork {
   onMute = (socket, data) => {
     const player = this.entities.get(data.playerId)
     if (!player) return
-    // admins can mute builders + visitors
-    // builders can mute visitors
-    // visitors cannot mute anyone
     if (socket.player.data.rank <= player.data.rank) return
     this.livekit.setMuted(data.playerId, data.muted)
   }
@@ -342,13 +315,11 @@ export class ServerNetwork extends BaseNetwork {
       return console.error('player attempted to modify blueprint without builder permission')
     }
     const blueprint = this.blueprints.get(data.id)
-    // if new version is greater than current version, allow it
     if (data.version > blueprint.version) {
       this.blueprints.modify(data)
       this.send('blueprintModified', data, socket.id)
       this.dirtyBlueprints.add(data.id)
     }
-    // otherwise, send a revert back to client, because someone else modified before them
     else {
       socket.send('blueprintModified', blueprint)
     }
@@ -369,11 +340,9 @@ export class ServerNetwork extends BaseNetwork {
     entity.modify(data)
     this.send('entityModified', data, socket.id)
     if (entity.isApp) {
-      // mark for saving
       this.dirtyApps.add(entity.data.id)
     }
     if (entity.isPlayer) {
-      // persist player name and avatar changes
       const changes = {}
       let changed
       if (data.hasOwnProperty('name')) {

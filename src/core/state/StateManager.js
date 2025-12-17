@@ -1,4 +1,3 @@
-// State Manager - reactive data synchronization for UI
 
 export class StateManager {
   constructor(initialState = {}) {
