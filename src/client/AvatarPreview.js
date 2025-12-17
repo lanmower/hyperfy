@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 import { isString } from 'lodash'
 import { Emotes } from '../core/extras/playerEmotes.js'
-import { AvatarCamera } from './avatar/AvatarCamera.js'
-import { AvatarStats } from './avatar/AvatarStats.js'
 
 const MAX_UPLOAD_SIZE = 1000000000000
 const MAX_UPLOAD_SIZE_LABEL = '1LOLS'
 const HDR_URL = '/day2.hdr'
 const DEG2RAD = THREE.MathUtils.DEG2RAD
+const FOV = 70
+const PLANE_ASPECT_RATIO = 16 / 9
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
