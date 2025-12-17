@@ -38,10 +38,18 @@ const overlapHits = []
  *
  */
 export class Physics extends System {
+  // DI Service Constants
+  static DEPS = {
+    stage: 'stage',
+  }
+
   constructor(world) {
     super(world)
     this.scene = null
   }
+
+  // DI Property Getters
+  get stage() { return this.getService(Physics.DEPS.stage) }
 
   async init() {
     const info = await loadPhysX()
@@ -453,7 +461,7 @@ export class Physics extends System {
     // finalize any physics updates immediately
     // but don't listen to any loopback commits from those actor moves
     this.ignoreSetGlobalPose = true
-    this.world.stage.clean()
+    this.stage.clean()
     this.ignoreSetGlobalPose = false
   }
 

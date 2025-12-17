@@ -29,6 +29,18 @@ const HEALTH_MAX = 100
  *
  */
 export class ServerNetwork extends BaseNetwork {
+  // DI Service Constants
+  static DEPS = {
+    errorMonitor: 'errorMonitor',
+    entities: 'entities',
+    settings: 'settings',
+    blueprints: 'blueprints',
+    livekit: 'livekit',
+    events: 'events',
+    chat: 'chat',
+    collections: 'collections',
+  }
+
   constructor(world) {
     super(world, serverNetworkHandlers)
     this.id = 0
@@ -43,6 +55,16 @@ export class ServerNetwork extends BaseNetwork {
     this.protocol.flushTarget = this
     this.setupHotReload()
   }
+
+  // DI Property Getters
+  get errorMonitor() { return this.getService(ServerNetwork.DEPS.errorMonitor) }
+  get entities() { return this.getService(ServerNetwork.DEPS.entities) }
+  get settings() { return this.getService(ServerNetwork.DEPS.settings) }
+  get blueprints() { return this.getService(ServerNetwork.DEPS.blueprints) }
+  get livekit() { return this.getService(ServerNetwork.DEPS.livekit) }
+  get events() { return this.getService(ServerNetwork.DEPS.events) }
+  get chat() { return this.getService(ServerNetwork.DEPS.chat) }
+  get collections() { return this.getService(ServerNetwork.DEPS.collections) }
 
   setupHotReload() {
     process.on('message', msg => {
@@ -66,23 +88,23 @@ export class ServerNetwork extends BaseNetwork {
     const blueprints = await this.persistence.loadBlueprints()
     for (const blueprint of blueprints) {
       const data = JSON.parse(blueprint.data)
-      this.world.blueprints.add(data, true)
+      this.blueprints.add(data, true)
     }
     const entities = await this.persistence.loadEntities()
     for (const entity of entities) {
       const data = JSON.parse(entity.data)
       data.state = {}
-      this.world.entities.add(data, true)
+      this.entities.add(data, true)
     }
     try {
       const settings = await this.persistence.loadSettings()
-      this.world.settings.deserialize(settings)
-      this.world.settings.setHasAdminCode(!!process.env.ADMIN_CODE)
+      this.settings.deserialize(settings)
+      this.settings.setHasAdminCode(!!process.env.ADMIN_CODE)
     } catch (err) {
       console.error(err)
     }
     // watch settings changes
-    this.world.events.on('settingChanged', this.saveSettings)
+    this.events.on('settingChanged', this.saveSettings)
     // queue first save
     if (SAVE_INTERVAL) {
       this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
@@ -126,7 +148,7 @@ export class ServerNetwork extends BaseNetwork {
     const counts = { upsertedBlueprints: 0, upsertedApps: 0, deletedApps: 0 }
     const now = moment().toISOString()
     for (const id of this.dirtyBlueprints) {
-      const blueprint = this.world.blueprints.get(id)
+      const blueprint = this.blueprints.get(id)
       try {
         await this.persistence.saveBlueprint(blueprint.id, blueprint, now, now)
         counts.upsertedBlueprints++
@@ -137,7 +159,7 @@ export class ServerNetwork extends BaseNetwork {
       }
     }
     for (const id of this.dirtyApps) {
-      const entity = this.world.entities.get(id)
+      const entity = this.entities.get(id)
       if (entity) {
         if (entity.data.uploader || entity.data.mover) continue
         try {
@@ -162,14 +184,14 @@ export class ServerNetwork extends BaseNetwork {
   }
 
   saveSettings = async () => {
-    const data = this.world.settings.serialize()
+    const data = this.settings.serialize()
     await this.persistence.setConfig('settings', JSON.stringify(data))
   }
 
   async onConnection(ws, params) {
     try {
       // check player limit
-      const playerLimit = this.world.settings.playerLimit
+      const playerLimit = this.settings.playerLimit
       if (isNumber(playerLimit) && playerLimit > 0 && this.sockets.size >= playerLimit) {
         const packet = writePacket('kick', 'player_limit')
         ws.send(packet)
@@ -213,13 +235,13 @@ export class ServerNetwork extends BaseNetwork {
       }
 
       // livekit options
-      const livekit = await this.world.livekit.serialize(user.id)
+      const livekit = await this.livekit.serialize(user.id)
 
       // create socket
       const socket = new Socket({ id: user.id, ws, network: this })
 
       // spawn player
-      socket.player = this.world.entities.add(
+      socket.player = this.entities.add(
         {
           id: user.id,
           type: 'player',
@@ -228,7 +250,7 @@ export class ServerNetwork extends BaseNetwork {
           userId: socket.id,
           name: name || user.name,
           health: HEALTH_MAX,
-          avatar: user.avatar || this.world.settings.avatar?.url || 'asset://avatar.vrm',
+          avatar: user.avatar || this.settings.avatar?.url || 'asset://avatar.vrm',
           sessionAvatar: avatar || null,
           rank: user.rank,
           enteredAt: Date.now(),
@@ -243,11 +265,11 @@ export class ServerNetwork extends BaseNetwork {
         assetsUrl: process.env.PUBLIC_ASSETS_URL,
         apiUrl: process.env.PUBLIC_API_URL,
         maxUploadSize: process.env.PUBLIC_MAX_UPLOAD_SIZE,
-        collections: this.world.collections.serialize(),
-        settings: this.world.settings.serialize(),
-        chat: this.world.chat.serialize(),
-        blueprints: this.world.blueprints.serialize(),
-        entities: this.world.entities.serialize(),
+        collections: this.collections.serialize(),
+        settings: this.settings.serialize(),
+        chat: this.chat.serialize(),
+        blueprints: this.blueprints.serialize(),
+        entities: this.entities.serialize(),
         livekit,
         authToken,
         hasAdminCode: !!process.env.ADMIN_CODE,
@@ -257,14 +279,14 @@ export class ServerNetwork extends BaseNetwork {
 
       // enter events on the server are sent after the snapshot.
       // on the client these are sent during PlayerRemote.js entity instantiation!
-      this.world.events.emit('enter', { playerId: socket.player.data.id })
+      this.events.emit('enter', { playerId: socket.player.data.id })
     } catch (err) {
       console.error(err)
     }
   }
 
   onChatAdded = async (socket, msg) => {
-    this.world.chat.add(msg, false)
+    this.chat.add(msg, false)
     this.send('chatAdded', msg, socket.id)
   }
 
@@ -277,7 +299,7 @@ export class ServerNetwork extends BaseNetwork {
     const { playerId, rank } = data
     if (!playerId) return
     if (!isNumber(rank)) return
-    const player = this.world.entities.get(playerId)
+    const player = this.entities.get(playerId)
     if (!player || !player.isPlayer) return
     player.modify({ rank })
     this.send('entityModified', { id: playerId, rank })
@@ -285,7 +307,7 @@ export class ServerNetwork extends BaseNetwork {
   }
 
   onKick = (socket, playerId) => {
-    const player = this.world.entities.get(playerId)
+    const player = this.entities.get(playerId)
     if (!player) return
     // admins can kick builders + visitors
     // builders can kick visitors
@@ -297,20 +319,20 @@ export class ServerNetwork extends BaseNetwork {
   }
 
   onMute = (socket, data) => {
-    const player = this.world.entities.get(data.playerId)
+    const player = this.entities.get(data.playerId)
     if (!player) return
     // admins can mute builders + visitors
     // builders can mute visitors
     // visitors cannot mute anyone
     if (socket.player.data.rank <= player.data.rank) return
-    this.world.livekit.setMuted(data.playerId, data.muted)
+    this.livekit.setMuted(data.playerId, data.muted)
   }
 
   onBlueprintAdded = (socket, blueprint) => {
     if (!socket.player.isBuilder()) {
       return console.error('player attempted to add blueprint without builder permission')
     }
-    this.world.blueprints.add(blueprint)
+    this.blueprints.add(blueprint)
     this.send('blueprintAdded', blueprint, socket.id)
     this.dirtyBlueprints.add(blueprint.id)
   }
@@ -319,10 +341,10 @@ export class ServerNetwork extends BaseNetwork {
     if (!socket.player.isBuilder()) {
       return console.error('player attempted to modify blueprint without builder permission')
     }
-    const blueprint = this.world.blueprints.get(data.id)
+    const blueprint = this.blueprints.get(data.id)
     // if new version is greater than current version, allow it
     if (data.version > blueprint.version) {
-      this.world.blueprints.modify(data)
+      this.blueprints.modify(data)
       this.send('blueprintModified', data, socket.id)
       this.dirtyBlueprints.add(data.id)
     }
@@ -336,13 +358,13 @@ export class ServerNetwork extends BaseNetwork {
     if (!socket.player.isBuilder()) {
       return console.error('player attempted to add entity without builder permission')
     }
-    const entity = this.world.entities.add(data)
+    const entity = this.entities.add(data)
     this.send('entityAdded', data, socket.id)
     if (entity.isApp) this.dirtyApps.add(entity.data.id)
   }
 
   onEntityModified = async (socket, data) => {
-    const entity = this.world.entities.get(data.id)
+    const entity = this.entities.get(data.id)
     if (!entity) return console.error('onEntityModified: no entity found', data)
     entity.modify(data)
     this.send('entityModified', data, socket.id)
@@ -370,14 +392,14 @@ export class ServerNetwork extends BaseNetwork {
 
   onEntityEvent = (socket, event) => {
     const [id, version, name, data] = event
-    const entity = this.world.entities.get(id)
+    const entity = this.entities.get(id)
     entity?.onEvent(version, name, data, socket.id)
   }
 
   onEntityRemoved = (socket, id) => {
     if (!socket.player.isBuilder()) return console.error('player attempted to remove entity without builder permission')
-    const entity = this.world.entities.get(id)
-    this.world.entities.remove(id)
+    const entity = this.entities.get(id)
+    this.entities.remove(id)
     this.send('entityRemoved', id, socket.id)
     if (entity && entity.isApp) this.dirtyApps.add(id)
   }
@@ -385,7 +407,7 @@ export class ServerNetwork extends BaseNetwork {
   onSettingsModified = (socket, data) => {
     if (!socket.player.isBuilder())
       return console.error('player attempted to modify settings without builder permission')
-    this.world.settings.set(data.key, data.value)
+    this.settings.set(data.key, data.value)
     this.send('settingsModified', data, socket.id)
   }
 
@@ -442,8 +464,8 @@ export class ServerNetwork extends BaseNetwork {
 
     errorObserver.recordClientError(socket.id, errorEvent, metadata)
 
-    if (this.world.errorMonitor) {
-      this.world.errorMonitor.receiveClientError({
+    if (this.errorMonitor) {
+      this.errorMonitor.receiveClientError({
         error: errorEvent,
         ...metadata
       })
@@ -471,8 +493,8 @@ export class ServerNetwork extends BaseNetwork {
 
     errorObserver.recordClientError(socket.id, data.error || data, metadata)
 
-    if (this.world.errorMonitor) {
-      this.world.errorMonitor.receiveClientError({
+    if (this.errorMonitor) {
+      this.errorMonitor.receiveClientError({
         error: data.error || data,
         ...metadata
       })
@@ -491,7 +513,7 @@ export class ServerNetwork extends BaseNetwork {
   }
 
   onMcpSubscribeErrors = (socket, options = {}) => {
-    if (!this.world.errorMonitor) return
+    if (!this.errorMonitor) return
 
     const errorListener = (event, errorData) => {
       if (event === 'error' || event === 'critical') {
@@ -501,25 +523,25 @@ export class ServerNetwork extends BaseNetwork {
 
     socket.mcpErrorListener = errorListener
     socket.mcpErrorSubscription = { active: true, options }
-    this.world.errorMonitor.listeners.add(errorListener)
+    this.errorMonitor.listeners.add(errorListener)
   }
 
   onGetErrors = (socket, options = {}) => {
-    if (!this.world.errorMonitor) {
+    if (!this.errorMonitor) {
       socket.send('errors', { errors: [], stats: null })
       return
     }
-    const errors = this.world.errorMonitor.getErrors(options)
-    const stats = this.world.errorMonitor.getStats()
+    const errors = this.errorMonitor.getErrors(options)
+    const stats = this.errorMonitor.getStats()
     socket.send('errors', { errors, stats })
   }
 
   onClearErrors = (socket) => {
-    if (!this.world.errorMonitor) {
+    if (!this.errorMonitor) {
       socket.send('clearErrors', { cleared: 0 })
       return
     }
-    const count = this.world.errorMonitor.clearErrors()
+    const count = this.errorMonitor.clearErrors()
     socket.send('clearErrors', { cleared: count })
   }
 
@@ -593,14 +615,14 @@ export class ServerNetwork extends BaseNetwork {
   }
 
   onDisconnect = (socket, code) => {
-    if (socket.mcpErrorListener && this.world.errorMonitor) {
-      this.world.errorMonitor.listeners.delete(socket.mcpErrorListener)
+    if (socket.mcpErrorListener && this.errorMonitor) {
+      this.errorMonitor.listeners.delete(socket.mcpErrorListener)
     }
     if (socket.mcpErrorSubscription) {
       socket.mcpErrorSubscription.active = false
     }
 
-    this.world.livekit.clearModifiers(socket.id)
+    this.livekit.clearModifiers(socket.id)
     socket.player.destroy(true)
     this.sockets.delete(socket.id)
   }

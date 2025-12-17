@@ -30,6 +30,19 @@ const v1 = new THREE.Vector3()
  * - BuilderModeManager: Mode switching and gizmo control
  */
 export class ClientBuilder extends System {
+  // DI Service Constants
+  static DEPS = {
+    controls: 'controls',
+    network: 'network',
+    entities: 'entities',
+    ui: 'ui',
+    events: 'events',
+    blueprints: 'blueprints',
+    rig: 'rig',
+    snaps: 'snaps',
+    networkRate: 'networkRate',
+  }
+
   constructor(world) {
     super(world)
     this.enabled = false
@@ -43,6 +56,17 @@ export class ClientBuilder extends System {
     this.target.rotation.reorder('YXZ')
     this.target.limit = PROJECT_MAX
   }
+
+  // DI Property Getters
+  get controls() { return this.getService(ClientBuilder.DEPS.controls) }
+  get network() { return this.getService(ClientBuilder.DEPS.network) }
+  get entities() { return this.getService(ClientBuilder.DEPS.entities) }
+  get ui() { return this.getService(ClientBuilder.DEPS.ui) }
+  get events() { return this.getService(ClientBuilder.DEPS.events) }
+  get blueprints() { return this.getService(ClientBuilder.DEPS.blueprints) }
+  get rig() { return this.getService(ClientBuilder.DEPS.rig) }
+  get snaps() { return this.getService(ClientBuilder.DEPS.snaps) }
+  get networkRate() { return this.getService(ClientBuilder.DEPS.networkRate) }
 
   async init({ viewport }) {
     this.viewport = viewport
@@ -60,12 +84,12 @@ export class ClientBuilder extends System {
     this.viewport.addEventListener('drop', this.fileHandler.onDrop)
 
     // Listen to player/setting changes
-    this.world.events.on('player', this.checkLocalPlayer)
-    this.world.events.on('settingChanged', this.checkLocalPlayer)
+    this.events.on('player', this.checkLocalPlayer)
+    this.events.on('settingChanged', this.checkLocalPlayer)
   }
 
   start() {
-    this.control = this.world.controls.bind({ priority: ControlPriorities.BUILDER })
+    this.control = this.controls.bind({ priority: ControlPriorities.BUILDER })
     this.control.mouseLeft.onPress = () => {
       // pointer lock requires user-gesture in safari
       // so this can't be done during update cycle
@@ -83,13 +107,13 @@ export class ClientBuilder extends System {
       // builder revoked
       this.select(null)
       this.enabled = false
-      this.world.events.emit('buildModeChanged', false)
+      this.events.emit('buildModeChanged', false)
     }
     this.updateActions()
   }
 
   canBuild() {
-    return this.world.entities.player?.isBuilder()
+    return this.entities.player?.isBuilder()
   }
 
   updateActions() {
@@ -151,7 +175,7 @@ export class ClientBuilder extends System {
     }
 
     // deselect if stolen
-    if (this.selected && this.selected?.data.mover !== this.world.network.id) {
+    if (this.selected && this.selected?.data.mover !== this.network.id) {
       this.select(null)
     }
 
@@ -205,12 +229,12 @@ export class ClientBuilder extends System {
       if (entity?.isApp) {
         this.select(null)
         this.control.pointer.unlock()
-        this.world.ui.setApp(entity)
+        this.ui.setApp(entity)
       }
       if (entity?.isPlayer) {
         this.select(null)
         this.control.pointer.unlock()
-        this.world.ui.togglePane('players')
+        this.ui.togglePane('players')
       }
     }
     // inspect out of pointer-lock
@@ -219,12 +243,12 @@ export class ClientBuilder extends System {
       if (entity?.isApp) {
         this.select(null)
         this.control.pointer.unlock()
-        this.world.ui.setApp(entity)
+        this.ui.setApp(entity)
       }
       if (entity?.isPlayer) {
         this.select(null)
         this.control.pointer.unlock()
-        this.world.ui.togglePane('players')
+        this.ui.togglePane('players')
       }
     }
   }
@@ -257,12 +281,12 @@ export class ClientBuilder extends System {
           scene: entity.blueprint.scene,
           disabled: entity.blueprint.disabled,
         }
-        this.world.blueprints.add(blueprint, true)
+        this.blueprints.add(blueprint, true)
         // assign new blueprint
         entity.modify({ blueprint: blueprint.id })
-        this.world.network.send('entityModified', { id: entity.data.id, blueprint: blueprint.id })
+        this.network.send('entityModified', { id: entity.data.id, blueprint: blueprint.id })
         // toast
-        this.world.events.emit('toast', 'Unlinked')
+        this.events.emit('toast', 'Unlinked')
       }
     }
   }
@@ -275,11 +299,11 @@ export class ClientBuilder extends System {
       const entity = this.selected || this.picker.getEntityAtReticle()
       if (entity?.isApp) {
         entity.data.pinned = !entity.data.pinned
-        this.world.network.send('entityModified', {
+        this.network.send('entityModified', {
           id: entity.data.id,
           pinned: entity.data.pinned,
         })
-        this.world.events.emit('toast', entity.data.pinned ? 'Pinned' : 'Un-pinned')
+        this.events.emit('toast', entity.data.pinned ? 'Pinned' : 'Un-pinned')
         this.select(null)
       }
     }
@@ -349,7 +373,7 @@ export class ClientBuilder extends System {
             scene: entity.blueprint.scene,
             disabled: entity.blueprint.disabled,
           }
-          this.world.blueprints.add(blueprint, true)
+          this.blueprints.add(blueprint, true)
           blueprintId = blueprint.id
         }
         const data = {
@@ -359,12 +383,12 @@ export class ClientBuilder extends System {
           position: entity.root.position.toArray(),
           quaternion: entity.root.quaternion.toArray(),
           scale: entity.root.scale.toArray(),
-          mover: this.world.network.id,
+          mover: this.network.id,
           uploader: null,
           pinned: false,
           state: {},
         }
-        const dup = this.world.entities.add(data, true)
+        const dup = this.entities.add(data, true)
         this.select(dup)
         this.addUndo({
           name: 'remove-entity',
@@ -451,8 +475,8 @@ export class ClientBuilder extends System {
     const hit = this.picker.getHitAtReticle(app, true)
 
     // place at distance
-    const camPos = this.world.rig.position
-    const camDir = v1.copy(FORWARD).applyQuaternion(this.world.rig.quaternion)
+    const camPos = this.rig.position
+    const camDir = v1.copy(FORWARD).applyQuaternion(this.rig.quaternion)
     const hitDistance = hit ? hit.point.distanceTo(camPos) : 0
 
     if (hit && hitDistance < this.target.limit) {
@@ -501,7 +525,7 @@ export class ClientBuilder extends System {
     // and snap to any nearby points
     if (!this.control.controlLeft.down) {
       for (const pos of app.snaps) {
-        const result = this.world.snaps.octree.query(pos, SNAP_DISTANCE)[0]
+        const result = this.snaps.octree.query(pos, SNAP_DISTANCE)[0]
         if (result) {
           const offset = v1.copy(result.position).sub(pos)
           app.root.position.add(offset)
@@ -518,9 +542,9 @@ export class ClientBuilder extends System {
     if (!this.selected) return
 
     this.lastMoveSendTime += delta
-    if (this.lastMoveSendTime > this.world.networkRate) {
+    if (this.lastMoveSendTime > this.networkRate) {
       const app = this.selected
-      this.world.network.send('entityModified', {
+      this.network.send('entityModified', {
         id: app.data.id,
         position: app.root.position.toArray(),
         quaternion: app.root.quaternion.toArray(),
@@ -548,15 +572,15 @@ export class ClientBuilder extends System {
     if (!undo) return
     if (this.selected) this.select(null)
     if (undo.name === 'add-entity') {
-      this.world.entities.add(undo.data, true)
+      this.entities.add(undo.data, true)
       return
     }
     if (undo.name === 'move-entity') {
-      const entity = this.world.entities.get(undo.entityId)
+      const entity = this.entities.get(undo.entityId)
       if (!entity) return
       entity.data.position = undo.position
       entity.data.quaternion = undo.quaternion
-      this.world.network.send('entityModified', {
+      this.network.send('entityModified', {
         id: undo.entityId,
         position: entity.data.position,
         quaternion: entity.data.quaternion,
@@ -566,7 +590,7 @@ export class ClientBuilder extends System {
       return
     }
     if (undo.name === 'remove-entity') {
-      const entity = this.world.entities.get(undo.entityId)
+      const entity = this.entities.get(undo.entityId)
       if (!entity) return
       entity.destroy(true)
       return
@@ -583,7 +607,7 @@ export class ClientBuilder extends System {
     this.enabled = enabled
     if (!this.enabled) this.select(null)
     this.updateActions()
-    this.world.events.emit('buildModeChanged', enabled)
+    this.events.emit('buildModeChanged', enabled)
   }
 
   /**
@@ -602,14 +626,14 @@ export class ClientBuilder extends System {
 
     // deselect existing
     if (this.selected && this.selected !== app) {
-      if (!this.selected.dead && this.selected.data.mover === this.world.network.id) {
+      if (!this.selected.dead && this.selected.data.mover === this.network.id) {
         const selected = this.selected
         selected.data.mover = null
         selected.data.position = selected.root.position.toArray()
         selected.data.quaternion = selected.root.quaternion.toArray()
         selected.data.scale = selected.root.scale.toArray()
         selected.data.state = {}
-        this.world.network.send('entityModified', {
+        this.network.send('entityModified', {
           id: selected.data.id,
           mover: null,
           position: selected.data.position,
@@ -639,10 +663,10 @@ export class ClientBuilder extends System {
         quaternion: app.data.quaternion.slice(),
         scale: app.data.scale.slice(),
       })
-      if (app.data.mover !== this.world.network.id) {
-        app.data.mover = this.world.network.id
+      if (app.data.mover !== this.network.id) {
+        app.data.mover = this.network.id
         app.build()
-        this.world.network.send('entityModified', { id: app.data.id, mover: app.data.mover })
+        this.network.send('entityModified', { id: app.data.id, mover: app.data.mover })
       }
       this.selected = app
       const mode = this.modeManager.getMode()
