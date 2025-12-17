@@ -16,6 +16,7 @@ import { PlayerPermissions } from './player/PlayerPermissions.js'
 import { PlayerInputHandler } from './player/PlayerInputHandler.js'
 import { PlayerUIManager } from './player/PlayerUIManager.js'
 import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
+import { PlayerCameraManager } from './player/PlayerCameraManager.js'
 import { EVENT } from '../constants/EventNames.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
@@ -30,7 +31,6 @@ const MIN_ZOOM = 0
 const MAX_ZOOM = 8
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
-const DEFAULT_CAM_HEIGHT = 1.2
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -87,21 +87,12 @@ export class PlayerLocal extends BaseEntity {
     Object.defineProperty(this, 'bubbleText', { get: () => this.ui.bubbleText })
     Object.defineProperty(this, 'avatar', { get: () => this.avatarManager.avatar })
     Object.defineProperty(this, 'avatarUrl', { get: () => this.avatarManager.avatarUrl, set: (v) => { this.avatarManager.avatarUrl = v } })
+    Object.defineProperty(this, 'camHeight', { get: () => this.cam.camHeight, set: (v) => { this.cam.camHeight = v } })
 
     this.aura.activate({ world: this.world, entity: this })
     this.base.activate({ world: this.world, entity: this })
 
-    this.camHeight = DEFAULT_CAM_HEIGHT
-
-    this.cam = {}
-    this.cam.position = new THREE.Vector3().copy(this.base.position)
-    this.cam.position.y += this.camHeight
-    this.cam.quaternion = new THREE.Quaternion()
-    this.cam.rotation = new THREE.Euler(0, 0, 0, 'YXZ')
-    bindRotations(this.cam.quaternion, this.cam.rotation)
-    this.cam.quaternion.copy(this.base.quaternion)
-    this.cam.rotation.x += -15 * DEG2RAD
-    this.cam.zoom = 1.5
+    this.cam = new PlayerCameraManager(this, this.base)
 
     if (this.world.loader?.preloader) {
       await this.world.loader.preloader
