@@ -1,13 +1,9 @@
-import { Participant, ParticipantEvent, Room, RoomEvent, ScreenSharePresets, Track } from 'livekit-client'
-import * as THREE from '../extras/three.js'
-
 import { System } from './System.js'
 import { isBoolean } from 'lodash-es'
-import { TrackSource } from 'livekit-server-sdk'
-
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
+import { PlayerVoiceController } from './livekit/PlayerVoiceController.js'
+import { TrackManager } from './livekit/TrackManager.js'
+import { ScreenManager } from './livekit/ScreenManager.js'
+import { RoomManager } from './livekit/RoomManager.js'
 
 export class ClientLiveKit extends System {
   static DEPS = {
@@ -32,9 +28,10 @@ export class ClientLiveKit extends System {
     this.defaultLevel = null
     this.levels = {}
     this.muted = new Set()
-    this.voices = new Map() // playerId -> PlayerVoice
-    this.screens = []
-    this.screenNodes = new Set() // Video
+    this.voices = new Map()
+    this.trackManager = new TrackManager(this)
+    this.screenManager = new ScreenManager(this)
+    this.roomManager = new RoomManager(this)
   }
 
   get settings() { return this.getService(ClientLiveKit.DEPS.settings) }
@@ -66,36 +63,7 @@ export class ClientLiveKit extends System {
   }
 
   async deserialize(opts) {
-    if (!opts) return
-    this.status.available = true
-    this.status.muted = opts.muted.has(this.network.id)
-    this.levels = opts.levels
-    this.muted = opts.muted
-    this.room = new Room({
-      webAudioMix: {
-        audioContext: this.audio.ctx,
-      },
-      publishDefaults: {
-        screenShareEncoding: ScreenSharePresets.h1080fps30.encoding,
-        screenShareSimulcastLayers: [ScreenSharePresets.h1080fps30],
-      },
-    })
-    this.room.on(RoomEvent.TrackMuted, this.onTrackMuted)
-    this.room.on(RoomEvent.TrackUnmuted, this.onTrackUnmuted)
-    this.room.on(RoomEvent.LocalTrackPublished, this.onLocalTrackPublished)
-    this.room.on(RoomEvent.LocalTrackUnpublished, this.onLocalTrackUnpublished)
-    this.room.on(RoomEvent.TrackSubscribed, this.onTrackSubscribed)
-    this.room.on(RoomEvent.TrackUnsubscribed, this.onTrackUnsubscribed)
-    this.room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, speaking => {
-      const player = this.entities.player
-      this.events.emit('playerSpeaking', { playerId: player.data.id, speaking })
-      player.setSpeaking(speaking)
-    })
-    this.audio.ready(async () => {
-      await this.room.connect(opts.wsUrl, opts.token)
-      this.status.connected = true
-      this.events.emit('livekitStatusChanged', this.status)
-    })
+    return this.roomManager.deserialize(opts, this.audio)
   }
 
   setMuted(playerId, muted) {
@@ -140,342 +108,22 @@ export class ClientLiveKit extends System {
   }
 
   setMicrophoneEnabled(value) {
-    if (!this.room) return console.error('[livekit] setMicrophoneEnabled failed (not connected)')
-    value = isBoolean(value) ? value : !this.room.localParticipant.isMicrophoneEnabled
-    if (this.status.mic === value) return
-    this.room.localParticipant.setMicrophoneEnabled(value)
+    return this.roomManager.setMicrophoneEnabled(value)
   }
 
   setScreenShareTarget(targetId = null) {
-    if (!this.room) return console.error('[livekit] setScreenShareTarget failed (not connected)')
-    if (this.status.screenshare === targetId) return
-    const metadata = JSON.stringify({
-      screenTargetId: targetId,
-    })
-    this.room.localParticipant.setMetadata(metadata)
-    this.room.localParticipant.setScreenShareEnabled(!!targetId, {
-    })
-  }
-
-  onTrackMuted = track => {
-    if (track.isLocal && track.source === 'microphone') {
-      this.status.mic = false
-      this.events.emit('livekitStatusChanged', this.status)
-    }
-  }
-
-  onTrackUnmuted = track => {
-    if (track.isLocal && track.source === 'microphone') {
-      this.status.mic = true
-      this.events.emit('livekitStatusChanged', this.status)
-    }
-  }
-
-  onLocalTrackPublished = publication => {
-    const world = this.world
-    const track = publication.track
-    const playerId = this.network.id
-    if (publication.source === 'microphone') {
-      this.status.mic = true
-      this.events.emit('livekitStatusChanged', this.status)
-    }
-    if (publication.source === 'screen_share') {
-      const metadata = JSON.parse(this.room.localParticipant.metadata || '{}')
-      const targetId = metadata.screenTargetId
-      this.status.screenshare = targetId
-      const screen = createPlayerScreen({ world, playerId, targetId, track, publication })
-      this.addScreen(screen)
-      this.events.emit('livekitStatusChanged', this.status)
-    }
-  }
-
-  onLocalTrackUnpublished = publication => {
-    const playerId = this.network.id
-    if (publication.source === 'microphone') {
-      this.status.mic = false
-      this.events.emit('livekitStatusChanged', this.status)
-    }
-    if (publication.source === 'screen_share') {
-      const screen = this.screens.find(s => s.playerId === playerId)
-      this.removeScreen(screen)
-      this.status.screenshare = null
-      this.events.emit('livekitStatusChanged', this.status)
-    }
-  }
-
-  onTrackSubscribed = (track, publication, participant) => {
-    const playerId = participant.identity
-    const player = this.entities.getPlayer(playerId)
-    if (!player) return console.error('onTrackSubscribed failed: no player')
-    const world = this.world
-    if (track.source === 'microphone') {
-      const level = this.levels[playerId] || this.defaultLevel
-      const muted = this.muted.has(playerId)
-      const voice = new PlayerVoice(world, player, level, muted, track, participant)
-      this.voices.set(playerId, voice)
-    }
-    if (track.source === 'screen_share') {
-      const metadata = JSON.parse(participant.metadata || '{}')
-      const targetId = metadata.screenTargetId
-      const screen = createPlayerScreen({ world, playerId, targetId, track, publication })
-      this.addScreen(screen)
-    }
-  }
-
-  onTrackUnsubscribed = (track, publication, participant) => {
-    const playerId = participant.identity
-    if (track.source === 'microphone') {
-      const voice = this.voices.get(playerId)
-      voice?.destroy()
-      this.voices.delete(playerId)
-    }
-    if (track.source === 'screen_share') {
-      const screen = this.screens.find(s => s.playerId === playerId)
-      this.removeScreen(screen)
-    }
-  }
-
-  addScreen(screen) {
-    this.screens.push(screen)
-    for (const node of this.screenNodes) {
-      if (node._screenId === screen.targetId) {
-        node.needsRebuild = true
-        node.setDirty()
-      }
-    }
-  }
-
-  removeScreen(screen) {
-    screen.destroy()
-    this.screens = this.screens.filter(s => s !== screen)
-    for (const node of this.screenNodes) {
-      if (node._screenId === screen.targetId) {
-        node.needsRebuild = true
-        node.setDirty()
-      }
-    }
+    return this.roomManager.setScreenShareTarget(targetId)
   }
 
   registerScreenNode(node) {
-    this.screenNodes.add(node)
-    let match
-    for (const screen of this.screens) {
-      if (screen.targetId === node._screenId) {
-        match = screen
-      }
-    }
-    return match
+    return this.screenManager.registerScreenNode(node)
   }
 
   unregisterScreenNode(node) {
-    this.screenNodes.delete(node)
+    return this.screenManager.unregisterScreenNode(node)
   }
 
   destroy() {
-    this.voices.forEach(voice => {
-      voice.destroy()
-    })
-    this.voices.clear()
-    this.screens.forEach(screen => {
-      screen.destroy()
-    })
-    this.screens = []
-    this.screenNodes.clear()
-    if (this.room) {
-      this.room.off(RoomEvent.TrackMuted, this.onTrackMuted)
-      this.room.off(RoomEvent.TrackUnmuted, this.onTrackUnmuted)
-      this.room.off(RoomEvent.LocalTrackPublished, this.onLocalTrackPublished)
-      this.room.off(RoomEvent.LocalTrackUnpublished, this.onLocalTrackUnpublished)
-      this.room.off(RoomEvent.TrackSubscribed, this.onTrackSubscribed)
-      this.room.off(RoomEvent.TrackUnsubscribed, this.onTrackUnsubscribed)
-      if (this.room.localParticipant) {
-        this.room.localParticipant.off(ParticipantEvent.IsSpeakingChanged)
-      }
-      this.room?.disconnect()
-    }
+    return this.roomManager.destroy()
   }
-}
-
-class PlayerVoice {
-  constructor(world, player, level, muted, track, participant) {
-    this.world = world
-    this.player = player
-    this.level = level
-    this.muted = muted
-    this.track = track
-    this.participant = participant
-    this.track.setAudioContext(world.audio.ctx)
-    this.root = world.audio.ctx.createGain()
-    this.panner = world.audio.ctx.createPanner()
-    this.panner.panningModel = 'HRTF'
-    this.panner.panningModel = 'HRTF'
-    this.panner.distanceModel = 'inverse'
-    this.panner.refDistance = 1
-    this.panner.maxDistance = 40
-    this.panner.rolloffFactor = 3
-    this.panner.coneInnerAngle = 360
-    this.panner.coneOuterAngle = 360
-    this.panner.coneOuterGain = 0
-    this.gain = world.audio.groupGains.voice
-    this.root.connect(this.gain)
-    this.root.connect(this.panner)
-    this.panner.connect(this.gain)
-    this.track.attach()
-    this.apply()
-    this.participant.on(ParticipantEvent.IsSpeakingChanged, speaking => {
-      this.livekit.emit('speaking', { playerId: this.player.data.id, speaking })
-      this.player.setSpeaking(speaking)
-    })
-  }
-
-  setMuted(muted) {
-    if (this.muted === muted) return
-    this.muted = muted
-    this.apply()
-  }
-
-  setLevel(level) {
-    if (this.level === level) return
-    this.level = level
-    this.apply()
-  }
-
-  apply() {
-    if (this.muted) {
-      this.root.gain.value = 0
-      this.track.setWebAudioPlugins([this.root])
-    } else if (this.level === 'disabled') {
-      this.root.gain.value = 0
-      this.track.setWebAudioPlugins([this.root])
-    } else if (this.level === 'spatial') {
-      this.root.gain.value = 1
-      this.track.setWebAudioPlugins([this.panner])
-    } else if (this.level === 'global') {
-      this.root.gain.value = 1
-      this.track.setWebAudioPlugins([this.root])
-    }
-  }
-
-  lateUpdate(delta) {
-    if (this.muted) return
-    if (this.level !== 'spatial') return
-    const audio = this.audio
-    const matrix = this.player.base.matrixWorld
-    const pos = v1.setFromMatrixPosition(matrix)
-    const qua = q1.setFromRotationMatrix(matrix)
-    const dir = v2.set(0, 0, -1).applyQuaternion(qua)
-    if (this.panner.positionX) {
-      const endTime = audio.ctx.currentTime + audio.lastDelta
-      this.panner.positionX.linearRampToValueAtTime(pos.x, endTime)
-      this.panner.positionY.linearRampToValueAtTime(pos.y, endTime)
-      this.panner.positionZ.linearRampToValueAtTime(pos.z, endTime)
-      this.panner.orientationX.linearRampToValueAtTime(dir.x, endTime)
-      this.panner.orientationY.linearRampToValueAtTime(dir.y, endTime)
-      this.panner.orientationZ.linearRampToValueAtTime(dir.z, endTime)
-    } else {
-      this.panner.setPosition(pos.x, pos.y, pos.z)
-      this.panner.setOrientation(dir.x, dir.y, dir.z)
-    }
-  }
-
-  destroy() {
-    this.livekit.emit('speaking', { playerId: this.player.data.id, speaking: false })
-    this.player.setSpeaking(false)
-    this.track.detach()
-  }
-}
-
-function createPlayerScreen({ world, playerId, targetId, track, participant }) {
-  const elem = document.createElement('video')
-  elem.playsInline = true
-  elem.muted = true
-  track.attach(elem)
-  const texture = new THREE.VideoTexture(elem)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.minFilter = THREE.LinearFilter
-  texture.magFilter = THREE.LinearFilter
-  texture.anisotropy = world.graphics.maxAnisotropy
-  texture.needsUpdate = true
-  let width
-  let height
-  let ready = false
-  const prepare = (function () {
-    return new Promise(async resolve => {
-      let playing = false
-      let data = false
-      elem.addEventListener(
-        'loadeddata',
-        async () => {
-          if (playing) elem.pause()
-          data = true
-          width = elem.videoWidth
-          height = elem.videoHeight
-          console.log({ width, height })
-          ready = true
-          resolve()
-        },
-        { once: true }
-      )
-      elem.addEventListener(
-        'loadedmetadata',
-        async () => {
-          if (data) return
-        },
-        { once: true }
-      )
-    })
-  })()
-  function isPlaying() {
-    return true
-  }
-  function play(restartIfPlaying = false) {
-  }
-  function pause() {
-  }
-  function stop() {
-  }
-  function release() {
-  }
-  function destroy() {
-    console.log('destory')
-    texture.dispose()
-  }
-  const handle = {
-    isScreen: true,
-    playerId,
-    targetId,
-    elem,
-    audio: null,
-    texture,
-    prepare,
-    get ready() {
-      return ready
-    },
-    get width() {
-      return width
-    },
-    get height() {
-      return height
-    },
-    get loop() {
-      return false
-    },
-    set loop(value) {
-    },
-    get isPlaying() {
-      return isPlaying()
-    },
-    get currentTime() {
-      return elem.currentTime
-    },
-    set currentTime(value) {
-      elem.currentTime = value
-    },
-    play,
-    pause,
-    stop,
-    release,
-    destroy,
-  }
-  return handle
 }
