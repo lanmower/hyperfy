@@ -1,16 +1,13 @@
 import * as THREE from 'three'
 import { isString } from 'lodash'
 import { Emotes } from '../core/extras/playerEmotes.js'
+import { AvatarCamera } from './avatar/AvatarCamera.js'
+import { AvatarStats } from './avatar/AvatarStats.js'
 
-const MAX_UPLOAD_SIZE = 1000000000000 // TODO
+const MAX_UPLOAD_SIZE = 1000000000000
 const MAX_UPLOAD_SIZE_LABEL = '1LOLS'
-
-const FOV = 70
-const PLANE_ASPECT_RATIO = 16 / 9
 const HDR_URL = '/day2.hdr'
-
 const DEG2RAD = THREE.MathUtils.DEG2RAD
-const RAD2DEG = THREE.MathUtils.RAD2DEG
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -30,7 +27,7 @@ const materialSlots = [
   'roughnessMap',
 ]
 
-let renderer = null // re-use one renderer for this
+let renderer = null
 function getRenderer() {
   if (!renderer) {
     renderer = new THREE.WebGLRenderer({
@@ -47,8 +44,8 @@ export class AvatarPreview {
     this.world = world
     this.viewport = viewport
     this.scene = new THREE.Scene()
-    this.size = { width: 1080, height: 900, aspect: 1080 / 900 } // defaults
-    this.camera = new THREE.PerspectiveCamera(FOV, this.size.aspect, 0.01, 2000)
+    this.size = { width: 1080, height: 900, aspect: 1080 / 900 }
+    this.camera = new THREE.PerspectiveCamera(70, this.size.aspect, 0.01, 2000)
     this.camera.layers.enableAll()
     this.scene.add(this.camera)
     this.sun = new THREE.DirectionalLight(0xffffff, 3)
@@ -67,6 +64,7 @@ export class AvatarPreview {
     this.rig.rotation.y = 180 * DEG2RAD
     this.scene.add(this.rig)
     this.viewport.appendChild(this.renderer.domElement)
+    this.avatarCamera = new AvatarCamera(this.camera, this.size)
     this.resize(this.viewport.offsetWidth, this.viewport.offsetHeight, false)
     window.preview = this
   }
@@ -93,70 +91,16 @@ export class AvatarPreview {
     this.node.activate({})
     this.node.setEmote(Emotes.IDLE)
     if (!this.renderer) return
-    this.positionCamera()
+    this.avatarCamera.positionCamera(this.node)
     this.render()
-    this.resolveInfo()
+    this.info = AvatarStats.resolveInfo(this.file, this.node)
     this.renderer.setAnimationLoop(this.update)
     return this.info
   }
 
-  positionCamera() {
-    const camera = this.camera
-    const raw = this.node.instance.raw
-    const hips = raw.userData.vrm.humanoid.getRawBone('hips').node
-
-
-
-    const box = new THREE.Box3()
-    box.setFromObject(raw.scene)
-
-    const hipsY = hips.getWorldPosition(v1).y
-    box.min.y = hipsY
-
-    box.min.x = 0.5
-    box.max.x = 0.5
-
-    camera.position.y = box.max.y - box.getSize(v1).y / 2
-
-
-    var size = new THREE.Vector3()
-    box.getSize(size)
-
-
-
-    const fov = camera.fov * (Math.PI / 180)
-    const fovh = 2 * Math.atan(Math.tan(fov / 2) * camera.aspect)
-    let dx = size.z / 2 + Math.abs(size.x / 2 / Math.tan(fovh / 2))
-    let dy = size.z / 2 + Math.abs(size.y / 2 / Math.tan(fov / 2))
-    let cameraZ = Math.max(dx, dy)
-
-    camera.position.z = -cameraZ
-    camera.rotation.y += 180 * DEG2RAD
-
-    const minZ = box.min.z
-    const cameraToFarEdge = minZ < 0 ? -minZ + cameraZ : cameraZ - minZ
-
-    camera.far = cameraToFarEdge * 3
-    camera.updateProjectionMatrix()
-  }
-
   resize(width, height, render = true) {
-    this.size.width = width
-    this.size.height = height
-    this.size.aspect = width / height
-    this.camera.aspect = this.size.aspect
-
-    if (this.size.aspect > PLANE_ASPECT_RATIO) {
-      const cameraHeight = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
-      const ratio = this.camera.aspect / PLANE_ASPECT_RATIO
-      const newCameraHeight = cameraHeight / ratio
-      this.camera.fov = THREE.MathUtils.radToDeg(Math.atan(newCameraHeight)) * 2
-    } else {
-      this.camera.fov = FOV
-    }
-
-    this.camera.updateProjectionMatrix()
-    this.renderer.setSize(this.size.width, this.size.height)
+    this.avatarCamera.resize(width, height)
+    this.renderer.setSize(width, height)
     if (render) {
       this.render()
     }
@@ -171,89 +115,6 @@ export class AvatarPreview {
 
   render() {
     this.renderer.render(this.scene, this.camera)
-  }
-
-  resolveInfo() {
-    console.log(this.renderer.info)
-    console.log(this.renderer.info.render.triangles)
-    const stats = {}
-    const bbox = new THREE.Box3().setFromObject(this.node.instance.raw.scene)
-    const bounds = bbox
-      .getSize(v1)
-      .toArray()
-      .map(n => parseFloat(n.toFixed(1)))
-    stats.bounds = {
-      value: bounds,
-      rank: this.determineRank(spec => {
-        return spec.bounds[0] >= bounds[0] && spec.bounds[1] >= bounds[1] && spec.bounds[2] >= bounds[2]
-      }),
-    }
-    let triangles = 0
-    this.node.instance.raw.scene.traverse(node => {
-      if (node.isMesh) {
-        const geometry = node.geometry
-        if (geometry.index !== null) {
-          triangles += geometry.index.count / 3
-        } else {
-          triangles += geometry.attributes.position.count / 3
-        }
-      }
-    })
-    stats.triangles = {
-      value: triangles,
-      rank: this.determineRank(spec => spec.triangles >= triangles),
-    }
-    let draws = 0
-    this.node.instance.raw.scene.traverse(function (node) {
-      if (node.isMesh) {
-        const material = node.material
-        if (Array.isArray(material)) {
-          for (let i = 0; i < material.length; i++) {
-            draws++
-          }
-        } else {
-          draws++
-        }
-      }
-    })
-    stats.draws = {
-      value: draws,
-      rank: this.determineRank(spec => spec.draws >= draws),
-    }
-    const fileSize = this.file.size
-    stats.fileSize = {
-      value: fileSize,
-      rank: this.determineRank(spec => spec.fileSize >= fileSize),
-    }
-    let skeleton = null
-    this.node.instance.raw.scene.traverse(function (node) {
-      if (node.isSkinnedMesh) {
-        skeleton = node.skeleton
-      }
-    })
-    const bones = skeleton?.bones.length || 0
-    stats.bones = {
-      value: bones,
-      rank: this.determineRank(spec => spec.bones >= bones),
-    }
-    let rank = 5
-    for (const key in stats) {
-      if (stats[key].rank < rank) {
-        rank = stats[key].rank
-      }
-    }
-    this.info = {
-      rank,
-      stats,
-    }
-    console.log('info', this.info)
-  }
-
-  determineRank(fn) {
-    for (const spec of specs) {
-      if (fn(spec)) return spec.rank
-    }
-    return 1
   }
 
   capture(width, height) {
@@ -282,39 +143,3 @@ export class AvatarPreview {
     this.renderer = null
   }
 }
-
-
-const specs = [
-  {
-    rank: 5,
-    fileSize: 5 * 1048576, // 5 MB
-    triangles: 4000,
-    draws: 1,
-    bones: 70,
-    bounds: [3, 3, 3],
-  },
-  {
-    rank: 4,
-    fileSize: 10 * 1048576, // 10 MB
-    triangles: 16000,
-    draws: 2,
-    bones: 100,
-    bounds: [3, 3, 3],
-  },
-  {
-    rank: 3,
-    fileSize: 15 * 1048576, // 15 MB
-    triangles: 32000,
-    draws: 4,
-    bones: 130,
-    bounds: [4, 4, 4],
-  },
-  {
-    rank: 2,
-    fileSize: 25 * 1048576, // 25 MB
-    triangles: 64000,
-    draws: 32,
-    bones: 160,
-    bounds: [7, 6, 4],
-  },
-]
