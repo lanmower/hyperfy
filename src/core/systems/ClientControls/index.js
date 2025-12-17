@@ -11,6 +11,13 @@ const isBrowser = typeof window !== 'undefined'
 let actionIds = 0
 
 export class ClientControls extends System {
+  // DI Service Constants
+  static DEPS = {
+    rig: 'rig',
+    camera: 'camera',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     this.controls = []
@@ -39,6 +46,11 @@ export class ClientControls extends System {
     this.inputHandler = new InputHandler(this)
     this.xrHandler = new XRHandler(this)
   }
+
+  // DI Property Getters
+  get rig() { return this.getService(ClientControls.DEPS.rig) }
+  get camera() { return this.getService(ClientControls.DEPS.camera) }
+  get events() { return this.getService(ClientControls.DEPS.events) }
 
   start() {
     this.xrHandler.init()
@@ -76,14 +88,14 @@ export class ClientControls extends System {
     for (const control of this.controls) {
       const camera = control.entries.camera
       if (camera?.write && !written) {
-        this.world.rig.position.copy(camera.position)
-        this.world.rig.quaternion.copy(camera.quaternion)
-        this.world.camera.position.z = camera.zoom
+        this.rig.position.copy(camera.position)
+        this.rig.quaternion.copy(camera.quaternion)
+        this.camera.position.z = camera.zoom
         written = true
       } else if (camera) {
-        camera.position.copy(this.world.rig.position)
-        camera.quaternion.copy(this.world.rig.quaternion)
-        camera.zoom = this.world.camera.position.z
+        camera.position.copy(this.rig.position)
+        camera.quaternion.copy(this.rig.quaternion)
+        camera.zoom = this.camera.position.z
       }
     }
     // clear touch deltas
@@ -185,7 +197,7 @@ export class ClientControls extends System {
         }
       }
     }
-    this.world.events.emit('actions', this.actions)
+    this.events.emit('actions', this.actions)
   }
 
   setTouchBtn(prop, down) {
