@@ -28,10 +28,7 @@ export class World extends EventEmitter {
     this.loadSystemsFromRegistry()
   }
 
-  /**
-   * Load systems dynamically from the system registry
-   * Only loads systems for the current platform
-   */
+  
   loadSystemsFromRegistry() {
     const systems = systemRegistry.getCurrentPlatformSystems()
 

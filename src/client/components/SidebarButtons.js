@@ -18,10 +18,7 @@ import {
 import { cls } from './cls.js'
 import { isTouch } from '../utils.js'
 
-/**
- * Sidebar Buttons
- * Renders all button sections in the sidebar
- */
+
 
 function Section({ active, top, bottom, children }) {
   return (

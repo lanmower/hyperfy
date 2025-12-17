@@ -1,9 +1,4 @@
-/**
- * AppBlueprint.schema.js
- *
- * Centralized blueprint schema definition.
- * Single source of truth for app blueprint structure used by both hyperfy and hyperfy-sdk.
- */
+
 
 export const BlueprintSchema = {
   id: {

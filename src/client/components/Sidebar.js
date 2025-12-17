@@ -5,10 +5,7 @@ import { useRank } from './useRank.js'
 import { SidebarButtons } from './SidebarButtons.js'
 import { SidebarPanes } from './SidebarPanes.js'
 
-/**
- * Sidebar
- * Main sidebar component - coordinates button sections and pane content rendering
- */
+
 
 export function Sidebar({ world, ui }) {
   const player = world.entities.player

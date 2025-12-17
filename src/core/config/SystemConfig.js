@@ -1,14 +1,6 @@
-/**
- * System Configuration
- *
- * Centralized configuration for all Hyperfy systems.
- * Extracts magic numbers, constants, and tunable parameters.
- * Environment variables can override defaults.
- */
 
-/**
- * Physics Configuration
- */
+
+
 export const PhysicsConfig = {
   CAPSULE_RADIUS: parseFloat(process.env.PHYSICS_CAPSULE_RADIUS ?? 0.3),
   CAPSULE_HEIGHT: parseFloat(process.env.PHYSICS_CAPSULE_HEIGHT ?? 1.8),
@@ -36,9 +28,7 @@ export const PhysicsConfig = {
   PUSH_FORCE_DECAY: parseFloat(process.env.PHYSICS_PUSH_DECAY ?? 0.95),
 }
 
-/**
- * Rendering Configuration
- */
+
 export const RenderingConfig = {
   SHADOW_MAP_SIZE: parseInt(process.env.RENDER_SHADOW_SIZE ?? 2048),
   SHADOW_BIAS: parseFloat(process.env.RENDER_SHADOW_BIAS ?? 0.0001),
@@ -57,9 +47,7 @@ export const RenderingConfig = {
   PIXEL_RATIO: parseFloat(process.env.RENDER_PIXEL_RATIO ?? 1),
 }
 
-/**
- * Network Configuration
- */
+
 export const NetworkConfig = {
   SERVER_TICK_RATE: parseInt(process.env.NET_TICK_RATE ?? 60),
   PLAYER_UPDATE_RATE: parseFloat(process.env.NET_UPDATE_RATE ?? 8), // Hz
@@ -78,9 +66,7 @@ export const NetworkConfig = {
   MAX_MESSAGE_SIZE: parseInt(process.env.NET_MAX_MSG_SIZE ?? 1024 * 100),
 }
 
-/**
- * Input Configuration
- */
+
 export const InputConfig = {
   POINTER_SENSITIVITY: parseFloat(process.env.INPUT_POINTER_SENS ?? 1),
   POINTER_LOOK_SPEED: parseFloat(process.env.INPUT_POINTER_SPEED ?? 0.001),
@@ -99,9 +85,7 @@ export const InputConfig = {
   KEY_REPEAT_INTERVAL: parseInt(process.env.INPUT_REPEAT_INTERVAL ?? 30),
 }
 
-/**
- * Avatar & Animation Configuration
- */
+
 export const AvatarConfig = {
   VRM_DEFAULT_SCALE: parseFloat(process.env.AVATAR_SCALE ?? 1),
   VRM_BLEND_SHAPE_WEIGHT: parseFloat(process.env.AVATAR_BLEND_WEIGHT ?? 1),
@@ -115,9 +99,7 @@ export const AvatarConfig = {
   NAMETAG_OFFSET: parseFloat(process.env.NAMETAG_OFFSET ?? 2),
 }
 
-/**
- * Chat Configuration
- */
+
 export const ChatConfig = {
   MAX_MESSAGES: parseInt(process.env.CHAT_MAX_MESSAGES ?? 50),
   MESSAGE_TIMEOUT: parseInt(process.env.CHAT_TIMEOUT ?? 300000),
@@ -129,9 +111,7 @@ export const ChatConfig = {
   MAX_MESSAGES_PER_MINUTE: parseInt(process.env.CHAT_RATE_LIMIT ?? 60),
 }
 
-/**
- * Audio Configuration
- */
+
 export const AudioConfig = {
   MASTER_VOLUME: parseFloat(process.env.AUDIO_MASTER ?? 1.0),
   EFFECTS_VOLUME: parseFloat(process.env.AUDIO_EFFECTS ?? 0.8),
@@ -141,9 +121,7 @@ export const AudioConfig = {
   VOICE_CODEC: process.env.AUDIO_CODEC ?? 'opus',
 }
 
-/**
- * Performance Configuration
- */
+
 export const PerformanceConfig = {
   TARGET_FPS: parseInt(process.env.PERF_TARGET_FPS ?? 60),
   MIN_FRAME_TIME: 1000 / parseInt(process.env.PERF_TARGET_FPS ?? 60),
@@ -157,9 +135,7 @@ export const PerformanceConfig = {
   ASSET_CLEANUP_INTERVAL: parseInt(process.env.PERF_CLEANUP ?? 60000),
 }
 
-/**
- * Error & Debug Configuration
- */
+
 export const ErrorConfig = {
   CAPTURE_ERRORS: process.env.CAPTURE_ERRORS !== 'false',
   MAX_ERROR_HISTORY: parseInt(process.env.ERROR_MAX_HISTORY ?? 500),
@@ -170,9 +146,7 @@ export const ErrorConfig = {
   LOG_NETWORK_MESSAGES: process.env.LOG_NETWORK === 'true',
 }
 
-/**
- * Get all configuration as a single object
- */
+
 export function getAllConfig() {
   return {
     physics: PhysicsConfig,
@@ -187,9 +161,7 @@ export function getAllConfig() {
   }
 }
 
-/**
- * Validate configuration values
- */
+
 export function validateConfig() {
   const errors = []
 

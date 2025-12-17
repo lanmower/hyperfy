@@ -1,19 +1,4 @@
-/**
- * Unified Event Topics
- *
- * Defines all event types that can be emitted throughout the Hyperfy system.
- * This serves as a single source of truth for event names and prevents typos.
- *
- * Events are categorized by domain:
- * - System: Core runtime and lifecycle events
- * - World: World/environment events
- * - Entity: Entity lifecycle events
- * - Player: Player-specific events
- * - Network: Network communication events
- * - App: Application runtime events
- * - Error: Error tracking and monitoring
- * - UI: User interface events
- */
+
 
 export const EventTopics = {
   System: {
@@ -120,21 +105,12 @@ function registerTopics(obj) {
 
 registerTopics(EventTopics)
 
-/**
- * Validate that an event topic is registered
- * @param {string} topic - The event topic to validate
- * @returns {boolean} True if the topic is registered
- */
+
 export function isValidEventTopic(topic) {
   return eventTopicStrings.has(topic)
 }
 
-/**
- * Create a custom app event topic
- * @param {string} appId - The app ID
- * @param {string} eventName - The custom event name
- * @returns {string} The full event topic string
- */
+
 export function createAppEventTopic(appId, eventName) {
   return `app:${appId}:${eventName}`
 }

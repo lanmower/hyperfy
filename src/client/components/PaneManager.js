@@ -1,7 +1,4 @@
-/**
- * Pane Manager
- * Manages sidebar pane definitions, state, and routing logic
- */
+
 
 export class PaneManager {
   constructor(world) {

@@ -1,7 +1,4 @@
-/**
- * Sidebar Panes
- * Renders all pane content components
- */
+
 
 import { Prefs } from './SidebarPanes/Prefs.js'
 import { World } from './SidebarPanes/World.js'

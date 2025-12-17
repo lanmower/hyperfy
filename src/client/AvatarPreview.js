@@ -283,14 +283,7 @@ export class AvatarPreview {
   }
 }
 
-/**
- * The following are minimum specs to belong to a rank.
- * If a vrm doesn't fit into any of these ranks then it is ranked Very Poor (1)
- *
- * These specs closely follow VRChat Quest Limits:
- * https://docs.vrchat.com/docs/avatar-performance-ranking-system#quest-limits
- *
- */
+
 const specs = [
   {
     rank: 5,

@@ -40,9 +40,7 @@ export class BufferedLerpVector3 {
     }
   }
 
-  /**
-   * Call once per frame with your frame‐delta in seconds.
-   */
+  
   update(delta) {
     this.localTime += delta
     const tRender = this.localTime - this.buffer
@@ -77,9 +75,7 @@ export class BufferedLerpVector3 {
     return this
   }
 
-  /**
-   * Instantly jump your localTime to latest+buffer
-   */
+  
   snap() {
     let latest = this.samples[0]
     for (let samp of this.samples) {

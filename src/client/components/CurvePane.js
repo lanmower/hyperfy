@@ -92,9 +92,7 @@ export function CurvePane({ curve, title, xLabel, yLabel, yMin, yMax, onCommit, 
     >
       <div className='curvepane-head' ref={headRef}>
         <div className='curvepane-head-title'>{title}</div>
-        {/* <div className='curvepane-head-close' onClick={() => world.emit('avatar', null)}>
-          <XIcon size={20} />
-        </div> */}
+        {}
       </div>
       <div className='curvepane-chart'>
         <div className='curvepane-container' ref={containerRef} />

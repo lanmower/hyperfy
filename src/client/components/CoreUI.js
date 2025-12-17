@@ -92,12 +92,10 @@ export function CoreUI({ world }) {
       {ready && <ActionsBlock world={world} />}
       {ready && <Sidebar world={world} ui={ui} />}
       {ready && <Chat world={world} />}
-      {/* {ready && <Side world={world} player={player} menu={menu} />} */}
-      {/* {ready && menu?.type === 'app' && code && (
-        <CodeEditor key={`code-${menu.app.data.id}`} world={world} app={menu.app} blur={menu.blur} />
-      )} */}
+      {}
+      {}
       {avatar && <AvatarPane key={avatar.hash} world={world} info={avatar} />}
-      {/* {apps && <AppsPane world={world} close={() => world.ui.toggleApps()} />} */}
+      {}
       {!ready && <LoadingOverlay world={world} />}
       {kicked && <KickedOverlay code={kicked} />}
       {ready && isTouch && <TouchBtns world={world} />}

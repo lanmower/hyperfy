@@ -1,15 +1,6 @@
-/**
- * Unified Registry Configuration
- *
- * Consolidates all hardcoded registries into a single, extensible configuration.
- * Enables dynamic addition of new asset types, commands, handlers, and settings
- * without modifying dispatch logic.
- */
 
-/**
- * Maps command names to their handler functions
- * Format: { commandName: handlerFunction }
- */
+
+
 export const commandRegistry = {
   admin: 'admin', // admin <code>
   name: 'name',   // name <newname>
@@ -18,11 +9,7 @@ export const commandRegistry = {
   server: 'server', // server <command>
 }
 
-/**
- * Defines which asset types are supported and how they're loaded
- * Keyed by environment: client, server
- * Each type maps to its handler
- */
+
 export const assetTypeRegistry = {
   client: {
     video: 'video',
@@ -44,10 +31,7 @@ export const assetTypeRegistry = {
   }
 }
 
-/**
- * Maps network message types to their handler functions
- * Keyed by environment: client, server
- */
+
 export const messageHandlerRegistry = {
   server: {
     'chatAdded': 'chatAdded',
@@ -84,10 +68,7 @@ export const messageHandlerRegistry = {
   }
 }
 
-/**
- * Defines configurable settings for client/server
- * Format: { settingKey: { type, default, min?, max?, values? } }
- */
+
 export const settingRegistry = {
   audio: {
     volume: { type: 'number', default: 1, min: 0, max: 1 },
@@ -117,9 +98,7 @@ export const settingRegistry = {
   },
 }
 
-/**
- * Defines available node types and their categories
- */
+
 export const nodeTypeRegistry = {
   mesh: { category: '3D', type: 'geometry' },
   skinnedMesh: { category: '3D', type: 'geometry' },
@@ -147,10 +126,7 @@ export const nodeTypeRegistry = {
   sky: { category: 'Rendering', type: 'environment' },
 }
 
-/**
- * Metadata and configurations for systems
- * Enables dynamic system discovery and configuration
- */
+
 export const systemRegistry = {
   client: [
     'ClientBuilder',
@@ -183,9 +159,7 @@ export const systemRegistry = {
   ]
 }
 
-/**
- * Defines file type handlers for asset loading
- */
+
 export const loaderRegistry = {
   video: {
     extensions: ['.mp4', '.webm', '.ogg'],
@@ -205,9 +179,7 @@ export const loaderRegistry = {
   },
 }
 
-/**
- * User preference keys and their metadata
- */
+
 export const preferenceRegistry = {
   audio_volume: { type: 'number', min: 0, max: 1, description: 'Master volume' },
   audio_muted: { type: 'boolean', description: 'Mute all audio' },
@@ -217,9 +189,7 @@ export const preferenceRegistry = {
   language: { type: 'enum', values: ['en', 'es', 'fr', 'de', 'ja', 'zh'], description: 'UI language' },
 }
 
-/**
- * Predefined error patterns for categorization and handling
- */
+
 export const errorPatternRegistry = {
   network: /network|connection|socket|websocket|timeout|disconnected/i,
   physics: /physics|rigidbody|collider|constraint|joint/i,
@@ -231,9 +201,7 @@ export const errorPatternRegistry = {
   validation: /validation|schema|constraint|invalid|required/i,
 }
 
-/**
- * User ranks and their capabilities
- */
+
 export const rankRegistry = {
   visitor: { level: 0, permissions: ['join', 'chat', 'view'] },
   member: { level: 1, permissions: ['join', 'chat', 'view', 'build', 'script'] },
@@ -241,9 +209,7 @@ export const rankRegistry = {
   admin: { level: 3, permissions: ['all'] },
 }
 
-/**
- * Factory function to get registries
- */
+
 export function getRegistry(type, environment = null) {
   const registries = {
     commands: commandRegistry,
@@ -270,9 +236,7 @@ export function getRegistry(type, environment = null) {
   return registry
 }
 
-/**
- * Helper to extend registries at runtime
- */
+
 const extensionHandlers = new Map()
 
 export function registerExtension(type, environment, key, handler) {

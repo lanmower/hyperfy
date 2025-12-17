@@ -2,7 +2,7 @@
 import * as T from 'three'
 
 const D =
-    /* glsl */
+    
     `
     
 #ifdef IS_VERTEX
@@ -46,7 +46,7 @@ const D =
 #endif
 `,
   P =
-    /* glsl */
+    
     `
 
 #ifdef IS_VERTEX
@@ -137,22 +137,22 @@ const D =
 #endif
 `,
   H =
-    /* glsl */
+    
     `
     varying mat4 csm_internal_vModelViewMatrix;
 `,
   x =
-    /* glsl */
+    
     `
     csm_internal_vModelViewMatrix = modelViewMatrix;
 `,
   y =
-    /* glsl */
+    
     `
     varying mat4 csm_internal_vModelViewMatrix;
 `,
   F =
-    /* glsl */
+    
     `
     
 `,

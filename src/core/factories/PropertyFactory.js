@@ -1,34 +1,8 @@
-/**
- * Property Factory
- *
- * Declarative property definition and initialization for node classes.
- * Eliminates duplicate property initialization patterns across 28+ node types.
- *
- * Usage:
- * ```javascript
- * class Mesh extends Node {
- *   static properties = {
- *     position: { default: [0, 0, 0], type: 'vec3' },
- *     rotation: { default: [0, 0, 0], type: 'vec3' },
- *     scale: { default: [1, 1, 1], type: 'vec3' },
- *     visible: { default: true, type: 'boolean' },
- *     castShadow: { default: false, type: 'boolean' },
- *   }
- * }
- *
- * // In constructor:
- * applyProperties(this, Mesh.properties, data)
- * ```
- */
+
 
 import { cloneDeep } from 'lodash-es'
 
-/**
- * Apply properties from schema to an instance
- * @param {Object} instance - Object to apply properties to
- * @param {Object} propertySchema - Property definitions
- * @param {Object} data - Data values to apply
- */
+
 export function applyProperties(instance, propertySchema, data = {}) {
   for (const [key, definition] of Object.entries(propertySchema)) {
     const value = data[key]
@@ -58,9 +32,7 @@ export function applyProperties(instance, propertySchema, data = {}) {
   }
 }
 
-/**
- * Coerce a value to the correct type based on property definition
- */
+
 function coercePropertyValue(value, definition) {
   const { type } = definition
 
@@ -95,9 +67,7 @@ function coercePropertyValue(value, definition) {
   }
 }
 
-/**
- * Validate properties against schema
- */
+
 export function validateProperties(propertySchema, data) {
   const errors = []
 
@@ -123,9 +93,7 @@ export function validateProperties(propertySchema, data) {
   return errors
 }
 
-/**
- * Get property definitions merged with parent class definitions
- */
+
 export function getPropertySchema(nodeClass) {
   const properties = {}
 
@@ -140,9 +108,7 @@ export function getPropertySchema(nodeClass) {
   return properties
 }
 
-/**
- * Serialize properties from an instance
- */
+
 export function serializeProperties(instance, propertySchema) {
   const serialized = {}
 
@@ -162,15 +128,7 @@ export function serializeProperties(instance, propertySchema) {
   return serialized
 }
 
-/**
- * Create a property schema builder for fluent API
- * @example
- * const schema = PropertyBuilder.create()
- *   .vec3('position', { default: [0, 0, 0] })
- *   .boolean('visible', { default: true })
- *   .string('name', { default: 'Untitled' })
- *   .build()
- */
+
 export class PropertyBuilder {
   constructor() {
     this.schema = {}

@@ -1,28 +1,11 @@
-/*!
- * @pixiv/three-vrm v2.1.2
- * VRM file loader for three.js.
- *
- * Copyright (c) 2019-2024 pixiv Inc.
- * @pixiv/three-vrm is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
+
 import * as THREE from 'three';
 import { BufferAttribute } from 'three';
 
-/*!
- * @pixiv/three-vrm-core v2.1.2
- * The implementation of core features of VRM, for @pixiv/three-vrm
- *
- * Copyright (c) 2020-2024 pixiv Inc.
- * @pixiv/three-vrm-core is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
+
 
 class VRMExpression extends THREE.Object3D {
-    /**
-     * A value represents how much it should override blink expressions.
-     * `0.0` == no override at all, `1.0` == completely block the expressions.
-     */
+    
     get overrideBlinkAmount() {
         if (this.overrideBlink === 'block') {
             return 0.0 < this.weight ? 1.0 : 0.0;
@@ -34,10 +17,7 @@ class VRMExpression extends THREE.Object3D {
             return 0.0;
         }
     }
-    /**
-     * A value represents how much it should override lookAt expressions.
-     * `0.0` == no override at all, `1.0` == completely block the expressions.
-     */
+    
     get overrideLookAtAmount() {
         if (this.overrideLookAt === 'block') {
             return 0.0 < this.weight ? 1.0 : 0.0;
@@ -49,10 +29,7 @@ class VRMExpression extends THREE.Object3D {
             return 0.0;
         }
     }
-    /**
-     * A value represents how much it should override mouth expressions.
-     * `0.0` == no override at all, `1.0` == completely block the expressions.
-     */
+    
     get overrideMouthAmount() {
         if (this.overrideMouth === 'block') {
             return 0.0 < this.weight ? 1.0 : 0.0;
@@ -66,25 +43,15 @@ class VRMExpression extends THREE.Object3D {
     }
     constructor(expressionName) {
         super();
-        /**
-         * The current weight of the expression.
-         */
+        
         this.weight = 0.0;
-        /**
-         * Interpret values greater than 0.5 as 1.0, ortherwise 0.0.
-         */
+        
         this.isBinary = false;
-        /**
-         * Specify how the expression overrides blink expressions.
-         */
+        
         this.overrideBlink = 'none';
-        /**
-         * Specify how the expression overrides lookAt expressions.
-         */
+        
         this.overrideLookAt = 'none';
-        /**
-         * Specify how the expression overrides mouth expressions.
-         */
+        
         this.overrideMouth = 'none';
         this._binds = [];
         this.name = `VRMExpression_${expressionName}`;
@@ -95,38 +62,20 @@ class VRMExpression extends THREE.Object3D {
     addBind(bind) {
         this._binds.push(bind);
     }
-    /**
-     * Apply weight to every assigned blend shapes.
-     * Should be called every frame.
-     */
+    
     applyWeight(options) {
         var _a;
         let actualWeight = this.isBinary ? (this.weight <= 0.5 ? 0.0 : 1.0) : this.weight;
         actualWeight *= (_a = options === null || options === void 0 ? void 0 : options.multiplier) !== null && _a !== void 0 ? _a : 1.0;
         this._binds.forEach((bind) => bind.applyWeight(actualWeight));
     }
-    /**
-     * Clear previously assigned blend shapes.
-     */
+    
     clearAppliedWeight() {
         this._binds.forEach((bind) => bind.clearAppliedWeight());
     }
 }
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter$6(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -146,56 +95,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 function extractPrimitivesInternal(gltf, nodeIndex, node) {
     var _a, _b;
     const json = gltf.parser.json;
-    /**
-     * Let's list up every possible patterns that parsed gltf nodes with a mesh can have,,,
-     *
-     * "*" indicates that those meshes should be listed up using this function
-     *
-     * ### A node with a (mesh, a signle primitive)
-     *
-     * - `THREE.Mesh`: The only primitive of the mesh *
-     *
-     * ### A node with a (mesh, multiple primitives)
-     *
-     * - `THREE.Group`: The root of the mesh
-     *   - `THREE.Mesh`: A primitive of the mesh *
-     *   - `THREE.Mesh`: A primitive of the mesh (2) *
-     *
-     * ### A node with a (mesh, multiple primitives) AND (a child with a mesh, a single primitive)
-     *
-     * - `THREE.Group`: The root of the mesh
-     *   - `THREE.Mesh`: A primitive of the mesh *
-     *   - `THREE.Mesh`: A primitive of the mesh (2) *
-     *   - `THREE.Mesh`: A primitive of a MESH OF THE CHILD
-     *
-     * ### A node with a (mesh, multiple primitives) AND (a child with a mesh, multiple primitives)
-     *
-     * - `THREE.Group`: The root of the mesh
-     *   - `THREE.Mesh`: A primitive of the mesh *
-     *   - `THREE.Mesh`: A primitive of the mesh (2) *
-     *   - `THREE.Group`: The root of a MESH OF THE CHILD
-     *     - `THREE.Mesh`: A primitive of the mesh of the child
-     *     - `THREE.Mesh`: A primitive of the mesh of the child (2)
-     *
-     * ### A node with a (mesh, multiple primitives) BUT the node is a bone
-     *
-     * - `THREE.Bone`: The root of the node, as a bone
-     *   - `THREE.Group`: The root of the mesh
-     *     - `THREE.Mesh`: A primitive of the mesh *
-     *     - `THREE.Mesh`: A primitive of the mesh (2) *
-     *
-     * ### A node with a (mesh, multiple primitives) AND (a child with a mesh, multiple primitives) BUT the node is a bone
-     *
-     * - `THREE.Bone`: The root of the node, as a bone
-     *   - `THREE.Group`: The root of the mesh
-     *     - `THREE.Mesh`: A primitive of the mesh *
-     *     - `THREE.Mesh`: A primitive of the mesh (2) *
-     *   - `THREE.Group`: The root of a MESH OF THE CHILD
-     *     - `THREE.Mesh`: A primitive of the mesh of the child
-     *     - `THREE.Mesh`: A primitive of the mesh of the child (2)
-     *
-     * ...I will take a strategy that traverses the root of the node and take first (primitiveCount) meshes.
-     */
+    
     const schemaNode = (_a = json.nodes) === null || _a === void 0 ? void 0 : _a[nodeIndex];
     if (schemaNode == null) {
         console.warn(`extractPrimitivesInternal: Attempt to use nodes[${nodeIndex}] of glTF but the node doesn't exist`);
@@ -221,30 +121,14 @@ function extractPrimitivesInternal(gltf, nodeIndex, node) {
     });
     return primitives;
 }
-/**
- * Extract primitives ( `THREE.Mesh[]` ) of a node from a loaded GLTF.
- * The main purpose of this function is to distinguish primitives and children from a node that has both meshes and children.
- *
- * It utilizes the behavior that GLTFLoader adds mesh primitives to the node object ( `THREE.Group` ) first then adds its children.
- *
- * @param gltf A GLTF object taken from GLTFLoader
- * @param nodeIndex The index of the node
- */
+
 function gltfExtractPrimitivesFromNode(gltf, nodeIndex) {
     return __awaiter$6(this, void 0, void 0, function* () {
         const node = yield gltf.parser.getDependency('node', nodeIndex);
         return extractPrimitivesInternal(gltf, nodeIndex, node);
     });
 }
-/**
- * Extract primitives ( `THREE.Mesh[]` ) of nodes from a loaded GLTF.
- * See {@link gltfExtractPrimitivesFromNode} for more details.
- *
- * It returns a map from node index to extraction result.
- * If a node does not have a mesh, the entry for the node will not be put in the returning map.
- *
- * @param gltf A GLTF object taken from GLTFLoader
- */
+
 function gltfExtractPrimitivesFromNodes(gltf) {
     return __awaiter$6(this, void 0, void 0, function* () {
         const nodes = yield gltf.parser.getDependencies('node');
@@ -259,13 +143,7 @@ function gltfExtractPrimitivesFromNodes(gltf) {
     });
 }
 
-/**
- * Get a material definition index of glTF from associated material.
- * It's basically a comat code between Three.js r133 or above and previous versions.
- * @param parser GLTFParser
- * @param material A material of gltf
- * @returns Material definition index of glTF
- */
+
 function gltfGetAssociatedMaterialIndex(parser, material) {
     var _a, _b;
     const threeRevision = parseInt(THREE.REVISION, 10);
@@ -283,7 +161,7 @@ function gltfGetAssociatedMaterialIndex(parser, material) {
     return index;
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const VRMExpressionPresetName = {
     Aa: 'aa',
     Ih: 'ih',
@@ -305,11 +183,7 @@ const VRMExpressionPresetName = {
     Neutral: 'neutral',
 };
 
-/**
- * Clamp the input value within [0.0 - 1.0].
- *
- * @param value The input value
- */
+
 function saturate(value) {
     return Math.max(Math.min(value, 1.0), 0.0);
 }
@@ -321,9 +195,7 @@ class VRMExpressionManager {
     get expressionMap() {
         return Object.assign({}, this._expressionMap);
     }
-    /**
-     * A map from name to expression, but excluding custom expressions.
-     */
+    
     get presetExpressionMap() {
         const result = {};
         const presetNameSet = new Set(Object.values(VRMExpressionPresetName));
@@ -334,9 +206,7 @@ class VRMExpressionManager {
         });
         return result;
     }
-    /**
-     * A map from name to expression, but excluding preset expressions.
-     */
+    
     get customExpressionMap() {
         const result = {};
         const presetNameSet = new Set(Object.values(VRMExpressionPresetName));
@@ -347,37 +217,20 @@ class VRMExpressionManager {
         });
         return result;
     }
-    /**
-     * Create a new {@link VRMExpressionManager}.
-     */
+    
     constructor() {
-        /**
-         * A set of name or preset name of expressions that will be overridden by {@link VRMExpression.overrideBlink}.
-         */
+        
         this.blinkExpressionNames = ['blink', 'blinkLeft', 'blinkRight'];
-        /**
-         * A set of name or preset name of expressions that will be overridden by {@link VRMExpression.overrideLookAt}.
-         */
+        
         this.lookAtExpressionNames = ['lookLeft', 'lookRight', 'lookUp', 'lookDown'];
-        /**
-         * A set of name or preset name of expressions that will be overridden by {@link VRMExpression.overrideMouth}.
-         */
+        
         this.mouthExpressionNames = ['aa', 'ee', 'ih', 'oh', 'ou'];
-        /**
-         * A set of {@link VRMExpression}.
-         * When you want to register expressions, use {@link registerExpression}
-         */
+        
         this._expressions = [];
-        /**
-         * A map from name to expression.
-         */
+        
         this._expressionMap = {};
     }
-    /**
-     * Copy the given {@link VRMExpressionManager} into this one.
-     * @param source The {@link VRMExpressionManager} you want to copy
-     * @returns this
-     */
+    
     copy(source) {
         const expressions = this._expressions.concat();
         expressions.forEach((expression) => {
@@ -391,37 +244,21 @@ class VRMExpressionManager {
         this.mouthExpressionNames = source.mouthExpressionNames.concat();
         return this;
     }
-    /**
-     * Returns a clone of this {@link VRMExpressionManager}.
-     * @returns Copied {@link VRMExpressionManager}
-     */
+    
     clone() {
         return new VRMExpressionManager().copy(this);
     }
-    /**
-     * Return a registered expression.
-     * If it cannot find an expression, it will return `null` instead.
-     *
-     * @param name Name or preset name of the expression
-     */
+    
     getExpression(name) {
         var _a;
         return (_a = this._expressionMap[name]) !== null && _a !== void 0 ? _a : null;
     }
-    /**
-     * Register an expression.
-     *
-     * @param expression {@link VRMExpression} that describes the expression
-     */
+    
     registerExpression(expression) {
         this._expressions.push(expression);
         this._expressionMap[expression.expressionName] = expression;
     }
-    /**
-     * Unregister an expression.
-     *
-     * @param expression The expression you want to unregister
-     */
+    
     unregisterExpression(expression) {
         const index = this._expressions.indexOf(expression);
         if (index === -1) {
@@ -430,62 +267,25 @@ class VRMExpressionManager {
         this._expressions.splice(index, 1);
         delete this._expressionMap[expression.expressionName];
     }
-    /**
-     * Get the current weight of the specified expression.
-     * If it doesn't have an expression of given name, it will return `null` instead.
-     *
-     * @param name Name of the expression
-     */
+    
     getValue(name) {
         var _a;
         const expression = this.getExpression(name);
         return (_a = expression === null || expression === void 0 ? void 0 : expression.weight) !== null && _a !== void 0 ? _a : null;
     }
-    /**
-     * Set a weight to the specified expression.
-     *
-     * @param name Name of the expression
-     * @param weight Weight
-     */
+    
     setValue(name, weight) {
         const expression = this.getExpression(name);
         if (expression) {
             expression.weight = saturate(weight);
         }
     }
-    /**
-     * Get a track name of specified expression.
-     * This track name is needed to manipulate its expression via keyframe animations.
-     *
-     * @example Manipulate an expression using keyframe animation
-     * ```js
-     * const trackName = vrm.expressionManager.getExpressionTrackName( 'blink' );
-     * const track = new THREE.NumberKeyframeTrack(
-     *   name,
-     *   [ 0.0, 0.5, 1.0 ], // times
-     *   [ 0.0, 1.0, 0.0 ] // values
-     * );
-     *
-     * const clip = new THREE.AnimationClip(
-     *   'blink', // name
-     *   1.0, // duration
-     *   [ track ] // tracks
-     * );
-     *
-     * const mixer = new THREE.AnimationMixer( vrm.scene );
-     * const action = mixer.clipAction( clip );
-     * action.play();
-     * ```
-     *
-     * @param name Name of the expression
-     */
+    
     getExpressionTrackName(name) {
         const expression = this.getExpression(name);
         return expression ? `${expression.name}.weight` : null;
     }
-    /**
-     * Update every expressions.
-     */
+    
     update() {
         const weightMultipliers = this._calculateWeightMultipliers();
         this._expressions.forEach((expression) => {
@@ -506,9 +306,7 @@ class VRMExpressionManager {
             expression.applyWeight({ multiplier });
         });
     }
-    /**
-     * Calculate sum of override amounts to see how much we should multiply weights of certain expressions.
-     */
+    
     _calculateWeightMultipliers() {
         let blink = 1.0;
         let lookAt = 1.0;
@@ -525,7 +323,7 @@ class VRMExpressionManager {
     }
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const VRMExpressionMaterialColorType = {
     Color: 'color',
     EmissionColor: 'emissionColor',
@@ -543,9 +341,7 @@ const v0ExpressionMaterialColorMap = {
 };
 
 const _color = new THREE.Color();
-/**
- * A bind of expression influences to a material color.
- */
+
 class VRMExpressionMaterialColorBind {
     constructor({ material, type, targetValue, targetAlpha, }) {
         this.material = material;
@@ -627,11 +423,7 @@ class VRMExpressionMaterialColorBind {
         })) === null || _a === void 0 ? void 0 : _a[1]) !== null && _b !== void 0 ? _b : null);
     }
 }
-/**
- * Mapping of property names from VRMC/materialColorBinds.type to three.js/Material.
- * The first element stands for color channels, the second element stands for the alpha channel.
- * The second element can be null if the target property doesn't exist.
- */
+
 VRMExpressionMaterialColorBind._propertyNameMapMap = {
     isMeshStandardMaterial: {
         color: ['color', 'opacity'],
@@ -650,9 +442,7 @@ VRMExpressionMaterialColorBind._propertyNameMapMap = {
     },
 };
 
-/**
- * A bind of {@link VRMExpression} influences to morph targets.
- */
+
 class VRMExpressionMorphTargetBind {
     constructor({ primitives, index, weight, }) {
         this.primitives = primitives;
@@ -678,9 +468,7 @@ class VRMExpressionMorphTargetBind {
 }
 
 const _v2 = new THREE.Vector2();
-/**
- * A bind of expression influences to texture transforms.
- */
+
 class VRMExpressionTextureTransformBind {
     constructor({ material, scale, offset, }) {
         var _a, _b;
@@ -761,13 +549,9 @@ VRMExpressionTextureTransformBind._propertyNamesMap = {
     ],
 };
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$4 = new Set(['1.0', '1.0-beta']);
-/**
- * A plugin of GLTFLoader that imports a {@link VRMExpressionManager} from a VRM extension of a GLTF.
- */
+
 class VRMExpressionLoaderPlugin {
     get name() {
         return 'VRMExpressionLoaderPlugin';
@@ -780,11 +564,7 @@ class VRMExpressionLoaderPlugin {
             gltf.userData.vrmExpressionManager = yield this._import(gltf);
         });
     }
-    /**
-     * Import a {@link VRMExpressionManager} from a VRM.
-     *
-     * @param gltf A parsed result of GLTF taken from GLTFLoader
-     */
+    
     _import(gltf) {
         return __awaiter$6(this, void 0, void 0, function* () {
             const v1Result = yield this._v1Import(gltf);
@@ -983,13 +763,7 @@ class VRMExpressionLoaderPlugin {
                             materialValue.targetValue === undefined) {
                             return;
                         }
-                        /**
-                         * アバターのオブジェクトに設定されているマテリアルの内から
-                         * materialValueで指定されているマテリアルを集める。
-                         *
-                         * 特定には名前を使用する。
-                         * アウトライン描画用のマテリアルも同時に集める。
-                         */
+                        
                         const materials = [];
                         gltf.scene.traverse((object) => {
                             if (object.material) {
@@ -1057,7 +831,7 @@ VRMExpressionLoaderPlugin.v0v1PresetNameMap = {
     neutral: 'neutral',
 };
 
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const VRMExpressionOverrideType = {
     None: 'none',
     Block: 'block',
@@ -1065,12 +839,7 @@ const VRMExpressionOverrideType = {
 };
 
 class VRMFirstPerson {
-    /**
-     * Create a new VRMFirstPerson object.
-     *
-     * @param humanoid A {@link VRMHumanoid}
-     * @param meshAnnotations A renderer settings. See the description of [[RendererFirstPersonFlags]] for more info
-     */
+    
     constructor(humanoid, meshAnnotations) {
         this._firstPersonOnlyLayer = VRMFirstPerson.DEFAULT_FIRSTPERSON_ONLY_LAYER;
         this._thirdPersonOnlyLayer = VRMFirstPerson.DEFAULT_THIRDPERSON_ONLY_LAYER;
@@ -1078,12 +847,7 @@ class VRMFirstPerson {
         this.humanoid = humanoid;
         this.meshAnnotations = meshAnnotations;
     }
-    /**
-     * Copy the given {@link VRMFirstPerson} into this one.
-     * {@link humanoid} must be same as the source one.
-     * @param source The {@link VRMFirstPerson} you want to copy
-     * @returns this
-     */
+    
     copy(source) {
         if (this.humanoid !== source.humanoid) {
             throw new Error('VRMFirstPerson: humanoid must be same in order to copy');
@@ -1094,49 +858,19 @@ class VRMFirstPerson {
         }));
         return this;
     }
-    /**
-     * Returns a clone of this {@link VRMFirstPerson}.
-     * @returns Copied {@link VRMFirstPerson}
-     */
+    
     clone() {
         return new VRMFirstPerson(this.humanoid, this.meshAnnotations).copy(this);
     }
-    /**
-     * A camera layer represents `FirstPersonOnly` layer.
-     * Note that **you must call {@link setup} first before you use the layer feature** or it does not work properly.
-     *
-     * The value is {@link DEFAULT_FIRSTPERSON_ONLY_LAYER} by default but you can change the layer by specifying via {@link setup} if you prefer.
-     *
-     * @see https://vrm.dev/en/univrm/api/univrm_use_firstperson/
-     * @see https://threejs.org/docs/#api/en/core/Layers
-     */
+    
     get firstPersonOnlyLayer() {
         return this._firstPersonOnlyLayer;
     }
-    /**
-     * A camera layer represents `ThirdPersonOnly` layer.
-     * Note that **you must call {@link setup} first before you use the layer feature** or it does not work properly.
-     *
-     * The value is {@link DEFAULT_THIRDPERSON_ONLY_LAYER} by default but you can change the layer by specifying via {@link setup} if you prefer.
-     *
-     * @see https://vrm.dev/en/univrm/api/univrm_use_firstperson/
-     * @see https://threejs.org/docs/#api/en/core/Layers
-     */
+    
     get thirdPersonOnlyLayer() {
         return this._thirdPersonOnlyLayer;
     }
-    /**
-     * In this method, it assigns layers for every meshes based on mesh annotations.
-     * You must call this method first before you use the layer feature.
-     *
-     * This is an equivalent of [VRMFirstPerson.Setup](https://github.com/vrm-c/UniVRM/blob/73a5bd8fcddaa2a7a8735099a97e63c9db3e5ea0/Assets/VRM/Runtime/FirstPerson/VRMFirstPerson.cs#L295-L299) of the UniVRM.
-     *
-     * The `cameraLayer` parameter specifies which layer will be assigned for `FirstPersonOnly` / `ThirdPersonOnly`.
-     * In UniVRM, we specified those by naming each desired layer as `FIRSTPERSON_ONLY_LAYER` / `THIRDPERSON_ONLY_LAYER`
-     * but we are going to specify these layers at here since we are unable to name layers in Three.js.
-     *
-     * @param cameraLayer Specify which layer will be for `FirstPersonOnly` / `ThirdPersonOnly`.
-     */
+    
     setup({ firstPersonOnlyLayer = VRMFirstPerson.DEFAULT_FIRSTPERSON_ONLY_LAYER, thirdPersonOnlyLayer = VRMFirstPerson.DEFAULT_THIRDPERSON_ONLY_LAYER, } = {}) {
         if (this._initializedLayers) {
             return;
@@ -1306,26 +1040,14 @@ class VRMFirstPerson {
         }
     }
 }
-/**
- * A default camera layer for `FirstPersonOnly` layer.
- *
- * @see [[getFirstPersonOnlyLayer]]
- */
+
 VRMFirstPerson.DEFAULT_FIRSTPERSON_ONLY_LAYER = 9;
-/**
- * A default camera layer for `ThirdPersonOnly` layer.
- *
- * @see [[getThirdPersonOnlyLayer]]
- */
+
 VRMFirstPerson.DEFAULT_THIRDPERSON_ONLY_LAYER = 10;
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$3 = new Set(['1.0', '1.0-beta']);
-/**
- * A plugin of GLTFLoader that imports a {@link VRMFirstPerson} from a VRM extension of a GLTF.
- */
+
 class VRMFirstPersonLoaderPlugin {
     get name() {
         return 'VRMFirstPersonLoaderPlugin';
@@ -1345,12 +1067,7 @@ class VRMFirstPersonLoaderPlugin {
             gltf.userData.vrmFirstPerson = yield this._import(gltf, vrmHumanoid);
         });
     }
-    /**
-     * Import a {@link VRMFirstPerson} from a VRM.
-     *
-     * @param gltf A parsed result of GLTF taken from GLTFLoader
-     * @param humanoid A {@link VRMHumanoid} instance that represents the VRM
-     */
+    
     _import(gltf, humanoid) {
         return __awaiter$6(this, void 0, void 0, function* () {
             if (humanoid == null) {
@@ -1446,7 +1163,7 @@ class VRMFirstPersonLoaderPlugin {
     }
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const VRMFirstPersonMeshAnnotationType = {
     Auto: 'auto',
     Both: 'both',
@@ -1488,10 +1205,8 @@ class VRMHumanoidHelper extends THREE.Group {
     }
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/**
- * The list of {@link VRMHumanBoneName}. Dependency aware.
- */
+
+
 const VRMHumanBoneList = [
     'hips',
     'spine',
@@ -1550,12 +1265,8 @@ const VRMHumanBoneList = [
     'rightLittleDistal',
 ];
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/**
- * The names of {@link VRMHumanoid} bone names.
- *
- * Ref: https://github.com/vrm-c/vrm-specification/blob/master/specification/VRMC_vrm-1.0/humanoid.md
- */
+
+
 const VRMHumanBoneName = {
     Hips: 'hips',
     Spine: 'spine',
@@ -1614,12 +1325,8 @@ const VRMHumanBoneName = {
     RightLittleDistal: 'rightLittleDistal',
 };
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/**
- * An object that maps from {@link VRMHumanBoneName} to its parent {@link VRMHumanBoneName}.
- *
- * Ref: https://github.com/vrm-c/vrm-specification/blob/master/specification/VRMC_vrm-1.0/humanoid.md
- */
+
+
 const VRMHumanBoneParentMap = {
     hips: null,
     spine: 'hips',
@@ -1678,12 +1385,7 @@ const VRMHumanBoneParentMap = {
     rightLittleDistal: 'rightLittleIntermediate',
 };
 
-/**
- * A compat function for `Quaternion.invert()` / `Quaternion.inverse()`.
- * `Quaternion.invert()` is introduced in r123 and `Quaternion.inverse()` emits a warning.
- * We are going to use this compat for a while.
- * @param target A target quaternion
- */
+
 function quatInvertCompat$1(target) {
     if (target.invert) {
         target.invert();
@@ -1696,23 +1398,14 @@ function quatInvertCompat$1(target) {
 
 const _v3A$3$2 = new THREE.Vector3();
 const _quatA$4 = new THREE.Quaternion();
-/**
- * A class represents the Rig of a VRM.
- */
+
 class VRMRig {
-    /**
-     * Create a new {@link VRMHumanoid}.
-     * @param humanBones A {@link VRMHumanBones} contains all the bones of the new humanoid
-     */
+    
     constructor(humanBones) {
         this.humanBones = humanBones;
         this.restPose = this.getAbsolutePose();
     }
-    /**
-     * Return the current absolute pose of this humanoid as a {@link VRMPose}.
-     * Note that the output result will contain initial state of the VRM and not compatible between different models.
-     * You might want to use {@link getPose} instead.
-     */
+    
     getAbsolutePose() {
         const pose = {};
         Object.keys(this.humanBones).forEach((vrmBoneNameString) => {
@@ -1730,11 +1423,7 @@ class VRMRig {
         });
         return pose;
     }
-    /**
-     * Return the current pose of this humanoid as a {@link VRMPose}.
-     *
-     * Each transform is a local transform relative from rest pose (T-pose).
-     */
+    
     getPose() {
         const pose = {};
         Object.keys(this.humanBones).forEach((boneNameString) => {
@@ -1761,14 +1450,7 @@ class VRMRig {
         });
         return pose;
     }
-    /**
-     * Let the humanoid do a specified pose.
-     *
-     * Each transform have to be a local transform relative from rest pose (T-pose).
-     * You can pass what you got from {@link getPose}.
-     *
-     * @param poseObject A [[VRMPose]] that represents a single pose
-     */
+    
     setPose(poseObject) {
         Object.entries(poseObject).forEach(([boneNameString, state]) => {
             const boneName = boneNameString;
@@ -1794,9 +1476,7 @@ class VRMRig {
             }
         });
     }
-    /**
-     * Reset the humanoid to its rest pose.
-     */
+    
     resetPose() {
         Object.entries(this.restPose).forEach(([boneName, rest]) => {
             const node = this.getBoneNode(boneName);
@@ -1811,20 +1491,12 @@ class VRMRig {
             }
         });
     }
-    /**
-     * Return a bone bound to a specified {@link VRMHumanBoneName}, as a {@link VRMHumanBone}.
-     *
-     * @param name Name of the bone you want
-     */
+    
     getBone(name) {
         var _a;
         return (_a = this.humanBones[name]) !== null && _a !== void 0 ? _a : undefined;
     }
-    /**
-     * Return a bone bound to a specified {@link VRMHumanBoneName}, as a `THREE.Object3D`.
-     *
-     * @param name Name of the bone you want
-     */
+    
     getBoneNode(name) {
         var _a, _b;
         return (_b = (_a = this.humanBones[name]) === null || _a === void 0 ? void 0 : _a.node) !== null && _b !== void 0 ? _b : null;
@@ -1834,9 +1506,7 @@ class VRMRig {
 const _v3A$2$2 = new THREE.Vector3();
 const _quatA$3$1 = new THREE.Quaternion();
 const _boneWorldPos = new THREE.Vector3();
-/**
- * A class represents the normalized Rig of a VRM.
- */
+
 class VRMHumanoidRig extends VRMRig {
     static _setupTransforms(modelRig) {
         const root = new THREE.Object3D();
@@ -1900,9 +1570,7 @@ class VRMHumanoidRig extends VRMRig {
         this._parentWorldRotations = parentWorldRotations;
         this._boneRotations = boneRotations;
     }
-    /**
-     * Update this humanoid rig.
-     */
+    
     update() {
         VRMHumanBoneList.forEach((boneName) => {
             const boneNode = this.original.getBoneNode(boneName);
@@ -1928,233 +1596,134 @@ class VRMHumanoidRig extends VRMRig {
     }
 }
 
-/**
- * A class represents a humanoid of a VRM.
- */
+
 class VRMHumanoid {
-    /**
-     * @deprecated Deprecated. Use either {@link rawRestPose} or {@link normalizedRestPose} instead.
-     */
+    
     get restPose() {
         console.warn('VRMHumanoid: restPose is deprecated. Use either rawRestPose or normalizedRestPose instead.');
         return this.rawRestPose;
     }
-    /**
-     * A {@link VRMPose} of its raw human bones that is its default state.
-     * Note that it's not compatible with {@link setRawPose} and {@link getRawPose}, since it contains non-relative values of each local transforms.
-     */
+    
     get rawRestPose() {
         return this._rawHumanBones.restPose;
     }
-    /**
-     * A {@link VRMPose} of its normalized human bones that is its default state.
-     * Note that it's not compatible with {@link setNormalizedPose} and {@link getNormalizedPose}, since it contains non-relative values of each local transforms.
-     */
+    
     get normalizedRestPose() {
         return this._normalizedHumanBones.restPose;
     }
-    /**
-     * A map from {@link VRMHumanBoneName} to raw {@link VRMHumanBone}s.
-     */
+    
     get humanBones() {
         return this._rawHumanBones.humanBones;
     }
-    /**
-     * A map from {@link VRMHumanBoneName} to raw {@link VRMHumanBone}s.
-     */
+    
     get rawHumanBones() {
         return this._rawHumanBones.humanBones;
     }
-    /**
-     * A map from {@link VRMHumanBoneName} to normalized {@link VRMHumanBone}s.
-     */
+    
     get normalizedHumanBones() {
         return this._normalizedHumanBones.humanBones;
     }
-    /**
-     * The root of normalized {@link VRMHumanBone}s.
-     */
+    
     get normalizedHumanBonesRoot() {
         return this._normalizedHumanBones.root;
     }
-    /**
-     * Create a new {@link VRMHumanoid}.
-     * @param humanBones A {@link VRMHumanBones} contains all the bones of the new humanoid
-     * @param autoUpdateHumanBones Whether it copies pose from normalizedHumanBones to rawHumanBones on {@link update}. `true` by default.
-     */
+    
     constructor(humanBones, options) {
         var _a;
         this.autoUpdateHumanBones = (_a = options === null || options === void 0 ? void 0 : options.autoUpdateHumanBones) !== null && _a !== void 0 ? _a : true;
         this._rawHumanBones = new VRMRig(humanBones);
         this._normalizedHumanBones = new VRMHumanoidRig(this._rawHumanBones);
     }
-    /**
-     * Copy the given {@link VRMHumanoid} into this one.
-     * @param source The {@link VRMHumanoid} you want to copy
-     * @returns this
-     */
+    
     copy(source) {
         this.autoUpdateHumanBones = source.autoUpdateHumanBones;
         this._rawHumanBones = new VRMRig(source.humanBones);
         this._normalizedHumanBones = new VRMHumanoidRig(this._rawHumanBones);
         return this;
     }
-    /**
-     * Returns a clone of this {@link VRMHumanoid}.
-     * @returns Copied {@link VRMHumanoid}
-     */
+    
     clone() {
         return new VRMHumanoid(this.humanBones, { autoUpdateHumanBones: this.autoUpdateHumanBones }).copy(this);
     }
-    /**
-     * @deprecated Deprecated. Use either {@link getRawAbsolutePose} or {@link getNormalizedAbsolutePose} instead.
-     */
+    
     getAbsolutePose() {
         console.warn('VRMHumanoid: getAbsolutePose() is deprecated. Use either getRawAbsolutePose() or getNormalizedAbsolutePose() instead.');
         return this.getRawAbsolutePose();
     }
-    /**
-     * Return the current absolute pose of this raw human bones as a {@link VRMPose}.
-     * Note that the output result will contain initial state of the VRM and not compatible between different models.
-     * You might want to use {@link getRawPose} instead.
-     */
+    
     getRawAbsolutePose() {
         return this._rawHumanBones.getAbsolutePose();
     }
-    /**
-     * Return the current absolute pose of this normalized human bones as a {@link VRMPose}.
-     * Note that the output result will contain initial state of the VRM and not compatible between different models.
-     * You might want to use {@link getNormalizedPose} instead.
-     */
+    
     getNormalizedAbsolutePose() {
         return this._normalizedHumanBones.getAbsolutePose();
     }
-    /**
-     * @deprecated Deprecated. Use either {@link getRawPose} or {@link getNormalizedPose} instead.
-     */
+    
     getPose() {
         console.warn('VRMHumanoid: getPose() is deprecated. Use either getRawPose() or getNormalizedPose() instead.');
         return this.getRawPose();
     }
-    /**
-     * Return the current pose of raw human bones as a {@link VRMPose}.
-     *
-     * Each transform is a local transform relative from rest pose (T-pose).
-     */
+    
     getRawPose() {
         return this._rawHumanBones.getPose();
     }
-    /**
-     * Return the current pose of normalized human bones as a {@link VRMPose}.
-     *
-     * Each transform is a local transform relative from rest pose (T-pose).
-     */
+    
     getNormalizedPose() {
         return this._normalizedHumanBones.getPose();
     }
-    /**
-     * @deprecated Deprecated. Use either {@link setRawPose} or {@link setNormalizedPose} instead.
-     */
+    
     setPose(poseObject) {
         console.warn('VRMHumanoid: setPose() is deprecated. Use either setRawPose() or setNormalizedPose() instead.');
         return this.setRawPose(poseObject);
     }
-    /**
-     * Let the raw human bones do a specified pose.
-     *
-     * Each transform have to be a local transform relative from rest pose (T-pose).
-     * You can pass what you got from {@link getRawPose}.
-     *
-     * If you are using {@link autoUpdateHumanBones}, you might want to use {@link setNormalizedPose} instead.
-     *
-     * @param poseObject A {@link VRMPose} that represents a single pose
-     */
+    
     setRawPose(poseObject) {
         return this._rawHumanBones.setPose(poseObject);
     }
-    /**
-     * Let the normalized human bones do a specified pose.
-     *
-     * Each transform have to be a local transform relative from rest pose (T-pose).
-     * You can pass what you got from {@link getNormalizedPose}.
-     *
-     * @param poseObject A {@link VRMPose} that represents a single pose
-     */
+    
     setNormalizedPose(poseObject) {
         return this._normalizedHumanBones.setPose(poseObject);
     }
-    /**
-     * @deprecated Deprecated. Use either {@link resetRawPose} or {@link resetNormalizedPose} instead.
-     */
+    
     resetPose() {
         console.warn('VRMHumanoid: resetPose() is deprecated. Use either resetRawPose() or resetNormalizedPose() instead.');
         return this.resetRawPose();
     }
-    /**
-     * Reset the raw humanoid to its rest pose.
-     *
-     * If you are using {@link autoUpdateHumanBones}, you might want to use {@link resetNormalizedPose} instead.
-     */
+    
     resetRawPose() {
         return this._rawHumanBones.resetPose();
     }
-    /**
-     * Reset the normalized humanoid to its rest pose.
-     */
+    
     resetNormalizedPose() {
         return this._normalizedHumanBones.resetPose();
     }
-    /**
-     * @deprecated Deprecated. Use either {@link getRawBone} or {@link getNormalizedBone} instead.
-     */
+    
     getBone(name) {
         console.warn('VRMHumanoid: getBone() is deprecated. Use either getRawBone() or getNormalizedBone() instead.');
         return this.getRawBone(name);
     }
-    /**
-     * Return a raw {@link VRMHumanBone} bound to a specified {@link VRMHumanBoneName}.
-     *
-     * @param name Name of the bone you want
-     */
+    
     getRawBone(name) {
         return this._rawHumanBones.getBone(name);
     }
-    /**
-     * Return a normalized {@link VRMHumanBone} bound to a specified {@link VRMHumanBoneName}.
-     *
-     * @param name Name of the bone you want
-     */
+    
     getNormalizedBone(name) {
         return this._normalizedHumanBones.getBone(name);
     }
-    /**
-     * @deprecated Deprecated. Use either {@link getRawBoneNode} or {@link getNormalizedBoneNode} instead.
-     */
+    
     getBoneNode(name) {
         console.warn('VRMHumanoid: getBoneNode() is deprecated. Use either getRawBoneNode() or getNormalizedBoneNode() instead.');
         return this.getRawBoneNode(name);
     }
-    /**
-     * Return a raw bone as a `THREE.Object3D` bound to a specified {@link VRMHumanBoneName}.
-     *
-     * @param name Name of the bone you want
-     */
+    
     getRawBoneNode(name) {
         return this._rawHumanBones.getBoneNode(name);
     }
-    /**
-     * Return a normalized bone as a `THREE.Object3D` bound to a specified {@link VRMHumanBoneName}.
-     *
-     * @param name Name of the bone you want
-     */
+    
     getNormalizedBoneNode(name) {
         return this._normalizedHumanBones.getBoneNode(name);
     }
-    /**
-     * Update the humanoid component.
-     *
-     * If {@link autoUpdateHumanBones} is `true`, it transfers the pose of normalized human bones to raw human bones.
-     */
+    
     update() {
         if (this.autoUpdateHumanBones) {
             this._normalizedHumanBones.update();
@@ -2162,7 +1731,7 @@ class VRMHumanoid {
     }
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const VRMRequiredHumanBoneName = {
     Hips: 'hips',
     Spine: 'spine',
@@ -2181,22 +1750,16 @@ const VRMRequiredHumanBoneName = {
     RightHand: 'rightHand',
 };
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$2$1 = new Set(['1.0', '1.0-beta']);
-/**
- * A map from old thumb bone names to new thumb bone names
- */
+
 const thumbBoneNameMap = {
     leftThumbProximal: 'leftThumbMetacarpal',
     leftThumbIntermediate: 'leftThumbProximal',
     rightThumbProximal: 'rightThumbMetacarpal',
     rightThumbIntermediate: 'rightThumbProximal',
 };
-/**
- * A plugin of GLTFLoader that imports a {@link VRMHumanoid} from a VRM extension of a GLTF.
- */
+
 class VRMHumanoidLoaderPlugin {
     get name() {
         return 'VRMHumanoidLoaderPlugin';
@@ -2211,11 +1774,7 @@ class VRMHumanoidLoaderPlugin {
             gltf.userData.vrmHumanoid = yield this._import(gltf);
         });
     }
-    /**
-     * Import a {@link VRMHumanoid} from a VRM.
-     *
-     * @param gltf A parsed result of GLTF taken from GLTFLoader
-     */
+    
     _import(gltf) {
         return __awaiter$6(this, void 0, void 0, function* () {
             const v1Result = yield this._v1Import(gltf);
@@ -2250,11 +1809,7 @@ class VRMHumanoidLoaderPlugin {
             if (!schemaHumanoid) {
                 return null;
             }
-            /**
-             * compat: 1.0-beta thumb bone names
-             *
-             * `true` if `leftThumbIntermediate` or `rightThumbIntermediate` exists
-             */
+            
             const existsPreviousThumbName = schemaHumanoid.humanBones.leftThumbIntermediate != null ||
                 schemaHumanoid.humanBones.rightThumbIntermediate != null;
             const humanBones = {};
@@ -2334,11 +1889,7 @@ class VRMHumanoidLoaderPlugin {
             return humanoid;
         });
     }
-    /**
-     * Ensure required bones exist in given human bones.
-     * @param humanBones Human bones
-     * @returns Human bones, no longer partial!
-     */
+    
     _ensureRequiredBonesExist(humanBones) {
         const missingRequiredBones = Object.values(VRMRequiredHumanBoneName).filter((requiredBoneName) => humanBones[requiredBoneName] == null);
         if (missingRequiredBones.length > 0) {
@@ -2537,44 +2088,18 @@ class VRMLookAtHelper extends THREE.Group {
 
 const _position = new THREE.Vector3();
 const _scale = new THREE.Vector3();
-/**
- * A replacement of `Object3D.getWorldQuaternion`.
- * Extract the world quaternion of an object from its world space matrix, without calling `Object3D.updateWorldMatrix`.
- * Use this when you're sure that the world matrix is up-to-date.
- *
- * @param object The object
- * @param out A target quaternion
- */
+
 function getWorldQuaternionLite(object, out) {
     object.matrixWorld.decompose(_position, out, _scale);
     return out;
 }
 
-/**
- * Calculate azimuth / altitude angles from a vector.
- *
- * This returns a difference of angles from (1, 0, 0).
- * Azimuth represents an angle around Y axis.
- * Altitude represents an angle around Z axis.
- * It is rotated in intrinsic Y-Z order.
- *
- * @param vector The vector
- * @returns A tuple contains two angles, `[ azimuth, altitude ]`
- */
+
 function calcAzimuthAltitude(vector) {
     return [Math.atan2(-vector.z, vector.x), Math.atan2(vector.y, Math.sqrt(vector.x * vector.x + vector.z * vector.z))];
 }
 
-/**
- * Make sure the angle is within -PI to PI.
- *
- * @example
- * ```js
- * sanitizeAngle(1.5 * Math.PI) // -0.5 * PI
- * ```
- *
- * @param angle An input angle
- */
+
 function sanitizeAngle(angle) {
     const roundTurn = Math.round(angle / 2.0 / Math.PI);
     return angle - 2.0 * Math.PI * roundTurn;
@@ -2589,66 +2114,38 @@ const _quatB$1$1 = new THREE.Quaternion();
 const _quatC$1 = new THREE.Quaternion();
 const _quatD = new THREE.Quaternion();
 const _eulerA$1 = new THREE.Euler();
-/**
- * A class controls eye gaze movements of a VRM.
- */
+
 class VRMLookAt {
-    /**
-     * Its current angle around Y axis, in degree.
-     */
+    
     get yaw() {
         return this._yaw;
     }
-    /**
-     * Its current angle around Y axis, in degree.
-     */
+    
     set yaw(value) {
         this._yaw = value;
         this._needsUpdate = true;
     }
-    /**
-     * Its current angle around X axis, in degree.
-     */
+    
     get pitch() {
         return this._pitch;
     }
-    /**
-     * Its current angle around X axis, in degree.
-     */
+    
     set pitch(value) {
         this._pitch = value;
         this._needsUpdate = true;
     }
-    /**
-     * @deprecated Use {@link getEuler} instead.
-     */
+    
     get euler() {
         console.warn('VRMLookAt: euler is deprecated. use getEuler() instead.');
         return this.getEuler(new THREE.Euler());
     }
-    /**
-     * Create a new {@link VRMLookAt}.
-     *
-     * @param humanoid A {@link VRMHumanoid}
-     * @param applier A {@link VRMLookAtApplier}
-     */
+    
     constructor(humanoid, applier) {
-        /**
-         * The origin of LookAt. Position offset from the head bone.
-         */
+        
         this.offsetFromHeadBone = new THREE.Vector3();
-        /**
-         * If this is true, the LookAt will be updated automatically by calling {@link update}, towarding the direction to the {@link target}.
-         * `true` by default.
-         *
-         * See also: {@link target}
-         */
+        
         this.autoUpdate = true;
-        /**
-         * The front direction of the face.
-         * Intended to be used for VRM 0.0 compat (VRM 0.0 models are facing Z- instead of Z+).
-         * You usually don't want to touch this.
-         */
+        
         this.faceFront = new THREE.Vector3(0.0, 0.0, 1.0);
         this.humanoid = humanoid;
         this.applier = applier;
@@ -2657,22 +2154,11 @@ class VRMLookAt {
         this._needsUpdate = true;
         this._restHeadWorldQuaternion = this.getLookAtWorldQuaternion(new THREE.Quaternion());
     }
-    /**
-     * Get its yaw-pitch angles as an `Euler`.
-     * Does NOT consider {@link faceFront}; it returns `Euler(0, 0, 0; "YXZ")` by default regardless of the faceFront value.
-     *
-     * @param target The target euler
-     */
+    
     getEuler(target) {
         return target.set(THREE.MathUtils.DEG2RAD * this._pitch, THREE.MathUtils.DEG2RAD * this._yaw, 0.0, 'YXZ');
     }
-    /**
-     * Copy the given {@link VRMLookAt} into this one.
-     * {@link humanoid} must be same as the source one.
-     * {@link applier} will reference the same instance as the source one.
-     * @param source The {@link VRMLookAt} you want to copy
-     * @returns this
-     */
+    
     copy(source) {
         if (this.humanoid !== source.humanoid) {
             throw new Error('VRMLookAt: humanoid must be same in order to copy');
@@ -2684,46 +2170,27 @@ class VRMLookAt {
         this.faceFront.copy(source.faceFront);
         return this;
     }
-    /**
-     * Returns a clone of this {@link VRMLookAt}.
-     * Note that {@link humanoid} and {@link applier} will reference the same instance as this one.
-     * @returns Copied {@link VRMLookAt}
-     */
+    
     clone() {
         return new VRMLookAt(this.humanoid, this.applier).copy(this);
     }
-    /**
-     * Reset the lookAt direction (yaw and pitch) to the initial direction.
-     */
+    
     reset() {
         this._yaw = 0.0;
         this._pitch = 0.0;
         this._needsUpdate = true;
     }
-    /**
-     * Get its lookAt position in world coordinate.
-     *
-     * @param target A target `THREE.Vector3`
-     */
+    
     getLookAtWorldPosition(target) {
         const head = this.humanoid.getRawBoneNode('head');
         return target.copy(this.offsetFromHeadBone).applyMatrix4(head.matrixWorld);
     }
-    /**
-     * Get its lookAt rotation in world coordinate.
-     * Does NOT consider {@link faceFront}.
-     *
-     * @param target A target `THREE.Quaternion`
-     */
+    
     getLookAtWorldQuaternion(target) {
         const head = this.humanoid.getRawBoneNode('head');
         return getWorldQuaternionLite(head, target);
     }
-    /**
-     * Get a quaternion that rotates the +Z unit vector of the humanoid Head to the {@link faceFront} direction.
-     *
-     * @param target A target `THREE.Quaternion`
-     */
+    
     getFaceFrontQuaternion(target) {
         if (this.faceFront.distanceToSquared(VEC3_POSITIVE_Z$1) < 0.01) {
             return target.copy(this._restHeadWorldQuaternion).invert();
@@ -2732,11 +2199,7 @@ class VRMLookAt {
         _eulerA$1.set(0.0, 0.5 * Math.PI + faceFrontAzimuth, faceFrontAltitude, 'YZX');
         return target.setFromEuler(_eulerA$1).premultiply(_quatD.copy(this._restHeadWorldQuaternion).invert());
     }
-    /**
-     * Get its LookAt direction in world coordinate.
-     *
-     * @param target A target `THREE.Vector3`
-     */
+    
     getLookAtWorldDirection(target) {
         this.getLookAtWorldQuaternion(_quatB$1$1);
         this.getFaceFrontQuaternion(_quatC$1);
@@ -2746,15 +2209,7 @@ class VRMLookAt {
             .applyQuaternion(_quatC$1)
             .applyEuler(this.getEuler(_eulerA$1));
     }
-    /**
-     * Set its lookAt target position.
-     *
-     * Note that its result will be instantly overwritten if {@link VRMLookAtHead.autoUpdate} is enabled.
-     *
-     * If you want to track an object continuously, you might want to use {@link target} instead.
-     *
-     * @param position A target position, in world space
-     */
+    
     lookAt(position) {
         const headRotDiffInv = _quatA$1$1
             .copy(this._restHeadWorldQuaternion)
@@ -2769,12 +2224,7 @@ class VRMLookAt {
         this._pitch = THREE.MathUtils.RAD2DEG * pitch;
         this._needsUpdate = true;
     }
-    /**
-     * Update the VRMLookAtHead.
-     * If {@link autoUpdate} is enabled, this will make it look at the {@link target}.
-     *
-     * @param delta deltaTime, it isn't used though. You can use the parameter if you want to use this in your own extended {@link VRMLookAt}.
-     */
+    
     update(delta) {
         if (this.target != null && this.autoUpdate) {
             this.lookAt(this.target.getWorldPosition(_v3A$6));
@@ -2791,20 +2241,9 @@ const VEC3_POSITIVE_Z = new THREE.Vector3(0.0, 0.0, 1.0);
 const _quatA$6 = new THREE.Quaternion();
 const _quatB$3 = new THREE.Quaternion();
 const _eulerA = new THREE.Euler(0.0, 0.0, 0.0, 'YXZ');
-/**
- * A class that applies eye gaze directions to a VRM.
- * It will be used by {@link VRMLookAt}.
- */
+
 class VRMLookAtBoneApplier {
-    /**
-     * Create a new {@link VRMLookAtBoneApplier}.
-     *
-     * @param humanoid A {@link VRMHumanoid}
-     * @param rangeMapHorizontalInner A {@link VRMLookAtRangeMap} used for inner transverse direction
-     * @param rangeMapHorizontalOuter A {@link VRMLookAtRangeMap} used for outer transverse direction
-     * @param rangeMapVerticalDown A {@link VRMLookAtRangeMap} used for down direction
-     * @param rangeMapVerticalUp A {@link VRMLookAtRangeMap} used for up direction
-     */
+    
     constructor(humanoid, rangeMapHorizontalInner, rangeMapHorizontalOuter, rangeMapVerticalDown, rangeMapVerticalUp) {
         this.humanoid = humanoid;
         this.rangeMapHorizontalInner = rangeMapHorizontalInner;
@@ -2827,12 +2266,7 @@ class VRMLookAtBoneApplier {
             getWorldQuaternionLite(rightEye.parent, this._restRightEyeParentWorldQuat);
         }
     }
-    /**
-     * Apply the input angle to its associated VRM model.
-     *
-     * @param yaw Rotation around Y axis, in degree
-     * @param pitch Rotation around X axis, in degree
-     */
+    
     applyYawPitch(yaw, pitch) {
         const leftEye = this.humanoid.getRawBoneNode('leftEye');
         const rightEye = this.humanoid.getRawBoneNode('rightEye');
@@ -2885,20 +2319,14 @@ class VRMLookAtBoneApplier {
                 .multiply(this._restQuatRightEye);
         }
     }
-    /**
-     * @deprecated Use {@link applyYawPitch} instead.
-     */
+    
     lookAt(euler) {
         console.warn('VRMLookAtBoneApplier: lookAt() is deprecated. use apply() instead.');
         const yaw = THREE.MathUtils.RAD2DEG * euler.y;
         const pitch = THREE.MathUtils.RAD2DEG * euler.x;
         this.applyYawPitch(yaw, pitch);
     }
-    /**
-     * Get a quaternion that rotates the world-space +Z unit vector to the {@link faceFront} direction.
-     *
-     * @param target A target `THREE.Quaternion`
-     */
+    
     _getWorldFaceFrontQuat(target) {
         if (this.faceFront.distanceToSquared(VEC3_POSITIVE_Z) < 0.01) {
             return target.identity();
@@ -2908,25 +2336,12 @@ class VRMLookAtBoneApplier {
         return target.setFromEuler(_eulerA);
     }
 }
-/**
- * Represent its type of applier.
- */
+
 VRMLookAtBoneApplier.type = 'bone';
 
-/**
- * A class that applies eye gaze directions to a VRM.
- * It will be used by {@link VRMLookAt}.
- */
+
 class VRMLookAtExpressionApplier {
-    /**
-     * Create a new {@link VRMLookAtExpressionApplier}.
-     *
-     * @param expressions A {@link VRMExpressionManager}
-     * @param rangeMapHorizontalInner A {@link VRMLookAtRangeMap} used for inner transverse direction
-     * @param rangeMapHorizontalOuter A {@link VRMLookAtRangeMap} used for outer transverse direction
-     * @param rangeMapVerticalDown A {@link VRMLookAtRangeMap} used for down direction
-     * @param rangeMapVerticalUp A {@link VRMLookAtRangeMap} used for up direction
-     */
+    
     constructor(expressions, rangeMapHorizontalInner, rangeMapHorizontalOuter, rangeMapVerticalDown, rangeMapVerticalUp) {
         this.expressions = expressions;
         this.rangeMapHorizontalInner = rangeMapHorizontalInner;
@@ -2934,12 +2349,7 @@ class VRMLookAtExpressionApplier {
         this.rangeMapVerticalDown = rangeMapVerticalDown;
         this.rangeMapVerticalUp = rangeMapVerticalUp;
     }
-    /**
-     * Apply the input angle to its associated VRM model.
-     *
-     * @param yaw Rotation around Y axis, in degree
-     * @param pitch Rotation around X axis, in degree
-     */
+    
     applyYawPitch(yaw, pitch) {
         if (pitch < 0.0) {
             this.expressions.setValue('lookDown', 0.0);
@@ -2958,9 +2368,7 @@ class VRMLookAtExpressionApplier {
             this.expressions.setValue('lookLeft', this.rangeMapHorizontalOuter.map(yaw));
         }
     }
-    /**
-     * @deprecated Use {@link applyYawPitch} instead.
-     */
+    
     lookAt(euler) {
         console.warn('VRMLookAtBoneApplier: lookAt() is deprecated. use apply() instead.');
         const yaw = THREE.MathUtils.RAD2DEG * euler.y;
@@ -2968,43 +2376,26 @@ class VRMLookAtExpressionApplier {
         this.applyYawPitch(yaw, pitch);
     }
 }
-/**
- * Represent its type of applier.
- */
+
 VRMLookAtExpressionApplier.type = 'expression';
 
 class VRMLookAtRangeMap {
-    /**
-     * Create a new {@link VRMLookAtRangeMap}.
-     *
-     * @param inputMaxValue The {@link inputMaxValue} of the map
-     * @param outputScale The {@link outputScale} of the map
-     */
+    
     constructor(inputMaxValue, outputScale) {
         this.inputMaxValue = inputMaxValue;
         this.outputScale = outputScale;
     }
-    /**
-     * Evaluate an input value and output a mapped value.
-     * @param src The input value
-     */
+    
     map(src) {
         return this.outputScale * saturate(src / this.inputMaxValue);
     }
 }
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$1$1 = new Set(['1.0', '1.0-beta']);
-/**
- * The minimum permitted value for {@link V1VRMSchema.LookAtRangeMap.inputMaxValue}.
- * If the given value is smaller than this, the loader shows a warning and clamps up the value.
- */
+
 const INPUT_MAX_VALUE_MINIMUM = 0.01;
-/**
- * A plugin of GLTFLoader that imports a {@link VRMLookAt} from a VRM extension of a GLTF.
- */
+
 class VRMLookAtLoaderPlugin {
     get name() {
         return 'VRMLookAtLoaderPlugin';
@@ -3032,13 +2423,7 @@ class VRMLookAtLoaderPlugin {
             gltf.userData.vrmLookAt = yield this._import(gltf, vrmHumanoid, vrmExpressionManager);
         });
     }
-    /**
-     * Import a {@link VRMLookAt} from a VRM.
-     *
-     * @param gltf A parsed result of GLTF taken from GLTFLoader
-     * @param humanoid A {@link VRMHumanoid} instance that represents the VRM
-     * @param expressions A {@link VRMExpressionManager} instance that represents the VRM
-     */
+    
     _import(gltf, humanoid, expressions) {
         return __awaiter$6(this, void 0, void 0, function* () {
             if (humanoid == null || expressions == null) {
@@ -3166,18 +2551,14 @@ class VRMLookAtLoaderPlugin {
     }
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/**
- * Represents a type of applier.
- */
+
+
 const VRMLookAtTypeName = {
     Bone: 'bone',
     Expression: 'expression',
 };
 
-/**
- * Yoinked from https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/GLTFLoader.js
- */
+
 function resolveURL(url, path) {
     if (typeof url !== 'string' || url === '')
         return '';
@@ -3193,13 +2574,9 @@ function resolveURL(url, path) {
     return path + url;
 }
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$5 = new Set(['1.0', '1.0-beta']);
-/**
- * A plugin of GLTFLoader that imports a {@link VRM1Meta} from a VRM extension of a GLTF.
- */
+
 class VRMMetaLoaderPlugin {
     get name() {
         return 'VRMMetaLoaderPlugin';
@@ -3349,16 +2726,9 @@ class VRMMetaLoaderPlugin {
     }
 }
 
-/**
- * A class that represents a single VRM model.
- * This class only includes core spec of the VRM (`VRMC_vrm`).
- */
+
 class VRMCore {
-    /**
-     * Create a new VRM instance.
-     *
-     * @param params [[VRMParameters]] that represents components of the VRM
-     */
+    
     constructor(params) {
         this.scene = params.scene;
         this.meta = params.meta;
@@ -3367,13 +2737,7 @@ class VRMCore {
         this.firstPerson = params.firstPerson;
         this.lookAt = params.lookAt;
     }
-    /**
-     * **You need to call this on your update loop.**
-     *
-     * This function updates every VRM components.
-     *
-     * @param delta deltaTime
-     */
+    
     update(delta) {
         this.humanoid.update();
         if (this.lookAt) {
@@ -3425,28 +2789,16 @@ class VRMCoreLoaderPlugin {
     }
 }
 
-/**
- * A class that represents a single VRM model.
- */
+
 class VRM extends VRMCore {
-    /**
-     * Create a new VRM instance.
-     *
-     * @param params [[VRMParameters]] that represents components of the VRM
-     */
+    
     constructor(params) {
         super(params);
         this.materials = params.materials;
         this.springBoneManager = params.springBoneManager;
         this.nodeConstraintManager = params.nodeConstraintManager;
     }
-    /**
-     * **You need to call this on your update loop.**
-     *
-     * This function updates every VRM components.
-     *
-     * @param delta deltaTime
-     */
+    
     update(delta) {
         super.update(delta);
         if (this.nodeConstraintManager) {
@@ -3465,20 +2817,7 @@ class VRM extends VRMCore {
     }
 }
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter$5(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -3495,29 +2834,9 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
-/*!
- * @pixiv/three-vrm-materials-mtoon v2.1.2
- * MToon (toon material) module for @pixiv/three-vrm
- *
- * Copyright (c) 2020-2024 pixiv Inc.
- * @pixiv/three-vrm-materials-mtoon is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter$4(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -3536,34 +2855,22 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
 
 var vertexShader = "// #define PHONG\n\nvarying vec3 vViewPosition;\n\n#ifndef FLAT_SHADED\n  varying vec3 vNormal;\n#endif\n\n#include <common>\n\n// #include <uv_pars_vertex>\n#ifdef MTOON_USE_UV\n  varying vec2 vUv;\n\n  // COMPAT: pre-r151 uses a common uvTransform\n  #if THREE_VRM_THREE_REVISION < 151\n    uniform mat3 uvTransform;\n  #endif\n#endif\n\n// #include <uv2_pars_vertex>\n// COMAPT: pre-r151 uses uv2 for lightMap and aoMap\n#if THREE_VRM_THREE_REVISION < 151\n  #if defined( USE_LIGHTMAP ) || defined( USE_AOMAP )\n    attribute vec2 uv2;\n    varying vec2 vUv2;\n    uniform mat3 uv2Transform;\n  #endif\n#endif\n\n// #include <displacementmap_pars_vertex>\n// #include <envmap_pars_vertex>\n#include <color_pars_vertex>\n#include <fog_pars_vertex>\n#include <morphtarget_pars_vertex>\n#include <skinning_pars_vertex>\n#include <shadowmap_pars_vertex>\n#include <logdepthbuf_pars_vertex>\n#include <clipping_planes_pars_vertex>\n\n#ifdef USE_OUTLINEWIDTHMULTIPLYTEXTURE\n  uniform sampler2D outlineWidthMultiplyTexture;\n  uniform mat3 outlineWidthMultiplyTextureUvTransform;\n#endif\n\nuniform float outlineWidthFactor;\n\nvoid main() {\n\n  // #include <uv_vertex>\n  #ifdef MTOON_USE_UV\n    // COMPAT: pre-r151 uses a common uvTransform\n    #if THREE_VRM_THREE_REVISION >= 151\n      vUv = uv;\n    #else\n      vUv = ( uvTransform * vec3( uv, 1 ) ).xy;\n    #endif\n  #endif\n\n  // #include <uv2_vertex>\n  // COMAPT: pre-r151 uses uv2 for lightMap and aoMap\n  #if THREE_VRM_THREE_REVISION < 151\n    #if defined( USE_LIGHTMAP ) || defined( USE_AOMAP )\n      vUv2 = ( uv2Transform * vec3( uv2, 1 ) ).xy;\n    #endif\n  #endif\n\n  #include <color_vertex>\n\n  #include <beginnormal_vertex>\n  #include <morphnormal_vertex>\n  #include <skinbase_vertex>\n  #include <skinnormal_vertex>\n\n  // we need this to compute the outline properly\n  objectNormal = normalize( objectNormal );\n\n  #include <defaultnormal_vertex>\n\n  #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED\n    vNormal = normalize( transformedNormal );\n  #endif\n\n  #include <begin_vertex>\n\n  #include <morphtarget_vertex>\n  #include <skinning_vertex>\n  // #include <displacementmap_vertex>\n  #include <project_vertex>\n  #include <logdepthbuf_vertex>\n  #include <clipping_planes_vertex>\n\n  vViewPosition = - mvPosition.xyz;\n\n  float outlineTex = 1.0;\n\n  #ifdef OUTLINE\n    #ifdef USE_OUTLINEWIDTHMULTIPLYTEXTURE\n      vec2 outlineWidthMultiplyTextureUv = ( outlineWidthMultiplyTextureUvTransform * vec3( vUv, 1 ) ).xy;\n      outlineTex = texture2D( outlineWidthMultiplyTexture, outlineWidthMultiplyTextureUv ).g;\n    #endif\n\n    #ifdef OUTLINE_WIDTH_WORLD\n      float worldNormalLength = length( transformedNormal );\n      vec3 outlineOffset = outlineWidthFactor * outlineTex * worldNormalLength * objectNormal;\n      gl_Position = projectionMatrix * modelViewMatrix * vec4( outlineOffset + transformed, 1.0 );\n    #endif\n\n    #ifdef OUTLINE_WIDTH_SCREEN\n      vec3 clipNormal = ( projectionMatrix * modelViewMatrix * vec4( objectNormal, 0.0 ) ).xyz;\n      vec2 projectedNormal = normalize( clipNormal.xy );\n      projectedNormal.x *= projectionMatrix[ 0 ].x / projectionMatrix[ 1 ].y;\n      gl_Position.xy += 2.0 * outlineWidthFactor * outlineTex * projectedNormal.xy;\n    #endif\n\n    gl_Position.z += 1E-6 * gl_Position.w; // anti-artifact magic\n  #endif\n\n  #include <worldpos_vertex>\n  // #include <envmap_vertex>\n  #include <shadowmap_vertex>\n  #include <fog_vertex>\n\n}";
 
-var fragmentShader = "// #define PHONG\n\nuniform vec3 litFactor;\n\nuniform float opacity;\n\nuniform vec3 shadeColorFactor;\n#ifdef USE_SHADEMULTIPLYTEXTURE\n  uniform sampler2D shadeMultiplyTexture;\n  uniform mat3 shadeMultiplyTextureUvTransform;\n#endif\n\nuniform float shadingShiftFactor;\nuniform float shadingToonyFactor;\n\n#ifdef USE_SHADINGSHIFTTEXTURE\n  uniform sampler2D shadingShiftTexture;\n  uniform mat3 shadingShiftTextureUvTransform;\n  uniform float shadingShiftTextureScale;\n#endif\n\nuniform float giEqualizationFactor;\n\nuniform vec3 parametricRimColorFactor;\n#ifdef USE_RIMMULTIPLYTEXTURE\n  uniform sampler2D rimMultiplyTexture;\n  uniform mat3 rimMultiplyTextureUvTransform;\n#endif\nuniform float rimLightingMixFactor;\nuniform float parametricRimFresnelPowerFactor;\nuniform float parametricRimLiftFactor;\n\n#ifdef USE_MATCAPTEXTURE\n  uniform vec3 matcapFactor;\n  uniform sampler2D matcapTexture;\n  uniform mat3 matcapTextureUvTransform;\n#endif\n\nuniform vec3 emissive;\nuniform float emissiveIntensity;\n\nuniform vec3 outlineColorFactor;\nuniform float outlineLightingMixFactor;\n\n#ifdef USE_UVANIMATIONMASKTEXTURE\n  uniform sampler2D uvAnimationMaskTexture;\n  uniform mat3 uvAnimationMaskTextureUvTransform;\n#endif\n\nuniform float uvAnimationScrollXOffset;\nuniform float uvAnimationScrollYOffset;\nuniform float uvAnimationRotationPhase;\n\n#include <common>\n#include <packing>\n#include <dithering_pars_fragment>\n#include <color_pars_fragment>\n\n// #include <uv_pars_fragment>\n#if ( defined( MTOON_USE_UV ) && !defined( MTOON_UVS_VERTEX_ONLY ) )\n  varying vec2 vUv;\n#endif\n\n// #include <uv2_pars_fragment>\n// COMAPT: pre-r151 uses uv2 for lightMap and aoMap\n#if THREE_VRM_THREE_REVISION < 151\n  #if defined( USE_LIGHTMAP ) || defined( USE_AOMAP )\n    varying vec2 vUv2;\n  #endif\n#endif\n\n#include <map_pars_fragment>\n\n#ifdef USE_MAP\n  uniform mat3 mapUvTransform;\n#endif\n\n// #include <alphamap_pars_fragment>\n\n#if THREE_VRM_THREE_REVISION >= 132\n  #include <alphatest_pars_fragment>\n#endif\n\n#include <aomap_pars_fragment>\n// #include <lightmap_pars_fragment>\n#include <emissivemap_pars_fragment>\n\n#ifdef USE_EMISSIVEMAP\n  uniform mat3 emissiveMapUvTransform;\n#endif\n\n// #include <envmap_common_pars_fragment>\n// #include <envmap_pars_fragment>\n// #include <cube_uv_reflection_fragment>\n#include <fog_pars_fragment>\n\n// #include <bsdfs>\n// COMPAT: pre-r151 doesn't have BRDF_Lambert in <common>\n#if THREE_VRM_THREE_REVISION < 151\n  vec3 BRDF_Lambert( const in vec3 diffuseColor ) {\n    return RECIPROCAL_PI * diffuseColor;\n  }\n#endif\n\n#include <lights_pars_begin>\n\n#if THREE_VRM_THREE_REVISION >= 132\n  #include <normal_pars_fragment>\n#endif\n\n// #include <lights_phong_pars_fragment>\nvarying vec3 vViewPosition;\n\n#if THREE_VRM_THREE_REVISION < 132\n  #ifndef FLAT_SHADED\n    varying vec3 vNormal;\n  #endif\n#endif\n\nstruct MToonMaterial {\n  vec3 diffuseColor;\n  vec3 shadeColor;\n  float shadingShift;\n};\n\nfloat linearstep( float a, float b, float t ) {\n  return clamp( ( t - a ) / ( b - a ), 0.0, 1.0 );\n}\n\n/**\n * Convert NdotL into toon shading factor using shadingShift and shadingToony\n */\nfloat getShading(\n  const in float dotNL,\n  const in float shadow,\n  const in float shadingShift\n) {\n  float shading = dotNL;\n  shading = shading + shadingShift;\n  shading = linearstep( -1.0 + shadingToonyFactor, 1.0 - shadingToonyFactor, shading );\n  shading *= shadow;\n  return shading;\n}\n\n/**\n * Mix diffuseColor and shadeColor using shading factor and light color\n */\nvec3 getDiffuse(\n  const in MToonMaterial material,\n  const in float shading,\n  in vec3 lightColor\n) {\n  #ifdef DEBUG_LITSHADERATE\n    return vec3( BRDF_Lambert( shading * lightColor ) );\n  #endif\n\n  #if THREE_VRM_THREE_REVISION < 132\n    #ifndef PHYSICALLY_CORRECT_LIGHTS\n      lightColor *= PI;\n    #endif\n  #endif\n\n  vec3 col = lightColor * BRDF_Lambert( mix( material.shadeColor, material.diffuseColor, shading ) );\n\n  // The \"comment out if you want to PBR absolutely\" line\n  #ifdef V0_COMPAT_SHADE\n    col = min( col, material.diffuseColor );\n  #endif\n\n  return col;\n}\n\n// COMPAT: pre-r156 uses a struct GeometricContext\n#if THREE_VRM_THREE_REVISION >= 157\n  void RE_Direct_MToon( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in MToonMaterial material, const in float shadow, inout ReflectedLight reflectedLight ) {\n    float dotNL = clamp( dot( geometryNormal, directLight.direction ), -1.0, 1.0 );\n    vec3 irradiance = directLight.color;\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n\n    irradiance *= dotNL;\n\n    float shading = getShading( dotNL, shadow, material.shadingShift );\n\n    // toon shaded diffuse\n    reflectedLight.directDiffuse += getDiffuse( material, shading, directLight.color );\n  }\n\n  void RE_IndirectDiffuse_MToon( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in MToonMaterial material, inout ReflectedLight reflectedLight ) {\n    // indirect diffuse will use diffuseColor, no shadeColor involved\n    reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n  }\n#else\n  void RE_Direct_MToon( const in IncidentLight directLight, const in GeometricContext geometry, const in MToonMaterial material, const in float shadow, inout ReflectedLight reflectedLight ) {\n    float dotNL = clamp( dot( geometry.normal, directLight.direction ), -1.0, 1.0 );\n    vec3 irradiance = directLight.color;\n\n    #if THREE_VRM_THREE_REVISION < 132\n      #ifndef PHYSICALLY_CORRECT_LIGHTS\n        irradiance *= PI;\n      #endif\n    #endif\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n\n    irradiance *= dotNL;\n\n    float shading = getShading( dotNL, shadow, material.shadingShift );\n\n    // toon shaded diffuse\n    reflectedLight.directDiffuse += getDiffuse( material, shading, directLight.color );\n  }\n\n  void RE_IndirectDiffuse_MToon( const in vec3 irradiance, const in GeometricContext geometry, const in MToonMaterial material, inout ReflectedLight reflectedLight ) {\n    // indirect diffuse will use diffuseColor, no shadeColor involved\n    reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n  }\n#endif\n\n#define RE_Direct RE_Direct_MToon\n#define RE_IndirectDiffuse RE_IndirectDiffuse_MToon\n#define Material_LightProbeLOD( material ) (0)\n\n#include <shadowmap_pars_fragment>\n// #include <bumpmap_pars_fragment>\n\n// #include <normalmap_pars_fragment>\n#ifdef USE_NORMALMAP\n\n  uniform sampler2D normalMap;\n  uniform mat3 normalMapUvTransform;\n  uniform vec2 normalScale;\n\n#endif\n\n// COMPAT: USE_NORMALMAP_OBJECTSPACE used to be OBJECTSPACE_NORMALMAP in pre-r151\n#if defined( USE_NORMALMAP_OBJECTSPACE ) || defined( OBJECTSPACE_NORMALMAP )\n\n  uniform mat3 normalMatrix;\n\n#endif\n\n// COMPAT: USE_NORMALMAP_TANGENTSPACE used to be TANGENTSPACE_NORMALMAP in pre-r151\n#if ! defined ( USE_TANGENT ) && ( defined ( USE_NORMALMAP_TANGENTSPACE ) || defined ( TANGENTSPACE_NORMALMAP ) )\n\n  // Per-Pixel Tangent Space Normal Mapping\n  // http://hacksoflife.blogspot.ch/2009/11/per-pixel-tangent-space-normal-mapping.html\n\n  // three-vrm specific change: it requires `uv` as an input in order to support uv scrolls\n\n  // Temporary compat against shader change @ Three.js r126, r151\n  #if THREE_VRM_THREE_REVISION >= 151\n\n    mat3 getTangentFrame( vec3 eye_pos, vec3 surf_norm, vec2 uv ) {\n\n      vec3 q0 = dFdx( eye_pos.xyz );\n      vec3 q1 = dFdy( eye_pos.xyz );\n      vec2 st0 = dFdx( uv.st );\n      vec2 st1 = dFdy( uv.st );\n\n      vec3 N = surf_norm;\n\n      vec3 q1perp = cross( q1, N );\n      vec3 q0perp = cross( N, q0 );\n\n      vec3 T = q1perp * st0.x + q0perp * st1.x;\n      vec3 B = q1perp * st0.y + q0perp * st1.y;\n\n      float det = max( dot( T, T ), dot( B, B ) );\n      float scale = ( det == 0.0 ) ? 0.0 : inversesqrt( det );\n\n      return mat3( T * scale, B * scale, N );\n\n    }\n\n  #elif THREE_VRM_THREE_REVISION >= 126\n\n    vec3 perturbNormal2Arb( vec2 uv, vec3 eye_pos, vec3 surf_norm, vec3 mapN, float faceDirection ) {\n\n      vec3 q0 = vec3( dFdx( eye_pos.x ), dFdx( eye_pos.y ), dFdx( eye_pos.z ) );\n      vec3 q1 = vec3( dFdy( eye_pos.x ), dFdy( eye_pos.y ), dFdy( eye_pos.z ) );\n      vec2 st0 = dFdx( uv.st );\n      vec2 st1 = dFdy( uv.st );\n\n      vec3 N = normalize( surf_norm );\n\n      vec3 q1perp = cross( q1, N );\n      vec3 q0perp = cross( N, q0 );\n\n      vec3 T = q1perp * st0.x + q0perp * st1.x;\n      vec3 B = q1perp * st0.y + q0perp * st1.y;\n\n      // three-vrm specific change: Workaround for the issue that happens when delta of uv = 0.0\n      // TODO: Is this still required? Or shall I make a PR about it?\n      if ( length( T ) == 0.0 || length( B ) == 0.0 ) {\n        return surf_norm;\n      }\n\n      float det = max( dot( T, T ), dot( B, B ) );\n      float scale = ( det == 0.0 ) ? 0.0 : faceDirection * inversesqrt( det );\n\n      return normalize( T * ( mapN.x * scale ) + B * ( mapN.y * scale ) + N * mapN.z );\n\n    }\n\n  #else\n\n    vec3 perturbNormal2Arb( vec2 uv, vec3 eye_pos, vec3 surf_norm, vec3 mapN ) {\n\n      // Workaround for Adreno 3XX dFd*( vec3 ) bug. See #9988\n\n      vec3 q0 = vec3( dFdx( eye_pos.x ), dFdx( eye_pos.y ), dFdx( eye_pos.z ) );\n      vec3 q1 = vec3( dFdy( eye_pos.x ), dFdy( eye_pos.y ), dFdy( eye_pos.z ) );\n      vec2 st0 = dFdx( uv.st );\n      vec2 st1 = dFdy( uv.st );\n\n      float scale = sign( st1.t * st0.s - st0.t * st1.s ); // we do not care about the magnitude\n\n      vec3 S = ( q0 * st1.t - q1 * st0.t ) * scale;\n      vec3 T = ( - q0 * st1.s + q1 * st0.s ) * scale;\n\n      // three-vrm specific change: Workaround for the issue that happens when delta of uv = 0.0\n      // TODO: Is this still required? Or shall I make a PR about it?\n\n      if ( length( S ) == 0.0 || length( T ) == 0.0 ) {\n        return surf_norm;\n      }\n\n      S = normalize( S );\n      T = normalize( T );\n      vec3 N = normalize( surf_norm );\n\n      #ifdef DOUBLE_SIDED\n\n        // Workaround for Adreno GPUs gl_FrontFacing bug. See #15850 and #10331\n\n        bool frontFacing = dot( cross( S, T ), N ) > 0.0;\n\n        mapN.xy *= ( float( frontFacing ) * 2.0 - 1.0 );\n\n      #else\n\n        mapN.xy *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\n      #endif\n\n      mat3 tsn = mat3( S, T, N );\n      return normalize( tsn * mapN );\n\n    }\n\n  #endif\n\n#endif\n\n// #include <specularmap_pars_fragment>\n#include <logdepthbuf_pars_fragment>\n#include <clipping_planes_pars_fragment>\n\n// == post correction ==========================================================\nvoid postCorrection() {\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n  #include <fog_fragment>\n  #include <premultiplied_alpha_fragment>\n  #include <dithering_fragment>\n}\n\n// == main procedure ===========================================================\nvoid main() {\n  #include <clipping_planes_fragment>\n\n  vec2 uv = vec2(0.5, 0.5);\n\n  #if ( defined( MTOON_USE_UV ) && !defined( MTOON_UVS_VERTEX_ONLY ) )\n    uv = vUv;\n\n    float uvAnimMask = 1.0;\n    #ifdef USE_UVANIMATIONMASKTEXTURE\n      vec2 uvAnimationMaskTextureUv = ( uvAnimationMaskTextureUvTransform * vec3( uv, 1 ) ).xy;\n      uvAnimMask = texture2D( uvAnimationMaskTexture, uvAnimationMaskTextureUv ).b;\n    #endif\n\n    float uvRotCos = cos( uvAnimationRotationPhase * uvAnimMask );\n    float uvRotSin = sin( uvAnimationRotationPhase * uvAnimMask );\n    uv = mat2( uvRotCos, -uvRotSin, uvRotSin, uvRotCos ) * ( uv - 0.5 ) + 0.5;\n    uv = uv + vec2( uvAnimationScrollXOffset, uvAnimationScrollYOffset ) * uvAnimMask;\n  #endif\n\n  #ifdef DEBUG_UV\n    gl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );\n    #if ( defined( MTOON_USE_UV ) && !defined( MTOON_UVS_VERTEX_ONLY ) )\n      gl_FragColor = vec4( uv, 0.0, 1.0 );\n    #endif\n    return;\n  #endif\n\n  vec4 diffuseColor = vec4( litFactor, opacity );\n  ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );\n  vec3 totalEmissiveRadiance = emissive * emissiveIntensity;\n\n  #include <logdepthbuf_fragment>\n\n  // #include <map_fragment>\n  #ifdef USE_MAP\n    vec2 mapUv = ( mapUvTransform * vec3( uv, 1 ) ).xy;\n    vec4 sampledDiffuseColor = texture2D( map, mapUv );\n    #ifdef DECODE_VIDEO_TEXTURE\n      sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );\n    #endif\n    diffuseColor *= sampledDiffuseColor;\n  #endif\n\n  // #include <color_fragment>\n  #if ( defined( USE_COLOR ) && !defined( IGNORE_VERTEX_COLOR ) )\n    diffuseColor.rgb *= vColor;\n  #endif\n\n  // #include <alphamap_fragment>\n\n  #include <alphatest_fragment>\n\n  // #include <specularmap_fragment>\n\n  // #include <normal_fragment_begin>\n  float faceDirection = gl_FrontFacing ? 1.0 : -1.0;\n\n  #ifdef FLAT_SHADED\n\n    vec3 fdx = dFdx( vViewPosition );\n    vec3 fdy = dFdy( vViewPosition );\n    vec3 normal = normalize( cross( fdx, fdy ) );\n\n  #else\n\n    vec3 normal = normalize( vNormal );\n\n    #ifdef DOUBLE_SIDED\n\n      normal *= faceDirection;\n\n    #endif\n\n  #endif\n\n  #ifdef USE_NORMALMAP\n\n    vec2 normalMapUv = ( normalMapUvTransform * vec3( uv, 1 ) ).xy;\n\n  #endif\n\n  #ifdef USE_NORMALMAP_TANGENTSPACE\n\n    #ifdef USE_TANGENT\n\n      mat3 tbn = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n\n    #else\n\n      mat3 tbn = getTangentFrame( - vViewPosition, normal, normalMapUv );\n\n    #endif\n\n    #if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n\n      tbn[0] *= faceDirection;\n      tbn[1] *= faceDirection;\n\n    #endif\n\n  #endif\n\n  #ifdef USE_CLEARCOAT_NORMALMAP\n\n    #ifdef USE_TANGENT\n\n      mat3 tbn2 = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n\n    #else\n\n      mat3 tbn2 = getTangentFrame( - vViewPosition, normal, vClearcoatNormalMapUv );\n\n    #endif\n\n    #if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n\n      tbn2[0] *= faceDirection;\n      tbn2[1] *= faceDirection;\n\n    #endif\n\n  #endif\n\n  // non perturbed normal for clearcoat among others\n\n  vec3 nonPerturbedNormal = normal;\n\n  #ifdef OUTLINE\n    normal *= -1.0;\n  #endif\n\n  // #include <normal_fragment_maps>\n\n  // COMPAT: USE_NORMALMAP_OBJECTSPACE used to be OBJECTSPACE_NORMALMAP in pre-r151\n  #if defined( USE_NORMALMAP_OBJECTSPACE ) || defined( OBJECTSPACE_NORMALMAP )\n\n    normal = texture2D( normalMap, normalMapUv ).xyz * 2.0 - 1.0; // overrides both flatShading and attribute normals\n\n    #ifdef FLIP_SIDED\n\n      normal = - normal;\n\n    #endif\n\n    #ifdef DOUBLE_SIDED\n\n      // Temporary compat against shader change @ Three.js r126\n      // See: #21205, #21307, #21299\n      #if THREE_VRM_THREE_REVISION >= 126\n\n        normal = normal * faceDirection;\n\n      #else\n\n        normal = normal * ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\n      #endif\n\n    #endif\n\n    normal = normalize( normalMatrix * normal );\n\n  // COMPAT: USE_NORMALMAP_TANGENTSPACE used to be TANGENTSPACE_NORMALMAP in pre-r151\n  #elif defined( USE_NORMALMAP_TANGENTSPACE ) || defined( TANGENTSPACE_NORMALMAP )\n\n    vec3 mapN = texture2D( normalMap, normalMapUv ).xyz * 2.0 - 1.0;\n    mapN.xy *= normalScale;\n\n    // COMPAT: pre-r151\n    #if THREE_VRM_THREE_REVISION >= 151 || defined( USE_TANGENT )\n\n      normal = normalize( tbn * mapN );\n\n    #else\n\n      // pre-r126\n      #if THREE_VRM_THREE_REVISION >= 126\n\n        normal = perturbNormal2Arb( uv, -vViewPosition, normal, mapN, faceDirection );\n\n      #else\n\n        normal = perturbNormal2Arb( uv, -vViewPosition, normal, mapN );\n\n      #endif\n\n    #endif\n\n  #endif\n\n  // #include <emissivemap_fragment>\n  #ifdef USE_EMISSIVEMAP\n    vec2 emissiveMapUv = ( emissiveMapUvTransform * vec3( uv, 1 ) ).xy;\n    totalEmissiveRadiance *= texture2D( emissiveMap, emissiveMapUv ).rgb;\n  #endif\n\n  #ifdef DEBUG_NORMAL\n    gl_FragColor = vec4( 0.5 + 0.5 * normal, 1.0 );\n    return;\n  #endif\n\n  // -- MToon: lighting --------------------------------------------------------\n  // accumulation\n  // #include <lights_phong_fragment>\n  MToonMaterial material;\n\n  material.diffuseColor = diffuseColor.rgb;\n\n  material.shadeColor = shadeColorFactor;\n  #ifdef USE_SHADEMULTIPLYTEXTURE\n    vec2 shadeMultiplyTextureUv = ( shadeMultiplyTextureUvTransform * vec3( uv, 1 ) ).xy;\n    material.shadeColor *= texture2D( shadeMultiplyTexture, shadeMultiplyTextureUv ).rgb;\n  #endif\n\n  #if ( defined( USE_COLOR ) && !defined( IGNORE_VERTEX_COLOR ) )\n    material.shadeColor.rgb *= vColor;\n  #endif\n\n  material.shadingShift = shadingShiftFactor;\n  #ifdef USE_SHADINGSHIFTTEXTURE\n    vec2 shadingShiftTextureUv = ( shadingShiftTextureUvTransform * vec3( uv, 1 ) ).xy;\n    material.shadingShift += texture2D( shadingShiftTexture, shadingShiftTextureUv ).r * shadingShiftTextureScale;\n  #endif\n\n  // #include <lights_fragment_begin>\n\n  // MToon Specific changes:\n  // Since we want to take shadows into account of shading instead of irradiance,\n  // we had to modify the codes that multiplies the results of shadowmap into color of direct lights.\n\n  // COMPAT: pre-r156 uses a struct GeometricContext\n  #if THREE_VRM_THREE_REVISION >= 157\n    vec3 geometryPosition = - vViewPosition;\n    vec3 geometryNormal = normal;\n    vec3 geometryViewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );\n\n    vec3 geometryClearcoatNormal;\n\n    #ifdef USE_CLEARCOAT\n\n      geometryClearcoatNormal = clearcoatNormal;\n\n    #endif\n  #else\n    GeometricContext geometry;\n\n    geometry.position = - vViewPosition;\n    geometry.normal = normal;\n    geometry.viewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );\n\n    #ifdef USE_CLEARCOAT\n\n      geometry.clearcoatNormal = clearcoatNormal;\n\n    #endif\n  #endif\n\n  IncidentLight directLight;\n\n  // since these variables will be used in unrolled loop, we have to define in prior\n  float shadow;\n\n  #if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )\n\n    PointLight pointLight;\n    #if defined( USE_SHADOWMAP ) && NUM_POINT_LIGHT_SHADOWS > 0\n    PointLightShadow pointLightShadow;\n    #endif\n\n    #pragma unroll_loop_start\n    for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {\n\n      pointLight = pointLights[ i ];\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        getPointLightInfo( pointLight, geometryPosition, directLight );\n      #elif THREE_VRM_THREE_REVISION >= 132\n        getPointLightInfo( pointLight, geometry, directLight );\n      #else\n        getPointDirectLightIrradiance( pointLight, geometry, directLight );\n      #endif\n\n      shadow = 1.0;\n      #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_POINT_LIGHT_SHADOWS )\n      pointLightShadow = pointLightShadows[ i ];\n      shadow = all( bvec2( directLight.visible, receiveShadow ) ) ? getPointShadow( pointShadowMap[ i ], pointLightShadow.shadowMapSize, pointLightShadow.shadowIntensity, pointLightShadow.shadowBias, pointLightShadow.shadowRadius, vPointShadowCoord[ i ], pointLightShadow.shadowCameraNear, pointLightShadow.shadowCameraFar ) : 1.0;\n      #endif\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, shadow, reflectedLight );\n      #else\n        RE_Direct( directLight, geometry, material, shadow, reflectedLight );\n      #endif\n\n    }\n    #pragma unroll_loop_end\n\n  #endif\n\n  #if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )\n\n    SpotLight spotLight;\n    #if defined( USE_SHADOWMAP ) && NUM_SPOT_LIGHT_SHADOWS > 0\n    SpotLightShadow spotLightShadow;\n    #endif\n\n    #pragma unroll_loop_start\n    for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {\n\n      spotLight = spotLights[ i ];\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        getSpotLightInfo( spotLight, geometryPosition, directLight );\n      #elif THREE_VRM_THREE_REVISION >= 132\n        getSpotLightInfo( spotLight, geometry, directLight );\n      #else\n        getSpotDirectLightIrradiance( spotLight, geometry, directLight );\n      #endif\n\n      shadow = 1.0;\n      #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )\n      spotLightShadow = spotLightShadows[ i ];\n      shadow = all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowIntensity, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;\n      #endif\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, shadow, reflectedLight );\n      #else\n        RE_Direct( directLight, geometry, material, shadow, reflectedLight );\n      #endif\n\n    }\n    #pragma unroll_loop_end\n\n  #endif\n\n  #if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )\n\n    DirectionalLight directionalLight;\n    #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0\n    DirectionalLightShadow directionalLightShadow;\n    #endif\n\n    #pragma unroll_loop_start\n    for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {\n\n      directionalLight = directionalLights[ i ];\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        getDirectionalLightInfo( directionalLight, directLight );\n      #elif THREE_VRM_THREE_REVISION >= 132\n        getDirectionalLightInfo( directionalLight, geometry, directLight );\n      #else\n        getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n      #endif\n\n      shadow = 1.0;\n      #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )\n      directionalLightShadow = directionalLightShadows[ i ];\n      shadow = all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n      #endif\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, shadow, reflectedLight );\n      #else\n        RE_Direct( directLight, geometry, material, shadow, reflectedLight );\n      #endif\n\n    }\n    #pragma unroll_loop_end\n\n  #endif\n\n  // #if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )\n\n  //   RectAreaLight rectAreaLight;\n\n  //   #pragma unroll_loop_start\n  //   for ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {\n\n  //     rectAreaLight = rectAreaLights[ i ];\n  //     RE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );\n\n  //   }\n  //   #pragma unroll_loop_end\n\n  // #endif\n\n  #if defined( RE_IndirectDiffuse )\n\n    vec3 iblIrradiance = vec3( 0.0 );\n\n    vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );\n\n    // COMPAT: pre-r156 uses a struct GeometricContext\n    // COMPAT: pre-r156 doesn't have a define USE_LIGHT_PROBES\n    #if THREE_VRM_THREE_REVISION >= 157\n      #if defined( USE_LIGHT_PROBES )\n        irradiance += getLightProbeIrradiance( lightProbe, geometryNormal );\n      #endif\n    #elif THREE_VRM_THREE_REVISION >= 133\n      irradiance += getLightProbeIrradiance( lightProbe, geometry.normal );\n    #else\n      irradiance += getLightProbeIrradiance( lightProbe, geometry );\n    #endif\n\n    #if ( NUM_HEMI_LIGHTS > 0 )\n\n      #pragma unroll_loop_start\n      for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {\n\n        // COMPAT: pre-r156 uses a struct GeometricContext\n        #if THREE_VRM_THREE_REVISION >= 157\n          irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );\n        #elif THREE_VRM_THREE_REVISION >= 133\n          irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry.normal );\n        #else\n          irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );\n        #endif\n\n      }\n      #pragma unroll_loop_end\n\n    #endif\n\n  #endif\n\n  // #if defined( RE_IndirectSpecular )\n\n  //   vec3 radiance = vec3( 0.0 );\n  //   vec3 clearcoatRadiance = vec3( 0.0 );\n\n  // #endif\n\n  #include <lights_fragment_maps>\n  #include <lights_fragment_end>\n\n  // modulation\n  #include <aomap_fragment>\n\n  vec3 col = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;\n\n  #ifdef DEBUG_LITSHADERATE\n    gl_FragColor = vec4( col, diffuseColor.a );\n    postCorrection();\n    return;\n  #endif\n\n  // -- MToon: rim lighting -----------------------------------------\n  vec3 viewDir = normalize( vViewPosition );\n\n  #ifndef PHYSICALLY_CORRECT_LIGHTS\n    reflectedLight.directSpecular /= PI;\n  #endif\n  vec3 rimMix = mix( vec3( 1.0 ), reflectedLight.directSpecular, 1.0 );\n\n  vec3 rim = parametricRimColorFactor * pow( saturate( 1.0 - dot( viewDir, normal ) + parametricRimLiftFactor ), parametricRimFresnelPowerFactor );\n\n  #ifdef USE_MATCAPTEXTURE\n    {\n      vec3 x = normalize( vec3( viewDir.z, 0.0, -viewDir.x ) );\n      vec3 y = cross( viewDir, x ); // guaranteed to be normalized\n      vec2 sphereUv = 0.5 + 0.5 * vec2( dot( x, normal ), -dot( y, normal ) );\n      sphereUv = ( matcapTextureUvTransform * vec3( sphereUv, 1 ) ).xy;\n      vec3 matcap = texture2D( matcapTexture, sphereUv ).rgb;\n      rim += matcapFactor * matcap;\n    }\n  #endif\n\n  #ifdef USE_RIMMULTIPLYTEXTURE\n    vec2 rimMultiplyTextureUv = ( rimMultiplyTextureUvTransform * vec3( uv, 1 ) ).xy;\n    rim *= texture2D( rimMultiplyTexture, rimMultiplyTextureUv ).rgb;\n  #endif\n\n  col += rimMix * rim;\n\n  // -- MToon: Emission --------------------------------------------------------\n  col += totalEmissiveRadiance;\n\n  // #include <envmap_fragment>\n\n  // -- Almost done! -----------------------------------------------------------\n  #if defined( OUTLINE )\n    col = outlineColorFactor.rgb * mix( vec3( 1.0 ), col, outlineLightingMixFactor );\n  #endif\n\n  #ifdef OPAQUE\n    diffuseColor.a = 1.0;\n  #endif\n\n  gl_FragColor = vec4( col, diffuseColor.a );\n  postCorrection();\n}\n";
+var fragmentShader = "// #define PHONG\n\nuniform vec3 litFactor;\n\nuniform float opacity;\n\nuniform vec3 shadeColorFactor;\n#ifdef USE_SHADEMULTIPLYTEXTURE\n  uniform sampler2D shadeMultiplyTexture;\n  uniform mat3 shadeMultiplyTextureUvTransform;\n#endif\n\nuniform float shadingShiftFactor;\nuniform float shadingToonyFactor;\n\n#ifdef USE_SHADINGSHIFTTEXTURE\n  uniform sampler2D shadingShiftTexture;\n  uniform mat3 shadingShiftTextureUvTransform;\n  uniform float shadingShiftTextureScale;\n#endif\n\nuniform float giEqualizationFactor;\n\nuniform vec3 parametricRimColorFactor;\n#ifdef USE_RIMMULTIPLYTEXTURE\n  uniform sampler2D rimMultiplyTexture;\n  uniform mat3 rimMultiplyTextureUvTransform;\n#endif\nuniform float rimLightingMixFactor;\nuniform float parametricRimFresnelPowerFactor;\nuniform float parametricRimLiftFactor;\n\n#ifdef USE_MATCAPTEXTURE\n  uniform vec3 matcapFactor;\n  uniform sampler2D matcapTexture;\n  uniform mat3 matcapTextureUvTransform;\n#endif\n\nuniform vec3 emissive;\nuniform float emissiveIntensity;\n\nuniform vec3 outlineColorFactor;\nuniform float outlineLightingMixFactor;\n\n#ifdef USE_UVANIMATIONMASKTEXTURE\n  uniform sampler2D uvAnimationMaskTexture;\n  uniform mat3 uvAnimationMaskTextureUvTransform;\n#endif\n\nuniform float uvAnimationScrollXOffset;\nuniform float uvAnimationScrollYOffset;\nuniform float uvAnimationRotationPhase;\n\n#include <common>\n#include <packing>\n#include <dithering_pars_fragment>\n#include <color_pars_fragment>\n\n// #include <uv_pars_fragment>\n#if ( defined( MTOON_USE_UV ) && !defined( MTOON_UVS_VERTEX_ONLY ) )\n  varying vec2 vUv;\n#endif\n\n// #include <uv2_pars_fragment>\n// COMAPT: pre-r151 uses uv2 for lightMap and aoMap\n#if THREE_VRM_THREE_REVISION < 151\n  #if defined( USE_LIGHTMAP ) || defined( USE_AOMAP )\n    varying vec2 vUv2;\n  #endif\n#endif\n\n#include <map_pars_fragment>\n\n#ifdef USE_MAP\n  uniform mat3 mapUvTransform;\n#endif\n\n// #include <alphamap_pars_fragment>\n\n#if THREE_VRM_THREE_REVISION >= 132\n  #include <alphatest_pars_fragment>\n#endif\n\n#include <aomap_pars_fragment>\n// #include <lightmap_pars_fragment>\n#include <emissivemap_pars_fragment>\n\n#ifdef USE_EMISSIVEMAP\n  uniform mat3 emissiveMapUvTransform;\n#endif\n\n// #include <envmap_common_pars_fragment>\n// #include <envmap_pars_fragment>\n// #include <cube_uv_reflection_fragment>\n#include <fog_pars_fragment>\n\n// #include <bsdfs>\n// COMPAT: pre-r151 doesn't have BRDF_Lambert in <common>\n#if THREE_VRM_THREE_REVISION < 151\n  vec3 BRDF_Lambert( const in vec3 diffuseColor ) {\n    return RECIPROCAL_PI * diffuseColor;\n  }\n#endif\n\n#include <lights_pars_begin>\n\n#if THREE_VRM_THREE_REVISION >= 132\n  #include <normal_pars_fragment>\n#endif\n\n// #include <lights_phong_pars_fragment>\nvarying vec3 vViewPosition;\n\n#if THREE_VRM_THREE_REVISION < 132\n  #ifndef FLAT_SHADED\n    varying vec3 vNormal;\n  #endif\n#endif\n\nstruct MToonMaterial {\n  vec3 diffuseColor;\n  vec3 shadeColor;\n  float shadingShift;\n};\n\nfloat linearstep( float a, float b, float t ) {\n  return clamp( ( t - a ) / ( b - a ), 0.0, 1.0 );\n}\n\n\nfloat getShading(\n  const in float dotNL,\n  const in float shadow,\n  const in float shadingShift\n) {\n  float shading = dotNL;\n  shading = shading + shadingShift;\n  shading = linearstep( -1.0 + shadingToonyFactor, 1.0 - shadingToonyFactor, shading );\n  shading *= shadow;\n  return shading;\n}\n\n\nvec3 getDiffuse(\n  const in MToonMaterial material,\n  const in float shading,\n  in vec3 lightColor\n) {\n  #ifdef DEBUG_LITSHADERATE\n    return vec3( BRDF_Lambert( shading * lightColor ) );\n  #endif\n\n  #if THREE_VRM_THREE_REVISION < 132\n    #ifndef PHYSICALLY_CORRECT_LIGHTS\n      lightColor *= PI;\n    #endif\n  #endif\n\n  vec3 col = lightColor * BRDF_Lambert( mix( material.shadeColor, material.diffuseColor, shading ) );\n\n  // The \"comment out if you want to PBR absolutely\" line\n  #ifdef V0_COMPAT_SHADE\n    col = min( col, material.diffuseColor );\n  #endif\n\n  return col;\n}\n\n// COMPAT: pre-r156 uses a struct GeometricContext\n#if THREE_VRM_THREE_REVISION >= 157\n  void RE_Direct_MToon( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in MToonMaterial material, const in float shadow, inout ReflectedLight reflectedLight ) {\n    float dotNL = clamp( dot( geometryNormal, directLight.direction ), -1.0, 1.0 );\n    vec3 irradiance = directLight.color;\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n\n    irradiance *= dotNL;\n\n    float shading = getShading( dotNL, shadow, material.shadingShift );\n\n    // toon shaded diffuse\n    reflectedLight.directDiffuse += getDiffuse( material, shading, directLight.color );\n  }\n\n  void RE_IndirectDiffuse_MToon( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in MToonMaterial material, inout ReflectedLight reflectedLight ) {\n    // indirect diffuse will use diffuseColor, no shadeColor involved\n    reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n  }\n#else\n  void RE_Direct_MToon( const in IncidentLight directLight, const in GeometricContext geometry, const in MToonMaterial material, const in float shadow, inout ReflectedLight reflectedLight ) {\n    float dotNL = clamp( dot( geometry.normal, directLight.direction ), -1.0, 1.0 );\n    vec3 irradiance = directLight.color;\n\n    #if THREE_VRM_THREE_REVISION < 132\n      #ifndef PHYSICALLY_CORRECT_LIGHTS\n        irradiance *= PI;\n      #endif\n    #endif\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n\n    irradiance *= dotNL;\n\n    float shading = getShading( dotNL, shadow, material.shadingShift );\n\n    // toon shaded diffuse\n    reflectedLight.directDiffuse += getDiffuse( material, shading, directLight.color );\n  }\n\n  void RE_IndirectDiffuse_MToon( const in vec3 irradiance, const in GeometricContext geometry, const in MToonMaterial material, inout ReflectedLight reflectedLight ) {\n    // indirect diffuse will use diffuseColor, no shadeColor involved\n    reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n\n    // directSpecular will be used for rim lighting, not an actual specular\n    reflectedLight.directSpecular += irradiance;\n  }\n#endif\n\n#define RE_Direct RE_Direct_MToon\n#define RE_IndirectDiffuse RE_IndirectDiffuse_MToon\n#define Material_LightProbeLOD( material ) (0)\n\n#include <shadowmap_pars_fragment>\n// #include <bumpmap_pars_fragment>\n\n// #include <normalmap_pars_fragment>\n#ifdef USE_NORMALMAP\n\n  uniform sampler2D normalMap;\n  uniform mat3 normalMapUvTransform;\n  uniform vec2 normalScale;\n\n#endif\n\n// COMPAT: USE_NORMALMAP_OBJECTSPACE used to be OBJECTSPACE_NORMALMAP in pre-r151\n#if defined( USE_NORMALMAP_OBJECTSPACE ) || defined( OBJECTSPACE_NORMALMAP )\n\n  uniform mat3 normalMatrix;\n\n#endif\n\n// COMPAT: USE_NORMALMAP_TANGENTSPACE used to be TANGENTSPACE_NORMALMAP in pre-r151\n#if ! defined ( USE_TANGENT ) && ( defined ( USE_NORMALMAP_TANGENTSPACE ) || defined ( TANGENTSPACE_NORMALMAP ) )\n\n  // Per-Pixel Tangent Space Normal Mapping\n  // http://hacksoflife.blogspot.ch/2009/11/per-pixel-tangent-space-normal-mapping.html\n\n  // three-vrm specific change: it requires `uv` as an input in order to support uv scrolls\n\n  // Temporary compat against shader change @ Three.js r126, r151\n  #if THREE_VRM_THREE_REVISION >= 151\n\n    mat3 getTangentFrame( vec3 eye_pos, vec3 surf_norm, vec2 uv ) {\n\n      vec3 q0 = dFdx( eye_pos.xyz );\n      vec3 q1 = dFdy( eye_pos.xyz );\n      vec2 st0 = dFdx( uv.st );\n      vec2 st1 = dFdy( uv.st );\n\n      vec3 N = surf_norm;\n\n      vec3 q1perp = cross( q1, N );\n      vec3 q0perp = cross( N, q0 );\n\n      vec3 T = q1perp * st0.x + q0perp * st1.x;\n      vec3 B = q1perp * st0.y + q0perp * st1.y;\n\n      float det = max( dot( T, T ), dot( B, B ) );\n      float scale = ( det == 0.0 ) ? 0.0 : inversesqrt( det );\n\n      return mat3( T * scale, B * scale, N );\n\n    }\n\n  #elif THREE_VRM_THREE_REVISION >= 126\n\n    vec3 perturbNormal2Arb( vec2 uv, vec3 eye_pos, vec3 surf_norm, vec3 mapN, float faceDirection ) {\n\n      vec3 q0 = vec3( dFdx( eye_pos.x ), dFdx( eye_pos.y ), dFdx( eye_pos.z ) );\n      vec3 q1 = vec3( dFdy( eye_pos.x ), dFdy( eye_pos.y ), dFdy( eye_pos.z ) );\n      vec2 st0 = dFdx( uv.st );\n      vec2 st1 = dFdy( uv.st );\n\n      vec3 N = normalize( surf_norm );\n\n      vec3 q1perp = cross( q1, N );\n      vec3 q0perp = cross( N, q0 );\n\n      vec3 T = q1perp * st0.x + q0perp * st1.x;\n      vec3 B = q1perp * st0.y + q0perp * st1.y;\n\n      // three-vrm specific change: Workaround for the issue that happens when delta of uv = 0.0\n      // TODO: Is this still required? Or shall I make a PR about it?\n      if ( length( T ) == 0.0 || length( B ) == 0.0 ) {\n        return surf_norm;\n      }\n\n      float det = max( dot( T, T ), dot( B, B ) );\n      float scale = ( det == 0.0 ) ? 0.0 : faceDirection * inversesqrt( det );\n\n      return normalize( T * ( mapN.x * scale ) + B * ( mapN.y * scale ) + N * mapN.z );\n\n    }\n\n  #else\n\n    vec3 perturbNormal2Arb( vec2 uv, vec3 eye_pos, vec3 surf_norm, vec3 mapN ) {\n\n      // Workaround for Adreno 3XX dFd*( vec3 ) bug. See #9988\n\n      vec3 q0 = vec3( dFdx( eye_pos.x ), dFdx( eye_pos.y ), dFdx( eye_pos.z ) );\n      vec3 q1 = vec3( dFdy( eye_pos.x ), dFdy( eye_pos.y ), dFdy( eye_pos.z ) );\n      vec2 st0 = dFdx( uv.st );\n      vec2 st1 = dFdy( uv.st );\n\n      float scale = sign( st1.t * st0.s - st0.t * st1.s ); // we do not care about the magnitude\n\n      vec3 S = ( q0 * st1.t - q1 * st0.t ) * scale;\n      vec3 T = ( - q0 * st1.s + q1 * st0.s ) * scale;\n\n      // three-vrm specific change: Workaround for the issue that happens when delta of uv = 0.0\n      // TODO: Is this still required? Or shall I make a PR about it?\n\n      if ( length( S ) == 0.0 || length( T ) == 0.0 ) {\n        return surf_norm;\n      }\n\n      S = normalize( S );\n      T = normalize( T );\n      vec3 N = normalize( surf_norm );\n\n      #ifdef DOUBLE_SIDED\n\n        // Workaround for Adreno GPUs gl_FrontFacing bug. See #15850 and #10331\n\n        bool frontFacing = dot( cross( S, T ), N ) > 0.0;\n\n        mapN.xy *= ( float( frontFacing ) * 2.0 - 1.0 );\n\n      #else\n\n        mapN.xy *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\n      #endif\n\n      mat3 tsn = mat3( S, T, N );\n      return normalize( tsn * mapN );\n\n    }\n\n  #endif\n\n#endif\n\n// #include <specularmap_pars_fragment>\n#include <logdepthbuf_pars_fragment>\n#include <clipping_planes_pars_fragment>\n\n// == post correction ==========================================================\nvoid postCorrection() {\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n  #include <fog_fragment>\n  #include <premultiplied_alpha_fragment>\n  #include <dithering_fragment>\n}\n\n// == main procedure ===========================================================\nvoid main() {\n  #include <clipping_planes_fragment>\n\n  vec2 uv = vec2(0.5, 0.5);\n\n  #if ( defined( MTOON_USE_UV ) && !defined( MTOON_UVS_VERTEX_ONLY ) )\n    uv = vUv;\n\n    float uvAnimMask = 1.0;\n    #ifdef USE_UVANIMATIONMASKTEXTURE\n      vec2 uvAnimationMaskTextureUv = ( uvAnimationMaskTextureUvTransform * vec3( uv, 1 ) ).xy;\n      uvAnimMask = texture2D( uvAnimationMaskTexture, uvAnimationMaskTextureUv ).b;\n    #endif\n\n    float uvRotCos = cos( uvAnimationRotationPhase * uvAnimMask );\n    float uvRotSin = sin( uvAnimationRotationPhase * uvAnimMask );\n    uv = mat2( uvRotCos, -uvRotSin, uvRotSin, uvRotCos ) * ( uv - 0.5 ) + 0.5;\n    uv = uv + vec2( uvAnimationScrollXOffset, uvAnimationScrollYOffset ) * uvAnimMask;\n  #endif\n\n  #ifdef DEBUG_UV\n    gl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );\n    #if ( defined( MTOON_USE_UV ) && !defined( MTOON_UVS_VERTEX_ONLY ) )\n      gl_FragColor = vec4( uv, 0.0, 1.0 );\n    #endif\n    return;\n  #endif\n\n  vec4 diffuseColor = vec4( litFactor, opacity );\n  ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );\n  vec3 totalEmissiveRadiance = emissive * emissiveIntensity;\n\n  #include <logdepthbuf_fragment>\n\n  // #include <map_fragment>\n  #ifdef USE_MAP\n    vec2 mapUv = ( mapUvTransform * vec3( uv, 1 ) ).xy;\n    vec4 sampledDiffuseColor = texture2D( map, mapUv );\n    #ifdef DECODE_VIDEO_TEXTURE\n      sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );\n    #endif\n    diffuseColor *= sampledDiffuseColor;\n  #endif\n\n  // #include <color_fragment>\n  #if ( defined( USE_COLOR ) && !defined( IGNORE_VERTEX_COLOR ) )\n    diffuseColor.rgb *= vColor;\n  #endif\n\n  // #include <alphamap_fragment>\n\n  #include <alphatest_fragment>\n\n  // #include <specularmap_fragment>\n\n  // #include <normal_fragment_begin>\n  float faceDirection = gl_FrontFacing ? 1.0 : -1.0;\n\n  #ifdef FLAT_SHADED\n\n    vec3 fdx = dFdx( vViewPosition );\n    vec3 fdy = dFdy( vViewPosition );\n    vec3 normal = normalize( cross( fdx, fdy ) );\n\n  #else\n\n    vec3 normal = normalize( vNormal );\n\n    #ifdef DOUBLE_SIDED\n\n      normal *= faceDirection;\n\n    #endif\n\n  #endif\n\n  #ifdef USE_NORMALMAP\n\n    vec2 normalMapUv = ( normalMapUvTransform * vec3( uv, 1 ) ).xy;\n\n  #endif\n\n  #ifdef USE_NORMALMAP_TANGENTSPACE\n\n    #ifdef USE_TANGENT\n\n      mat3 tbn = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n\n    #else\n\n      mat3 tbn = getTangentFrame( - vViewPosition, normal, normalMapUv );\n\n    #endif\n\n    #if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n\n      tbn[0] *= faceDirection;\n      tbn[1] *= faceDirection;\n\n    #endif\n\n  #endif\n\n  #ifdef USE_CLEARCOAT_NORMALMAP\n\n    #ifdef USE_TANGENT\n\n      mat3 tbn2 = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n\n    #else\n\n      mat3 tbn2 = getTangentFrame( - vViewPosition, normal, vClearcoatNormalMapUv );\n\n    #endif\n\n    #if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n\n      tbn2[0] *= faceDirection;\n      tbn2[1] *= faceDirection;\n\n    #endif\n\n  #endif\n\n  // non perturbed normal for clearcoat among others\n\n  vec3 nonPerturbedNormal = normal;\n\n  #ifdef OUTLINE\n    normal *= -1.0;\n  #endif\n\n  // #include <normal_fragment_maps>\n\n  // COMPAT: USE_NORMALMAP_OBJECTSPACE used to be OBJECTSPACE_NORMALMAP in pre-r151\n  #if defined( USE_NORMALMAP_OBJECTSPACE ) || defined( OBJECTSPACE_NORMALMAP )\n\n    normal = texture2D( normalMap, normalMapUv ).xyz * 2.0 - 1.0; // overrides both flatShading and attribute normals\n\n    #ifdef FLIP_SIDED\n\n      normal = - normal;\n\n    #endif\n\n    #ifdef DOUBLE_SIDED\n\n      // Temporary compat against shader change @ Three.js r126\n      // See: #21205, #21307, #21299\n      #if THREE_VRM_THREE_REVISION >= 126\n\n        normal = normal * faceDirection;\n\n      #else\n\n        normal = normal * ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\n      #endif\n\n    #endif\n\n    normal = normalize( normalMatrix * normal );\n\n  // COMPAT: USE_NORMALMAP_TANGENTSPACE used to be TANGENTSPACE_NORMALMAP in pre-r151\n  #elif defined( USE_NORMALMAP_TANGENTSPACE ) || defined( TANGENTSPACE_NORMALMAP )\n\n    vec3 mapN = texture2D( normalMap, normalMapUv ).xyz * 2.0 - 1.0;\n    mapN.xy *= normalScale;\n\n    // COMPAT: pre-r151\n    #if THREE_VRM_THREE_REVISION >= 151 || defined( USE_TANGENT )\n\n      normal = normalize( tbn * mapN );\n\n    #else\n\n      // pre-r126\n      #if THREE_VRM_THREE_REVISION >= 126\n\n        normal = perturbNormal2Arb( uv, -vViewPosition, normal, mapN, faceDirection );\n\n      #else\n\n        normal = perturbNormal2Arb( uv, -vViewPosition, normal, mapN );\n\n      #endif\n\n    #endif\n\n  #endif\n\n  // #include <emissivemap_fragment>\n  #ifdef USE_EMISSIVEMAP\n    vec2 emissiveMapUv = ( emissiveMapUvTransform * vec3( uv, 1 ) ).xy;\n    totalEmissiveRadiance *= texture2D( emissiveMap, emissiveMapUv ).rgb;\n  #endif\n\n  #ifdef DEBUG_NORMAL\n    gl_FragColor = vec4( 0.5 + 0.5 * normal, 1.0 );\n    return;\n  #endif\n\n  // -- MToon: lighting --------------------------------------------------------\n  // accumulation\n  // #include <lights_phong_fragment>\n  MToonMaterial material;\n\n  material.diffuseColor = diffuseColor.rgb;\n\n  material.shadeColor = shadeColorFactor;\n  #ifdef USE_SHADEMULTIPLYTEXTURE\n    vec2 shadeMultiplyTextureUv = ( shadeMultiplyTextureUvTransform * vec3( uv, 1 ) ).xy;\n    material.shadeColor *= texture2D( shadeMultiplyTexture, shadeMultiplyTextureUv ).rgb;\n  #endif\n\n  #if ( defined( USE_COLOR ) && !defined( IGNORE_VERTEX_COLOR ) )\n    material.shadeColor.rgb *= vColor;\n  #endif\n\n  material.shadingShift = shadingShiftFactor;\n  #ifdef USE_SHADINGSHIFTTEXTURE\n    vec2 shadingShiftTextureUv = ( shadingShiftTextureUvTransform * vec3( uv, 1 ) ).xy;\n    material.shadingShift += texture2D( shadingShiftTexture, shadingShiftTextureUv ).r * shadingShiftTextureScale;\n  #endif\n\n  // #include <lights_fragment_begin>\n\n  // MToon Specific changes:\n  // Since we want to take shadows into account of shading instead of irradiance,\n  // we had to modify the codes that multiplies the results of shadowmap into color of direct lights.\n\n  // COMPAT: pre-r156 uses a struct GeometricContext\n  #if THREE_VRM_THREE_REVISION >= 157\n    vec3 geometryPosition = - vViewPosition;\n    vec3 geometryNormal = normal;\n    vec3 geometryViewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );\n\n    vec3 geometryClearcoatNormal;\n\n    #ifdef USE_CLEARCOAT\n\n      geometryClearcoatNormal = clearcoatNormal;\n\n    #endif\n  #else\n    GeometricContext geometry;\n\n    geometry.position = - vViewPosition;\n    geometry.normal = normal;\n    geometry.viewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );\n\n    #ifdef USE_CLEARCOAT\n\n      geometry.clearcoatNormal = clearcoatNormal;\n\n    #endif\n  #endif\n\n  IncidentLight directLight;\n\n  // since these variables will be used in unrolled loop, we have to define in prior\n  float shadow;\n\n  #if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )\n\n    PointLight pointLight;\n    #if defined( USE_SHADOWMAP ) && NUM_POINT_LIGHT_SHADOWS > 0\n    PointLightShadow pointLightShadow;\n    #endif\n\n    #pragma unroll_loop_start\n    for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {\n\n      pointLight = pointLights[ i ];\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        getPointLightInfo( pointLight, geometryPosition, directLight );\n      #elif THREE_VRM_THREE_REVISION >= 132\n        getPointLightInfo( pointLight, geometry, directLight );\n      #else\n        getPointDirectLightIrradiance( pointLight, geometry, directLight );\n      #endif\n\n      shadow = 1.0;\n      #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_POINT_LIGHT_SHADOWS )\n      pointLightShadow = pointLightShadows[ i ];\n      shadow = all( bvec2( directLight.visible, receiveShadow ) ) ? getPointShadow( pointShadowMap[ i ], pointLightShadow.shadowMapSize, pointLightShadow.shadowIntensity, pointLightShadow.shadowBias, pointLightShadow.shadowRadius, vPointShadowCoord[ i ], pointLightShadow.shadowCameraNear, pointLightShadow.shadowCameraFar ) : 1.0;\n      #endif\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, shadow, reflectedLight );\n      #else\n        RE_Direct( directLight, geometry, material, shadow, reflectedLight );\n      #endif\n\n    }\n    #pragma unroll_loop_end\n\n  #endif\n\n  #if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )\n\n    SpotLight spotLight;\n    #if defined( USE_SHADOWMAP ) && NUM_SPOT_LIGHT_SHADOWS > 0\n    SpotLightShadow spotLightShadow;\n    #endif\n\n    #pragma unroll_loop_start\n    for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {\n\n      spotLight = spotLights[ i ];\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        getSpotLightInfo( spotLight, geometryPosition, directLight );\n      #elif THREE_VRM_THREE_REVISION >= 132\n        getSpotLightInfo( spotLight, geometry, directLight );\n      #else\n        getSpotDirectLightIrradiance( spotLight, geometry, directLight );\n      #endif\n\n      shadow = 1.0;\n      #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )\n      spotLightShadow = spotLightShadows[ i ];\n      shadow = all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowIntensity, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;\n      #endif\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, shadow, reflectedLight );\n      #else\n        RE_Direct( directLight, geometry, material, shadow, reflectedLight );\n      #endif\n\n    }\n    #pragma unroll_loop_end\n\n  #endif\n\n  #if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )\n\n    DirectionalLight directionalLight;\n    #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0\n    DirectionalLightShadow directionalLightShadow;\n    #endif\n\n    #pragma unroll_loop_start\n    for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {\n\n      directionalLight = directionalLights[ i ];\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        getDirectionalLightInfo( directionalLight, directLight );\n      #elif THREE_VRM_THREE_REVISION >= 132\n        getDirectionalLightInfo( directionalLight, geometry, directLight );\n      #else\n        getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n      #endif\n\n      shadow = 1.0;\n      #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )\n      directionalLightShadow = directionalLightShadows[ i ];\n      shadow = all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n      #endif\n\n      // COMPAT: pre-r156 uses a struct GeometricContext\n      #if THREE_VRM_THREE_REVISION >= 157\n        RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, shadow, reflectedLight );\n      #else\n        RE_Direct( directLight, geometry, material, shadow, reflectedLight );\n      #endif\n\n    }\n    #pragma unroll_loop_end\n\n  #endif\n\n  // #if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )\n\n  //   RectAreaLight rectAreaLight;\n\n  //   #pragma unroll_loop_start\n  //   for ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {\n\n  //     rectAreaLight = rectAreaLights[ i ];\n  //     RE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );\n\n  //   }\n  //   #pragma unroll_loop_end\n\n  // #endif\n\n  #if defined( RE_IndirectDiffuse )\n\n    vec3 iblIrradiance = vec3( 0.0 );\n\n    vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );\n\n    // COMPAT: pre-r156 uses a struct GeometricContext\n    // COMPAT: pre-r156 doesn't have a define USE_LIGHT_PROBES\n    #if THREE_VRM_THREE_REVISION >= 157\n      #if defined( USE_LIGHT_PROBES )\n        irradiance += getLightProbeIrradiance( lightProbe, geometryNormal );\n      #endif\n    #elif THREE_VRM_THREE_REVISION >= 133\n      irradiance += getLightProbeIrradiance( lightProbe, geometry.normal );\n    #else\n      irradiance += getLightProbeIrradiance( lightProbe, geometry );\n    #endif\n\n    #if ( NUM_HEMI_LIGHTS > 0 )\n\n      #pragma unroll_loop_start\n      for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {\n\n        // COMPAT: pre-r156 uses a struct GeometricContext\n        #if THREE_VRM_THREE_REVISION >= 157\n          irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );\n        #elif THREE_VRM_THREE_REVISION >= 133\n          irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry.normal );\n        #else\n          irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );\n        #endif\n\n      }\n      #pragma unroll_loop_end\n\n    #endif\n\n  #endif\n\n  // #if defined( RE_IndirectSpecular )\n\n  //   vec3 radiance = vec3( 0.0 );\n  //   vec3 clearcoatRadiance = vec3( 0.0 );\n\n  // #endif\n\n  #include <lights_fragment_maps>\n  #include <lights_fragment_end>\n\n  // modulation\n  #include <aomap_fragment>\n\n  vec3 col = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;\n\n  #ifdef DEBUG_LITSHADERATE\n    gl_FragColor = vec4( col, diffuseColor.a );\n    postCorrection();\n    return;\n  #endif\n\n  // -- MToon: rim lighting -----------------------------------------\n  vec3 viewDir = normalize( vViewPosition );\n\n  #ifndef PHYSICALLY_CORRECT_LIGHTS\n    reflectedLight.directSpecular /= PI;\n  #endif\n  vec3 rimMix = mix( vec3( 1.0 ), reflectedLight.directSpecular, 1.0 );\n\n  vec3 rim = parametricRimColorFactor * pow( saturate( 1.0 - dot( viewDir, normal ) + parametricRimLiftFactor ), parametricRimFresnelPowerFactor );\n\n  #ifdef USE_MATCAPTEXTURE\n    {\n      vec3 x = normalize( vec3( viewDir.z, 0.0, -viewDir.x ) );\n      vec3 y = cross( viewDir, x ); // guaranteed to be normalized\n      vec2 sphereUv = 0.5 + 0.5 * vec2( dot( x, normal ), -dot( y, normal ) );\n      sphereUv = ( matcapTextureUvTransform * vec3( sphereUv, 1 ) ).xy;\n      vec3 matcap = texture2D( matcapTexture, sphereUv ).rgb;\n      rim += matcapFactor * matcap;\n    }\n  #endif\n\n  #ifdef USE_RIMMULTIPLYTEXTURE\n    vec2 rimMultiplyTextureUv = ( rimMultiplyTextureUvTransform * vec3( uv, 1 ) ).xy;\n    rim *= texture2D( rimMultiplyTexture, rimMultiplyTextureUv ).rgb;\n  #endif\n\n  col += rimMix * rim;\n\n  // -- MToon: Emission --------------------------------------------------------\n  col += totalEmissiveRadiance;\n\n  // #include <envmap_fragment>\n\n  // -- Almost done! -----------------------------------------------------------\n  #if defined( OUTLINE )\n    col = outlineColorFactor.rgb * mix( vec3( 1.0 ), col, outlineLightingMixFactor );\n  #endif\n\n  #ifdef OPAQUE\n    diffuseColor.a = 1.0;\n  #endif\n\n  gl_FragColor = vec4( col, diffuseColor.a );\n  postCorrection();\n}\n";
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/**
- * Specifiers of debug mode of {@link MToonMaterial}.
- *
- * See: {@link MToonMaterial.debugMode}
- */
+
+
 const MToonMaterialDebugMode = {
-    /**
-     * Render normally.
-     */
+    
     None: 'none',
-    /**
-     * Visualize normals of the surface.
-     */
+    
     Normal: 'normal',
-    /**
-     * Visualize lit/shade of the surface.
-     */
+    
     LitShadeRate: 'litShadeRate',
-    /**
-     * Visualize UV of the surface.
-     */
+    
     UV: 'uv',
 };
 
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const MToonMaterialOutlineWidthMode = {
     None: 'none',
     WorldCoordinates: 'worldCoordinates',
@@ -3574,15 +2881,7 @@ const encodingColorSpaceMap = {
     3000: '',
     3001: 'srgb',
 };
-/**
- * A compat function to get texture color space.
- *
- * COMPAT: pre-r152
- * Starting from Three.js r152, `texture.encoding` is renamed to `texture.colorSpace`.
- * This function will handle the comapt.
- *
- * @param texture The texture you want to get the color space from
- */
+
 function getTextureColorSpace(texture) {
     if (parseInt(THREE.REVISION, 10) >= 152) {
         return texture.colorSpace;
@@ -3592,13 +2891,8 @@ function getTextureColorSpace(texture) {
     }
 }
 
-/* tslint:disable:member-ordering */
-/**
- * MToon is a material specification that has various features.
- * The spec and implementation are originally founded for Unity engine and this is a port of the material.
- *
- * See: https://github.com/Santarh/MToon
- */
+
+
 class MToonMaterial extends THREE.ShaderMaterial {
     get color() {
         return this.uniforms.litFactor.value;
@@ -3774,10 +3068,7 @@ class MToonMaterial extends THREE.ShaderMaterial {
     set uvAnimationRotationPhase(value) {
         this.uniforms.uvAnimationRotationPhase.value = value;
     }
-    /**
-     * When this is `true`, vertex colors will be ignored.
-     * `true` by default.
-     */
+    
     get ignoreVertexColor() {
         return this._ignoreVertexColor;
     }
@@ -3785,40 +3076,20 @@ class MToonMaterial extends THREE.ShaderMaterial {
         this._ignoreVertexColor = value;
         this.needsUpdate = true;
     }
-    /**
-     * There is a line of the shader called "comment out if you want to PBR absolutely" in VRM0.0 MToon.
-     * When this is true, the material enables the line to make it compatible with the legacy rendering of VRM.
-     * Usually not recommended to turn this on.
-     * `false` by default.
-     */
+    
     get v0CompatShade() {
         return this._v0CompatShade;
     }
-    /**
-     * There is a line of the shader called "comment out if you want to PBR absolutely" in VRM0.0 MToon.
-     * When this is true, the material enables the line to make it compatible with the legacy rendering of VRM.
-     * Usually not recommended to turn this on.
-     * `false` by default.
-     */
+    
     set v0CompatShade(v) {
         this._v0CompatShade = v;
         this.needsUpdate = true;
     }
-    /**
-     * Debug mode for the material.
-     * You can visualize several components for diagnosis using debug mode.
-     *
-     * See: {@link MToonMaterialDebugMode}
-     */
+    
     get debugMode() {
         return this._debugMode;
     }
-    /**
-     * Debug mode for the material.
-     * You can visualize several components for diagnosis using debug mode.
-     *
-     * See: {@link MToonMaterialDebugMode}
-     */
+    
     set debugMode(m) {
         this._debugMode = m;
         this.needsUpdate = true;
@@ -3837,9 +3108,7 @@ class MToonMaterial extends THREE.ShaderMaterial {
         this._isOutline = b;
         this.needsUpdate = true;
     }
-    /**
-     * Readonly boolean that indicates this is a [[MToonMaterial]].
-     */
+    
     get isMToonMaterial() {
         return true;
     }
@@ -3849,21 +3118,11 @@ class MToonMaterial extends THREE.ShaderMaterial {
         this.uvAnimationScrollXSpeedFactor = 0.0;
         this.uvAnimationScrollYSpeedFactor = 0.0;
         this.uvAnimationRotationSpeedFactor = 0.0;
-        /**
-         * Whether the material is affected by fog.
-         * `true` by default.
-         */
+        
         this.fog = true;
-        /**
-         * Will be read in WebGLPrograms
-         *
-         * See: https://github.com/mrdoob/three.js/blob/4f5236ac3d6f41d904aa58401b40554e8fbdcb15/src/renderers/webgl/WebGLPrograms.js#L190-L191
-         */
+        
         this.normalMapType = THREE.TangentSpaceNormalMap;
-        /**
-         * When this is `true`, vertex colors will be ignored.
-         * `true` by default.
-         */
+        
         this._ignoreVertexColor = true;
         this._v0CompatShade = false;
         this._debugMode = MToonMaterialDebugMode.None;
@@ -3955,11 +3214,7 @@ class MToonMaterial extends THREE.ShaderMaterial {
             }
         };
     }
-    /**
-     * Update this material.
-     *
-     * @param delta deltaTime since last update
-     */
+    
     update(delta) {
         this._uploadUniformsWorkaround();
         this._updateUVAnimation(delta);
@@ -3987,21 +3242,14 @@ class MToonMaterial extends THREE.ShaderMaterial {
         this.needsUpdate = true;
         return this;
     }
-    /**
-     * Update UV animation state.
-     * Intended to be called via {@link update}.
-     * @param delta deltaTime
-     */
+    
     _updateUVAnimation(delta) {
         this.uniforms.uvAnimationScrollXOffset.value += delta * this.uvAnimationScrollXSpeedFactor;
         this.uniforms.uvAnimationScrollYOffset.value += delta * this.uvAnimationScrollYSpeedFactor;
         this.uniforms.uvAnimationRotationPhase.value += delta * this.uvAnimationRotationSpeedFactor;
         this.uniformsNeedUpdate = true;
     }
-    /**
-     * Upload uniforms that need to upload but doesn't automatically because of reasons.
-     * Intended to be called via {@link constructor} and {@link update}.
-     */
+    
     _uploadUniformsWorkaround() {
         this.uniforms.opacity.value = this.opacity;
         this._updateTextureMatrix(this.uniforms.map, this.uniforms.mapUvTransform);
@@ -4019,9 +3267,7 @@ class MToonMaterial extends THREE.ShaderMaterial {
         }
         this.uniformsNeedUpdate = true;
     }
-    /**
-     * Returns a map object of preprocessor token and macro of the shader program.
-     */
+    
     _generateDefines() {
         const threeRevision = parseInt(THREE.REVISION, 10);
         const useUvInVert = this.outlineWidthMultiplyTexture !== null;
@@ -4066,16 +3312,7 @@ const colorSpaceEncodingMap = {
     '': 3000,
     srgb: 3001,
 };
-/**
- * A compat function to set texture color space.
- *
- * COMPAT: pre-r152
- * Starting from Three.js r152, `texture.encoding` is renamed to `texture.colorSpace`.
- * This function will handle the comapt.
- *
- * @param texture The texture you want to set the color space to
- * @param colorSpace The color space you want to set to the texture
- */
+
 function setTextureColorSpace(texture, colorSpace) {
     if (parseInt(THREE.REVISION, 10) >= 152) {
         texture.colorSpace = colorSpace;
@@ -4085,11 +3322,7 @@ function setTextureColorSpace(texture, colorSpace) {
     }
 }
 
-/**
- * MaterialParameters hates `undefined`. This helper automatically rejects assign of these `undefined`.
- * It also handles asynchronous process of textures.
- * Make sure await for {@link GLTFMToonMaterialParamsAssignHelper.pending}.
- */
+
 class GLTFMToonMaterialParamsAssignHelper {
     get pending() {
         return Promise.all(this._pendings);
@@ -4133,9 +3366,7 @@ class GLTFMToonMaterialParamsAssignHelper {
     }
 }
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$2 = new Set(['1.0', '1.0-beta']);
 class MToonMaterialLoaderPlugin {
     get name() {
@@ -4204,12 +3435,7 @@ class MToonMaterialLoaderPlugin {
             return meshOrGroup;
         });
     }
-    /**
-     * Delete use of `KHR_materials_unlit` from its `materials` if the material is using MToon.
-     *
-     * Since GLTFLoader have so many hardcoded procedure related to `KHR_materials_unlit`
-     * we have to delete the extension before we start to parse the glTF.
-     */
+    
     _removeUnlitExtensionIfMToonExists() {
         const parser = this.parser;
         const json = parser.json;
@@ -4277,15 +3503,7 @@ class MToonMaterialLoaderPlugin {
             yield assignHelper.pending;
         });
     }
-    /**
-     * This will do two processes that is required to render MToon properly.
-     *
-     * - Set render order
-     * - Generate outline
-     *
-     * @param mesh A target GLTF primitive
-     * @param materialIndex The material index of the primitive
-     */
+    
     _setupPrimitive(mesh, materialIndex) {
         const extension = this._getMToonExtension(materialIndex);
         if (extension) {
@@ -4296,11 +3514,7 @@ class MToonMaterialLoaderPlugin {
             return;
         }
     }
-    /**
-     * Generate outline for the given mesh, if it needs.
-     *
-     * @param mesh The target mesh
-     */
+    
     _generateOutline(mesh) {
         const surfaceMaterial = mesh.material;
         if (!(surfaceMaterial instanceof MToonMaterial)) {
@@ -4343,28 +3557,8 @@ class MToonMaterialLoaderPlugin {
 }
 MToonMaterialLoaderPlugin.EXTENSION_NAME = 'VRMC_materials_mtoon';
 
-/*!
- * @pixiv/three-vrm-materials-hdr-emissive-multiplier v2.1.2
- * Support VRMC_hdr_emissiveMultiplier for @pixiv/three-vrm
- *
- * Copyright (c) 2020-2024 pixiv Inc.
- * @pixiv/three-vrm-materials-hdr-emissive-multiplier is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter$3(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -4417,29 +3611,9 @@ class VRMMaterialsHDREmissiveMultiplierLoaderPlugin {
 }
 VRMMaterialsHDREmissiveMultiplierLoaderPlugin.EXTENSION_NAME = 'VRMC_materials_hdr_emissiveMultiplier';
 
-/*!
- * @pixiv/three-vrm-materials-v0compat v2.1.2
- * VRM0.0 materials compatibility layer plugin for @pixiv/three-vrm
- *
- * Copyright (c) 2020-2024 pixiv Inc.
- * @pixiv/three-vrm-materials-v0compat is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter$2(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -4672,9 +3846,7 @@ class VRMMaterialsV0CompatPlugin {
                 VRMC_materials_mtoon: mtoonExtension,
             } });
     }
-    /**
-     * Create a glTF `KHR_texture_transform` extension from v0 texture transform info.
-     */
+    
     _portTextureTransform(materialProperties) {
         var _a, _b, _c, _d, _e;
         const textureTransform = (_a = materialProperties.vectorProperties) === null || _a === void 0 ? void 0 : _a['_MainTex'];
@@ -4688,10 +3860,7 @@ class VRMMaterialsV0CompatPlugin {
             KHR_texture_transform: { offset, scale },
         };
     }
-    /**
-     * Convert v0 render order into v1 render order.
-     * This uses a map from v0 render queue to v1 compliant render queue offset which is generated in {@link _populateRenderQueueMap}.
-     */
+    
     _v0ParseRenderQueue(materialProperties) {
         var _a, _b, _c;
         const isTransparent = (_b = (_a = materialProperties.keywordMap) === null || _a === void 0 ? void 0 : _a['_ALPHABLEND_ON']) !== null && _b !== void 0 ? _b : false;
@@ -4710,18 +3879,11 @@ class VRMMaterialsV0CompatPlugin {
         }
         return offset;
     }
-    /**
-     * Create a map which maps v0 render queue to v1 compliant render queue offset.
-     * This lists up all render queues the model use and creates a map to new render queue offsets in the same order.
-     */
+    
     _populateRenderQueueMap(materialPropertiesList) {
-        /**
-         * A set of used render queues in Transparent materials.
-         */
+        
         const renderQueuesTransparent = new Set();
-        /**
-         * A set of used render queues in TransparentZWrite materials.
-         */
+        
         const renderQueuesTransparentZWrite = new Set();
         materialPropertiesList.forEach((materialProperties) => {
             var _a, _b, _c;
@@ -4760,14 +3922,7 @@ class VRMMaterialsV0CompatPlugin {
     }
 }
 
-/*!
- * @pixiv/three-vrm-node-constraint v2.1.2
- * Node constraint module for @pixiv/three-vrm
- *
- * Copyright (c) 2020-2024 pixiv Inc.
- * @pixiv/three-vrm-node-constraint is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
+
 
 const _v3A$3$1 = new THREE.Vector3();
 class VRMNodeConstraintHelper extends THREE.Group {
@@ -4809,12 +3964,7 @@ function decomposeRotation(matrix, target) {
     return target;
 }
 
-/**
- * A compat function for `Quaternion.invert()` / `Quaternion.inverse()`.
- * `Quaternion.invert()` is introduced in r123 and `Quaternion.inverse()` emits a warning.
- * We are going to use this compat for a while.
- * @param target A target quaternion
- */
+
 function quatInvertCompat(target) {
     if (target.invert) {
         target.invert();
@@ -4825,14 +3975,9 @@ function quatInvertCompat(target) {
     return target;
 }
 
-/**
- * A base class of VRM constraint classes.
- */
+
 class VRMNodeConstraint {
-    /**
-     * @param destination The destination object
-     * @param source The source object
-     */
+    
     constructor(destination, source) {
         this.destination = destination;
         this.source = source;
@@ -4846,21 +3991,13 @@ const _v3C$1 = new THREE.Vector3();
 const _quatA$2 = new THREE.Quaternion();
 const _quatB$2 = new THREE.Quaternion();
 const _quatC = new THREE.Quaternion();
-/**
- * A constraint that makes it look at a source object.
- *
- * See: https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_node_constraint-1.0_beta#roll-constraint
- */
+
 class VRMAimConstraint extends VRMNodeConstraint {
-    /**
-     * The aim axis of the constraint.
-     */
+    
     get aimAxis() {
         return this._aimAxis;
     }
-    /**
-     * The aim axis of the constraint.
-     */
+    
     set aimAxis(aimAxis) {
         this._aimAxis = aimAxis;
         this._v3AimAxis.set(aimAxis === 'PositiveX' ? 1.0 : aimAxis === 'NegativeX' ? -1.0 : 0.0, aimAxis === 'PositiveY' ? 1.0 : aimAxis === 'NegativeY' ? -1.0 : 0.0, aimAxis === 'PositiveZ' ? 1.0 : aimAxis === 'NegativeZ' ? -1.0 : 0.0);
@@ -4903,20 +4040,7 @@ class VRMAimConstraint extends VRMNodeConstraint {
     }
 }
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter$1(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -4933,13 +4057,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
-/**
- * Traverse ancestors of given object and call given callback from root side.
- * It will include the given object itself.
- *
- * @param object The object you want to traverse
- * @param callback The call back function that will be called for each ancestors
- */
+
 function traverseAncestorsFromRoot$1(object, callback) {
     const ancestors = [object];
     let head = object.parent;
@@ -4988,17 +4106,7 @@ class VRMNodeConstraintManager {
             this._processConstraint(constraint, constraintsTried, constraintsDone, (constraint) => constraint.update());
         }
     }
-    /**
-     * Update a constraint.
-     * If there are other constraints that are dependant, it will try to update them recursively.
-     * It might throw an error if there are circular dependencies.
-     *
-     * Intended to be used in {@link update} and {@link _processConstraint} itself recursively.
-     *
-     * @param constraint A constraint you want to update
-     * @param constraintsTried Set of constraints that are already tried to be updated
-     * @param constraintsDone Set of constraints that are already up to date
-     */
+    
     _processConstraint(constraint, constraintsTried, constraintsDone, callback) {
         if (constraintsDone.has(constraint)) {
             return;
@@ -5025,11 +4133,7 @@ class VRMNodeConstraintManager {
 
 const _quatA$1 = new THREE.Quaternion();
 const _quatB$1 = new THREE.Quaternion();
-/**
- * A constraint that transfers a rotation around one axis of a source.
- *
- * See: https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_node_constraint-1.0_beta#roll-constraint
- */
+
 class VRMRotationConstraint extends VRMNodeConstraint {
     get dependencies() {
         return new Set([this.source]);
@@ -5053,21 +4157,13 @@ class VRMRotationConstraint extends VRMNodeConstraint {
 const _v3A$5 = new THREE.Vector3();
 const _quatA$3 = new THREE.Quaternion();
 const _quatB = new THREE.Quaternion();
-/**
- * A constraint that transfers a rotation around one axis of a source.
- *
- * See: https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_node_constraint-1.0_beta#roll-constraint
- */
+
 class VRMRollConstraint extends VRMNodeConstraint {
-    /**
-     * The roll axis of the constraint.
-     */
+    
     get rollAxis() {
         return this._rollAxis;
     }
-    /**
-     * The roll axis of the constraint.
-     */
+    
     set rollAxis(rollAxis) {
         this._rollAxis = rollAxis;
         this._v3RollAxis.set(rollAxis === 'X' ? 1.0 : 0.0, rollAxis === 'Y' ? 1.0 : 0.0, rollAxis === 'Z' ? 1.0 : 0.0);
@@ -5089,44 +4185,20 @@ class VRMRollConstraint extends VRMNodeConstraint {
         quatInvertCompat(this._invSrcRestQuatMulDstRestQuat.copy(this.source.quaternion)).multiply(this._dstRestQuat);
     }
     update() {
-        /**
-         * What the quatDelta is intended to be:
-         *
-         * ```ts
-         * const quatSrcDelta = _quatA
-         *   .copy( this._invSrcRestQuat )
-         *   .multiply( this.source.quaternion );
-         * const quatSrcDeltaInParent = _quatB
-         *   .copy( this._srcRestQuat )
-         *   .multiply( quatSrcDelta )
-         *   .multiply( this._invSrcRestQuat );
-         * const quatSrcDeltaInDst = _quatA
-         *   .copy( this._invDstRestQuat )
-         *   .multiply( quatSrcDeltaInParent )
-         *   .multiply( this._dstRestQuat );
-         * ```
-         */
+        
         const quatDelta = _quatA$3
             .copy(this._invDstRestQuat)
             .multiply(this.source.quaternion)
             .multiply(this._invSrcRestQuatMulDstRestQuat);
         const n1 = _v3A$5.copy(this._v3RollAxis).applyQuaternion(quatDelta);
-        /**
-         * What the quatFromTo is intended to be:
-         *
-         * ```ts
-         * const quatFromTo = _quatB.setFromUnitVectors( this._v3RollAxis, n1 ).inverse();
-         * ```
-         */
+        
         const quatFromTo = _quatB.setFromUnitVectors(n1, this._v3RollAxis);
         const targetQuat = quatFromTo.premultiply(this._dstRestQuat).multiply(quatDelta);
         this.destination.quaternion.copy(this._dstRestQuat).slerp(targetQuat, this.weight);
     }
 }
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS$1 = new Set(['1.0', '1.0-beta']);
 class VRMNodeConstraintLoaderPlugin {
     get name() {
@@ -5141,12 +4213,7 @@ class VRMNodeConstraintLoaderPlugin {
             gltf.userData.vrmNodeConstraintManager = yield this._import(gltf);
         });
     }
-    /**
-     * Import constraints from a GLTF and returns a {@link VRMNodeConstraintManager}.
-     * It might return `null` instead when it does not need to be created or something go wrong.
-     *
-     * @param gltf A parsed result of GLTF taken from GLTFLoader
-     */
+    
     _import(gltf) {
         var _a;
         return __awaiter$1(this, void 0, void 0, function* () {
@@ -5236,18 +4303,9 @@ class VRMNodeConstraintLoaderPlugin {
 }
 VRMNodeConstraintLoaderPlugin.EXTENSION_NAME = 'VRMC_node_constraint';
 
-/*!
- * @pixiv/three-vrm-springbone v2.1.2
- * Spring bone module for @pixiv/three-vrm
- *
- * Copyright (c) 2020-2024 pixiv Inc.
- * @pixiv/three-vrm-springbone is distributed under MIT License
- * https://github.com/pixiv/three-vrm/blob/release/LICENSE
- */
 
-/**
- * Represents a shape of a collider.
- */
+
+
 class VRMSpringBoneColliderShape {
 }
 
@@ -5553,9 +4611,7 @@ class VRMSpringBoneJointHelper extends THREE.Group {
     }
 }
 
-/**
- * Represents a collider of a VRM.
- */
+
 class VRMSpringBoneCollider extends THREE.Object3D {
     constructor(shape) {
         super();
@@ -5564,12 +4620,7 @@ class VRMSpringBoneCollider extends THREE.Object3D {
 }
 
 const _matA$1 = new THREE.Matrix4();
-/**
- * A compat function for `Matrix4.invert()` / `Matrix4.getInverse()`.
- * `Matrix4.invert()` is introduced in r123 and `Matrix4.getInverse()` emits a warning.
- * We are going to use this compat for a while.
- * @param target A target matrix
- */
+
 function mat4InvertCompat(target) {
     if (target.invert) {
         target.invert();
@@ -5581,11 +4632,7 @@ function mat4InvertCompat(target) {
 }
 
 class Matrix4InverseCache {
-    /**
-     * Inverse of given matrix.
-     * Note that it will return its internal private instance.
-     * Make sure copying this before mutate this.
-     */
+    
     get inverse() {
         if (this._shouldUpdateInverse) {
             this._inverseCache.copy(this.matrix);
@@ -5595,14 +4642,9 @@ class Matrix4InverseCache {
         return this._inverseCache;
     }
     constructor(matrix) {
-        /**
-         * A cache of inverse of current matrix.
-         */
+        
         this._inverseCache = new THREE.Matrix4();
-        /**
-         * A flag that makes it want to recalculate its {@link _inverseCache}.
-         * Will be set `true` when `elements` are mutated and be used in `getInverse`.
-         */
+        
         this._shouldUpdateInverse = true;
         this.matrix = matrix;
         const handler = {
@@ -5624,25 +4666,16 @@ const IDENTITY_MATRIX4 = new THREE.Matrix4();
 const _v3A = new THREE.Vector3();
 const _v3B = new THREE.Vector3();
 const _v3C = new THREE.Vector3();
-/**
- * A temporary variable which is used in `update`
- */
+
 const _worldSpacePosition = new THREE.Vector3();
-/**
- * A temporary variable which is used in `update`
- */
+
 const _centerSpacePosition = new THREE.Vector3();
-/**
- * A temporary variable which is used in `update`
- */
+
 const _nextTail = new THREE.Vector3();
 const _quatA = new THREE.Quaternion();
 const _matA = new THREE.Matrix4();
 const _matB = new THREE.Matrix4();
-/**
- * A class represents a single joint of a spring bone.
- * It should be managed by a [[VRMSpringBoneManager]].
- */
+
 class VRMSpringBoneJoint {
     get center() {
         return this._center;
@@ -5663,58 +4696,28 @@ class VRMSpringBoneJoint {
     get initialLocalChildPosition() {
         return this._initialLocalChildPosition;
     }
-    /**
-     * Returns the world matrix of its parent object.
-     * Note that it returns a reference to the matrix. Don't mutate this directly!
-     */
+    
     get _parentMatrixWorld() {
         return this.bone.parent ? this.bone.parent.matrixWorld : IDENTITY_MATRIX4;
     }
-    /**
-     * Create a new VRMSpringBone.
-     *
-     * @param bone An Object3D that will be attached to this bone
-     * @param child An Object3D that will be used as a tail of this spring bone. It can be null when the spring bone is imported from VRM 0.0
-     * @param settings Several parameters related to behavior of the spring bone
-     * @param colliderGroups Collider groups that will be collided with this spring bone
-     */
+    
     constructor(bone, child, settings = {}, colliderGroups = []) {
         var _a, _b, _c, _d, _e, _f;
-        /**
-         * Current position of child tail, in center unit. Will be used for verlet integration.
-         */
+        
         this._currentTail = new THREE.Vector3();
-        /**
-         * Previous position of child tail, in center unit. Will be used for verlet integration.
-         */
+        
         this._prevTail = new THREE.Vector3();
-        /**
-         * Initial axis of the bone, in local unit.
-         */
+        
         this._boneAxis = new THREE.Vector3();
-        /**
-         * Length of the bone in world unit.
-         * Will be used for normalization in update loop, will be updated by {@link _calcWorldSpaceBoneLength}.
-         *
-         * It's same as local unit length unless there are scale transformations in the world space.
-         */
+        
         this._worldSpaceBoneLength = 0.0;
-        /**
-         * This springbone will be calculated based on the space relative from this object.
-         * If this is `null`, springbone will be calculated in world space.
-         */
+        
         this._center = null;
-        /**
-         * Initial state of the local matrix of the bone.
-         */
+        
         this._initialLocalMatrix = new THREE.Matrix4();
-        /**
-         * Initial state of the rotation of the bone.
-         */
+        
         this._initialLocalRotation = new THREE.Quaternion();
-        /**
-         * Initial state of the position of its child.
-         */
+        
         this._initialLocalChildPosition = new THREE.Vector3();
         this.bone = bone; // uniVRMでの parent
         this.bone.matrixAutoUpdate = false; // updateにより計算されるのでthree.js内での自動処理は不要
@@ -5728,10 +4731,7 @@ class VRMSpringBoneJoint {
         };
         this.colliderGroups = colliderGroups;
     }
-    /**
-     * Set the initial state of this spring bone.
-     * You might want to call {@link VRMSpringBoneManager.setInitState} instead.
-     */
+    
     setInitState() {
         this._initialLocalMatrix.copy(this.bone.matrix);
         this._initialLocalRotation.copy(this.bone.quaternion);
@@ -5746,10 +4746,7 @@ class VRMSpringBoneJoint {
         this._prevTail.copy(this._currentTail);
         this._boneAxis.copy(this._initialLocalChildPosition).normalize();
     }
-    /**
-     * Reset the state of this bone.
-     * You might want to call [[VRMSpringBoneManager.reset]] instead.
-     */
+    
     reset() {
         this.bone.quaternion.copy(this._initialLocalRotation);
         this.bone.updateMatrix();
@@ -5758,12 +4755,7 @@ class VRMSpringBoneJoint {
         this.bone.localToWorld(this._currentTail.copy(this._initialLocalChildPosition)).applyMatrix4(matrixWorldToCenter);
         this._prevTail.copy(this._currentTail);
     }
-    /**
-     * Update the state of this bone.
-     * You might want to call [[VRMSpringBoneManager.update]] instead.
-     *
-     * @param delta deltaTime
-     */
+    
     update(delta) {
         if (delta <= 0)
             return;
@@ -5801,11 +4793,7 @@ class VRMSpringBoneJoint {
         this.bone.updateMatrix();
         this.bone.matrixWorld.multiplyMatrices(this._parentMatrixWorld, this.bone.matrix);
     }
-    /**
-     * Do collision math against every colliders attached to this bone.
-     *
-     * @param tail The tail you want to process
-     */
+    
     _collision(tail) {
         this.colliderGroups.forEach((colliderGroup) => {
             colliderGroup.colliders.forEach((collider) => {
@@ -5817,10 +4805,7 @@ class VRMSpringBoneJoint {
             });
         });
     }
-    /**
-     * Calculate the {@link _worldSpaceBoneLength}.
-     * Intended to be used in {@link update}.
-     */
+    
     _calcWorldSpaceBoneLength() {
         _v3A.setFromMatrixPosition(this.bone.matrixWorld); // get world position of this.bone
         if (this.child) {
@@ -5832,10 +4817,7 @@ class VRMSpringBoneJoint {
         }
         this._worldSpaceBoneLength = _v3A.sub(_v3B).length();
     }
-    /**
-     * Create a matrix that converts center space into world space.
-     * @param target Target matrix
-     */
+    
     _getMatrixCenterToWorld(target) {
         if (this._center) {
             target.copy(this._center.matrixWorld);
@@ -5845,10 +4827,7 @@ class VRMSpringBoneJoint {
         }
         return target;
     }
-    /**
-     * Create a matrix that converts world space into center space.
-     * @param target Target matrix
-     */
+    
     _getMatrixWorldToCenter(target) {
         if (this._center) {
             target.copy(this._center.userData.inverseCacheProxy.inverse);
@@ -5860,20 +4839,7 @@ class VRMSpringBoneJoint {
     }
 }
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
 
 function __awaiter(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -5902,13 +4868,7 @@ function traverseAncestorsFromRoot(object, callback) {
     });
 }
 
-/**
- * Traverse children of given object and execute given callback.
- * The given object itself wont be given to the callback.
- * If the return value of the callback is `true`, it will halt the traversal of its children.
- * @param object A root object
- * @param callback A callback function called for each children
- */
+
 function traverseChildrenUntilConditionMet(object, callback) {
     object.children.forEach((child) => {
         const result = callback(child);
@@ -5926,9 +4886,7 @@ class VRMSpringBoneManager {
     get joints() {
         return this._joints;
     }
-    /**
-     * @deprecated Use {@link joints} instead.
-     */
+    
     get springBones() {
         console.warn('VRMSpringBoneManager: springBones is deprecated. use joints instead.');
         return this._joints;
@@ -5960,9 +4918,7 @@ class VRMSpringBoneManager {
         }
         objectSet.add(joint);
     }
-    /**
-     * @deprecated Use {@link addJoint} instead.
-     */
+    
     addSpringBone(joint) {
         console.warn('VRMSpringBoneManager: addSpringBone() is deprecated. use addJoint() instead.');
         this.addJoint(joint);
@@ -5972,9 +4928,7 @@ class VRMSpringBoneManager {
         const objectSet = this._objectSpringBonesMap.get(joint.bone);
         objectSet.delete(joint);
     }
-    /**
-     * @deprecated Use {@link deleteJoint} instead.
-     */
+    
     deleteSpringBone(joint) {
         console.warn('VRMSpringBoneManager: deleteSpringBone() is deprecated. use deleteJoint() instead.');
         this.deleteJoint(joint);
@@ -6011,19 +4965,7 @@ class VRMSpringBoneManager {
             });
         }
     }
-    /**
-     * Update a spring bone.
-     * If there are other spring bone that are dependant, it will try to update them recursively.
-     * It updates matrixWorld of all ancestors and myself.
-     * It might throw an error if there are circular dependencies.
-     *
-     * Intended to be used in {@link update} and {@link _processSpringBone} itself recursively.
-     *
-     * @param springBone A springBone you want to update
-     * @param springBonesTried Set of springBones that are already tried to be updated
-     * @param springBonesDone Set of springBones that are already up to date
-     * @param objectUpdated Set of object3D whose matrixWorld is updated
-     */
+    
     _processSpringBone(springBone, springBonesTried, springBonesDone, objectUpdated, callback) {
         if (springBonesDone.has(springBone)) {
             return;
@@ -6053,11 +4995,7 @@ class VRMSpringBoneManager {
         objectUpdated.add(springBone.bone);
         springBonesDone.add(springBone);
     }
-    /**
-     * Return a set of objects that are dependant of given spring bone.
-     * @param springBone A spring bone
-     * @return A set of objects that are dependant of given spring bone
-     */
+    
     _getDependencies(springBone) {
         const set = new Set();
         const parent = springBone.bone.parent;
@@ -6073,9 +5011,7 @@ class VRMSpringBoneManager {
     }
 }
 
-/**
- * Possible spec versions it recognizes.
- */
+
 const POSSIBLE_SPEC_VERSIONS = new Set(['1.0', '1.0-beta']);
 class VRMSpringBoneLoaderPlugin {
     get name() {
@@ -6091,12 +5027,7 @@ class VRMSpringBoneLoaderPlugin {
             gltf.userData.vrmSpringBoneManager = yield this._import(gltf);
         });
     }
-    /**
-     * Import spring bones from a GLTF and return a {@link VRMSpringBoneManager}.
-     * It might return `null` instead when it does not need to be created or something go wrong.
-     *
-     * @param gltf A parsed result of GLTF taken from GLTFLoader
-     */
+    
     _import(gltf) {
         return __awaiter(this, void 0, void 0, function* () {
             const v1Result = yield this._v1Import(gltf);
@@ -6447,13 +5378,7 @@ function deepDispose(object3D) {
     object3D.traverse(dispose);
 }
 
-/**
- * Traverse given object and remove unnecessarily bound joints from every `THREE.SkinnedMesh`.
- * Some environments like mobile devices have a lower limit of bones and might be unable to perform mesh skinning, this function might resolve such an issue.
- * Also this function might greatly improve the performance of mesh skinning.
- *
- * @param root Root object that will be traversed
- */
+
 function removeUnnecessaryJoints(root) {
     const skeletonList = new Map();
     root.traverse((obj) => {
@@ -6487,16 +5412,7 @@ function removeUnnecessaryJoints(root) {
     });
 }
 
-/**
- * Traverse given object and remove unnecessary vertices from every BufferGeometries.
- * This only processes buffer geometries with index buffer.
- *
- * Three.js creates morph textures for each geometries and it sometimes consumes unnecessary amount of VRAM for certain models.
- * This function will optimize geometries to reduce the size of morph texture.
- * See: https://github.com/mrdoob/three.js/issues/23095
- *
- * @param root Root object that will be traversed
- */
+
 function removeUnnecessaryVertices(root) {
     const geometryMap = new Map();
     root.traverse((obj) => {
@@ -6526,9 +5442,9 @@ function removeUnnecessaryVertices(root) {
         newGeometry.setDrawRange(geometry.drawRange.start, geometry.drawRange.count);
         newGeometry.userData = geometry.userData;
         geometryMap.set(geometry, newGeometry);
-        /** from original index to new index */
+        
         const originalIndexNewIndexMap = [];
-        /** from new index to original index */
+        
         const newIndexOriginalIndexMap = [];
         {
             const originalIndexArray = origianlIndex.array;
@@ -6562,7 +5478,7 @@ function removeUnnecessaryVertices(root) {
             });
             newGeometry.setAttribute(attributeName, new BufferAttribute(newAttributeArray, itemSize, normalized));
         });
-        /** True if all morphs are zero. */
+        
         let isNullMorph = true;
         Object.keys(geometry.morphAttributes).forEach((attributeName) => {
             newGeometry.morphAttributes[attributeName] = [];
@@ -6594,11 +5510,7 @@ function removeUnnecessaryVertices(root) {
     });
 }
 
-/**
- * If the given VRM is VRM0.0, rotate the `vrm.scene` by 180 degrees around the Y axis.
- *
- * @param vrm The target VRM
- */
+
 function rotateVRM0(vrm) {
     var _a;
     if (((_a = vrm.meta) === null || _a === void 0 ? void 0 : _a.metaVersion) === '0') {

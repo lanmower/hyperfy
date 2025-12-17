@@ -1,9 +1,4 @@
-/**
- * Pseudorandom Number Generator
- * -----------------------------
- * Implementation taken from the `prng` and `lfrs` NPM packages
- * and modernized to work with newer build tools and ES6+
- */
+
 
 const DEFAULT_SEED = 149304961039362642461
 const REGISTER_LENGTH = 31

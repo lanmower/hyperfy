@@ -1,13 +1,6 @@
 import { Quaternion, MathUtils } from 'three'
 
-/**
- * This is an enhanced version of THREE.Vector3 to add the _onChange function
- * to match THREE.Quaternion
- * 
- * Current version is from THREE v167
- * 
- * The initial unmodified version was committed so you can diff what changed.
- */
+
 
 export class Vector3Enhanced {
 
@@ -852,6 +845,6 @@ export class Vector3Enhanced {
 
 }
 
-const _vector = /*@__PURE__*/ new Vector3Enhanced();
-const _quaternion = /*@__PURE__*/ new Quaternion();
+const _vector =  new Vector3Enhanced();
+const _quaternion =  new Quaternion();
 

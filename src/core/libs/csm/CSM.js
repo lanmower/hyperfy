@@ -1,14 +1,10 @@
 import * as three from 'three'
 
-/**
- * Forked from: https://github.com/Dhruv-0-Arora/three-csm/blob/master/build/three-csm.js
- * Also fixed getShadow signature, which needed .shadowIntensity arg before .shadowBias (only fixed for directional lights)
- * Also fixed a fade bug not being set correctly in updateUniforms
- */
+
 
 const lightParsBeginInitial = three.ShaderChunk.lights_pars_begin
 const CSMShader = {
-  lights_fragment_begin: cascades => /* glsl */ `
+  lights_fragment_begin: cascades =>  `
 vec3 geometryPosition = - vViewPosition;
 vec3 geometryNormal = normal;
 vec3 geometryViewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );
@@ -276,7 +272,7 @@ IncidentLight directLight;
 #endif
 `,
   lights_pars_begin: maxCascades =>
-    /* glsl */ `
+     `
 #if defined( USE_CSM ) && defined( CSM_CASCADES )
 uniform vec2 CSM_cascades[${maxCascades}]; // This value is the max. number supported of cascades
 uniform float cameraNear;

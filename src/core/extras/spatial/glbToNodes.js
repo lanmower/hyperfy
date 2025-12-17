@@ -264,16 +264,7 @@ const snoise = `
 `
 
 function setupSplatmap(mesh) {
-  /**
-   * TODO
-   * - vertex colors should shade terrain
-   * - use alpha for a 4th texture layer
-   *
-   * NOTES
-   * - blender gltf export doesnt support a complex triplanar splatmap shader
-   *   so we force the splat and rgba textures into random material slots and
-   *   reconstruct them here.
-   */
+  
   const original = mesh.material
   if (original.specularIntensityMap) original.specularIntensityMap.colorSpace = THREE.SRGBColorSpace
   if (original.transmissionMap) original.transmissionMap.colorSpace = THREE.SRGBColorSpace

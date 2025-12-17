@@ -1,12 +1,4 @@
-/**
- * This is an exact copy of GLTFLoader.js in three v0.173.0
- * 
- * Search the following keywords to see changes:
- * 
- * HYP_IMPORT_CHANGE: just points to the jsm/examples absolute instead relative since we copied
- * HYP_WEBP_NODE: allows WebP extension to work in nodejs
- * 
- */
+
 
 import {
 	AnimationClip,
@@ -440,7 +432,7 @@ class GLTFLoader extends Loader {
 
 }
 
-/* GLTFREGISTRY */
+
 
 function GLTFRegistry() {
 
@@ -476,9 +468,9 @@ function GLTFRegistry() {
 
 }
 
-/*********************************/
-/********** EXTENSIONS ***********/
-/*********************************/
+
+
+
 
 const EXTENSIONS = {
 	KHR_BINARY_GLTF: 'KHR_binary_glTF',
@@ -505,11 +497,7 @@ const EXTENSIONS = {
 	EXT_MESH_GPU_INSTANCING: 'EXT_mesh_gpu_instancing'
 };
 
-/**
- * Punctual Lights Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_lights_punctual
- */
+
 class GLTFLightsExtension {
 
 	constructor( parser ) {
@@ -637,11 +625,7 @@ class GLTFLightsExtension {
 
 }
 
-/**
- * Unlit Materials Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_unlit
- */
+
 class GLTFMaterialsUnlitExtension {
 
 	constructor() {
@@ -690,11 +674,7 @@ class GLTFMaterialsUnlitExtension {
 
 }
 
-/**
- * Materials Emissive Strength Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/blob/5768b3ce0ef32bc39cdf1bef10b948586635ead3/extensions/2.0/Khronos/KHR_materials_emissive_strength/README.md
- */
+
 class GLTFMaterialsEmissiveStrengthExtension {
 
 	constructor( parser ) {
@@ -729,11 +709,7 @@ class GLTFMaterialsEmissiveStrengthExtension {
 
 }
 
-/**
- * Clearcoat Materials Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_clearcoat
- */
+
 class GLTFMaterialsClearcoatExtension {
 
 	constructor( parser ) {
@@ -813,11 +789,7 @@ class GLTFMaterialsClearcoatExtension {
 
 }
 
-/**
- * Materials dispersion Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_dispersion
- */
+
 class GLTFMaterialsDispersionExtension {
 
 	constructor( parser ) {
@@ -859,11 +831,7 @@ class GLTFMaterialsDispersionExtension {
 
 }
 
-/**
- * Iridescence Materials Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_iridescence
- */
+
 class GLTFMaterialsIridescenceExtension {
 
 	constructor( parser ) {
@@ -947,11 +915,7 @@ class GLTFMaterialsIridescenceExtension {
 
 }
 
-/**
- * Sheen Materials Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_sheen
- */
+
 class GLTFMaterialsSheenExtension {
 
 	constructor( parser ) {
@@ -1022,12 +986,7 @@ class GLTFMaterialsSheenExtension {
 
 }
 
-/**
- * Transmission Materials Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_transmission
- * Draft: https://github.com/KhronosGroup/glTF/pull/1698
- */
+
 class GLTFMaterialsTransmissionExtension {
 
 	constructor( parser ) {
@@ -1081,11 +1040,7 @@ class GLTFMaterialsTransmissionExtension {
 
 }
 
-/**
- * Materials Volume Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_volume
- */
+
 class GLTFMaterialsVolumeExtension {
 
 	constructor( parser ) {
@@ -1140,11 +1095,7 @@ class GLTFMaterialsVolumeExtension {
 
 }
 
-/**
- * Materials ior Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_ior
- */
+
 class GLTFMaterialsIorExtension {
 
 	constructor( parser ) {
@@ -1186,11 +1137,7 @@ class GLTFMaterialsIorExtension {
 
 }
 
-/**
- * Materials specular Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_specular
- */
+
 class GLTFMaterialsSpecularExtension {
 
 	constructor( parser ) {
@@ -1250,11 +1197,7 @@ class GLTFMaterialsSpecularExtension {
 }
 
 
-/**
- * Materials bump Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/EXT_materials_bump
- */
+
 class GLTFMaterialsBumpExtension {
 
 	constructor( parser ) {
@@ -1304,11 +1247,7 @@ class GLTFMaterialsBumpExtension {
 
 }
 
-/**
- * Materials anisotropy Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_anisotropy
- */
+
 class GLTFMaterialsAnisotropyExtension {
 
 	constructor( parser ) {
@@ -1368,11 +1307,7 @@ class GLTFMaterialsAnisotropyExtension {
 
 }
 
-/**
- * BasisU Texture Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_texture_basisu
- */
+
 class GLTFTextureBasisUExtension {
 
 	constructor( parser ) {
@@ -1418,11 +1353,7 @@ class GLTFTextureBasisUExtension {
 
 }
 
-/**
- * WebP Texture Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Vendor/EXT_texture_webp
- */
+
 class GLTFTextureWebPExtension {
 
 	constructor( parser ) {
@@ -1504,11 +1435,7 @@ class GLTFTextureWebPExtension {
 
 }
 
-/**
- * AVIF Texture Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Vendor/EXT_texture_avif
- */
+
 class GLTFTextureAVIFExtension {
 
 	constructor( parser ) {
@@ -1585,11 +1512,7 @@ class GLTFTextureAVIFExtension {
 
 }
 
-/**
- * meshopt BufferView Compression Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Vendor/EXT_meshopt_compression
- */
+
 class GLTFMeshoptCompression {
 
 	constructor( parser ) {
@@ -1667,12 +1590,7 @@ class GLTFMeshoptCompression {
 
 }
 
-/**
- * GPU Instancing Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Vendor/EXT_mesh_gpu_instancing
- *
- */
+
 class GLTFMeshGpuInstancing {
 
 	constructor( parser ) {
@@ -1819,7 +1737,7 @@ class GLTFMeshGpuInstancing {
 
 }
 
-/* BINARY EXTENSION */
+
 const BINARY_EXTENSION_HEADER_MAGIC = 'glTF';
 const BINARY_EXTENSION_HEADER_LENGTH = 12;
 const BINARY_EXTENSION_CHUNK_TYPES = { JSON: 0x4E4F534A, BIN: 0x004E4942 };
@@ -1890,11 +1808,7 @@ class GLTFBinaryExtension {
 
 }
 
-/**
- * DRACO Mesh Compression Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_draco_mesh_compression
- */
+
 class GLTFDracoMeshCompressionExtension {
 
 	constructor( json, dracoLoader ) {
@@ -1973,11 +1887,7 @@ class GLTFDracoMeshCompressionExtension {
 
 }
 
-/**
- * Texture Transform Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_texture_transform
- */
+
 class GLTFTextureTransformExtension {
 
 	constructor() {
@@ -2031,11 +1941,7 @@ class GLTFTextureTransformExtension {
 
 }
 
-/**
- * Mesh Quantization Extension
- *
- * Specification: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_mesh_quantization
- */
+
 class GLTFMeshQuantizationExtension {
 
 	constructor() {
@@ -2046,9 +1952,9 @@ class GLTFMeshQuantizationExtension {
 
 }
 
-/*********************************/
-/********** INTERPOLATION ********/
-/*********************************/
+
+
+
 
 class GLTFCubicSplineInterpolant extends Interpolant {
 
@@ -2133,11 +2039,11 @@ class GLTFCubicSplineQuaternionInterpolant extends GLTFCubicSplineInterpolant {
 }
 
 
-/*********************************/
-/********** INTERNALS ************/
-/*********************************/
 
-/* CONSTANTS */
+
+
+
+
 
 const WEBGL_CONSTANTS = {
 	FLOAT: 5126,
@@ -2226,12 +2132,7 @@ const ALPHA_MODES = {
 	BLEND: 'BLEND'
 };
 
-/**
- * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#default-material
- *
- * @param {Object<String, Material>} cache
- * @return {Material}
- */
+
 function createDefaultMaterial( cache ) {
 
 	if ( cache[ 'DefaultMaterial' ] === undefined ) {
@@ -2268,10 +2169,7 @@ function addUnknownExtensionsToUserData( knownExtensions, object, objectDef ) {
 
 }
 
-/**
- * @param {Object3D|Material|BufferGeometry} object
- * @param {GLTF.definition} gltfDef
- */
+
 function assignExtrasToUserData( object, gltfDef ) {
 
 	if ( gltfDef.extras !== undefined ) {
@@ -2290,14 +2188,7 @@ function assignExtrasToUserData( object, gltfDef ) {
 
 }
 
-/**
- * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#morph-targets
- *
- * @param {BufferGeometry} geometry
- * @param {Array<GLTF.Target>} targets
- * @param {GLTFParser} parser
- * @return {Promise<BufferGeometry>}
- */
+
 function addMorphTargets( geometry, targets, parser ) {
 
 	let hasMorphPosition = false;
@@ -2379,10 +2270,7 @@ function addMorphTargets( geometry, targets, parser ) {
 
 }
 
-/**
- * @param {Mesh} mesh
- * @param {GLTF.Mesh} meshDef
- */
+
 function updateMorphTargets( mesh, meshDef ) {
 
 	mesh.updateMorphTargets();
@@ -2505,7 +2393,7 @@ function getImageURIMimeType( uri ) {
 
 const _identityMatrix = new Matrix4();
 
-/* GLTF PARSER */
+
 
 class GLTFParser {
 
@@ -2653,9 +2541,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Marks the special nodes/meshes in json for efficient parse.
-	 */
+	
 	_markDefs() {
 
 		const nodeDefs = this.json.nodes || [];
@@ -2700,18 +2586,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Counts references to shared node / Object3D resources. These resources
-	 * can be reused, or "instantiated", at multiple nodes in the scene
-	 * hierarchy. Mesh, Camera, and Light instances are instantiated and must
-	 * be marked. Non-scenegraph resources (like Materials, Geometries, and
-	 * Textures) can be reused directly and are not marked here.
-	 *
-	 * Example: CesiumMilkTruck sample model reuses "Wheel" meshes.
-	 *
-	 * @param {Object} cache
-	 * @param {Object3D} index
-	 */
+	
 	_addNodeRef( cache, index ) {
 
 		if ( index === undefined ) return;
@@ -2726,14 +2601,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Returns a reference to a shared resource, cloning it if necessary.
-	 *
-	 * @param {Object} cache
-	 * @param {Number} index
-	 * @param {Object} object
-	 * @return {Object}
-	 */
+	
 	_getNodeRef( cache, index, object ) {
 
 		if ( cache.refs[ index ] <= 1 ) return object;
@@ -2801,12 +2669,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Requests the specified dependency asynchronously, with caching.
-	 * @param {string} type
-	 * @param {number} index
-	 * @return {Promise<Object3D|Material|THREE.Texture|AnimationClip|ArrayBuffer|Object>}
-	 */
+	
 	getDependency( type, index ) {
 
 		const cacheKey = type + ':' + index;
@@ -2909,11 +2772,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Requests all dependencies of the specified type asynchronously, with caching.
-	 * @param {string} type
-	 * @return {Promise<Array<Object>>}
-	 */
+	
 	getDependencies( type ) {
 
 		let dependencies = this.cache.get( type );
@@ -2937,11 +2796,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#buffers-and-buffer-views
-	 * @param {number} bufferIndex
-	 * @return {Promise<ArrayBuffer>}
-	 */
+	
 	loadBuffer( bufferIndex ) {
 
 		const bufferDef = this.json.buffers[ bufferIndex ];
@@ -2973,11 +2828,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#buffers-and-buffer-views
-	 * @param {number} bufferViewIndex
-	 * @return {Promise<ArrayBuffer>}
-	 */
+	
 	loadBufferView( bufferViewIndex ) {
 
 		const bufferViewDef = this.json.bufferViews[ bufferViewIndex ];
@@ -2992,11 +2843,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#accessors
-	 * @param {number} accessorIndex
-	 * @return {Promise<BufferAttribute|InterleavedBufferAttribute>}
-	 */
+	
 	loadAccessor( accessorIndex ) {
 
 		const parser = this;
@@ -3123,11 +2970,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#textures
-	 * @param {number} textureIndex
-	 * @return {Promise<THREE.Texture|null>}
-	 */
+	
 	loadTexture( textureIndex ) {
 
 		const json = this.json;
@@ -3289,15 +3132,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Asynchronously assigns a texture to the given material parameters.
-	 *
-	 * @param {Object} materialParams
-	 * @param {string} mapName
-	 * @param {Object} mapDef
-	 * @param {string} colorSpace
-	 * @return {Promise<Texture>}
-	 */
+	
 	assignTexture( materialParams, mapName, mapDef, colorSpace ) {
 
 		const parser = this;
@@ -3341,14 +3176,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Assigns final material to a Mesh, Line, or Points instance. The instance
-	 * already has a material (generated from the glTF material options alone)
-	 * but reuse of the same glTF material may require multiple threejs materials
-	 * to accommodate different primitive types, defines, etc. New materials will
-	 * be created if necessary, and reused from a cache.
-	 * @param  {Object3D} mesh Mesh, Line, or Points instance.
-	 */
+	
 	assignFinalMaterial( mesh ) {
 
 		const geometry = mesh.geometry;
@@ -3437,17 +3265,13 @@ class GLTFParser {
 
 	}
 
-	getMaterialType( /* materialIndex */ ) {
+	getMaterialType(  ) {
 
 		return MeshStandardMaterial;
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#materials
-	 * @param {number} materialIndex
-	 * @return {Promise<Material>}
-	 */
+	
 	loadMaterial( materialIndex ) {
 
 		const parser = this;
@@ -3599,12 +3423,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * When Object3D instances are targeted by animation, they need unique names.
-	 *
-	 * @param {String} originalName
-	 * @return {String}
-	 */
+	
 	createUniqueName( originalName ) {
 
 		const sanitizedName = PropertyBinding.sanitizeNodeName( originalName || '' );
@@ -3623,14 +3442,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#geometry
-	 *
-	 * Creates BufferGeometries from primitives.
-	 *
-	 * @param {Array<GLTF.Primitive>} primitives
-	 * @return {Promise<Array<BufferGeometry>>}
-	 */
+	
 	loadGeometries( primitives ) {
 
 		const parser = this;
@@ -3688,11 +3500,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#meshes
-	 * @param {number} meshIndex
-	 * @return {Promise<Group|Mesh|SkinnedMesh>}
-	 */
+	
 	loadMesh( meshIndex ) {
 
 		const parser = this;
@@ -3833,11 +3641,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#cameras
-	 * @param {number} cameraIndex
-	 * @return {Promise<THREE.Camera>}
-	 */
+	
 	loadCamera( cameraIndex ) {
 
 		let camera;
@@ -3869,11 +3673,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#skins
-	 * @param {number} skinIndex
-	 * @return {Promise<Skeleton>}
-	 */
+	
 	loadSkin( skinIndex ) {
 
 		const skinDef = this.json.skins[ skinIndex ];
@@ -3937,11 +3737,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#animations
-	 * @param {number} animationIndex
-	 * @return {Promise<AnimationClip>}
-	 */
+	
 	loadAnimation( animationIndex ) {
 
 		const json = this.json;
@@ -4063,11 +3859,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#nodes-and-hierarchy
-	 * @param {number} nodeIndex
-	 * @return {Promise<Object3D>}
-	 */
+	
 	loadNode( nodeIndex ) {
 
 		const json = this.json;
@@ -4262,11 +4054,7 @@ class GLTFParser {
 
 	}
 
-	/**
-	 * Specification: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#scenes
-	 * @param {number} sceneIndex
-	 * @return {Promise<Group>}
-	 */
+	
 	loadScene( sceneIndex ) {
 
 		const extensions = this.extensions;
@@ -4468,11 +4256,7 @@ class GLTFParser {
 
 }
 
-/**
- * @param {BufferGeometry} geometry
- * @param {GLTF.Primitive} primitiveDef
- * @param {GLTFParser} parser
- */
+
 function computeBounds( geometry, primitiveDef, parser ) {
 
 	const attributes = primitiveDef.attributes;
@@ -4575,12 +4359,7 @@ function computeBounds( geometry, primitiveDef, parser ) {
 
 }
 
-/**
- * @param {BufferGeometry} geometry
- * @param {GLTF.Primitive} primitiveDef
- * @param {GLTFParser} parser
- * @return {Promise<BufferGeometry>}
- */
+
 function addPrimitiveAttributes( geometry, primitiveDef, parser ) {
 
 	const attributes = primitiveDef.attributes;

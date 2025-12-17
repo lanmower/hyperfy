@@ -168,22 +168,22 @@ export function Nodes({ app }) {
           <HierarchyDetail label='ID' value={selectedNode.id} copy />
           <HierarchyDetail label='Name' value={selectedNode.name} />
 
-          {/* Position */}
+          {}
           {hasProperty(selectedNode, 'position') && getVectorString(selectedNode.position) && (
             <HierarchyDetail label='Position' value={getVectorString(selectedNode.position)} />
           )}
 
-          {/* Rotation */}
+          {}
           {hasProperty(selectedNode, 'rotation') && getVectorString(selectedNode.rotation) && (
             <HierarchyDetail label='Rotation' value={getVectorString(selectedNode.rotation)} />
           )}
 
-          {/* Scale */}
+          {}
           {hasProperty(selectedNode, 'scale') && getVectorString(selectedNode.scale) && (
             <HierarchyDetail label='Scale' value={getVectorString(selectedNode.scale)} />
           )}
 
-          {/* Material */}
+          {}
           {hasProperty(selectedNode, 'material') && selectedNode.material && (
             <>
               <HierarchyDetail label='Material' value={selectedNode.material.type || 'Standard'} />
@@ -200,7 +200,7 @@ export function Nodes({ app }) {
             </>
           )}
 
-          {/* Geometry */}
+          {}
           {hasProperty(selectedNode, 'geometry') && selectedNode.geometry && (
             <HierarchyDetail label='Geometry' value={selectedNode.geometry.type || 'Custom'} />
           )}

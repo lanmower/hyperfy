@@ -1,12 +1,6 @@
 import Panel from './panel.js'
 
-/**
- * This is a modified version of stats-gl
- *
- * See: https://github.com/RenaudRohlinger/stats-gl/issues/10
- *
- * 1. Commented out patchThreeRenderer so we can use begin/end/update manually at engine level
- */
+
 
 class Stats {
   totalCpuDuration = 0
