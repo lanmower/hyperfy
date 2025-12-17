@@ -12,23 +12,33 @@ import { System } from './System.js'
  */
 
 export class ClientPointer extends System {
+  // DI Service Constants
+  static DEPS = {
+    controls: 'controls',
+    stage: 'stage',
+  }
+
   constructor(world) {
     super(world)
     this.pointerState = new PointerState()
   }
+
+  // DI Property Getters
+  get controls() { return this.getService(ClientPointer.DEPS.controls) }
+  get stage() { return this.getService(ClientPointer.DEPS.stage) }
 
   init({ ui }) {
     this.ui = ui
   }
 
   start() {
-    this.control = this.world.controls.bind({
+    this.control = this.controls.bind({
       priority: ControlPriorities.POINTER,
     })
   }
 
   update(delta) {
-    const hit = this.control.pointer.locked ? this.world.stage.raycastReticle()[0] : this.screenHit
+    const hit = this.control.pointer.locked ? this.stage.raycastReticle()[0] : this.screenHit
     this.pointerState.update(hit, this.control.mouseLeft.pressed, this.control.mouseLeft.released)
   }
 

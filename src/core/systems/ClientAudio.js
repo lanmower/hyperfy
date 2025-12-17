@@ -6,6 +6,13 @@ import { v } from '../utils/TempVectors.js'
 const up = new THREE.Vector3(0, 1, 0)
 
 export class ClientAudio extends System {
+  // DI Service Constants
+  static DEPS = {
+    events: 'events',
+    rig: 'rig',
+    prefs: 'prefs',
+  }
+
   constructor(world) {
     super(world)
     this.handles = new Set()
@@ -17,9 +24,9 @@ export class ClientAudio extends System {
       sfx: this.ctx.createGain(),
       voice: this.ctx.createGain(),
     }
-    this.groupGains.music.gain.value = world.prefs.state.get('music')
-    this.groupGains.sfx.gain.value = world.prefs.state.get('sfx')
-    this.groupGains.voice.gain.value = world.prefs.state.get('voice')
+    this.groupGains.music.gain.value = this.prefs.state.get('music')
+    this.groupGains.sfx.gain.value = this.prefs.state.get('sfx')
+    this.groupGains.voice.gain.value = this.prefs.state.get('voice')
     this.groupGains.music.connect(this.masterGain)
     this.groupGains.sfx.connect(this.masterGain)
     this.groupGains.voice.connect(this.masterGain)
@@ -104,8 +111,13 @@ export class ClientAudio extends System {
     console.log('[audio] suspended, waiting for interact...')
   }
 
+  // DI Property Getters
+  get events() { return this.getService(ClientAudio.DEPS.events) }
+  get rig() { return this.getService(ClientAudio.DEPS.rig) }
+  get prefs() { return this.getService(ClientAudio.DEPS.prefs) }
+
   async init() {
-    this.world.events.on('prefChanged', this.onPrefChanged)
+    this.events.on('prefChanged', this.onPrefChanged)
   }
 
   start() {
@@ -113,7 +125,7 @@ export class ClientAudio extends System {
   }
 
   lateUpdate(delta) {
-    const target = this.world.rig
+    const target = this.rig
     const dir = v[0].set(0, 0, -1).applyQuaternion(target.quaternion)
     if (this.listener.positionX) {
       // https://github.com/mrdoob/three.js/blob/master/src/audio/AudioListener.js

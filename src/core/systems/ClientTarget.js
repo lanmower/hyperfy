@@ -3,9 +3,17 @@ import * as THREE from 'three'
 import { System } from './System.js'
 
 export class ClientTarget extends System {
+  // DI Service Constants
+  static DEPS = {
+    camera: 'camera',
+  }
+
   constructor(world) {
     super(world)
   }
+
+  // DI Property Getters
+  get camera() { return this.getService(ClientTarget.DEPS.camera) }
 
   init({ ui }) {
     this.ui = ui
@@ -41,7 +49,7 @@ export class ClientTarget extends System {
     if (!this.target) return
 
     const vector = new THREE.Vector3().copy(this.target)
-    vector.project(this.world.camera)
+    vector.project(this.camera)
 
     const x = ((vector.x + 1) * this.bounds.width) / 2
     const y = ((-vector.y + 1) * this.bounds.height) / 2

@@ -6,6 +6,11 @@ import { storage } from '../storage.js'
 import { isTouch } from '../../client/utils.js'
 
 export class ClientPrefs extends System {
+  // DI Service Constants
+  static DEPS = {
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
 
@@ -40,10 +45,13 @@ export class ClientPrefs extends System {
     })
   }
 
+  // DI Property Getters
+  get events() { return this.getService(ClientPrefs.DEPS.events) }
+
   modify(key, value) {
     if (this.state.get(key) === value) return
     this.state.set(key, value)
-    this.world.events.emit('prefChanged', { key, value })
+    this.events.emit('prefChanged', { key, value })
     this.persist()
   }
 

@@ -19,6 +19,12 @@ import { createEmoteFactory } from '../extras/createEmoteFactory.js'
  *
  */
 export class ServerLoader extends BaseLoader {
+  // DI Service Constants
+  static DEPS = {
+    errorMonitor: 'errorMonitor',
+    scripts: 'scripts',
+  }
+
   constructor(world) {
     super(world)
     this.isServer = true
@@ -32,6 +38,10 @@ export class ServerLoader extends BaseLoader {
       createElementNS: () => ({ style: {} }),
     }
   }
+
+  // DI Property Getters
+  get errorMonitor() { return this.getService(ServerLoader.DEPS.errorMonitor) }
+  get scripts() { return this.getService(ServerLoader.DEPS.scripts) }
 
   getTypeHandlers() {
     return {
@@ -56,8 +66,8 @@ export class ServerLoader extends BaseLoader {
           })
         },
         err => {
-          if (this.world.errorMonitor) {
-            this.world.errorMonitor.captureError('gltfloader.error', {
+          if (this.errorMonitor) {
+            this.errorMonitor.captureError('gltfloader.error', {
               message: err.message || String(err),
               url: url,
               type: 'model'
@@ -67,8 +77,8 @@ export class ServerLoader extends BaseLoader {
         }
       )
     } catch (err) {
-      if (this.world.errorMonitor) {
-        this.world.errorMonitor.captureError('model.load.error', {
+      if (this.errorMonitor) {
+        this.errorMonitor.captureError('model.load.error', {
           message: err.message || String(err),
           url: url,
           type: 'model'
@@ -91,8 +101,8 @@ export class ServerLoader extends BaseLoader {
           })
         },
         err => {
-          if (this.world.errorMonitor) {
-            this.world.errorMonitor.captureError('gltfloader.error', {
+          if (this.errorMonitor) {
+            this.errorMonitor.captureError('gltfloader.error', {
               message: err.message || String(err),
               url: url,
               type: 'emote'
@@ -102,8 +112,8 @@ export class ServerLoader extends BaseLoader {
         }
       )
     } catch (err) {
-      if (this.world.errorMonitor) {
-        this.world.errorMonitor.captureError('emote.load.error', {
+      if (this.errorMonitor) {
+        this.errorMonitor.captureError('emote.load.error', {
           message: err.message || String(err),
           url: url,
           type: 'emote'
@@ -134,7 +144,7 @@ export class ServerLoader extends BaseLoader {
   handleScript = (url) => new Promise(async (resolve, reject) => {
     try {
       const code = await this.fetchText(url)
-      const script = this.world.scripts.evaluate(code)
+      const script = this.scripts.evaluate(code)
       resolve(script)
     } catch (err) {
       reject(err)

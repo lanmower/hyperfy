@@ -14,6 +14,14 @@ const PING_RATE = 1 / 2
  *
  */
 export class ClientStats extends System {
+  // DI Service Constants
+  static DEPS = {
+    events: 'events',
+    prefs: 'prefs',
+    graphics: 'graphics',
+    network: 'network',
+  }
+
   constructor(world) {
     super(world)
     this.stats = null
@@ -25,18 +33,24 @@ export class ClientStats extends System {
     this.maxPing = 0.01 // Starting value for max (will be updated)
   }
 
+  // DI Property Getters
+  get events() { return this.getService(ClientStats.DEPS.events) }
+  get prefs() { return this.getService(ClientStats.DEPS.prefs) }
+  get graphics() { return this.getService(ClientStats.DEPS.graphics) }
+  get network() { return this.getService(ClientStats.DEPS.network) }
+
   init({ ui }) {
     this.ui = ui
   }
 
   start() {
-    this.world.events.on('prefChanged', this.onPrefChanged)
-    this.world.events.on('uiStateChanged', this.onUIState)
-    this.world.events.on('ready', this.onReady)
+    this.events.on('prefChanged', this.onPrefChanged)
+    this.events.on('uiStateChanged', this.onUIState)
+    this.events.on('ready', this.onReady)
   }
 
   onReady = () => {
-    if (this.world.prefs.state.get('stats')) {
+    if (this.prefs.state.get('stats')) {
       this.toggle(true)
     }
   }
@@ -57,7 +71,7 @@ export class ClientStats extends System {
           mode: 0,
         })
         this.stats.dom.style.zIndex = null
-        this.stats.init(this.world.graphics.renderer, false)
+        this.stats.init(this.graphics.renderer, false)
         this.ping = new Panel('PING', '#f00', '#200')
         this.stats.addPanel(this.ping, 3)
       }
@@ -78,7 +92,7 @@ export class ClientStats extends System {
     this.lastPingAt += delta
     if (this.lastPingAt > PING_RATE) {
       const time = performance.now()
-      this.world.network.send('ping', time)
+      this.network.send('ping', time)
       this.lastPingAt = 0
     }
   }
