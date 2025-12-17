@@ -1,170 +1,23 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { css } from '@firebolt-dev/css'
-import { ChevronLeftIcon, ChevronRightIcon } from './Icons.js'
+import { ChevronRightIcon } from './Icons.js'
 import { useUpdate } from './useUpdate.js'
 import { hashFile } from '../../core/utils-client.js'
 import { LoaderIcon, XIcon } from 'lucide-react'
 import { downloadFile } from '../../core/extras/downloadFile.js'
 import { CurvePreview } from './CurvePreview.js'
-import { Curve } from '../../core/extras/Curve.js'
+import { Curve } from '../../core/extras/assets/Curve.js'
 import { Portal } from './Portal.js'
 import { CurvePane } from './CurvePane.js'
 
-const MenuContext = createContext()
-
-export function Menu({ title, blur, children }) {
-  const [hint, setHint] = useState(null)
-  return (
-    <MenuContext.Provider value={setHint}>
-      <div
-        className='menu'
-        css={css`
-          pointer-events: auto;
-          opacity: ${blur ? 0.3 : 1};
-          transition: opacity 0.15s ease-out;
-          font-size: 1rem;
-          .menu-head {
-            background: #0f1018;
-            padding: 1rem;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            overflow: hidden;
-            span {
-              font-size: 1.3rem;
-              font-weight: 600;
-            }
-          }
-          .menu-items {
-            background-color: rgba(15, 16, 24, 0.8);
-            overflow-y: auto;
-            max-height: calc(2.5rem * 9.5);
-          }
-        `}
-      >
-        <div className='menu-head'>
-          <span>{title}</span>
-        </div>
-        <div className='menu-items noscrollbar'>{children}</div>
-        {hint && <MenuHint text={hint} />}
-      </div>
-    </MenuContext.Provider>
-  )
-}
-
-function MenuHint({ text }) {
-  return (
-    <div
-      className='menuhint'
-      css={css`
-        margin-top: 0.2rem;
-        padding: 0.875rem;
-        font-size: 1rem;
-        line-height: 1.4;
-        background-color: rgba(15, 16, 24, 0.8);
-        border-top: 0.1rem solid black;
-      `}
-    >
-      <span>{text}</span>
-    </div>
-  )
-}
-
-export function MenuItemBack({ hint, onClick }) {
-  const setHint = useContext(MenuContext)
-  return (
-    <label
-      className='menuback'
-      css={css`
-        display: flex;
-        align-items: center;
-        height: 2.5rem;
-        padding: 0 0.825rem;
-        font-size: 1rem;
-        > svg {
-          margin-left: -0.25rem;
-        }
-        .menuback-label {
-          flex: 1;
-        }
-        &:hover {
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.05);
-        }
-      `}
-      onPointerEnter={() => setHint(hint)}
-      onPointerLeave={() => setHint(null)}
-      onClick={onClick}
-    >
-      <ChevronLeftIcon size={'1.5rem'} />
-      <div className='menuback-label'>
-        <span>Back</span>
-      </div>
-    </label>
-  )
-}
-
-export function MenuLine() {
-  return (
-    <div
-      className='menuline'
-      css={css`
-        height: 0.1rem;
-        background: rgba(255, 255, 255, 0.1);
-      `}
-    />
-  )
-}
-
-export function MenuSection({ label }) {
-  return (
-    <div
-      css={css`
-        padding: 0.25rem 0.875rem;
-        font-size: 0.75rem;
-        font-weight: 500;
-        opacity: 0.3;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-      `}
-    >
-      <span>{label}</span>
-    </div>
-  )
-}
-
-export function MenuItemBtn({ label, hint, nav, onClick }) {
-  const setHint = useContext(MenuContext)
-  return (
-    <div
-      className='menuitembtn'
-      css={css`
-        display: flex;
-        align-items: center;
-        height: 2.5rem;
-        padding: 0 0.875rem;
-        .menuitembtn-label {
-          flex: 1;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          overflow: hidden;
-        }
-        &:hover {
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.05);
-        }
-      `}
-      onPointerEnter={() => setHint(hint)}
-      onPointerLeave={() => setHint(null)}
-      onClick={onClick}
-    >
-      <div className='menuitembtn-label'>{label}</div>
-      {nav && <ChevronRightIcon size='1.5rem' />}
-    </div>
-  )
-}
+export { Menu, MenuContext } from './MenuComponents/Menu.js'
+export { MenuItemBack } from './MenuComponents/MenuItemBack.js'
+export { MenuLine } from './MenuComponents/MenuLine.js'
+export { MenuSection } from './MenuComponents/MenuSection.js'
+export { MenuItemBtn } from './MenuComponents/MenuItemBtn.js'
 
 export function MenuItemText({ label, hint, placeholder, value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
   const [localValue, setLocalValue] = useState(value)
   useEffect(() => {
@@ -229,6 +82,7 @@ export function MenuItemText({ label, hint, placeholder, value, onChange }) {
 }
 
 export function MenuItemTextarea({ label, hint, placeholder, value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
   const textareaRef = useRef()
   const [localValue, setLocalValue] = useState(value)
@@ -249,14 +103,14 @@ export function MenuItemTextarea({ label, hint, placeholder, value, onChange }) 
   }, [])
   return (
     <label
-      className='menuitemtext'
+      className='menuitemtextarea'
       css={css`
         display: flex;
         align-items: flex-start;
         min-height: 2.5rem;
         padding: 0 0.875rem;
         cursor: text;
-        .menuitemtext-label {
+        .menuitemtextarea-label {
           padding-top: 0.6rem;
           width: 9.4rem;
           flex-shrink: 0;
@@ -264,7 +118,7 @@ export function MenuItemTextarea({ label, hint, placeholder, value, onChange }) 
           text-overflow: ellipsis;
           overflow: hidden;
         }
-        .menuitemtext-field {
+        .menuitemtextarea-field {
           flex: 1;
           padding: 0.6rem 0 0.6rem 0;
         }
@@ -288,8 +142,8 @@ export function MenuItemTextarea({ label, hint, placeholder, value, onChange }) 
       onPointerEnter={() => setHint(hint)}
       onPointerLeave={() => setHint(null)}
     >
-      <div className='menuitemtext-label'>{label}</div>
-      <div className='menuitemtext-field'>
+      <div className='menuitemtextarea-label'>{label}</div>
+      <div className='menuitemtextarea-field'>
         <textarea
           ref={textareaRef}
           value={localValue || ''}
@@ -312,7 +166,17 @@ export function MenuItemTextarea({ label, hint, placeholder, value, onChange }) 
   )
 }
 
-export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Infinity, step = 1, value, onChange }) {
+export function MenuItemNumber({
+  label,
+  hint,
+  dp = 0,
+  min = -Infinity,
+  max = Infinity,
+  step = 1,
+  value,
+  onChange,
+}) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
   if (value === undefined || value === null) {
     value = 0
@@ -323,7 +187,6 @@ export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Inf
     if (!focused && local !== value.toFixed(dp)) setLocal(value.toFixed(dp))
   }, [focused, value])
   const setTo = str => {
-    // try parse math
     let num
     try {
       num = (0, eval)(str)
@@ -332,7 +195,7 @@ export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Inf
       }
     } catch (err) {
       console.error(err)
-      num = value // revert back to original
+      num = value
     }
     if (num < min || num > max) {
       num = value
@@ -360,9 +223,7 @@ export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Inf
           flex: 1;
         }
         input {
-          height: 1rem;
           text-align: right;
-          overflow: hidden;
           cursor: inherit;
           &::selection {
             background-color: white;
@@ -385,6 +246,7 @@ export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Inf
           onChange={e => setLocal(e.target.value)}
           onKeyDown={e => {
             if (e.code === 'Enter') {
+              e.preventDefault()
               e.target.blur()
             }
             if (e.code === 'ArrowUp') {
@@ -400,12 +262,10 @@ export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Inf
           }}
           onBlur={e => {
             setFocused(false)
-            // if blank, set back to original
             if (local === '') {
               setLocal(value.toFixed(dp))
               return
             }
-            // otherwise run through pipeline
             setTo(local)
           }}
         />
@@ -415,6 +275,7 @@ export function MenuItemNumber({ label, hint, dp = 0, min = -Infinity, max = Inf
 }
 
 export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, instant, value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
   const trackRef = useRef()
   if (value === undefined || value === null) {
@@ -431,9 +292,7 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
       const rect = trackElement.getBoundingClientRect()
       const position = (e.clientX - rect.left) / rect.width
       const rawValue = min + position * (max - min)
-      // Round to nearest step
       const steppedValue = Math.round(rawValue / step) * step
-      // Clamp between min and max
       return Math.max(min, Math.min(max, steppedValue))
     }
     let sliding
@@ -494,7 +353,8 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
           padding-right: 1rem;
         }
         .menuitemrange-text {
-          font-size: 0.7rem;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.4);
           margin-right: 0.5rem;
           opacity: 0;
         }
@@ -535,8 +395,9 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
 }
 
 export function MenuItemSwitch({ label, hint, options, value, onChange }) {
-  options = options || []
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
+  options = options || []
   const idx = options.findIndex(o => o.value === value)
   const selected = options[idx]
   const prev = () => {
@@ -580,7 +441,6 @@ export function MenuItemSwitch({ label, hint, options, value, onChange }) {
           line-height: 1;
         }
         &:hover {
-          padding: 0 0.275rem 0 0.875rem;
           background-color: rgba(255, 255, 255, 0.05);
           .menuitemswitch-btn {
             display: flex;
@@ -592,7 +452,7 @@ export function MenuItemSwitch({ label, hint, options, value, onChange }) {
     >
       <div className='menuitemswitch-label'>{label}</div>
       <div className='menuitemswitch-btn left' onClick={prev}>
-        <ChevronLeftIcon size='1.5rem' />
+        <ChevronRightIcon size='1.5rem' style={{ transform: 'rotate(180deg)' }} />
       </div>
       <div className='menuitemswitch-text'>{selected?.label || '???'}</div>
       <div className='menuitemswitch-btn right' onClick={next}>
@@ -602,7 +462,43 @@ export function MenuItemSwitch({ label, hint, options, value, onChange }) {
   )
 }
 
+export function MenuItemToggle({ label, hint, trueLabel = 'Yes', falseLabel = 'No', value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
+  const setHint = useContext(MenuContext)
+  return (
+    <div
+      className='menuitemtoggle'
+      css={css`
+        display: flex;
+        align-items: center;
+        height: 2.5rem;
+        padding: 0 0.875rem;
+        .menuitemtoggle-label {
+          flex: 1;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          padding-right: 1rem;
+        }
+        .menuitemtoggle-text {
+        }
+        &:hover {
+          cursor: pointer;
+          background: rgba(255, 255, 255, 0.05);
+        }
+      `}
+      onPointerEnter={() => setHint(hint)}
+      onPointerLeave={() => setHint(null)}
+      onClick={() => onChange(!value)}
+    >
+      <div className='menuitemtoggle-label'>{label}</div>
+      <div className='menuitemtoggle-text'>{value ? trueLabel : falseLabel}</div>
+    </div>
+  )
+}
+
 export function MenuItemCurve({ label, hint, x, xRange, y, yMin, yMax, value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
   const curve = useMemo(() => new Curve().deserialize(value || '0,0.5,0,0|1,0.5,0,0'), [value])
   const [edit, setEdit] = useState(false)
@@ -675,24 +571,35 @@ export function MenuItemCurve({ label, hint, x, xRange, y, yMin, yMax, value, on
   )
 }
 
-// todo: blueprint models need migrating to file object format so
-// we can replace needing this and instead use MenuItemFile, but
-// that will also somehow need to support both model and avatar kinds.
 export function MenuItemFileBtn({ label, hint, accept, value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
-  const [key, setKey] = useState(0)
-  const handleDownload = e => {
-    if (e.shiftKey) {
-      e.preventDefault()
-      const file = world.loader.getFile(value)
-      if (!file) return
-      downloadFile(file)
+  const nRef = useRef(0)
+  const update = useUpdate()
+  const [loading, setLoading] = useState(null)
+  const set = async e => {
+    const n = ++nRef.current
+    update()
+    const file = e.target.files[0]
+    if (!file) return
+    const hash = await hashFile(file)
+    const filename = `${hash}.${file.name.split('.').pop()}`
+    const url = `asset://${filename}`
+    const newValue = {
+      name: file.name,
+      url,
     }
+    setLoading(newValue)
+    setLoading(null)
+    onChange(newValue)
   }
-  const handleChange = e => {
-    setKey(n => n + 1)
-    onChange(e.target.files[0])
+  const remove = e => {
+    e.preventDefault()
+    e.stopPropagation()
+    onChange(null)
   }
+  const n = nRef.current
+  const name = loading?.name || value?.name
   return (
     <label
       className='menuitemfilebtn'
@@ -702,13 +609,36 @@ export function MenuItemFileBtn({ label, hint, accept, value, onChange }) {
         height: 2.5rem;
         padding: 0 0.875rem;
         overflow: hidden;
-        .menuitemfilebtn-label {
-          width: 9.4rem;
-          flex-shrink: 0;
-        }
         input {
           position: absolute;
           top: -9999px;
+          left: -9999px;
+          opacity: 0;
+        }
+        svg {
+          line-height: 0;
+        }
+        .menuitemfilebtn-label {
+          flex: 1;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          padding-right: 1rem;
+        }
+        .menuitemfilebtn-name {
+          text-align: right;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          max-width: 9rem;
+        }
+        .menuitemfilebtn-x {
+          line-height: 0;
+          margin: 0 -0.2rem 0 0.3rem;
+          color: rgba(255, 255, 255, 0.3);
+          &:hover {
+            color: white;
+          }
         }
         &:hover {
           cursor: pointer;
@@ -717,10 +647,20 @@ export function MenuItemFileBtn({ label, hint, accept, value, onChange }) {
       `}
       onPointerEnter={() => setHint(hint)}
       onPointerLeave={() => setHint(null)}
-      onClick={handleDownload}
     >
       <div className='menuitemfilebtn-label'>{label}</div>
-      <input key={key} type='file' accept={accept} onChange={handleChange} />
+      {name && <div className='menuitemfilebtn-name'>{name}</div>}
+      {value && !loading && (
+        <div className='menuitemfilebtn-x'>
+          <XIcon size='1rem' onClick={remove} />
+        </div>
+      )}
+      {loading && (
+        <div>
+          <LoaderIcon size='1rem' />
+        </div>
+      )}
+      <input key={n} type='file' onChange={set} accept={accept} />
     </label>
   )
 }
@@ -777,44 +717,34 @@ export const fileKinds = {
 }
 
 export function MenuItemFile({ world, label, hint, kind: kindName, value, onChange }) {
+  const MenuContext = require('./MenuComponents/Menu.js').MenuContext
   const setHint = useContext(MenuContext)
   const nRef = useRef(0)
   const update = useUpdate()
   const [loading, setLoading] = useState(null)
   const kind = fileKinds[kindName]
-  if (!kind) return null // invalid?
+  if (!kind) return null
   const set = async e => {
-    // trigger input rebuild
     const n = ++nRef.current
     update()
-    // get file
     const file = e.target.files[0]
     if (!file) return
-    // check ext
     const ext = file.name.split('.').pop().toLowerCase()
     if (!kind.exts.includes(ext)) {
       return console.error(`attempted invalid file extension for ${kindName}: ${ext}`)
     }
-    // immutable hash the file
     const hash = await hashFile(file)
-    // use hash as glb filename
     const filename = `${hash}.${ext}`
-    // canonical url to this file
     const url = `asset://${filename}`
-    // show loading
     const newValue = {
       type: kind.type,
       name: file.name,
       url,
     }
     setLoading(newValue)
-    // upload file
     await world.network.upload(file)
-    // ignore if new value/upload
     if (nRef.current !== n) return
-    // cache file locally so this client can insta-load it
     world.loader.insert(kind.type, url, file)
-    // apply!
     setLoading(null)
     onChange(newValue)
   }
@@ -823,11 +753,14 @@ export function MenuItemFile({ world, label, hint, kind: kindName, value, onChan
     e.stopPropagation()
     onChange(null)
   }
-  const handleDownload = e => {
+  const handleDownload = async e => {
     if (e.shiftKey && value?.url) {
       e.preventDefault()
+      if (!world.loader.hasFile(value.url)) {
+        await world.loader.loadFile(value.url)
+      }
       const file = world.loader.getFile(value.url, value.name)
-      if (!file) return
+      if (!file) return console.error('could not load file')
       downloadFile(file)
     }
   }
@@ -917,40 +850,5 @@ export function MenuItemFile({ world, label, hint, kind: kindName, value, onChan
       )}
       <input key={n} type='file' onChange={set} accept={kind.accept} />
     </label>
-  )
-}
-
-export function MenuItemToggle({ label, hint, trueLabel = 'Yes', falseLabel = 'No', value, onChange }) {
-  const setHint = useContext(MenuContext)
-  return (
-    <div
-      className='menuitemtoggle'
-      css={css`
-        display: flex;
-        align-items: center;
-        height: 2.5rem;
-        padding: 0 0.875rem;
-        .menuitemtoggle-label {
-          flex: 1;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          padding-right: 1rem;
-        }
-        .menuitemtoggle-text {
-          // ...
-        }
-        &:hover {
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.05);
-        }
-      `}
-      onPointerEnter={() => setHint(hint)}
-      onPointerLeave={() => setHint(null)}
-      onClick={() => onChange(!value)}
-    >
-      <div className='menuitemtoggle-label'>{label}</div>
-      <div className='menuitemtoggle-text'>{value ? trueLabel : falseLabel}</div>
-    </div>
   )
 }
