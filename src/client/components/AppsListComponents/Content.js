@@ -13,6 +13,7 @@ import {
 import { orderBy } from 'lodash-es'
 import { cls } from '../cls.js'
 import { formatBytes } from '../../../core/extras/formatBytes.js'
+import { useWorldEvents } from '../hooks/index.js'
 
 const defaultStats = {
   geometries: 0,
@@ -90,17 +91,10 @@ export function Content({ world, query, perf, refresh, setRefresh }) {
     newItems = orderBy(newItems, sort, asc ? 'asc' : 'desc')
     return newItems
   }, [items, sort, asc, query])
-  useEffect(() => {
-    function onChange() {
-      setRefresh(n => n + 1)
-    }
-    world.entities.on('added', onChange)
-    world.entities.on('removed', onChange)
-    return () => {
-      world.entities.off('added', onChange)
-      world.entities.off('removed', onChange)
-    }
-  }, [])
+
+  const handleEntityChange = () => setRefresh(n => n + 1)
+  useWorldEvents(world.entities, { added: handleEntityChange, removed: handleEntityChange })
+
   const reorder = key => {
     if (sort === key) {
       setAsc(!asc)
