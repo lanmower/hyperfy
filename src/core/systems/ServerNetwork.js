@@ -11,8 +11,7 @@ import { WorldPersistence } from '../../server/services/WorldPersistence.js'
 import { FileStorage } from '../../server/services/FileStorage.js'
 import { FileUploader } from '../../server/services/FileUploader.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
-import { serializeForNetwork } from '../schemas/ChatMessage.schema.js'
-import { errorObserver } from '../../server/services/ErrorObserver.js'
+import { PacketHandlers } from './network/PacketHandlers.js'
 import { serverNetworkHandlers } from '../config/HandlerRegistry.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
