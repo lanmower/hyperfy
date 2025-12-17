@@ -5,6 +5,9 @@ import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { ButtonStateManager } from './controls/ButtonStateManager.js'
 import { ControlBindingManager } from './controls/ControlBindingManager.js'
+import { InputEventHandler } from './controls/InputEventHandler.js'
+import { PointerLockManager } from './controls/PointerLockManager.js'
+import { ControlFactory } from './controls/ControlFactory.js'
 
 const LMB = 1
 const RMB = 2
@@ -13,28 +16,7 @@ const MouseRight = 'mouseRight'
 const HandednessLeft = 'left'
 const HandednessRight = 'right'
 
-
 const isBrowser = typeof window !== 'undefined'
-
-const controlTypes = {
-  mouseLeft: createButton,
-  mouseRight: createButton,
-  touchStick: createVector,
-  scrollDelta: createValue,
-  pointer: createPointer,
-  screen: createScreen,
-  camera: createCamera,
-  xrLeftStick: createVector,
-  xrLeftTrigger: createButton,
-  xrLeftBtn1: createButton,
-  xrLeftBtn2: createButton,
-  xrRightStick: createVector,
-  xrRightTrigger: createButton,
-  xrRightBtn1: createButton,
-  xrRightBtn2: createButton,
-  touchA: createButton,
-  touchB: createButton,
-}
 
 export class ClientControls extends System {
   static DEPS = {
@@ -53,11 +35,11 @@ export class ClientControls extends System {
     this.pointer = {
       locked: false,
       shouldLock: false,
-      coords: new THREE.Vector3(), // [0,0] to [1,1]
-      position: new THREE.Vector3(), // [0,0] to [viewportWidth,viewportHeight]
-      delta: new THREE.Vector3(), // position delta (pixels)
+      coords: new THREE.Vector3(),
+      position: new THREE.Vector3(),
+      delta: new THREE.Vector3(),
     }
-    this.touches = new Map() // id -> { id, position, delta, prevPosition }
+    this.touches = new Map()
     this.screen = {
       width: 0,
       height: 0,
@@ -66,6 +48,30 @@ export class ClientControls extends System {
       delta: 0,
     }
     this.xrSession = null
+    this.lmbDown = false
+    this.rmbDown = false
+    this.controlTypes = {
+      mouseLeft: createButton,
+      mouseRight: createButton,
+      touchStick: createVector,
+      scrollDelta: createValue,
+      pointer: createPointer,
+      screen: createScreen,
+      camera: createCamera,
+      xrLeftStick: createVector,
+      xrLeftTrigger: createButton,
+      xrLeftBtn1: createButton,
+      xrLeftBtn2: createButton,
+      xrRightStick: createVector,
+      xrRightTrigger: createButton,
+      xrRightBtn1: createButton,
+      xrRightBtn2: createButton,
+      touchA: createButton,
+      touchB: createButton,
+    }
+    this.inputEventHandler = new InputEventHandler(this)
+    this.pointerLockManager = new PointerLockManager(this)
+    this.controlFactory = new ControlFactory(this)
   }
 
   get rig() { return this.getService(ClientControls.DEPS.rig) }
@@ -221,15 +227,15 @@ export class ClientControls extends System {
     this.viewport = viewport
     this.screen.width = this.viewport.offsetWidth
     this.screen.height = this.viewport.offsetHeight
-    window.addEventListener('keydown', this.onKeyDown)
-    window.addEventListener('keyup', this.onKeyUp)
-    document.addEventListener('pointerlockchange', this.onPointerLockChange)
-    this.viewport.addEventListener('pointerdown', this.onPointerDown)
-    window.addEventListener('pointermove', this.onPointerMove)
-    this.viewport.addEventListener('pointerup', this.onPointerUp)
-    this.viewport.addEventListener('pointercancel', this.onPointerUp)
-    this.viewport.addEventListener('wheel', this.onScroll, { passive: false })
-    document.body.addEventListener('contextmenu', this.onContextMenu)
+    window.addEventListener('keydown', this.inputEventHandler.onKeyDown)
+    window.addEventListener('keyup', this.inputEventHandler.onKeyUp)
+    document.addEventListener('pointerlockchange', this.pointerLockManager.onPointerLockChange)
+    this.viewport.addEventListener('pointerdown', this.inputEventHandler.onPointerDown)
+    window.addEventListener('pointermove', this.inputEventHandler.onPointerMove)
+    this.viewport.addEventListener('pointerup', this.inputEventHandler.onPointerUp)
+    this.viewport.addEventListener('pointercancel', this.inputEventHandler.onPointerUp)
+    this.viewport.addEventListener('wheel', this.inputEventHandler.onScroll, { passive: false })
+    document.body.addEventListener('contextmenu', this.inputEventHandler.onContextMenu)
     this.viewport.addEventListener('touchstart', this.onTouchStart)
     window.addEventListener('resize', this.onResize)
     window.addEventListener('focus', this.onFocus)
@@ -237,84 +243,11 @@ export class ClientControls extends System {
   }
 
   bind(options = {}) {
-    const self = this
-    const entries = {}
-    let reticleSupressor
-    const control = {
-      options,
-      entries,
-      actions: null,
-      api: {
-        hideReticle(value = true) {
-          if (reticleSupressor && value) return
-          if (!reticleSupressor && !value) return
-          if (reticleSupressor) {
-            reticleSupressor?.()
-            reticleSupressor = null
-          } else {
-            reticleSupressor = self.world.ui.suppressReticle()
-          }
-        },
-        setActions(value) {
-          if (value !== null && !Array.isArray(value)) {
-            throw new Error('[control] actions must be null or array')
-          }
-          control.actions = value
-          if (value) {
-            for (const action of value) {
-              action.id = ++actionIds
-            }
-          }
-          self.buildActions()
-        },
-        release: () => {
-          reticleSupressor?.()
-          const idx = this.controls.indexOf(control)
-          if (idx === -1) return
-          this.controls.splice(idx, 1)
-          options.onRelease?.()
-        },
-      },
-    }
-    const idx = this.controls.findIndex(c => c.options.priority <= options.priority)
-    if (idx === -1) {
-      this.controls.push(control)
-    } else {
-      this.controls.splice(idx, 0, control)
-    }
-    return new Proxy(control, {
-      get(target, prop) {
-        if (prop in target.api) {
-          return target.api[prop]
-        }
-        if (prop in entries) {
-          return entries[prop]
-        }
-        if (buttons.has(prop)) {
-          entries[prop] = createButton(self, control, prop)
-          return entries[prop]
-        }
-        const createType = controlTypes[prop]
-        if (createType) {
-          entries[prop] = createType(self, control, prop)
-          return entries[prop]
-        }
-        return undefined
-      },
-    })
+    return this.controlFactory.bind(options)
   }
 
   releaseAllButtons() {
-    for (const control of this.controls) {
-      for (const key in control.entries) {
-        const value = control.entries[key]
-        if (value.$button && value.down) {
-          value.released = true
-          value.down = false
-          value.onRelease?.()
-        }
-      }
-    }
+    return this.controlFactory.releaseAllButtons()
   }
 
   buildActions() {
@@ -389,213 +322,55 @@ export class ClientControls extends System {
   }
 
   onKeyDown = e => {
-    if (e.defaultPrevented) return
-    if (e.repeat) return
-    if (this.isInputFocused()) return
-    const code = e.code
-    if (code === 'Tab') {
-      e.preventDefault()
-    }
-    const prop = codeToProp[code]
-    const text = e.key
-    this.buttonsDown.add(prop)
-    for (const control of this.controls) {
-      const button = control.entries[prop]
-      if (button?.$button) {
-        button.pressed = true
-        button.down = true
-        const capture = button.onPress?.()
-        if (capture || button.capture) break
-      }
-      const capture = control.onButtonPress?.(prop, text)
-      if (capture) break
-    }
+    return this.inputEventHandler.onKeyDown(e)
   }
 
   onKeyUp = e => {
-    if (e.repeat) return
-    if (this.isInputFocused()) return
-    const code = e.code
-    if (code === 'MetaLeft' || code === 'MetaRight') {
-      return this.releaseAllButtons()
-    }
-    const prop = codeToProp[code]
-    this.buttonsDown.delete(prop)
-    for (const control of this.controls) {
-      const button = control.entries[prop]
-      if (button?.$button && button.down) {
-        button.down = false
-        button.released = true
-        button.onRelease?.()
-      }
-    }
+    return this.inputEventHandler.onKeyUp(e)
   }
 
   onPointerDown = e => {
-    if (e.isCoreUI) return
-    if (e.pointerType === 'touch') {
-      e.preventDefault()
-      const info = {
-        id: e.pointerId,
-        position: new THREE.Vector3(e.clientX, e.clientY, 0),
-        prevPosition: new THREE.Vector3(e.clientX, e.clientY, 0),
-        delta: new THREE.Vector3(),
-        pointerType: e.pointerType,
-      }
-      this.touches.set(e.pointerId, info)
-      for (const control of this.controls) {
-        const consume = control.options.onTouch?.(info)
-        if (consume) break
-      }
-    }
-    this.checkPointerChanges(e)
+    return this.inputEventHandler.onPointerDown(e)
   }
 
   onPointerMove = e => {
-    if (e.isCoreUI) return
-    if (e.pointerType === 'touch') {
-      const info = this.touches.get(e.pointerId)
-      if (info) {
-        info.delta.x += e.clientX - info.prevPosition.x
-        info.delta.y += e.clientY - info.prevPosition.y
-        info.position.x = e.clientX
-        info.position.y = e.clientY
-        info.prevPosition.x = e.clientX
-        info.prevPosition.y = e.clientY
-      }
-    }
-    const rect = this.viewport.getBoundingClientRect()
-    const offsetX = e.pageX - rect.left
-    const offsetY = e.pageY - rect.top
-    this.pointer.coords.x = Math.max(0, Math.min(1, offsetX / rect.width)) // prettier-ignore
-    this.pointer.coords.y = Math.max(0, Math.min(1, offsetY / rect.height)) // prettier-ignore
-    this.pointer.position.x = offsetX
-    this.pointer.position.y = offsetY
-    this.pointer.delta.x += e.movementX
-    this.pointer.delta.y += e.movementY
+    return this.inputEventHandler.onPointerMove(e)
   }
 
   onPointerUp = e => {
-    if (e.isCoreUI) return
-    if (e.pointerType === 'touch') {
-      const info = this.touches.get(e.pointerId)
-      if (info) {
-        for (const control of this.controls) {
-          const consume = control.options.onTouchEnd?.(info)
-          if (consume) break
-        }
-        this.touches.delete(e.pointerId)
-      }
-    }
-    this.checkPointerChanges(e)
+    return this.inputEventHandler.onPointerUp(e)
   }
 
   checkPointerChanges(e) {
-    const lmb = !!(e.buttons & LMB)
-    if (!this.lmbDown && lmb) {
-      this.lmbDown = true
-      this.buttonsDown.add(MouseLeft)
-      for (const control of this.controls) {
-        const button = control.entries.mouseLeft
-        if (button) {
-          button.down = true
-          button.pressed = true
-          const capture = button.onPress?.()
-          if (capture || button.capture) break
-        }
-      }
-    }
-    if (this.lmbDown && !lmb) {
-      this.lmbDown = false
-      this.buttonsDown.delete(MouseLeft)
-      for (const control of this.controls) {
-        const button = control.entries.mouseLeft
-        if (button) {
-          button.down = false
-          button.released = true
-          button.onRelease?.()
-        }
-      }
-    }
-    const rmb = !!(e.buttons & RMB)
-    if (!this.rmbDown && rmb) {
-      this.rmbDown = true
-      this.buttonsDown.add(MouseRight)
-      for (const control of this.controls) {
-        const button = control.entries.mouseRight
-        if (button) {
-          button.down = true
-          button.pressed = true
-          const capture = button.onPress?.()
-          if (capture || button.capture) break
-        }
-      }
-    }
-    if (this.rmbDown && !rmb) {
-      this.rmbDown = false
-      this.buttonsDown.delete(MouseRight)
-      for (const control of this.controls) {
-        const button = control.entries.mouseRight
-        if (button) {
-          button.down = false
-          button.released = true
-          button.onRelease?.()
-        }
-      }
-    }
+    return this.inputEventHandler.checkPointerChanges(e)
   }
 
   async lockPointer() {
-    if (isTouch) return
-    this.pointer.shouldLock = true
-    try {
-      await this.viewport.requestPointerLock()
-      return true
-    } catch (err) {
-      console.log('pointerlock denied, too quick?')
-      return false
-    }
+    return this.pointerLockManager.lockPointer()
   }
 
   unlockPointer() {
-    this.pointer.shouldLock = false
-    if (!this.pointer.locked) return
-    document.exitPointerLock()
-    this.onPointerLockEnd()
+    return this.pointerLockManager.unlockPointer()
   }
 
   onPointerLockChange = e => {
-    const didPointerLock = !!document.pointerLockElement
-    if (didPointerLock) {
-      this.onPointerLockStart()
-    } else {
-      this.onPointerLockEnd()
-    }
+    return this.pointerLockManager.onPointerLockChange(e)
   }
 
   onPointerLockStart() {
-    if (this.pointer.locked) return
-    this.pointer.locked = true
-    this.events.emit('pointerLockChanged', true)
-    if (!this.pointer.shouldLock) this.unlockPointer()
+    return this.pointerLockManager.onPointerLockStart()
   }
 
   onPointerLockEnd() {
-    if (!this.pointer.locked) return
-    this.pointer.locked = false
-    this.events.emit('pointerLockChanged', false)
+    return this.pointerLockManager.onPointerLockEnd()
   }
 
   onScroll = e => {
-    if (e.isCoreUI) return
-    e.preventDefault()
-    let delta = e.shiftKey ? e.deltaX : e.deltaY
-    if (!this.isMac) delta = -delta
-    this.scroll.delta += delta
+    return this.inputEventHandler.onScroll(e)
   }
 
   onContextMenu = e => {
-    e.preventDefault()
+    return this.inputEventHandler.onContextMenu(e)
   }
 
   onTouchStart = e => {
@@ -626,15 +401,15 @@ export class ClientControls extends System {
 
   destroy() {
     if (!isBrowser) return
-    window.removeEventListener('keydown', this.onKeyDown)
-    window.removeEventListener('keyup', this.onKeyUp)
-    document.removeEventListener('pointerlockchange', this.onPointerLockChange)
-    this.viewport.removeEventListener('pointerdown', this.onPointerDown)
-    window.removeEventListener('pointermove', this.onPointerMove)
-    this.viewport.removeEventListener('pointerup', this.onPointerUp)
-    this.viewport.removeEventListener('pointercancel', this.onPointerUp)
-    this.viewport.removeEventListener('wheel', this.onScroll, { passive: false })
-    document.body.removeEventListener('contextmenu', this.onContextMenu)
+    window.removeEventListener('keydown', this.inputEventHandler.onKeyDown)
+    window.removeEventListener('keyup', this.inputEventHandler.onKeyUp)
+    document.removeEventListener('pointerlockchange', this.pointerLockManager.onPointerLockChange)
+    this.viewport.removeEventListener('pointerdown', this.inputEventHandler.onPointerDown)
+    window.removeEventListener('pointermove', this.inputEventHandler.onPointerMove)
+    this.viewport.removeEventListener('pointerup', this.inputEventHandler.onPointerUp)
+    this.viewport.removeEventListener('pointercancel', this.inputEventHandler.onPointerUp)
+    this.viewport.removeEventListener('wheel', this.inputEventHandler.onScroll, { passive: false })
+    document.body.removeEventListener('contextmenu', this.inputEventHandler.onContextMenu)
     this.viewport.removeEventListener('touchstart', this.onTouchStart)
     window.removeEventListener('resize', this.onResize)
     window.removeEventListener('focus', this.onFocus)
