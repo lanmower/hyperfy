@@ -3,8 +3,8 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
 import { Display, isDisplay } from '../extras/yoga.js'
 import { fillRoundRect, imageRoundRect } from '../extras/roundRect.js'
-import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 
 const objectFits = ['contain', 'cover', 'fill']
 

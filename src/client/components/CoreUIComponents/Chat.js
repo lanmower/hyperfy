@@ -2,7 +2,7 @@ import { css } from '@firebolt-dev/css'
 import { MessageSquareTextIcon, SendHorizonalIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { cls, isTouch } from '../../utils.js'
-import { ControlPriorities } from '../../../../core/extras/assets/ControlPriorities.js'
+import { ControlPriorities } from '../../../core/extras/assets/ControlPriorities.js'
 import { MiniMessages } from './MiniMessages.js'
 import { Messages } from './Messages.js'
 

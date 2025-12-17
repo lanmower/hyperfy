@@ -1,4 +1,5 @@
 import * as THREE from '../../extras/three.js'
+import { EVENT } from '../../constants/EventNames.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -83,7 +84,7 @@ export class PlayerVoiceController {
   }
 
   destroy() {
-    this.livekit.emit('speaking', { playerId: this.player.data.id, speaking: false })
+    this.livekit.emit(EVENT.speaking, { playerId: this.player.data.id, speaking: false })
     this.player.setSpeaking(false)
     this.track.detach()
   }

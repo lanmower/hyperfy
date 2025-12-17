@@ -1,5 +1,6 @@
 import { PlayerVoiceController } from './PlayerVoiceController.js'
 import { createPlayerScreen } from './ScreenManager.js'
+import { EVENT } from '../../constants/EventNames.js'
 
 export class TrackManager {
   constructor(livekit) {
@@ -9,14 +10,14 @@ export class TrackManager {
   onTrackMuted(track) {
     if (track.isLocal && track.source === 'microphone') {
       this.livekit.status.mic = false
-      this.livekit.events.emit('livekitStatusChanged', this.livekit.status)
+      this.livekit.events.emit(EVENT.livekit, this.livekit.status)
     }
   }
 
   onTrackUnmuted(track) {
     if (track.isLocal && track.source === 'microphone') {
       this.livekit.status.mic = true
-      this.livekit.events.emit('livekitStatusChanged', this.livekit.status)
+      this.livekit.events.emit(EVENT.livekit, this.livekit.status)
     }
   }
 
@@ -27,7 +28,7 @@ export class TrackManager {
     const playerId = livekit.network.id
     if (publication.source === 'microphone') {
       livekit.status.mic = true
-      livekit.events.emit('livekitStatusChanged', livekit.status)
+      livekit.events.emit(EVENT.livekit, livekit.status)
     }
     if (publication.source === 'screen_share') {
       const metadata = JSON.parse(livekit.room.localParticipant.metadata || '{}')
@@ -35,7 +36,7 @@ export class TrackManager {
       livekit.status.screenshare = targetId
       const screen = createPlayerScreen({ world, playerId, targetId, track, publication })
       livekit.screenManager.addScreen(screen)
-      livekit.events.emit('livekitStatusChanged', livekit.status)
+      livekit.events.emit(EVENT.livekit, livekit.status)
     }
   }
 
@@ -44,13 +45,13 @@ export class TrackManager {
     const playerId = livekit.network.id
     if (publication.source === 'microphone') {
       livekit.status.mic = false
-      livekit.events.emit('livekitStatusChanged', livekit.status)
+      livekit.events.emit(EVENT.livekit, livekit.status)
     }
     if (publication.source === 'screen_share') {
       const screen = livekit.screenManager.screens.find(s => s.playerId === playerId)
       livekit.screenManager.removeScreen(screen)
       livekit.status.screenshare = null
-      livekit.events.emit('livekitStatusChanged', livekit.status)
+      livekit.events.emit(EVENT.livekit, livekit.status)
     }
   }
 

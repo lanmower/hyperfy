@@ -13,6 +13,7 @@ import { FileUploader } from '../../server/services/FileUploader.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { PacketHandlers } from './network/PacketHandlers.js'
 import { serverNetworkHandlers } from '../config/HandlerRegistry.js'
+import { EVENT } from '../constants/EventNames.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -252,7 +253,7 @@ export class ServerNetwork extends BaseNetwork {
 
       this.sockets.set(socket.id, socket)
 
-      this.events.emit('enter', { playerId: socket.player.data.id })
+      this.events.emit(EVENT.game.enter, { playerId: socket.player.data.id })
     } catch (err) {
       console.error(err)
     }

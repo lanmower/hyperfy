@@ -2,8 +2,8 @@ import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node } from './Node.js'
-import { defineProps, validators, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, validators, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 import { v } from '../utils/TempVectors.js'
 
 const defaults = {

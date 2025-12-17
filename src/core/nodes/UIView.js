@@ -19,7 +19,7 @@ import {
   isFlexWrap,
 } from '../extras/yoga.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
-import { defineProps, createPropertyProxy, validators } from '../../utils/helpers/defineProperty.js'
+import { defineProps, createPropertyProxy, validators } from '../utils/helpers/defineProperty.js'
 
 const defaults = {
   display: 'flex',

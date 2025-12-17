@@ -1,8 +1,8 @@
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, onSetRebuildIf, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, onSetRebuildIf, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'

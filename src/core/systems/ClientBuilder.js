@@ -10,6 +10,7 @@ import { BuilderEntityCreator } from './builder/BuilderEntityCreator.js'
 import { BuilderEntityPicker } from './builder/BuilderEntityPicker.js'
 import { BuilderFileHandler } from './builder/BuilderFileHandler.js'
 import { BuilderModeManager } from './builder/BuilderModeManager.js'
+import { EVENT } from '../constants/EventNames.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const SNAP_DISTANCE = 1
@@ -81,7 +82,7 @@ export class ClientBuilder extends System {
     if (this.enabled && !this.canBuild()) {
       this.select(null)
       this.enabled = false
-      this.events.emit('buildModeChanged', false)
+      this.events.emit(EVENT.game.buildModeChanged, false)
     }
     this.updateActions()
   }
@@ -510,7 +511,7 @@ export class ClientBuilder extends System {
     this.enabled = enabled
     if (!this.enabled) this.select(null)
     this.updateActions()
-    this.events.emit('buildModeChanged', enabled)
+    this.events.emit(EVENT.game.buildModeChanged, enabled)
   }
 
   setMode(mode) {

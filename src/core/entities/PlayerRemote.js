@@ -4,6 +4,7 @@ import { createNode } from '../extras/createNode.js'
 import { hasRank, Ranks } from '../extras/ranks.js'
 import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
 import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
+import { EVENT } from '../constants/EventNames.js'
 
 let capsuleGeometry
 {
@@ -206,12 +207,12 @@ export class PlayerRemote extends BaseEntity {
     if (data.hasOwnProperty('name')) {
       this.data.name = data.name
       this.nametag.label = data.name
-      this.world.events.emit('name', { playerId: this.data.id, name: this.data.name })
+      this.world.events.emit(EVENT.name, { playerId: this.data.id, name: this.data.name })
     }
     if (data.hasOwnProperty('health')) {
       this.data.health = data.health
       this.nametag.health = data.health
-      this.world.events.emit('health', { playerId: this.data.id, health: data.health })
+      this.world.events.emit(EVENT.health, { playerId: this.data.id, health: data.health })
     }
     if (data.hasOwnProperty('avatar')) {
       this.data.avatar = data.avatar
@@ -223,7 +224,7 @@ export class PlayerRemote extends BaseEntity {
     }
     if (data.hasOwnProperty('rank')) {
       this.data.rank = data.rank
-      this.world.events.emit('rank', { playerId: this.data.id, rank: this.data.rank })
+      this.world.events.emit(EVENT.rank, { playerId: this.data.id, rank: this.data.rank })
     }
     if (avatarChanged) {
       this.applyAvatar()
@@ -249,7 +250,7 @@ export class PlayerRemote extends BaseEntity {
     this.base.deactivate()
     this.avatar = null
     this.world.setHot(this, false)
-    this.world.events.emit('leave', { playerId: this.data.id })
+    this.world.events.emit(EVENT.game.leave, { playerId: this.data.id })
     this.aura.deactivate()
     this.aura = null
 

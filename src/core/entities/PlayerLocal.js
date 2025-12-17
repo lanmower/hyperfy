@@ -14,6 +14,7 @@ import { Modes } from '../constants/AnimationModes.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
 import { PlayerPermissions } from './player/PlayerPermissions.js'
 import { PlayerInputHandler } from './player/PlayerInputHandler.js'
+import { EVENT } from '../constants/EventNames.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
@@ -656,13 +657,13 @@ export class PlayerLocal extends BaseEntity {
     let changed
     if (data.hasOwnProperty('name')) {
       this.data.name = data.name
-      this.world.events.emit('name', { playerId: this.data.id, name: this.data.name })
+      this.world.events.emit(EVENT.name, { playerId: this.data.id, name: this.data.name })
       changed = true
     }
     if (data.hasOwnProperty('health')) {
       this.data.health = data.health
       this.nametag.health = data.health
-      this.world.events.emit('health', { playerId: this.data.id, health: data.health })
+      this.world.events.emit(EVENT.health, { playerId: this.data.id, health: data.health })
     }
     if (data.hasOwnProperty('avatar')) {
       this.data.avatar = data.avatar
@@ -683,7 +684,7 @@ export class PlayerLocal extends BaseEntity {
     }
     if (data.hasOwnProperty('rank')) {
       this.data.rank = data.rank
-      this.world.events.emit('rank', { playerId: this.data.id, rank: this.data.rank })
+      this.world.events.emit(EVENT.rank, { playerId: this.data.id, rank: this.data.rank })
       changed = true
     }
     if (avatarChanged) {

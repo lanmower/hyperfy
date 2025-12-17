@@ -3,6 +3,7 @@ import { ControlPriorities } from '../extras/ControlPriorities.js'
 import * as THREE from '../extras/three.js'
 import { isTouch } from '../../client/utils.js'
 import { clamp } from '../utils.js'
+import { EVENT } from '../constants/EventNames.js'
 
 const BATCH_SIZE = 500
 const FORWARD = new THREE.Vector3(0, 0, 1)
@@ -291,7 +292,7 @@ export class ClientActions extends System {
       if (distance > this.current.node._distance) {
         this.current.node = null
         this.current.distance = Infinity
-        this.events.emit('actionChanged', false)
+        this.events.emit(EVENT.action.changed, false)
         this.action.stop()
       } else {
         this.current.distance = distance
@@ -317,7 +318,7 @@ export class ClientActions extends System {
     }
     if (didChange) {
       this.action.start(this.current.node)
-      this.events.emit('actionChanged', true)
+      this.events.emit(EVENT.action.changed, true)
     }
     this.action.update(delta)
   }

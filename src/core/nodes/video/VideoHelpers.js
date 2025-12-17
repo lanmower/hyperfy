@@ -1,4 +1,4 @@
-import { imageFits, audioGroups, distanceModels, pivots } from '../../../utils/collections/NodeConstants.js'
+import { imageFits, audioGroups, distanceModels, pivots } from '../../utils/collections/NodeConstants.js'
 
 export function isDistanceModel(value) {
   return distanceModels.includes(value)

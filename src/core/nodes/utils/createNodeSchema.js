@@ -1,1 +1,1 @@
-export * from '../../utils/validation/createNodeSchema.js'
+export * from '../utils/validation/createNodeSchema.js'

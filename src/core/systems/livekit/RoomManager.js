@@ -1,4 +1,5 @@
 import { Room, RoomEvent, ParticipantEvent, ScreenSharePresets } from 'livekit-client'
+import { EVENT } from '../../constants/EventNames.js'
 
 export class RoomManager {
   constructor(livekit) {
@@ -29,13 +30,13 @@ export class RoomManager {
     livekit.room.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => this.livekit.trackManager.onTrackUnsubscribed(track, pub, participant))
     livekit.room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, speaking => {
       const player = livekit.entities.player
-      livekit.events.emit('playerSpeaking', { playerId: player.data.id, speaking })
+      livekit.events.emit(EVENT.speaking, { playerId: player.data.id, speaking })
       player.setSpeaking(speaking)
     })
     audio.ready(async () => {
       await livekit.room.connect(opts.wsUrl, opts.token)
       livekit.status.connected = true
-      livekit.events.emit('livekitStatusChanged', livekit.status)
+      livekit.events.emit(EVENT.livekit, livekit.status)
     })
   }
 

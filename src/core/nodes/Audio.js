@@ -3,8 +3,8 @@ import { every, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
 import { v, q } from '../utils/TempVectors.js'
-import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 
 const propertySchema = schema('src', 'volume', 'loop', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
   .override('volume', { onSet() { if (this.gainNode) this.gainNode.gain.value = this._volume } })

@@ -1,7 +1,7 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
-import { defineProps, validators, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, validators, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 
 const defaults = {
   label: '...',

@@ -2,6 +2,7 @@ import { App } from '../entities/App.js'
 import { PlayerLocal } from '../entities/PlayerLocal.js'
 import { PlayerRemote } from '../entities/PlayerRemote.js'
 import { System } from './System.js'
+import { EVENT } from '../constants/EventNames.js'
 
 let hyperfyEntityValidation = null
 
@@ -57,14 +58,14 @@ export class Entities extends System {
     if (data.type === 'player') {
       this.players.set(entity.data.id, entity)
       if (this.network.isClient && data.userId !== this.network.id) {
-        this.events.emit('enter', { playerId: entity.data.id })
+        this.events.emit(EVENT.game.enter, { playerId: entity.data.id })
       }
     }
     if (data.userId === this.network.id) {
       this.player = entity
-      this.events.emit('player', entity)
+      this.events.emit(EVENT.player, entity)
     }
-    this.events.emit('entityAdded', entity)
+    this.events.emit(EVENT.entity.added, entity)
     return entity
   }
 
@@ -75,7 +76,7 @@ export class Entities extends System {
     entity.destroy()
     this.items.delete(id)
     this.removed.push(id)
-    this.events.emit('entityRemoved', id)
+    this.events.emit(EVENT.entity.removed, id)
   }
 
   setHot(entity, hot) {

@@ -1,1 +1,1 @@
-export * from '../../utils/helpers/defineProperty.js'
+export * from '../utils/helpers/defineProperty.js'

@@ -5,16 +5,8 @@ import {
   MicOffIcon,
   SettingsIcon,
   VRIcon,
-  EarthIcon,
-  LayersIcon,
-  CirclePlusIcon,
-  CodeIcon,
-  ListTreeIcon,
-  MessageSquareTextIcon,
-  SquareMenuIcon,
-  TagIcon,
-  UsersIcon,
 } from './Icons.js'
+import { EarthIcon, LayersIcon, CirclePlusIcon, CodeIcon, ListTreeIcon, MessageSquareTextIcon, SquareMenuIcon, TagIcon, UsersIcon } from 'lucide-react'
 import { cls } from './cls.js'
 import { isTouch } from '../utils.js'
 

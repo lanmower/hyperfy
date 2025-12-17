@@ -4,6 +4,7 @@ import { PlayerVoiceController } from './livekit/PlayerVoiceController.js'
 import { TrackManager } from './livekit/TrackManager.js'
 import { ScreenManager } from './livekit/ScreenManager.js'
 import { RoomManager } from './livekit/RoomManager.js'
+import { EVENT } from '../constants/EventNames.js'
 
 export class ClientLiveKit extends System {
   static DEPS = {
@@ -49,7 +50,7 @@ export class ClientLiveKit extends System {
       const myLevel = this.levels[this.network.id] || this.defaultLevel
       if (this.status.level !== myLevel) {
         this.status.level = myLevel
-        this.events.emit('livekitStatusChanged', this.status)
+        this.events.emit(EVENT.livekit, this.status)
       }
       this.voices.forEach(voice => {
         const level = this.levels[voice.player.data.id] || this.defaultLevel
@@ -75,7 +76,7 @@ export class ClientLiveKit extends System {
     this.events.emit('playerMuted', { playerId, muted })
     if (playerId === this.network.id) {
       this.status.muted = muted
-      this.events.emit('livekitStatusChanged', this.status)
+      this.events.emit(EVENT.livekit, this.status)
     }
   }
 
@@ -89,7 +90,7 @@ export class ClientLiveKit extends System {
     if (playerId === this.network.id) {
       if (this.status.level !== level) {
         this.status.level = level
-        this.events.emit('livekitStatusChanged', this.status)
+        this.events.emit(EVENT.livekit, this.status)
       }
       return
     }

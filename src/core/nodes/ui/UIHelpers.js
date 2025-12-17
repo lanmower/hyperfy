@@ -1,5 +1,5 @@
 import * as THREE from '../../extras/three.js'
-import { pivots } from '../../../utils/collections/NodeConstants.js'
+import { pivots } from '../../utils/collections/NodeConstants.js'
 import { isNumber, isArray, every } from 'lodash-es'
 
 export function pivotGeometry(pivot, geometry, width, height) {

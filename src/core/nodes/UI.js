@@ -4,8 +4,8 @@ import Yoga from 'yoga-layout'
 
 import { Node } from './Node.js'
 import { clamp } from '../utils.js'
-import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 import { v, q, m, e } from '../utils/TempVectors.js'
 import {
   AlignContent,

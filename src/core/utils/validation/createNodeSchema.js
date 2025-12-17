@@ -1,5 +1,5 @@
 
-import { Props, propSchema } from '../Props.js'
+import { Props, propSchema } from '../../Props.js'
 import { validators, onSetRebuild, onSetRebuildIf } from '../helpers/defineProperty.js'
 
 export class SchemaBuilder {

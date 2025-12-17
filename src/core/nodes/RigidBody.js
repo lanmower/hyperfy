@@ -2,8 +2,8 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
-import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { schema } from '../utils/validation/createNodeSchema.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 

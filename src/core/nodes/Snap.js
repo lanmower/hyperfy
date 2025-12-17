@@ -1,6 +1,6 @@
 import * as THREE from '../extras/three.js'
 import { Node } from './Node.js'
-import { createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { createPropertyProxy } from '../utils/helpers/defineProperty.js'
 
 export class Snap extends Node {
   constructor(data = {}) {
