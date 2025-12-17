@@ -1,4 +1,4 @@
-export { EventBus, globalEvents, ErrorEventBus } from './events/index.js'
+export { EventBus, globalEvents } from './events/index.js'
 
 export * as validation from './validation/index.js'
 
