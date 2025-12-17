@@ -22,7 +22,7 @@
 - **48 total systems**: 17 client-only, 8 server-only, 23 shared
 - **DI Pattern**: ServiceContainer exists but underutilized - only 14 systems use getService(). Others directly access `this.world.<system>`
 - **Large Components**: Sidebar (1,895 LOC), CoreUI (1,328 LOC), Fields (1,041 LOC) - all should be split
-- **Monolithic Systems** >600 LOC: ClientBuilder (676), ClientControls (768), Physics (619), ServerNetwork (629), ClientLoader (543), ErrorMonitor (489)
+- **Monolithic Systems** >600 LOC: ClientBuilder (676)
 - **Coupling Risk**: 26 of 40 systems access world properties directly instead of through DI - enables circular dependencies
 - **God Objects**: ErrorMonitor receives all error reports, World acts as service locator, ClientBuilder orchestrates builder operations, Entities mixes entity management with network sync
 - **Missing Abstractions**: No InputSystem (scattered across ClientControls, ClientActions, ClientBuilder), no AudioSystem (in ClientLiveKit), no ResourceSystem (monolithic ClientLoader), no StateSync layer (in ServerNetwork + Entities)
@@ -160,9 +160,20 @@
 - ProxyFactory class: 94L - getWorldProxy(), getAppProxy(), getPlayerProxy() with descriptor caching
 - All blueprint, script, and event logic extracted and delegated
 
-### Session Summary - Phase 2, 3 & 4.1-4.4 Complete
+**Phase 4.5: ErrorMonitor System - PARTIAL** ◐
+- ErrorMonitor.js: 489L (partial extraction started)
+- ErrorForwarder class: 75L - Error distribution, server transmission, critical error handling
 
-**Total Systems Refactored**: 9 major systems
+**Phase 5.1: ClientControls System - COMPLETE** ✓
+- ClientControls.js: 729L → 504L (31% reduction!)
+- InputEventHandler class: 172L - Keyboard, pointer, scroll event handling with button state tracking
+- PointerLockManager class: 44L - Pointer lock state management and event handling
+- ControlFactory class: 93L - Control binding, action management, control type factories
+- All input event and pointer lock logic extracted and delegated
+
+### Session Summary - Phase 2, 3, 4.1-4.5 & 5.1 Complete
+
+**Total Systems Refactored**: 10 major systems
 - ServerNetwork: 598L → 293L (51% reduction)
 - Physics: 572L → 172L (70% reduction)
 - UI: 579L → 299L (48% reduction)
@@ -171,9 +182,10 @@
 - Node: 471L → 250L (47% reduction)
 - ClientLiveKit: 481L → 129L (73% reduction)
 - App: 495L → 273L (45% reduction)
-- Total LOC reduction: 4,203L → 1,854L (56% reduction across these 8 systems)
+- ClientControls: 729L → 504L (31% reduction)
+- Total LOC reduction: 4,932L → 2,358L (52% reduction across these 9 systems)
 
-**Modules Created**: 24 focused extraction modules
+**Modules Created**: 27 focused extraction modules
 - PhysicsQueries, PhysicsContactManager, PhysicsActorManager
 - UIRenderer, UIHelpers
 - VideoRenderer, VideoAudioController, VideoHelpers
@@ -181,14 +193,15 @@
 - TransformSystem, LifecycleManager, ProxyFactory
 - PlayerVoiceController, TrackManager, ScreenManager, RoomManager
 - BlueprintLoader, ScriptExecutor, EventManager, ProxyFactory (App)
+- InputEventHandler, PointerLockManager, ControlFactory
 - PacketHandlers, ~30 utility modules
 
 **Build Status**: 48 errors (no new errors introduced, stable)
-**Commits Made**: 10 session commits
+**Commits Made**: 11 session commits
 
 **Next Priority Systems** (>200L):
-1. ErrorMonitor.js (489L → 200L) - Error formatters, reporters
-2. ClientControls.js (768L → 200L) - Control/input handlers
-3. Particles.js (417L → 200L) - Emitter factory
-4. Nametags.js (386L → 200L) - Position calculator, occlusion
+1. ErrorMonitor.js (489L → 200L) - Complete error handlers, formatters, categories extraction
+2. Particles.js (417L → 200L) - Emitter factory
+3. Nametags.js (386L → 200L) - Position calculator, occlusion
+4. ClientActions.js (373L → 200L) - Action handlers
 
