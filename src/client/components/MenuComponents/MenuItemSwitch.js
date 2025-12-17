@@ -1,10 +1,9 @@
-import { useContext } from 'react'
 import { css } from '@firebolt-dev/css'
 import { ChevronRightIcon } from '../Icons.js'
-import { MenuContext } from './Menu.js'
+import { useMenuHint } from '../hooks/index.js'
 
 export function MenuItemSwitch({ label, hint, options, value, onChange }) {
-  const setHint = useContext(MenuContext)
+  const hintProps = useMenuHint(hint)
   options = options || []
   const idx = options.findIndex(o => o.value === value)
   const selected = options[idx]
@@ -26,37 +25,18 @@ export function MenuItemSwitch({ label, hint, options, value, onChange }) {
         align-items: center;
         height: 2.5rem;
         padding: 0 0.875rem;
-        .menuitemswitch-label {
-          flex: 1;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          padding-right: 1rem;
-        }
+        .menuitemswitch-label { flex: 1; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; padding-right: 1rem; }
         .menuitemswitch-btn {
-          width: 2.125rem;
-          height: 2.125rem;
-          display: none;
-          align-items: center;
-          justify-content: center;
-          opacity: 0.2;
-          &:hover {
-            cursor: pointer;
-            opacity: 1;
-          }
+          width: 2.125rem; height: 2.125rem; display: none; align-items: center; justify-content: center; opacity: 0.2;
+          &:hover { cursor: pointer; opacity: 1; }
         }
-        .menuitemswitch-text {
-          line-height: 1;
-        }
+        .menuitemswitch-text { line-height: 1; }
         &:hover {
           background-color: rgba(255, 255, 255, 0.05);
-          .menuitemswitch-btn {
-            display: flex;
-          }
+          .menuitemswitch-btn { display: flex; }
         }
       `}
-      onPointerEnter={() => setHint(hint)}
-      onPointerLeave={() => setHint(null)}
+      {...hintProps}
     >
       <div className='menuitemswitch-label'>{label}</div>
       <div className='menuitemswitch-btn left' onClick={prev}>

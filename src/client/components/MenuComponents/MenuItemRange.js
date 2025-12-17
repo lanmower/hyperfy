@@ -1,13 +1,11 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { css } from '@firebolt-dev/css'
-import { MenuContext } from './Menu.js'
+import { useMenuHint } from '../hooks/index.js'
 
 export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, instant, value, onChange }) {
-  const setHint = useContext(MenuContext)
+  const hintProps = useMenuHint(hint)
   const trackRef = useRef()
-  if (value === undefined || value === null) {
-    value = 0
-  }
+  if (value === undefined || value === null) value = 0
   const [local, setLocal] = useState(value)
   const [sliding, setSliding] = useState(false)
   useEffect(() => {
@@ -15,15 +13,15 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
   }, [sliding, value])
   useEffect(() => {
     const track = trackRef.current
-    function calculateValueFromPointer(e, trackElement) {
-      const rect = trackElement.getBoundingClientRect()
+    const calculateValueFromPointer = (e, el) => {
+      const rect = el.getBoundingClientRect()
       const position = (e.clientX - rect.left) / rect.width
       const rawValue = min + position * (max - min)
       const steppedValue = Math.round(rawValue / step) * step
       return Math.max(min, Math.min(max, steppedValue))
     }
     let sliding
-    function onPointerDown(e) {
+    const onPointerDown = e => {
       sliding = true
       setSliding(true)
       const newValue = calculateValueFromPointer(e, e.currentTarget)
@@ -31,13 +29,13 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
       if (instant) onChange(newValue)
       e.currentTarget.setPointerCapture(e.pointerId)
     }
-    function onPointerMove(e) {
+    const onPointerMove = e => {
       if (!sliding) return
       const newValue = calculateValueFromPointer(e, e.currentTarget)
       setLocal(newValue)
       if (instant) onChange(newValue)
     }
-    function onPointerUp(e) {
+    const onPointerUp = e => {
       if (!sliding) return
       sliding = false
       setSliding(false)
@@ -57,12 +55,8 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
   }, [])
   const barWidthPercentage = ((local - min) / (max - min)) * 100 + ''
   const text = useMemo(() => {
-    const num = local
-    const decimalDigits = (num.toString().split('.')[1] || '').length
-    if (decimalDigits <= 2) {
-      return num.toString()
-    }
-    return num.toFixed(2)
+    const decimalDigits = (local.toString().split('.')[1] || '').length
+    return decimalDigits <= 2 ? local.toString() : local.toFixed(2)
   }, [local])
   return (
     <div
@@ -72,45 +66,17 @@ export function MenuItemRange({ label, hint, min = 0, max = 1, step = 0.05, inst
         align-items: center;
         height: 2.5rem;
         padding: 0 0.875rem;
-        .menuitemrange-label {
-          flex: 1;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          padding-right: 1rem;
-        }
-        .menuitemrange-text {
-          font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.4);
-          margin-right: 0.5rem;
-          opacity: 0;
-        }
+        .menuitemrange-label { flex: 1; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; padding-right: 1rem; }
+        .menuitemrange-text { font-size: 0.75rem; color: rgba(255, 255, 255, 0.4); margin-right: 0.5rem; opacity: 0; }
         .menuitemrange-track {
-          width: 7rem;
-          flex-shrink: 0;
-          height: 0.5rem;
-          border-radius: 0.1rem;
-          display: flex;
-          align-items: stretch;
-          background-color: rgba(255, 255, 255, 0.1);
-          &:hover {
-            cursor: pointer;
-          }
+          width: 7rem; flex-shrink: 0; height: 0.5rem; border-radius: 0.1rem;
+          display: flex; align-items: stretch; background-color: rgba(255, 255, 255, 0.1);
+          &:hover { cursor: pointer; }
         }
-        .menuitemrange-bar {
-          background-color: white;
-          border-radius: 0.1rem;
-          width: ${barWidthPercentage}%;
-        }
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.05);
-          .menuitemrange-text {
-            opacity: 1;
-          }
-        }
+        .menuitemrange-bar { background-color: white; border-radius: 0.1rem; width: ${barWidthPercentage}%; }
+        &:hover { background-color: rgba(255, 255, 255, 0.05); .menuitemrange-text { opacity: 1; } }
       `}
-      onPointerEnter={() => setHint(hint)}
-      onPointerLeave={() => setHint(null)}
+      {...hintProps}
     >
       <div className='menuitemrange-label'>{label}</div>
       <div className='menuitemrange-text'>{text}</div>
