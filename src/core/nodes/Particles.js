@@ -2,8 +2,8 @@ import * as THREE from '../extras/three.js'
 import { every, isArray, isBoolean, isFunction, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 
 const shapeTypes = ['point', 'sphere', 'hemisphere', 'cone', 'box', 'circle', 'rectangle']
 const spaces = ['local', 'world']

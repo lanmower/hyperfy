@@ -1,11 +1,11 @@
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 
 const defaultStopOpts = { fade: 0.15 }
 

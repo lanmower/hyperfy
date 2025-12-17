@@ -1,7 +1,7 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
-import { defineProps, createPropertyProxy, validators } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy, validators } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 import { Node } from './Node.js'
 
 const propertySchema = schema('label', 'distance', 'duration', 'onStart', 'onTrigger', 'onCancel')

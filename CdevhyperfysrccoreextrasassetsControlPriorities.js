@@ -1,3 +1,0 @@
-export const CONTROL_PRIORITY_SYSTEM = 0
-export const CONTROL_PRIORITY_USER = 100
-export const CONTROL_PRIORITY_XR = 50

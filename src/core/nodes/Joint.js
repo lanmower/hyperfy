@@ -4,8 +4,8 @@ import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 import { q } from '../utils/TempVectors.js'
 
 const rebuild = function() { this.needsRebuild = true; this.setDirty() }

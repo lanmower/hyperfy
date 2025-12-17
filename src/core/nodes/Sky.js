@@ -1,7 +1,7 @@
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
 import * as THREE from '../extras/three.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 
 const rebuild = () => function() { this.needsRebuild = true; this.setDirty() }
 const propertySchema = schema('bg', 'hdr', 'rotationY', 'sunDirection', 'sunIntensity', 'fogNear', 'fogFar', 'fogColor')

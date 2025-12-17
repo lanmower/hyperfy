@@ -1,4 +1,4 @@
-import { collisionLayers as layers } from '../utils/NodeConstants.js'
+import { collisionLayers as layers } from '../../utils/collections/NodeConstants.js'
 import * as THREE from '../extras/three.js'
 import { isString } from 'lodash-es'
 
@@ -6,8 +6,8 @@ import { DEG2RAD } from '../extras/general.js'
 
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
-import { defineProps, validators, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, validators, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 
 const defaults = {
   radius: 0.4,

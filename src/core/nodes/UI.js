@@ -19,10 +19,10 @@ import {
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
 import { clamp } from '../utils.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 import { v, q, m, e } from '../utils/TempVectors.js'
-import { pivots } from '../utils/NodeConstants.js'
+import { pivots } from '../../utils/collections/NodeConstants.js'
 
 const FORWARD = new THREE.Vector3(0, 0, 1)
 

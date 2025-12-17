@@ -1,6 +1,6 @@
 import { isBoolean, isString } from 'lodash-es'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 import { Node } from './Node.js'
 import * as THREE from 'three'
 

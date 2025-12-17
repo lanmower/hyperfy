@@ -1,8 +1,8 @@
 import { Node } from './Node.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
-import { createImageSchema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { createImageSchema } from '../../utils/validation/createNodeSchema.js'
 
 const propertySchema = createImageSchema()
 

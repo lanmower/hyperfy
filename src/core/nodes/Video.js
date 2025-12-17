@@ -1,4 +1,4 @@
-import { imageFits as fits, audioGroups as groups, distanceModels, pivots } from '../utils/NodeConstants.js'
+import { imageFits as fits, audioGroups as groups, distanceModels, pivots } from '../../utils/collections/NodeConstants.js'
 import { isBoolean, isNumber, isString } from 'lodash-es'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import * as THREE from '../extras/three.js'
@@ -6,8 +6,8 @@ import * as THREE from '../extras/three.js'
 import { getRef, Node, secureRef } from './Node.js'
 import { uuid } from '../utils.js'
 import { v, q } from '../utils/TempVectors.js'
-import { defineProps, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 
 const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'color', 'lit', 'doubleside', 'castShadow', 'receiveShadow', 'aspect', 'fit', 'width', 'height', 'pivot', 'volume', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
   .overrideAll({

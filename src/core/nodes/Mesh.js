@@ -4,8 +4,8 @@ import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
-import { defineProps, onSetRebuildIf, createPropertyProxy } from '../utils/defineProperty.js'
-import { schema } from '../utils/createNodeSchema.js'
+import { defineProps, onSetRebuildIf, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
 
 const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')
   .override('type', { onSet() { this.needsRebuild = true } })
