@@ -1,19 +1,7 @@
 import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
-
-import { Settings } from './systems/Settings.js'
-import { Collections } from './systems/Collections.js'
-import { Apps } from './systems/Apps.js'
-import { Anchors } from './systems/Anchors.js'
-import { Avatars } from './systems/Avatars.js'
-import { Events } from './systems/Events.js'
-import { Chat } from './systems/Chat.js'
-import { Blueprints } from './systems/Blueprints.js'
-import { Entities } from './systems/Entities.js'
-import { Physics } from './systems/Physics.js'
-import { Stage } from './systems/Stage.js'
-import { Scripts } from './systems/Scripts.js'
-import { ErrorMonitor } from './systems/ErrorMonitor.js'
+import { ServiceContainer } from './di/ServiceContainer.js'
+import { systemRegistry } from './systems/SystemRegistry.js'
 
 export class World extends EventEmitter {
   constructor() {
@@ -30,32 +18,39 @@ export class World extends EventEmitter {
     this.assetsDir = null
     this.hot = new Set()
 
+    // Dependency injection container
+    this.di = new ServiceContainer()
+    // Register world itself for injection
+    this.di.registerSingleton('world', this)
+
     this.rig = new THREE.Object3D()
     // NOTE: camera near is slightly smaller than spherecast. far is slightly more than skybox.
     // this gives us minimal z-fighting without needing logarithmic depth buffers
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
     this.rig.add(this.camera)
 
-    // Initialize ErrorMonitor first to capture initialization errors
-    this.register('errorMonitor', ErrorMonitor)
-    this.register('settings', Settings)
-    this.register('collections', Collections)
-    this.register('apps', Apps)
-    this.register('anchors', Anchors)
-    this.register('avatars', Avatars)
-    this.register('events', Events)
-    this.register('scripts', Scripts)
-    this.register('chat', Chat)
-    this.register('blueprints', Blueprints)
-    this.register('entities', Entities)
-    this.register('physics', Physics)
-    this.register('stage', Stage)
+    // Load systems dynamically from registry
+    this.loadSystemsFromRegistry()
+  }
+
+  /**
+   * Load systems dynamically from the system registry
+   * Only loads systems for the current platform
+   */
+  loadSystemsFromRegistry() {
+    const systems = systemRegistry.getCurrentPlatformSystems()
+
+    for (const { name, class: SystemClass } of systems) {
+      this.register(name, SystemClass)
+    }
   }
 
   register(key, System) {
     const system = new System(this)
     this.systems.push(system)
     this[key] = system
+    // Register system in DI container for dependency injection
+    this.di.registerSingleton(key, system)
     return system
   }
 

@@ -5,6 +5,7 @@ import { storage } from '../storage.js'
 import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
+import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
 
 /**
  * Client Network System
@@ -15,7 +16,7 @@ import { BaseNetwork } from '../network/BaseNetwork.js'
  */
 export class ClientNetwork extends BaseNetwork {
   constructor(world) {
-    super(world)
+    super(world, clientNetworkHandlers)
     this.ws = null
     this.apiUrl = null
     this.id = null
@@ -23,30 +24,6 @@ export class ClientNetwork extends BaseNetwork {
     this.serverTimeOffset = 0
     this.protocol.isClient = true
     this.protocol.flushTarget = this
-  }
-
-  getMessageHandlers() {
-    return {
-      'snapshot': this.onSnapshot,
-      'settingsModified': this.onSettingsModified,
-      'chatAdded': this.onChatAdded,
-      'chatCleared': this.onChatCleared,
-      'blueprintAdded': this.onBlueprintAdded,
-      'blueprintModified': this.onBlueprintModified,
-      'entityAdded': this.onEntityAdded,
-      'entityModified': this.onEntityModified,
-      'entityEvent': this.onEntityEvent,
-      'entityRemoved': this.onEntityRemoved,
-      'playerTeleport': this.onPlayerTeleport,
-      'playerPush': this.onPlayerPush,
-      'playerSessionAvatar': this.onPlayerSessionAvatar,
-      'liveKitLevel': this.onLiveKitLevel,
-      'mute': this.onMute,
-      'pong': this.onPong,
-      'kick': this.onKick,
-      'hotReload': this.onHotReload,
-      'errors': this.onErrors,
-    }
   }
 
   init({ wsUrl, name, avatar }) {

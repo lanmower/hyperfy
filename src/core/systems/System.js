@@ -5,12 +5,24 @@ import EventEmitter from 'eventemitter3'
  *
  * - The base class all systems inherit from
  * - Includes lifecycle methods for startup and simulation etc
- *
+ * - Supports Dependency Injection via world.di container
  */
 export class System extends EventEmitter {
   constructor(world) {
     super()
     this.world = world
+  }
+
+  /**
+   * Get service from DI container (with fallback to this.world)
+   * Enables gradual migration to DI without breaking existing code
+   */
+  getService(name) {
+    if (this.world.di?.has?.(name)) {
+      return this.world.di.get(name)
+    }
+    // Fallback for services that might not be in DI yet
+    return this.world[name]
   }
 
   async init() {
