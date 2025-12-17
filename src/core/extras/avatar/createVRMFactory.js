@@ -6,6 +6,7 @@ import { getTrianglesFromGeometry } from './getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from './getTextureBytesFromMaterial.js'
 import { Emotes } from './playerEmotes.js'
 import { Modes } from '../constants/AnimationModes.js'
+import { DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_GAZE_DISTANCE, AimAxis, UpAxis } from './VRMFactoryConfig.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -14,32 +15,7 @@ const m1 = new THREE.Matrix4()
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 
-const DIST_MIN_RATE = 1 / 5 // 5 times per second
-const DIST_MAX_RATE = 1 / 60 // 40 times per second
-const DIST_MIN = 5 // <= 5m = max rate
-const DIST_MAX = 60 // >= 60m = min rate
-
-const MAX_GAZE_DISTANCE = 40
-
 const material = new THREE.MeshBasicMaterial()
-
-const AimAxis = {
-  X: new THREE.Vector3(1, 0, 0),
-  Y: new THREE.Vector3(0, 1, 0),
-  Z: new THREE.Vector3(0, 0, 1),
-  NEG_X: new THREE.Vector3(-1, 0, 0),
-  NEG_Y: new THREE.Vector3(0, -1, 0),
-  NEG_Z: new THREE.Vector3(0, 0, -1),
-}
-
-const UpAxis = {
-  X: new THREE.Vector3(1, 0, 0),
-  Y: new THREE.Vector3(0, 1, 0),
-  Z: new THREE.Vector3(0, 0, 1),
-  NEG_X: new THREE.Vector3(-1, 0, 0),
-  NEG_Y: new THREE.Vector3(0, -1, 0),
-  NEG_Z: new THREE.Vector3(0, 0, -1),
-}
 
 export function createVRMFactory(glb, setupMaterial) {
   glb.scene.matrixAutoUpdate = false
