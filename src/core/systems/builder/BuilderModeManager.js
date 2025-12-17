@@ -26,6 +26,8 @@ export class BuilderModeManager {
     this.world = world
     this.builder = builder
     this.picker = picker
+    this.camera = world.camera
+    this.stage = world.stage
     this.mode = 'grab'
     this.localSpace = false
     this.gizmo = null
@@ -105,7 +107,7 @@ export class BuilderModeManager {
     if (this.gizmo) this.detachGizmo()
 
     // Create gizmo
-    this.gizmo = new TransformControls(this.world.camera, this.builder.viewport)
+    this.gizmo = new TransformControls(this.camera, this.builder.viewport)
     this.gizmo.setSize(0.7)
     this.gizmo.space = this.localSpace ? 'local' : 'world'
 
@@ -132,8 +134,8 @@ export class BuilderModeManager {
     this.gizmoTarget.scale.copy(app.root.scale)
 
     // Add to scene
-    this.world.stage.scene.add(this.gizmoTarget)
-    this.world.stage.scene.add(this.gizmoHelper)
+    this.stage.scene.add(this.gizmoTarget)
+    this.stage.scene.add(this.gizmoHelper)
 
     // Setup rotation snapping
     this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
@@ -147,8 +149,8 @@ export class BuilderModeManager {
   detachGizmo() {
     if (!this.gizmo) return
 
-    this.world.stage.scene.remove(this.gizmoTarget)
-    this.world.stage.scene.remove(this.gizmoHelper)
+    this.stage.scene.remove(this.gizmoTarget)
+    this.stage.scene.remove(this.gizmoHelper)
     this.gizmo.detach()
     this.gizmo.disconnect()
     this.gizmo.dispose()

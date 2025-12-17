@@ -20,6 +20,12 @@ export class BuilderEntityCreator {
   constructor(world, builder) {
     this.world = world
     this.builder = builder
+    this.loader = world.loader
+    this.ui = world.ui
+    this.blueprints = world.blueprints
+    this.network = world.network
+    this.entities = world.entities
+    this.events = world.events
     this.e1 = new THREE.Euler()
     this.q1 = new THREE.Quaternion()
   }
@@ -32,12 +38,12 @@ export class BuilderEntityCreator {
 
     // Insert assets into loader cache
     for (const asset of info.assets) {
-      this.world.loader.insert(asset.type, asset.url, asset.file)
+      this.loader.insert(asset.type, asset.url, asset.file)
     }
 
     // Handle scene blueprint (replace existing scene)
     if (info.blueprint.scene) {
-      const confirmed = await this.world.ui.confirm({
+      const confirmed = await this.ui.confirm({
         title: 'Scene',
         message: 'Do you want to replace your current scene with this one?',
         confirmText: 'Replace',
@@ -46,7 +52,7 @@ export class BuilderEntityCreator {
       if (!confirmed) return
 
       // Update existing scene blueprint
-      const blueprint = this.world.blueprints.getScene()
+      const blueprint = this.blueprints.getScene()
       const change = {
         id: blueprint.id,
         version: blueprint.version + 1,
@@ -67,14 +73,14 @@ export class BuilderEntityCreator {
         disabled: info.blueprint.disabled,
       }
 
-      this.world.blueprints.modify(change)
+      this.blueprints.modify(change)
 
       // Upload assets
-      const promises = info.assets.map(asset => this.world.network.upload(asset.file))
+      const promises = info.assets.map(asset => this.network.upload(asset.file))
       await Promise.all(promises)
 
       // Publish changes
-      this.world.network.send('blueprintModified', change)
+      this.network.send('blueprintModified', change)
       return
     }
 
@@ -107,16 +113,16 @@ export class BuilderEntityCreator {
       quaternion: transform.quaternion,
       scale: [1, 1, 1],
       mover: null,
-      uploader: this.world.network.id,
+      uploader: this.network.id,
       pinned: false,
       state: {},
     }
 
-    this.world.blueprints.add(blueprint, true)
-    const app = this.world.entities.add(data, true)
+    this.blueprints.add(blueprint, true)
+    const app = this.entities.add(data, true)
 
     // Upload assets
-    const promises = info.assets.map(asset => this.world.network.upload(asset.file))
+    const promises = info.assets.map(asset => this.network.upload(asset.file))
     try {
       await Promise.all(promises)
       app.onUploaded()
@@ -136,7 +142,7 @@ export class BuilderEntityCreator {
     const url = `asset://${filename}`
 
     // Cache file locally for instant loading
-    this.world.loader.insert('model', url, file)
+    this.loader.insert('model', url, file)
 
     // Create blueprint
     const blueprint = {
@@ -158,7 +164,7 @@ export class BuilderEntityCreator {
       disabled: false,
     }
 
-    this.world.blueprints.add(blueprint, true)
+    this.blueprints.add(blueprint, true)
 
     // Spawn entity with uploader flag for other clients
     const data = {
@@ -169,15 +175,15 @@ export class BuilderEntityCreator {
       quaternion: transform.quaternion,
       scale: [1, 1, 1],
       mover: null,
-      uploader: this.world.network.id,
+      uploader: this.network.id,
       pinned: false,
       state: {},
     }
 
-    const app = this.world.entities.add(data, true)
+    const app = this.entities.add(data, true)
 
     // Upload the glb file
-    await this.world.network.upload(file)
+    await this.network.upload(file)
     app.onUploaded()
   }
 
@@ -191,20 +197,20 @@ export class BuilderEntityCreator {
     const url = `asset://${filename}`
 
     // Cache file locally
-    this.world.loader.insert('avatar', url, file)
+    this.loader.insert('avatar', url, file)
 
     // Emit avatar event for UI to handle placement/equipping
-    this.world.events.emit('avatar', {
+    this.events.emit('avatar', {
       file,
       url,
       hash,
       canPlace,
       onPlace: async () => {
-        this.world.events.emit('avatar', null)
+        this.events.emit('avatar', null)
         await this._placeAvatar(file, url, transform)
       },
       onEquip: async () => {
-        this.world.events.emit('avatar', null)
+        this.events.emit('avatar', null)
         await this._equipAvatar(file, url)
       },
     })
@@ -233,7 +239,7 @@ export class BuilderEntityCreator {
       disabled: false,
     }
 
-    this.world.blueprints.add(blueprint, true)
+    this.blueprints.add(blueprint, true)
 
     const data = {
       id: uuid(),
@@ -243,13 +249,13 @@ export class BuilderEntityCreator {
       quaternion: transform.quaternion,
       scale: [1, 1, 1],
       mover: null,
-      uploader: this.world.network.id,
+      uploader: this.network.id,
       pinned: false,
       state: {},
     }
 
-    const app = this.world.entities.add(data, true)
-    await this.world.network.upload(file)
+    const app = this.entities.add(data, true)
+    await this.network.upload(file)
     app.onUploaded()
   }
 
@@ -257,7 +263,7 @@ export class BuilderEntityCreator {
    * Equip avatar for player
    */
   async _equipAvatar(file, url) {
-    const player = this.world.entities.player
+    const player = this.entities.player
     const prevUrl = player.data.avatar
 
     // Update locally
@@ -265,7 +271,7 @@ export class BuilderEntityCreator {
 
     // Upload
     try {
-      await this.world.network.upload(file)
+      await this.network.upload(file)
     } catch (err) {
       console.error('Failed to upload avatar:', err)
       player.modify({ avatar: prevUrl })
@@ -277,7 +283,7 @@ export class BuilderEntityCreator {
     }
 
     // Publish for everyone
-    this.world.network.send('entityModified', {
+    this.network.send('entityModified', {
       id: player.data.id,
       avatar: url,
     })

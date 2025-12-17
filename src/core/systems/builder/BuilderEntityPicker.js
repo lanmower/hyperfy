@@ -12,13 +12,14 @@ export class BuilderEntityPicker {
   constructor(world, builder) {
     this.world = world
     this.builder = builder
+    this.stage = world.stage
   }
 
   /**
    * Get entity at center of screen (reticle)
    */
   getEntityAtReticle() {
-    const hits = this.world.stage.raycastReticle()
+    const hits = this.stage.raycastReticle()
     let entity
 
     for (const hit of hits) {
@@ -33,7 +34,7 @@ export class BuilderEntityPicker {
    * Get entity at pointer position (mouse)
    */
   getEntityAtPointer() {
-    const hits = this.world.stage.raycastPointer(this.builder.control.pointer.position)
+    const hits = this.stage.raycastPointer(this.builder.control.pointer.position)
     let entity
 
     for (const hit of hits) {
@@ -48,7 +49,7 @@ export class BuilderEntityPicker {
    * Get raycast hit at reticle with optional entity filtering
    */
   getHitAtReticle(ignoreEntity, ignorePlayers) {
-    const hits = this.world.stage.raycastReticle()
+    const hits = this.stage.raycastReticle()
     let hit
 
     for (const _hit of hits) {

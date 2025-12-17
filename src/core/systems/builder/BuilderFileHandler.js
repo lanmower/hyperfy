@@ -17,6 +17,9 @@ export class BuilderFileHandler {
     this.world = world
     this.builder = builder
     this.entityCreator = entityCreator
+    this.settings = world.settings
+    this.network = world.network
+    this.chat = world.chat
     this.dropTarget = null
     this.dropping = false
     this.file = null
@@ -65,18 +68,18 @@ export class BuilderFileHandler {
     const ext = file.name.split('.').pop().toLowerCase()
 
     // Check VRM permissions
-    if (ext === 'vrm' && !this.builder.canBuild() && !this.world.settings.customAvatars) {
+    if (ext === 'vrm' && !this.builder.canBuild() && !this.settings.customAvatars) {
       return
     }
 
     // Validate file size
-    const maxSize = this.world.network.maxUploadSize * 1024 * 1024
+    const maxSize = this.network.maxUploadSize * 1024 * 1024
     if (file.size > maxSize) {
-      this.world.chat.add({
+      this.chat.add({
         id: uuid(),
         from: null,
         fromId: null,
-        body: `File size too large (>${this.world.network.maxUploadSize}mb)`,
+        body: `File size too large (>${this.network.maxUploadSize}mb)`,
         createdAt: moment().toISOString(),
       })
       console.error(`File too large. Maximum size is ${maxSize / (1024 * 1024)}MB`)
@@ -85,7 +88,7 @@ export class BuilderFileHandler {
 
     // Check builder permission for non-VRM files
     if (ext !== 'vrm' && !this.builder.canBuild()) {
-      this.world.chat.add({
+      this.chat.add({
         id: uuid(),
         from: null,
         fromId: null,
