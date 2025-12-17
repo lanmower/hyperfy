@@ -1,7 +1,7 @@
 import { css } from '@firebolt-dev/css'
 import { useContext } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon } from '../Icons.js'
-import { HintContext } from '../Hint.js'
+import { ChevronLeftIcon, ChevronRightIcon } from '../../Icons.js'
+import { HintContext } from '../../Hint.js'
 
 export function FieldSwitch({ label, hint, options, value, onChange }) {
   options = options || []

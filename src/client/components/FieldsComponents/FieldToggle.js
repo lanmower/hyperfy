@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useContext } from 'react'
-import { HintContext } from '../Hint.js'
+import { HintContext } from '../../Hint.js'
 
 export function FieldToggle({ label, hint, trueLabel = 'Yes', falseLabel = 'No', value, onChange }) {
   const { setHint } = useContext(HintContext)

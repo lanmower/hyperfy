@@ -1,10 +1,10 @@
 import { css } from '@firebolt-dev/css'
 import { useContext, useMemo, useState } from 'react'
-import { HintContext } from '../Hint.js'
-import { Curve } from '../../../core/extras/Curve.js'
-import { CurvePreview } from '../CurvePreview.js'
-import { Portal } from '../Portal.js'
-import { CurvePane } from '../CurvePane.js'
+import { HintContext } from '../../Hint.js'
+import { Curve } from '../../../../core/extras/assets/Curve.js'
+import { CurvePreview } from '../../CurvePreview.js'
+import { Portal } from '../../Portal.js'
+import { CurvePane } from '../../CurvePane.js'
 
 export function FieldCurve({ label, hint, x, xRange, y, yMin, yMax, value, onChange }) {
   const { setHint } = useContext(HintContext)

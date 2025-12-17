@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { cls } from '../utils.js'
+import { cls } from '../../utils.js'
 
 export function ToastMsg({ text }) {
   const [visible, setVisible] = useState(true)

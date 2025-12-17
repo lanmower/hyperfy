@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useEffect, useState } from 'react'
-import { isTouch } from '../utils.js'
+import { isTouch } from '../../utils.js'
 import { Actions } from './Actions.js'
 
 export function ActionsBlock({ world }) {

@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useContext, useEffect, useState } from 'react'
-import { HintContext } from '../Hint.js'
+import { HintContext } from '../../Hint.js'
 
 export function FieldText({ label, hint, placeholder, value, onChange }) {
   const { setHint } = useContext(HintContext)

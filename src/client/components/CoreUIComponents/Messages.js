@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useEffect, useRef, useState } from 'react'
-import { cls } from '../utils.js'
+import { cls } from '../../utils.js'
 import { Message } from './Message.js'
 
 const MESSAGES_REFRESH_RATE = 30
