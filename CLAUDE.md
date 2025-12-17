@@ -128,27 +128,38 @@
 - VideoHelpers module: 36L - Validators, pivot calculations
 - Delegated all shader and audio logic
 
-### Session Summary - Phase 2 & 3 Complete
+### Phase 4 Progress
 
-**Total Systems Refactored**: 5 major systems
+**Phase 4.1: ClientLoader System - COMPLETE** ✓
+- ClientLoader.js: 511L → 139L (73% reduction!)
+- VideoFactory function: 172L extracted - Complete video element factory with HLS support, reference counting, media element audio source management
+- AssetHandlers class: 237L - All 9 asset type handlers (video, hdr, image, texture, model, emote, avatar, script, audio) plus insert handler registry
+- FileManager class: 44L - File caching, fetch-based loading, MIME type preservation
+- All asset type handling and file management delegated
+
+### Session Summary - Phase 2, 3 & 4.1 Complete
+
+**Total Systems Refactored**: 6 major systems
 - ServerNetwork: 598L → 293L (51% reduction)
 - Physics: 572L → 172L (70% reduction)
 - UI: 579L → 299L (48% reduction)
 - Video: 496L → 299L (40% reduction)
-- Total LOC reduction: 2,245L → 1,063L (53% reduction across these 4 systems)
+- ClientLoader: 511L → 139L (73% reduction)
+- Total LOC reduction: 2,688L → 1,202L (55% reduction across these 5 systems)
 
-**Modules Created**: 10 focused extraction modules
+**Modules Created**: 13 focused extraction modules
 - PhysicsQueries, PhysicsContactManager, PhysicsActorManager
 - UIRenderer, UIHelpers
 - VideoRenderer, VideoAudioController, VideoHelpers
+- VideoFactory, AssetHandlers, FileManager
 - PacketHandlers, ~30 utility modules
 
 **Build Status**: 48 errors (no new errors introduced, stable)
-**Commits Made**: 6 session commits
+**Commits Made**: 7 session commits
 
 **Next Priority Systems** (>200L):
-1. ClientLoader.js (543L → 200L) - Model/texture/audio loaders
-2. Node.js (511L → 200L) - Lifecycle, transform, proxy
-3. ClientLiveKit.js (534L → 200L) - Track/room managers
-4. App.js (546L → 200L) - Blueprint loader, state manager
+1. Node.js (511L → 200L) - Lifecycle, transform, proxy
+2. ClientLiveKit.js (534L → 200L) - Track/room managers
+3. App.js (546L → 200L) - Blueprint loader, state manager
+4. ErrorMonitor.js (489L → 200L) - Error formatters, reporters
 
