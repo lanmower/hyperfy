@@ -3,7 +3,10 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import Yoga from 'yoga-layout'
 
 import { Node } from './Node.js'
-import { fillRoundRect } from '../extras/roundRect.js'
+import { clamp } from '../utils.js'
+import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
+import { schema } from '../../utils/validation/createNodeSchema.js'
+import { v, q, m, e } from '../utils/TempVectors.js'
 import {
   AlignContent,
   AlignItems,
@@ -16,13 +19,8 @@ import {
   isJustifyContent,
   JustifyContent,
 } from '../extras/yoga.js'
-import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
-import { borderRoundRect } from '../extras/borderRoundRect.js'
-import { clamp } from '../utils.js'
-import { defineProps, createPropertyProxy } from '../../utils/helpers/defineProperty.js'
-import { schema } from '../../utils/validation/createNodeSchema.js'
-import { v, q, m, e } from '../utils/TempVectors.js'
-import { pivots } from '../../utils/collections/NodeConstants.js'
+import { UIRenderer } from './ui/UIRenderer.js'
+import { getPivotOffset, isBillboard, isPivot, isSpace, isEdge, isScaler } from './ui/UIHelpers.js'
 
 const FORWARD = new THREE.Vector3(0, 0, 1)
 
@@ -102,149 +100,21 @@ export class UI extends Node {
     this._offset = new THREE.Vector3().fromArray(data.offset || defaults.offset)
 
     this.ui = this
+    this.renderer = new UIRenderer(this)
 
     this._offset._onChange = () => this.rebuild()
   }
 
   build() {
-    if (!isBrowser) return
-    this.unbuild()
-    this.canvas = document.createElement('canvas')
-    this.canvas.width = this._width * this._res
-    this.canvas.height = this._height * this._res
-    this.canvasCtx = this.canvas.getContext('2d')
-    if (this._space === 'world') {
-      this.texture = new THREE.CanvasTexture(this.canvas)
-      this.texture.colorSpace = THREE.SRGBColorSpace
-      this.texture.anisotropy = this.ctx.world.graphics.maxAnisotropy
-      this.geometry = new THREE.PlaneGeometry(this._width, this._height)
-      this.geometry.scale(this._size, this._size, this._size)
-      pivotGeometry(this._pivot, this.geometry, this._width * this._size, this._height * this._size)
-      this.pivotOffset = getPivotOffset(this._pivot, this._width, this._height)
-      this.material = this.createMaterial(this._lit, this.texture, this._transparent, this._doubleside)
-      this.mesh = new THREE.Mesh(this.geometry, this.material)
-      this.mesh.matrixAutoUpdate = false
-      this.mesh.matrixWorldAutoUpdate = false
-      this.mesh.matrixWorld.copy(this.matrixWorld)
-      this.ctx.world.stage.scene.add(this.mesh)
-      if (this._pointerEvents) {
-        this.sItem = {
-          matrix: this.mesh.matrixWorld,
-          geometry: this.geometry,
-          material: this.material,
-          getEntity: () => this.ctx.entity,
-          node: this,
-        }
-        this.ctx.world.stage.octree.insert(this.sItem)
-      }
-      this.ctx.world.setHot(this, true)
-    } else {
-      this.canvas.style.position = 'absolute'
-      this.canvas.style.width = this._width + 'px'
-      this.canvas.style.height = this._height + 'px'
-      pivotCanvas(this._pivot, this.canvas, this._width, this._height)
-      this.canvas.style.left = `calc(${this.position.x * 100}% + ${this._offset.x}px)`
-      this.canvas.style.top = `calc(${this.position.y * 100}% + ${this._offset.y}px)`
-      this.canvas.style.pointerEvents = this._pointerEvents ? 'auto' : 'none'
-      if (this._pointerEvents) {
-        let hit
-        const canvas = this.canvas
-        const world = this.ctx.world
-        const onPointerEnter = e => {
-          const rect = canvas.getBoundingClientRect()
-          const x = (e.clientX - rect.left) * this._res
-          const y = (e.clientY - rect.top) * this._res
-          hit = {
-            node: this,
-            coords: new THREE.Vector3(x, y, 0),
-          }
-          world.pointer.setScreenHit(hit)
-        }
-        const onPointerMove = e => {
-          const rect = canvas.getBoundingClientRect()
-          const x = (e.clientX - rect.left) * this._res
-          const y = (e.clientY - rect.top) * this._res
-          hit.coords.x = x
-          hit.coords.y = y
-        }
-        const onPointerLeave = e => {
-          hit = null
-          world.pointer.setScreenHit(null)
-        }
-        canvas.addEventListener('pointerenter', onPointerEnter)
-        canvas.addEventListener('pointermove', onPointerMove)
-        canvas.addEventListener('pointerleave', onPointerLeave)
-        this.cleanupPointer = () => {
-          if (hit) world.pointer.setScreenHit(null)
-          canvas.removeEventListener('pointerenter', onPointerEnter)
-          canvas.removeEventListener('pointermove', onPointerMove)
-          canvas.removeEventListener('pointerleave', onPointerLeave)
-        }
-      }
-      this.ctx.world.pointer.ui.prepend(this.canvas)
-    }
-    this.needsRebuild = false
+    this.renderer.build()
   }
 
   unbuild() {
-    if (this.mesh) {
-      this.ctx.world.stage.scene.remove(this.mesh)
-      this.texture.dispose()
-      this.mesh.material.dispose()
-      this.mesh.geometry.dispose()
-      this.mesh = null
-      this.canvas = null
-      if (this.sItem) {
-        this.ctx.world.stage.octree.remove(this.sItem)
-        this.sItem = null
-      }
-      this.ctx.world.setHot(this, false)
-    }
-    if (this.canvas) {
-      this.ctx.world.pointer.ui.removeChild(this.canvas)
-      this.canvas = null
-    }
-    this.cleanupPointer?.()
-    this.cleanupPointer = null
+    this.renderer.unbuild()
   }
 
   draw() {
-    if (!isBrowser) return
-    this.yogaNode.calculateLayout(this._width * this._res, this._height * this._res, Yoga.DIRECTION_LTR)
-    const ctx = this.canvasCtx
-    ctx.clearRect(0, 0, this._width * this._res, this._height * this._res)
-    const left = this.yogaNode.getComputedLeft()
-    const top = this.yogaNode.getComputedTop()
-    const width = this.yogaNode.getComputedWidth()
-    const height = this.yogaNode.getComputedHeight()
-    if (this._backgroundColor) {
-      const inset = this._borderColor && this._borderWidth ? 1 * this._res : 0
-      const radius = Math.max(0, this._borderRadius * this._res - inset)
-      const insetLeft = left + inset
-      const insetTop = top + inset
-      const insetWidth = width - inset * 2
-      const insetHeight = height - inset * 2
-      fillRoundRect(ctx, insetLeft, insetTop, insetWidth, insetHeight, radius, this._backgroundColor)
-    }
-    if (this._borderWidth && this._borderColor) {
-      const radius = this._borderRadius * this._res
-      const thickness = this._borderWidth * this._res
-      ctx.strokeStyle = this._borderColor
-      ctx.lineWidth = thickness
-      if (this._borderRadius) {
-        borderRoundRect(ctx, left, top, width, height, radius, thickness)
-      } else {
-        const insetLeft = left + thickness / 2
-        const insetTop = top + thickness / 2
-        const insetWidth = width - thickness
-        const insetHeight = height - thickness
-        ctx.strokeRect(insetLeft, insetTop, insetWidth, insetHeight)
-      }
-    }
-    this.box = { left, top, width, height }
-    this.children.forEach(child => child.draw(ctx, left, top))
-    if (this.texture) this.texture.needsUpdate = true
-    this.needsRedraw = false
+    this.renderer.draw()
   }
 
   mount() {
@@ -405,16 +275,7 @@ export class UI extends Node {
   }
 
   createMaterial(lit, texture, transparent, doubleside) {
-    const material = lit
-      ? new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 })
-      : new THREE.MeshBasicMaterial({})
-    material.color.set('white')
-    material.transparent = transparent
-    material.depthWrite = false
-    material.map = texture
-    material.side = doubleside ? THREE.DoubleSide : THREE.FrontSide
-    this.ctx.world.setupMaterial(material)
-    return material
+    return this.renderer.createMaterial(lit, texture, transparent, doubleside)
   }
 
   get offset() {
@@ -435,145 +296,4 @@ export class UI extends Node {
     }
     return this.proxy
   }
-}
-
-function pivotGeometry(pivot, geometry, width, height) {
-  const halfWidth = width / 2
-  const halfHeight = height / 2
-  switch (pivot) {
-    case 'top-left':
-      geometry.translate(halfWidth, -halfHeight, 0)
-      break
-    case 'top-center':
-      geometry.translate(0, -halfHeight, 0)
-      break
-    case 'top-right':
-      geometry.translate(-halfWidth, -halfHeight, 0)
-      break
-    case 'center-left':
-      geometry.translate(halfWidth, 0, 0)
-      break
-    case 'center-right':
-      geometry.translate(-halfWidth, 0, 0)
-      break
-    case 'bottom-left':
-      geometry.translate(halfWidth, halfHeight, 0)
-      break
-    case 'bottom-center':
-      geometry.translate(0, halfHeight, 0)
-      break
-    case 'bottom-right':
-      geometry.translate(-halfWidth, halfHeight, 0)
-      break
-    case 'center':
-    default:
-      break
-  }
-}
-
-function pivotCanvas(pivot, canvas, width, height) {
-  switch (pivot) {
-    case 'top-left':
-      canvas.style.transform = `translate(0%, 0%)`
-      break
-    case 'top-center':
-      canvas.style.transform = `translate(-50%, 0%)`
-      break
-    case 'top-right':
-      canvas.style.transform = `translate(-100%, 0%)`
-      break
-    case 'center-left':
-      canvas.style.transform = `translate(0%, -50%)`
-      break
-    case 'center-right':
-      canvas.style.transform = `translate(-100%, -50%)`
-      break
-    case 'bottom-left':
-      canvas.style.transform = `translate(0%, -100%)`
-      break
-    case 'bottom-center':
-      canvas.style.transform = `translate(-50%, -100%)`
-      break
-    case 'bottom-right':
-      canvas.style.transform = `translate(-100%, -100%)`
-      break
-    case 'center':
-    default:
-      canvas.style.transform = `translate(-50%, -50%)`
-      break
-  }
-}
-
-function isBillboard(value) {
-  return billboards.includes(value)
-}
-
-function isPivot(value) {
-  return pivots.includes(value)
-}
-
-function isSpace(value) {
-  return spaces.includes(value)
-}
-
-function getPivotOffset(pivot, width, height) {
-  const halfW = width / 2
-  const halfH = height / 2
-  let tx = 0,
-    ty = 0
-  switch (pivot) {
-    case 'top-left':
-      tx = +halfW
-      ty = -halfH
-      break
-    case 'top-center':
-      tx = 0
-      ty = -halfH
-      break
-    case 'top-right':
-      tx = -halfW
-      ty = -halfH
-      break
-    case 'center-left':
-      tx = +halfW
-      ty = 0
-      break
-    case 'center-right':
-      tx = -halfW
-      ty = 0
-      break
-    case 'bottom-left':
-      tx = +halfW
-      ty = +halfH
-      break
-    case 'bottom-center':
-      tx = 0
-      ty = +halfH
-      break
-    case 'bottom-right':
-      tx = -halfW
-      ty = +halfH
-      break
-    case 'center':
-    default:
-      tx = 0
-      ty = 0
-      break
-  }
-
-  return new THREE.Vector2(-halfW + tx, +halfH + ty)
-}
-
-function isEdge(value) {
-  if (isNumber(value)) {
-    return true
-  }
-  if (isArray(value)) {
-    return value.length === 4 && every(value, n => isNumber(n))
-  }
-  return false
-}
-
-function isScaler(value) {
-  return isArray(value) && isNumber(value[0]) && isNumber(value[1])
 }
