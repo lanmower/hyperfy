@@ -129,7 +129,6 @@ export const nodeTypeRegistry = {
 
 export const systemRegistry = {
   client: [
-    'ClientBuilder',
     'ClientControls',
     'ClientNetwork',
     'ClientLoader',
@@ -148,8 +147,6 @@ export const systemRegistry = {
     'Scripts',
     'Stage',
     'Physics',
-    'Wind',
-    'LODs',
   ],
   shared: [
     'Avatars',

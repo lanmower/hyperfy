@@ -1,41 +1,7 @@
 import * as THREE from '../extras/three.js'
 
 import { System } from './System.js'
-import { CSM } from '../libs/csm/CSM.js'
 import { isNumber, isString } from 'lodash-es'
-
-const csmLevels = {
-  none: {
-    cascades: 1,
-    shadowMapSize: 1024,
-    castShadow: false,
-    lightIntensity: 3,
-  },
-  low: {
-    cascades: 1,
-    shadowMapSize: 2048,
-    castShadow: true,
-    lightIntensity: 3,
-    shadowBias: 0.0000009,
-    shadowNormalBias: 0.001,
-  },
-  med: {
-    cascades: 3,
-    shadowMapSize: 1024,
-    castShadow: true,
-    lightIntensity: 1,
-    shadowBias: 0.000002,
-    shadowNormalBias: 0.002,
-  },
-  high: {
-    cascades: 3,
-    shadowMapSize: 2048,
-    castShadow: true,
-    lightIntensity: 1,
-    shadowBias: 0.000003,
-    shadowNormalBias: 0.002,
-  },
-}
 
 THREE.ShaderChunk.fog_vertex = `
 #ifdef USE_FOG
@@ -77,7 +43,6 @@ export class ClientEnvironment extends System {
   }
 
   async start() {
-    this.buildCSM()
     this.updateSky()
   }
 
@@ -152,11 +117,11 @@ export class ClientEnvironment extends System {
     this.sky.rotation.y = rotationY
     this.sky.matrixWorld.compose(this.sky.position, this.sky.quaternion, this.sky.scale)
 
-    this.csm.lightDirection = sunDirection
-
-    for (const light of this.csm.lights) {
+    const light = this.stage.scene.children.find(c => c.isLight)
+    if (light) {
       light.intensity = sunIntensity
       light.color.set(sunColor)
+      light.position.copy(sunDirection).normalize().multiplyScalar(-100)
     }
 
     if (isNumber(fogNear) && isNumber(fogFar) && fogColor) {
@@ -179,9 +144,6 @@ export class ClientEnvironment extends System {
     }
   }
 
-  update(delta) {
-    this.csm.update()
-  }
 
   lateUpdate(delta) {
     this.sky.position.x = this.rig.position.x
@@ -189,49 +151,9 @@ export class ClientEnvironment extends System {
     this.sky.matrixWorld.setPosition(this.sky.position)
   }
 
-  buildCSM() {
-    const options = csmLevels[this.prefs.shadows]
-    if (this.csm) {
-      this.csm.updateCascades(options.cascades)
-      this.csm.updateShadowMapSize(options.shadowMapSize)
-      this.csm.lightDirection = this.skyInfo.sunDirection
-      for (const light of this.csm.lights) {
-        light.intensity = this.skyInfo.sunIntensity
-        light.color.set(this.skyInfo.sunColor)
-        light.castShadow = options.castShadow
-      }
-    } else {
-      const scene = this.stage.scene
-      const camera = this.camera
-      this.csm = new CSM({
-        mode: 'practical', // uniform, logarithmic, practical, custom
-        cascades: 3,
-        maxCascades: 3,
-        shadowMapSize: 2048,
-        maxFar: 100,
-        lightIntensity: 1,
-        lightDirection: new THREE.Vector3(0, -1, 0).normalize(),
-        fade: true,
-        parent: scene,
-        camera: camera,
-        ...options,
-      })
-      if (!options.castShadow) {
-        for (const light of this.csm.lights) {
-          light.castShadow = false
-        }
-      }
-    }
-  }
-
   onPrefChanged = ({ key, value }) => {
     if (key === 'shadows') {
-      this.buildCSM()
       this.updateSky()
     }
-  }
-
-  onGraphicsResize = () => {
-    this.csm.updateFrustums()
   }
 }
