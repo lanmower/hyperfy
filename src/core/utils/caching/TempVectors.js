@@ -1,4 +1,4 @@
-import * as THREE from '../extras/three.js'
+import * as THREE from '../../extras/three.js'
 
 export const v = [
   new THREE.Vector3(),

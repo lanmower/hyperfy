@@ -1,17 +1,19 @@
 import { css } from '@firebolt-dev/css'
 import {
-  CircleArrowRightIcon,
-  HammerIcon,
   MicIcon,
   MicOffIcon,
+} from '../Icons.js'
+import {
+  CircleArrowRightIcon,
+  HammerIcon,
   UserXIcon,
   Volume2Icon,
-} from '../Icons.js'
+} from 'lucide-react'
 import { cls } from '../cls.js'
 import { useContext, useEffect, useState } from 'react'
 import { HintContext } from '../Hint.js'
 import { sortBy } from 'lodash-es'
-import { Ranks } from '../../../core/extras/ranks.js'
+import { Ranks } from '../../../core/extras/assets/ranks.js'
 import * as THREE from '../../../core/extras/three.js'
 import { Pane } from './Pane.js'
 

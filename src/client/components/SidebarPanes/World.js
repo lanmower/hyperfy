@@ -8,7 +8,7 @@ import {
 } from '../Fields.js'
 import { useEffect, useState } from 'react'
 import { useRank } from '../useRank.js'
-import { Ranks } from '../../../core/extras/ranks.js'
+import { Ranks } from '../../../core/extras/assets/ranks.js'
 import { Pane } from './Pane.js'
 import { Group } from './Group.js'
 

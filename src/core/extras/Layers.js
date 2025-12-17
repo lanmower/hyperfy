@@ -1,2 +1,4 @@
-export const LAYER_NONE = 0
-export const LAYER_ALL = 0xFFFFFFFF
+const LAYER_NONE = 0
+const LAYER_ALL = 0xFFFFFFFF
+
+export const Layers = { LAYER_NONE, LAYER_ALL }

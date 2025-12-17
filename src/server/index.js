@@ -13,7 +13,7 @@ import statics from '@fastify/static'
 import multipart from '@fastify/multipart'
 
 import { createServerWorld } from '../core/createServerWorld.js'
-import { hashFile } from '../core/utils-server.js'
+import { hashFile } from '../core/utils.js'
 import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'

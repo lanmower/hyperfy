@@ -1,5 +1,5 @@
 import { css } from '@firebolt-dev/css'
-import { SaveIcon } from '../Icons.js'
+import { SaveIcon } from 'lucide-react'
 import { cls } from '../cls.js'
 import { useEffect, useRef, useState } from 'react'
 import { ScriptEditor } from '../ScriptEditor.js'

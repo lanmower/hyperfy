@@ -1,7 +1,4 @@
-export function serialize(obj) {
-  return JSON.stringify(obj)
-}
+const serialize = (obj) => JSON.stringify(obj)
+const deserialize = (str) => JSON.parse(str)
 
-export function deserialize(str) {
-  return JSON.parse(str)
-}
+export const Serialization = { serialize, deserialize }

@@ -3,7 +3,7 @@ import moment from 'moment'
 import fs from 'fs-extra'
 import path from 'path'
 import { uuid } from '../core/utils.js'
-import { importApp } from '../core/extras/appTools.js'
+import { importApp } from '../core/extras/utils/appTools.js'
 import { defaults } from 'lodash-es'
 import { Ranks } from '../core/extras/ranks.js'
 

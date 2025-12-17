@@ -1,5 +1,5 @@
 import { css } from '@firebolt-dev/css'
-import { RocketIcon, SearchIcon } from '../Icons.js'
+import { RocketIcon, SearchIcon } from 'lucide-react'
 import { cls } from '../cls.js'
 import { useEffect, useRef, useState } from 'react'
 import { AppsList } from '../AppsList.js'

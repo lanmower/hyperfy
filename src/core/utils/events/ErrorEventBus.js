@@ -1,6 +1,6 @@
 
 import { EventBus } from './EventBus.js'
-import { createErrorEvent, mergeErrorEvents, isSameError, ErrorLevels } from '../schemas/ErrorEvent.schema.js'
+import { createErrorEvent, mergeErrorEvents, isSameError, ErrorLevels } from '../../schemas/ErrorEvent.schema.js'
 
 export class ErrorEventBus extends EventBus {
   constructor() {

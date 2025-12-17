@@ -1,7 +1,9 @@
 import { css } from '@firebolt-dev/css'
 import {
-  BoxIcon,
   ChevronDownIcon,
+} from '../Icons.js'
+import {
+  BoxIcon,
   ChevronsUpDownIcon,
   DownloadIcon,
   OctagonXIcon,
@@ -9,13 +11,13 @@ import {
   LoaderPinwheelIcon,
   SparkleIcon,
   Trash2Icon,
-} from '../Icons.js'
+} from 'lucide-react'
 import { cls } from '../cls.js'
 import { useContext, useEffect, useState } from 'react'
 import { HintContext } from '../Hint.js'
 import { FieldVec3 } from '../Fields.js'
 import { downloadFile } from '../../../core/extras/downloadFile.js'
-import { exportApp } from '../../../core/extras/appTools.js'
+import { exportApp } from '../../../core/extras/utils/appTools.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { isBoolean } from 'lodash-es'
 import { DEG2RAD, RAD2DEG } from '../../../core/extras/general.js'
