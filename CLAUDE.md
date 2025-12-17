@@ -33,3 +33,14 @@
 - PlayerInputHandler exists but PlayerLocal.update still performs input handling directly
 - Platform tracking vector pools shared across all player instances must stay in PlayerPhysics scope
 
+## Control System Architecture
+- ButtonStateManager (src/core/systems/controls/ButtonStateManager.js) - button state tracking
+- ControlBindingManager (src/core/systems/controls/ControlBindingManager.js) - control priority and binding
+- ClientControls integrates with Player input for XR/touch/keyboard handling
+- XR input is lower priority than pointer lock input for camera control
+
+## Code Cleanliness
+- NO COMMENTS anywhere in src/ (removed all // and /* */ style comments for clarity)
+- All core systems follow KISS principles with minimal abstractions
+- Vector/quaternion pooling for performance-critical paths cannot be externalized
+
