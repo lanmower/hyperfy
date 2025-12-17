@@ -11,6 +11,11 @@ const levelPriorities = {
 }
 
 export class ServerLiveKit extends System {
+  // DI Service Constants
+  static DEPS = {
+    network: 'network',
+  }
+
   constructor(world) {
     super(world)
     this.roomId = uuid()
@@ -22,6 +27,9 @@ export class ServerLiveKit extends System {
     this.levels = {} // [playerId] => level (disabled, spatial, global)
     this.muted = new Set()
   }
+
+  // DI Property Getters
+  get network() { return this.getService(ServerLiveKit.DEPS.network) }
 
   async serialize(playerId) {
     if (!this.enabled) return null
@@ -49,12 +57,12 @@ export class ServerLiveKit extends System {
   setMuted(playerId, muted) {
     if (muted && !this.muted.has(playerId)) {
       this.muted.add(playerId)
-      this.world.network.send('mute', { playerId, muted })
+      this.network.send('mute', { playerId, muted })
       return
     }
     if (!muted && this.muted.has(playerId)) {
       this.muted.delete(playerId)
-      this.world.network.send('mute', { playerId, muted })
+      this.network.send('mute', { playerId, muted })
       return
     }
   }
@@ -113,6 +121,6 @@ export class ServerLiveKit extends System {
       return // no change
     }
     this.levels[playerId] = level
-    this.world.network.send('liveKitLevel', { playerId, level })
+    this.network.send('liveKitLevel', { playerId, level })
   }
 }

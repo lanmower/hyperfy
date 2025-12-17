@@ -16,6 +16,12 @@ const vec2 = new THREE.Vector2()
  *
  */
 export class Stage extends System {
+  // DI Service Constants
+  static DEPS = {
+    rig: 'rig',
+    camera: 'camera',
+  }
+
   constructor(world) {
     super(world)
     this.scene = new THREE.Scene()
@@ -32,11 +38,16 @@ export class Stage extends System {
     this.maskNone = new THREE.Layers()
     this.maskNone.enableAll()
     this.dirtyNodes = new Set()
+    this.setupMaterial = world.setupMaterial
   }
+
+  // DI Property Getters
+  get rig() { return this.getService(Stage.DEPS.rig) }
+  get camera() { return this.getService(Stage.DEPS.camera) }
 
   init({ viewport }) {
     this.viewport = viewport
-    this.scene.add(this.world.rig)
+    this.scene.add(this.rig)
   }
 
   update(delta) {
@@ -224,7 +235,7 @@ export class Stage extends System {
     const rect = this.viewport.getBoundingClientRect()
     vec2.x = ((position.x - rect.left) / rect.width) * 2 - 1
     vec2.y = -((position.y - rect.top) / rect.height) * 2 + 1
-    this.raycaster.setFromCamera(vec2, this.world.camera)
+    this.raycaster.setFromCamera(vec2, this.camera)
     this.raycaster.layers = layers
     this.raycaster.near = min
     this.raycaster.far = max

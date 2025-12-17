@@ -16,18 +16,28 @@ const DEFAULT_CONFIG = {
 }
 
 export class Settings extends System {
+  // DI Service Constants
+  static DEPS = {
+    events: 'events',
+    network: 'network',
+  }
+
   constructor(world) {
     super(world)
     this.state = new StateManager({ ...DEFAULT_CONFIG })
   }
+
+  // DI Property Getters
+  get events() { return this.getService(Settings.DEPS.events) }
+  get network() { return this.getService(Settings.DEPS.network) }
 
   get(key) { return this.state.get(key) }
 
   set(key, value, broadcast) {
     if (this.state.get(key) === value) return
     this.state.set(key, value)
-    this.world.events.emit('settingChanged', { key, value })
-    if (broadcast) this.world.network.send('settingsModified', { key, value })
+    this.events.emit('settingChanged', { key, value })
+    if (broadcast) this.network.send('settingsModified', { key, value })
   }
 
   setHasAdminCode(value) { this.state.set('hasAdminCode', value) }

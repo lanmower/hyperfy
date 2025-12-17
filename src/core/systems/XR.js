@@ -15,6 +15,14 @@ const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
  *
  */
 export class XR extends System {
+  // DI Service Constants
+  static DEPS = {
+    graphics: 'graphics',
+    events: 'events',
+    rig: 'rig',
+    camera: 'camera',
+  }
+
   constructor(world) {
     super(world)
     this.session = null
@@ -25,6 +33,12 @@ export class XR extends System {
     this.supportsAR = false
     this.controllerModelFactory = new XRControllerModelFactory()
   }
+
+  // DI Property Getters
+  get graphics() { return this.getService(XR.DEPS.graphics) }
+  get events() { return this.getService(XR.DEPS.events) }
+  get rig() { return this.getService(XR.DEPS.rig) }
+  get cameraService() { return this.getService(XR.DEPS.camera) }
 
   async init() {
     this.supportsVR = await navigator.xr?.isSessionSupported('immersive-vr')
@@ -41,30 +55,30 @@ export class XR extends System {
       console.error(err)
       console.error('xr session.updateTargetFrameRate(72) failed')
     }
-    this.world.graphics.renderer.xr.setSession(session)
+    this.graphics.renderer.xr.setSession(session)
     session.addEventListener('end', this.onSessionEnd)
     this.session = session
-    this.camera = this.world.graphics.renderer.xr.getCamera()
-    this.world.events.emit('xrSession', session)
+    this.camera = this.graphics.renderer.xr.getCamera()
+    this.events.emit('xrSession', session)
 
-    this.controller1Model = this.world.graphics.renderer.xr.getControllerGrip(0)
+    this.controller1Model = this.graphics.renderer.xr.getControllerGrip(0)
     this.controller1Model.add(this.controllerModelFactory.createControllerModel(this.controller1Model))
-    this.world.rig.add(this.controller1Model)
+    this.rig.add(this.controller1Model)
 
-    this.controller2Model = this.world.graphics.renderer.xr.getControllerGrip(1)
+    this.controller2Model = this.graphics.renderer.xr.getControllerGrip(1)
     this.controller2Model.add(this.controllerModelFactory.createControllerModel(this.controller2Model))
-    this.world.rig.add(this.controller2Model)
+    this.rig.add(this.controller2Model)
   }
 
   onSessionEnd = () => {
-    this.world.camera.position.set(0, 0, 0)
-    this.world.camera.rotation.set(0, 0, 0)
-    this.world.rig.remove(this.controller1Model)
-    this.world.rig.remove(this.controller2Model)
+    this.cameraService.position.set(0, 0, 0)
+    this.cameraService.rotation.set(0, 0, 0)
+    this.rig.remove(this.controller1Model)
+    this.rig.remove(this.controller2Model)
     this.session = null
     this.camera = null
     this.controller1Model = null
     this.controller2Model = null
-    this.world.events.emit('xrSession', null)
+    this.events.emit('xrSession', null)
   }
 }

@@ -25,13 +25,31 @@ function getWorker() {
 }
 
 export class Particles extends System {
+  // DI Service Constants
+  static DEPS = {
+    rig: 'rig',
+    xr: 'xr',
+    stage: 'stage',
+    loader: 'loader',
+    camera: 'camera',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     this.worker = null
-    this.uOrientationFull = { value: this.world.rig.quaternion }
+    this.uOrientationFull = { value: this.rig.quaternion }
     this.uOrientationY = { value: new THREE.Quaternion() }
     this.emitters = new Map() // id -> emitter
   }
+
+  // DI Property Getters
+  get rig() { return this.getService(Particles.DEPS.rig) }
+  get xr() { return this.getService(Particles.DEPS.xr) }
+  get stage() { return this.getService(Particles.DEPS.stage) }
+  get loader() { return this.getService(Particles.DEPS.loader) }
+  get camera() { return this.getService(Particles.DEPS.camera) }
+  get events() { return this.getService(Particles.DEPS.events) }
 
   init() {
     this.worker = getWorker()
@@ -40,7 +58,7 @@ export class Particles extends System {
   }
 
   start() {
-    this.world.on('xrSession', this.onXRSession)
+    this.events.on('xrSession', this.onXRSession)
   }
 
   register(node) {
@@ -69,7 +87,7 @@ export class Particles extends System {
   }
 
   onXRSession = session => {
-    this.uOrientationFull.value = session ? this.world.xr.camera.quaternion : this.world.rig.quaternion
+    this.uOrientationFull.value = session ? this.xr.camera.quaternion : this.rig.quaternion
   }
 }
 
@@ -131,7 +149,7 @@ function createEmitter(world, system, node) {
     uBillboard: { value: billboardModeInts[node._billboard] },
     uOrientation: node._billboard === 'full' ? system.uOrientationFull : system.uOrientationY,
   }
-  world.loader.load('texture', node._image).then(texture => {
+  system.loader.load('texture', node._image).then(texture => {
     texture.colorSpace = THREE.SRGBColorSpace
     uniforms.uTexture.value = texture
     // console.log(t)
@@ -261,7 +279,7 @@ function createEmitter(world, system, node) {
   mesh.frustumCulled = false
   mesh.matrixAutoUpdate = false
   mesh.matrixWorldAutoUpdate = false
-  world.stage.scene.add(mesh)
+  system.stage.scene.add(mesh)
 
   let matrixWorld = node.matrixWorld
 
@@ -324,7 +342,7 @@ function createEmitter(world, system, node) {
   }
 
   function update(delta) {
-    const camPosition = v1.setFromMatrixPosition(world.camera.matrixWorld)
+    const camPosition = v1.setFromMatrixPosition(system.camera.matrixWorld)
     const worldPosition = v2.setFromMatrixPosition(matrixWorld)
 
     // draw emitter back-to-front
@@ -379,7 +397,7 @@ function createEmitter(world, system, node) {
   function destroy() {
     system.emitters.delete(id)
     system.worker.postMessage({ op: 'destroy', emitterId: id })
-    world.stage.scene.remove(mesh)
+    system.stage.scene.remove(mesh)
     mesh.material.dispose()
     mesh.geometry.dispose()
   }

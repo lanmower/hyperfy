@@ -14,6 +14,7 @@ export class BaseLoader extends System {
     this.promises = new Map()
     this.results = new Map()
     this.preloadItems = []
+    this.resolveURL = world.resolveURL
     this.setupTypeRegistry()
   }
 
@@ -78,7 +79,7 @@ export class BaseLoader extends System {
     }
 
     // Allow subclass to resolve URL (different behavior on client vs server)
-    url = this.world.resolveURL(url, this.isServer)
+    url = this.resolveURL(url, this.isServer)
 
     const handler = this.typeHandlers[type]
     if (!handler) {

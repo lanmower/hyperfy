@@ -37,6 +37,13 @@ const defaultScale = new THREE.Vector3(1, 1, 1)
 const v1 = new THREE.Vector3()
 
 export class Nametags extends System {
+  // DI Service Constants
+  static DEPS = {
+    rig: 'rig',
+    stage: 'stage',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     this.nametags = []
@@ -57,7 +64,7 @@ export class Nametags extends System {
     this.uniforms = {
       uAtlas: { value: this.texture },
       uXR: { value: 0 },
-      uOrientation: { value: this.world.rig.quaternion },
+      uOrientation: { value: this.rig.quaternion },
     }
     this.material = new CustomShaderMaterial({
       baseMaterial: THREE.MeshBasicMaterial,
@@ -187,9 +194,14 @@ export class Nametags extends System {
     this.mesh.count = 0
   }
 
+  // DI Property Getters
+  get rig() { return this.getService(Nametags.DEPS.rig) }
+  get stage() { return this.getService(Nametags.DEPS.stage) }
+  get events() { return this.getService(Nametags.DEPS.events) }
+
   start() {
-    this.world.stage.scene.add(this.mesh)
-    this.world.on('xrSession', this.onXRSession)
+    this.stage.scene.add(this.mesh)
+    this.events.on('xrSession', this.onXRSession)
   }
 
   add({ name, health }) {
