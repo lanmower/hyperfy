@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useContext, useRef, useState } from 'react'
-import { HintContext } from '../../Hint.js'
+import { HintContext } from '../Hint.js'
 import { hashFile } from '../../../../core/utils-client.js'
 import { LoaderIcon, XIcon } from 'lucide-react'
 import { downloadFile } from '../../../../core/extras/downloadFile.js'

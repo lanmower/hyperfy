@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useEffect, useState } from 'react'
-import { ChevronDoubleUpIcon, HandIcon } from '../../Icons.js'
+import { ChevronDoubleUpIcon, HandIcon } from '../Icons.js'
 
 export function TouchBtns({ world }) {
   const [action, setAction] = useState(world.actions.current.node)

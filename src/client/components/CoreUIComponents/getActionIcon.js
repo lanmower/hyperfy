@@ -1,4 +1,4 @@
-import { buttons, propToLabel } from '../../core/extras/buttons.js'
+import { buttons, propToLabel } from '../../../core/extras/buttons.js'
 import { MouseLeftIcon } from '../MouseLeftIcon.js'
 import { MouseRightIcon } from '../MouseRightIcon.js'
 import { MouseWheelIcon } from '../MouseWheelIcon.js'

@@ -1,7 +1,7 @@
 import { css } from '@firebolt-dev/css'
 import { useContext } from 'react'
-import { HintContext } from '../../Hint.js'
-import { ChevronRightIcon } from '../../Icons.js'
+import { HintContext } from '../Hint.js'
+import { ChevronRightIcon } from '../Icons.js'
 
 export function FieldBtn({ label, note, hint, nav, onClick }) {
   const { setHint } = useContext(HintContext)

@@ -1,6 +1,6 @@
 import { css } from '@firebolt-dev/css'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { HintContext } from '../../Hint.js'
+import { HintContext } from '../Hint.js'
 
 export function FieldRange({ label, hint, min = 0, max = 1, step = 0.05, instant, value, onChange }) {
   const { setHint } = useContext(HintContext)
