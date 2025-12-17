@@ -1,7 +1,6 @@
 import * as THREE from '../extras/three.js'
 
-import { BaseEnvironment } from './BaseEnvironment.js'
-
+import { System } from './System.js'
 import { CSM } from '../libs/csm/CSM.js'
 import { isNumber, isString } from 'lodash-es'
 
@@ -49,7 +48,7 @@ THREE.ShaderChunk.fog_vertex = `
 #endif
 `
 
-export class ClientEnvironment extends BaseEnvironment {
+export class ClientEnvironment extends System {
   static DEPS = {
     stage: 'stage',
     rig: 'rig',
