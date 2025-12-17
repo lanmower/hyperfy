@@ -1,5 +1,5 @@
 import { isBoolean } from 'lodash-es'
-import * as THREE from './three.js'
+import * as THREE from '../three.js'
 
 const _v1 = new THREE.Vector3()
 const _v2 = new THREE.Vector3()

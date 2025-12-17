@@ -1,4 +1,4 @@
-import * as THREE from './three.js'
+import * as THREE from '../three.js'
 
 const _v1 = new THREE.Vector3()
 const _sphere = new THREE.Sphere()

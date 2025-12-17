@@ -21,7 +21,7 @@ import { isBoolean } from 'lodash-es'
 import { DEG2RAD, RAD2DEG } from '../../../core/extras/general.js'
 import * as THREE from '../../../core/extras/three.js'
 import { Pane } from './Pane.js'
-import { AppFields } from '../AppFields.js'
+import { AppFields } from '../../AppFields.js'
 
 const extToType = {
   glb: 'model',

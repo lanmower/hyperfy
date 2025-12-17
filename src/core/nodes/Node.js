@@ -333,7 +333,7 @@ export class Node {
   createProxy(customProps = {}) {
     if (!this.proxy) {
       const self = this
-      const proxy = customProps
+      let proxy = customProps
       proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(this.getProxy()))
       this.proxy = proxy
     }

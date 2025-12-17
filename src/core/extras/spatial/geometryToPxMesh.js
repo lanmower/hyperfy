@@ -1,4 +1,4 @@
-import * as THREE from './three.js'
+import * as THREE from '../three.js'
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 const cache = new Map() // id -> { id, pmesh, refs }
