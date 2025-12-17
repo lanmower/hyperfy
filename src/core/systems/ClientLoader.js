@@ -28,28 +28,13 @@ export class ClientLoader extends BaseLoader {
   }
 
   getTypeHandlers() {
-    return {
-      'video': this.handleVideo,
-      'hdr': this.handleHDR,
-      'image': this.handleImage,
-      'texture': this.handleTexture,
-      'model': this.handleModel,
-      'emote': this.handleEmote,
-      'avatar': this.handleAvatar,
-      'script': this.handleScript,
-      'audio': this.handleAudio,
+    const types = ['video', 'hdr', 'image', 'texture', 'model', 'emote', 'avatar', 'script', 'audio']
+    const handlers = {}
+    for (const type of types) {
+      handlers[type] = (url, file, key) => this.handlers[`handle${type[0].toUpperCase()}${type.slice(1)}`](url, file, key)
     }
+    return handlers
   }
-
-  handleVideo = (url, file, key) => this.handlers.handleVideo(url, file, key)
-  handleHDR = (url, file, key) => this.handlers.handleHDR(url, file, key)
-  handleImage = (url, file, key) => this.handlers.handleImage(url, file, key)
-  handleTexture = (url, file, key) => this.handlers.handleTexture(url, file, key)
-  handleModel = (url, file, key) => this.handlers.handleModel(url, file, key)
-  handleEmote = (url, file, key) => this.handlers.handleEmote(url, file, key)
-  handleAvatar = (url, file, key) => this.handlers.handleAvatar(url, file, key)
-  handleScript = (url, file, key) => this.handlers.handleScript(url, file, key)
-  handleAudio = (url, file, key) => this.handlers.handleAudio(url, file, key)
 
   start() {
     this.vrmHooks = {
