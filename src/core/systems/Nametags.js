@@ -1,32 +1,15 @@
-import { fillRoundRect } from '../extras/roundRect.js'
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
-import { uuid } from '../utils.js'
 import { System } from './System.js'
-
+import { NametagRenderer } from './nametags/NametagRenderer.js'
+import { NametagPositioner } from './nametags/NametagPositioner.js'
 
 const RES = 2
 const NAMETAG_WIDTH = 200 * RES
 const NAMETAG_HEIGHT = 35 * RES
-const NAMETAG_BORDER_RADIUS = 10 * RES
-
-const NAME_FONT_SIZE = 16 * RES
-const NAME_OUTLINE_SIZE = 4 * RES
-
-const HEALTH_MAX = 100
-const HEALTH_HEIGHT = 12 * RES
-const HEALTH_WIDTH = 100 * RES
-const HEALTH_BORDER = 1.5 * RES
-const HEALTH_BORDER_RADIUS = 20 * RES
-
 const PER_ROW = 5
 const PER_COLUMN = 20
 const MAX_INSTANCES = PER_ROW * PER_COLUMN
-
-const defaultQuaternion = new THREE.Quaternion(0, 0, 0, 1)
-const defaultScale = new THREE.Vector3(1, 1, 1)
-
-const v1 = new THREE.Vector3()
 
 export class Nametags extends System {
   static DEPS = {
@@ -41,8 +24,6 @@ export class Nametags extends System {
     this.canvas = document.createElement('canvas')
     this.canvas.width = NAMETAG_WIDTH * PER_ROW
     this.canvas.height = NAMETAG_HEIGHT * PER_COLUMN
-
-
     this.ctx = this.canvas.getContext('2d')
     this.texture = new THREE.CanvasTexture(this.canvas)
     this.texture.colorSpace = THREE.SRGBColorSpace
@@ -53,6 +34,8 @@ export class Nametags extends System {
       uXR: { value: 0 },
       uOrientation: { value: this.rig.quaternion },
     }
+    this.renderer = new NametagRenderer(this)
+    this.positioner = new NametagPositioner(this)
     this.material = new CustomShaderMaterial({
       baseMaterial: THREE.MeshBasicMaterial,
       transparent: true,
@@ -184,149 +167,11 @@ export class Nametags extends System {
   }
 
   add({ name, health }) {
-    const idx = this.nametags.length
-    if (idx >= MAX_INSTANCES) return console.error('nametags: reached max')
-
-    this.mesh.count++
-    this.mesh.instanceMatrix.needsUpdate = true
-    const row = Math.floor(idx / PER_ROW)
-    const col = idx % PER_ROW
-    const coords = this.mesh.geometry.attributes.coords
-    coords.setXY(idx, col / PER_ROW, row / PER_COLUMN)
-    coords.needsUpdate = true
-    const matrix = new THREE.Matrix4()
-    matrix.compose(new THREE.Vector3(), defaultQuaternion, defaultScale)
-    const nametag = {
-      idx,
-      name,
-      health,
-      matrix,
-      move: newMatrix => {
-        matrix.elements[12] = newMatrix.elements[12] // x position
-        matrix.elements[13] = newMatrix.elements[13] // y position
-        matrix.elements[14] = newMatrix.elements[14] // z position
-        this.mesh.setMatrixAt(nametag.idx, matrix)
-        this.mesh.instanceMatrix.needsUpdate = true
-      },
-      setName: name => {
-        if (nametag.name === name) return
-        nametag.name = name
-        this.draw(nametag)
-      },
-      setHealth: health => {
-        if (nametag.health === health) return
-        nametag.health = health
-        this.draw(nametag)
-        console.log('SET HEALTH', health)
-      },
-      destroy: () => {
-        this.remove(nametag)
-      },
-    }
-    this.nametags[idx] = nametag
-    this.draw(nametag)
-    return nametag
+    return this.positioner.add(name, health)
   }
 
   remove(nametag) {
-    if (!this.nametags.includes(nametag)) {
-      return console.warn('nametags: attempted to remove non-existent nametag')
-    }
-    const last = this.nametags[this.nametags.length - 1]
-    const isLast = nametag === last
-    if (isLast) {
-      this.nametags.pop()
-      this.undraw(nametag)
-    } else {
-      this.undraw(last)
-      last.idx = nametag.idx
-      this.draw(last)
-      const coords = this.mesh.geometry.attributes.coords
-      const row = Math.floor(nametag.idx / PER_ROW)
-      const col = nametag.idx % PER_ROW
-      coords.setXY(nametag.idx, col / PER_ROW, row / PER_COLUMN)
-      coords.needsUpdate = true
-      this.mesh.setMatrixAt(last.idx, last.matrix)
-      this.nametags[last.idx] = last
-      this.nametags.pop()
-    }
-    this.mesh.count--
-    this.mesh.instanceMatrix.needsUpdate = true
-  }
-
-  draw(nametag) {
-    const idx = nametag.idx
-    const row = Math.floor(idx / PER_ROW)
-    const col = idx % PER_ROW
-    const x = col * NAMETAG_WIDTH
-    const y = row * NAMETAG_HEIGHT
-    this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
-
-
-    this.ctx.font = `800 ${NAME_FONT_SIZE}px Rubik`
-    this.ctx.fillStyle = 'white'
-    this.ctx.textAlign = 'center'
-    this.ctx.textBaseline = 'top'
-    this.ctx.lineWidth = NAME_OUTLINE_SIZE
-    this.ctx.strokeStyle = 'rgba(0,0,0,0.5)'
-    const text = this.fitText(nametag.name, NAMETAG_WIDTH)
-    this.ctx.save()
-    this.ctx.globalCompositeOperation = 'xor'
-    this.ctx.globalAlpha = 1 // Adjust as needed
-    this.ctx.strokeText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2) // extra 2 on y to prevent bleeding into nametag above it
-    this.ctx.restore()
-    this.ctx.fillText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2)
-    if (nametag.health < HEALTH_MAX) {
-      {
-        const fillStyle = 'rgba(0, 0, 0, 0.6)'
-        const width = HEALTH_WIDTH
-        const height = HEALTH_HEIGHT
-        const left = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2
-        const top = y + NAME_FONT_SIZE + 5
-        const borderRadius = HEALTH_BORDER_RADIUS
-        fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
-      }
-      {
-        const fillStyle = '#229710'
-        const maxWidth = HEALTH_WIDTH - HEALTH_BORDER * 2
-        const perc = nametag.health / HEALTH_MAX
-        const width = maxWidth * perc
-        const height = HEALTH_HEIGHT - HEALTH_BORDER * 2
-        const left = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2 + HEALTH_BORDER
-        const top = y + NAME_FONT_SIZE + 5 + HEALTH_BORDER
-        const borderRadius = HEALTH_BORDER_RADIUS
-        fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
-      }
-    }
-    this.texture.needsUpdate = true
-  }
-
-  fitText(text, maxWidth) {
-    const width = this.ctx.measureText(text).width
-    if (width <= maxWidth) {
-      return text
-    }
-    const ellipsis = '...'
-    let truncated = text
-    const ellipsisWidth = this.ctx.measureText(ellipsis).width
-    while (truncated.length > 0) {
-      truncated = truncated.slice(0, -1)
-      const truncatedWidth = this.ctx.measureText(truncated).width
-      if (truncatedWidth + ellipsisWidth <= maxWidth) {
-        return truncated + ellipsis
-      }
-    }
-    return ellipsis
-  }
-
-  undraw(nametag) {
-    const idx = nametag.idx
-    const row = Math.floor(idx / PER_ROW)
-    const col = idx % PER_ROW
-    const x = col * NAMETAG_WIDTH
-    const y = row * NAMETAG_HEIGHT
-    this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
-    this.texture.needsUpdate = true
+    return this.positioner.remove(nametag)
   }
 
   onXRSession = session => {
