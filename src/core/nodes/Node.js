@@ -1,6 +1,9 @@
 import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 import { v, q, m } from '../utils/TempVectors.js'
+import { TransformSystem } from './base/TransformSystem.js'
+import { LifecycleManager } from './base/LifecycleManager.js'
+import { ProxyFactory } from './base/ProxyFactory.js'
 
 const _box3 = new THREE.Box3()
 const _sphere = new THREE.Sphere()
@@ -15,9 +18,7 @@ const defaults = {
 
 let nodeIds = -1
 
-const EPSILON = 0.000000001
-
-const secure = { allowRef: false }
+export const secure = { allowRef: false }
 export function getRef(pNode) {
   if (!pNode || !pNode._isRef) return pNode
   secure.allowRef = true
@@ -46,33 +47,6 @@ export class Node {
     this.parent = null
     this.children = []
     this.ctx = null
-    this.position = new THREE.Vector3()
-    this.position.fromArray(data.position || defaults.position)
-    this.quaternion = new THREE.Quaternion()
-    this.quaternion.fromArray(data.quaternion || defaults.quaternion)
-    this.rotation = new THREE.Euler().setFromQuaternion(this.quaternion)
-    this.rotation.reorder('YXZ')
-    this.scale = new THREE.Vector3()
-    this.scale.fromArray(data.scale || defaults.scale)
-    this.matrix = new THREE.Matrix4()
-    this.matrixWorld = new THREE.Matrix4()
-    this.position._onChange(() => {
-      this.setTransformed()
-    })
-    this.rotation._onChange(() => {
-      this.quaternion.setFromEuler(this.rotation, false)
-      this.setTransformed()
-    })
-    this.quaternion._onChange(() => {
-      this.rotation.setFromQuaternion(this.quaternion, undefined, false)
-      this.setTransformed()
-    })
-    this.scale._onChange(() => {
-      if (this.scale.x === 0 || this.scale.y === 0 || this.scale.z === 0) {
-        return this.scale.set(this.scale.x || EPSILON, this.scale.y || EPSILON, this.scale.z || EPSILON)
-      }
-      this.setTransformed()
-    })
     this._onPointerEnter = data.onPointerEnter
     this._onPointerLeave = data.onPointerLeave
     this._onPointerDown = data.onPointerDown
@@ -82,75 +56,34 @@ export class Node {
     this.isDirty = false
     this.isTransformed = true
     this.mounted = false
+    this.transform = new TransformSystem(this)
+    this.lifecycle = new LifecycleManager(this)
+    this.proxyFactory = new ProxyFactory(this)
+    this.transform.setupTransform(data)
   }
 
   activate(ctx) {
-    if (ctx) this.ctx = ctx
-    if (!this._active) return
-    if (this.mounted) return
-    this.updateTransform()
-    this.mounted = true
-    this.mount()
-    const children = this.children
-    for (let i = 0, l = children.length; i < l; i++) {
-      children[i].activate(ctx)
-    }
+    return this.lifecycle.activate(ctx)
   }
 
   deactivate() {
-    if (!this.mounted) return
-    const children = this.children
-    for (let i = 0, l = children.length; i < l; i++) {
-      children[i].deactivate()
-    }
-    this.unmount()
-    this.isDirty = false
-    this.isTransformed = true
-    this.mounted = false
+    return this.lifecycle.deactivate()
   }
 
   add(node) {
-    if (!node) return console.error('no node to add')
-    if (node.parent) {
-      node.parent.remove(node)
-    }
-    node.parent = this
-    this.children.push(node)
-    if (this.mounted) {
-      node.activate(this.ctx)
-    }
-    return this
+    return this.lifecycle.add(node)
   }
 
   remove(node) {
-    const idx = this.children.indexOf(node)
-    if (idx === -1) return
-    node.deactivate()
-    node.parent = null
-    this.children.splice(idx, 1)
-    return this
+    return this.lifecycle.remove(node)
   }
 
-
   setTransformed() {
-    if (this.isTransformed) return
-    this.traverse(node => {
-      if (node === this) {
-        node.isTransformed = true
-        node.setDirty()
-      } else if (node.isDirty) {
-        this.ctx.world.stage.dirtyNodes.delete(node)
-      } else {
-        node.isDirty = true
-      }
-    })
+    return this.transform.setTransformed()
   }
 
   setDirty() {
-    if (!this.mounted) return
-    if (this.isDirty) return
-    this.isDirty = true
-    this.ctx.world.stage.dirtyNodes.add(this)
+    return this.lifecycle.setDirty()
   }
 
   get active() {
@@ -170,24 +103,7 @@ export class Node {
   }
 
   clean() {
-    if (!this.isDirty) return
-    let top = this
-    while (top.parent && top.parent.isDirty) {
-      top = top.parent
-    }
-    let didTransform
-    top.traverse(node => {
-      if (node.isTransformed) {
-        didTransform = true
-      }
-      if (didTransform) {
-        node.updateTransform()
-      }
-      if (node.mounted) {
-        node.commit(didTransform)
-      }
-      node.isDirty = false
-    })
+    return this.lifecycle.clean()
   }
 
   mount() {
@@ -200,15 +116,7 @@ export class Node {
   }
 
   updateTransform() {
-    if (this.isTransformed) {
-      this.matrix.compose(this.position, this.quaternion, this.scale)
-      this.isTransformed = false
-    }
-    if (this.parent) {
-      this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix)
-    } else {
-      this.matrixWorld.copy(this.matrix)
-    }
+    return this.transform.updateTransform()
   }
 
   traverse(callback) {
@@ -260,13 +168,12 @@ export class Node {
     return null
   }
 
-  getWorldPosition(vec3 = v[0]) {
-    this.matrixWorld.decompose(vec3, q[0], v[1])
-    return vec3
+  getWorldPosition(vec3) {
+    return this.transform.getWorldPosition(vec3)
   }
 
-  getWorldMatrix(mat = m[0]) {
-    return mat.copy(this.matrixWorld)
+  getWorldMatrix(mat) {
+    return this.transform.getWorldMatrix(mat)
   }
 
   getStats(recursive, stats) {
@@ -331,140 +238,12 @@ export class Node {
   }
 
   createProxy(customProps = {}) {
-    if (!this.proxy) {
-      const self = this
-      let proxy = customProps
-      proxy = Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(this.getProxy()))
-      this.proxy = proxy
-    }
-    return this.proxy
+    return this.proxyFactory.createProxy(customProps)
   }
 
   getProxy() {
     if (!this.proxy) {
-      const self = this
-      const proxy = {
-        get id() {
-          return self.id
-        },
-        set id(value) {
-          throw new Error('Setting ID not currently supported')
-        },
-        get name() {
-          return self.name
-        },
-        get position() {
-          return self.position
-        },
-        set position(value) {
-          throw new Error('Cannot replace node position')
-        },
-        get quaternion() {
-          return self.quaternion
-        },
-        set quaternion(value) {
-          throw new Error('Cannot replace node quaternion')
-        },
-        get rotation() {
-          return self.rotation
-        },
-        set rotation(value) {
-          throw new Error('Cannot replace node position')
-        },
-        get scale() {
-          return self.scale
-        },
-        set scale(value) {
-          throw new Error('Cannot replace node scale')
-        },
-        get matrixWorld() {
-          return self.matrixWorld
-        },
-        get active() {
-          return self.active
-        },
-        set active(value) {
-          self.active = value
-        },
-        get parent() {
-          return self.parent?.getProxy()
-        },
-        set parent(value) {
-          throw new Error('Cannot set parent directly')
-        },
-        get children() {
-          return self.children.map(child => {
-            return child.getProxy()
-          })
-        },
-        get(id) {
-          const node = self.get(id)
-          return node?.getProxy() || null
-        },
-        getWorldMatrix(mat) {
-          return self.getWorldMatrix(mat)
-        },
-        add(pNode) {
-          const node = getRef(pNode)
-          self.add(node)
-          return this
-        },
-        remove(pNode) {
-          const node = getRef(pNode)
-          self.remove(node)
-          return this
-        },
-        traverse(callback) {
-          self.traverse(node => {
-            callback(node.getProxy())
-          })
-        },
-        clone(recursive) {
-          const node = self.clone(recursive)
-          return node.getProxy()
-        },
-        clean() {
-          self.clean()
-        },
-        get _ref() {
-          if (!secure.allowRef) return null
-          return self
-        },
-        get _isRef() {
-          return true
-        },
-        get onPointerEnter() {
-          return self.onPointerEnter
-        },
-        set onPointerEnter(value) {
-          self.onPointerEnter = value
-        },
-        get onPointerLeave() {
-          return self.onPointerLeave
-        },
-        set onPointerLeave(value) {
-          self.onPointerLeave = value
-        },
-        get onPointerDown() {
-          return self.onPointerDown
-        },
-        set onPointerDown(value) {
-          self.onPointerDown = value
-        },
-        get onPointerUp() {
-          return self.onPointerUp
-        },
-        set onPointerUp(value) {
-          self.onPointerUp = value
-        },
-        get cursor() {
-          return self.cursor
-        },
-        set cursor(value) {
-          self.cursor = value
-        },
-      }
-      this.proxy = proxy
+      this.proxy = this.proxyFactory.getProxy()
     }
     return this.proxy
   }
