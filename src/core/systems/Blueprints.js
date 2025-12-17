@@ -10,6 +10,24 @@ export class Blueprints extends System {
     this.items = new Map()
   }
 
+  /**
+   * Get service from DI container (with fallback to this.world)
+   */
+  getService(name) {
+    if (this.world.di?.has?.(name)) {
+      return this.world.di.get(name)
+    }
+    return this.world[name]
+  }
+
+  /**
+   * Shortcut accessors for commonly used services
+   */
+  get network() { return this.getService('network') }
+  get errorMonitor() { return this.getService('errorMonitor') }
+  get entities() { return this.getService('entities') }
+  get events() { return this.getService('events') }
+
   get(id) {
     return this.items.get(id)
   }
@@ -31,7 +49,7 @@ export class Blueprints extends System {
       const response = await this.executeWithErrorMonitoring(normalized.id, async () => {
         return { ...normalized, success: true }
       })
-      this.world.network.send('blueprintAdded', response)
+      this.network.send('blueprintAdded', response)
     }
   }
 
@@ -49,7 +67,7 @@ export class Blueprints extends System {
   }
 
   async executeWithErrorMonitoring(blueprintId, operation) {
-    const errorMonitor = this.world.errorMonitor
+    const errorMonitor = this.errorMonitor
     if (!errorMonitor) return await operation()
 
     const errorsBefore = errorMonitor.getErrors({ limit: 1000 }).length
@@ -95,10 +113,10 @@ export class Blueprints extends System {
     const changed = !isEqual(blueprint, modified)
     if (!changed) return
     this.items.set(blueprint.id, modified)
-    
+
     // Monitor for immediate errors during blueprint modification and send response
     const response = await this.executeWithErrorMonitoring(blueprint.id, async () => {
-      for (const [_, entity] of this.world.entities.items) {
+      for (const [_, entity] of this.entities.items) {
         if (entity.data.blueprint === blueprint.id) {
           entity.data.state = {}
           entity.build()
@@ -106,9 +124,9 @@ export class Blueprints extends System {
       }
       return { ...modified, success: true }
     })
-    
-    this.world.network.send('blueprintModified', response)
-    this.world.events.emit('blueprintModified', modified)
+
+    this.network.send('blueprintModified', response)
+    this.events.emit('blueprintModified', modified)
   }
 
   serialize() {

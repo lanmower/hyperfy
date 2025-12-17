@@ -10,6 +10,25 @@ export class Chat extends System {
     this.state = new StateManager({ messages: [] })
   }
 
+  /**
+   * Get service from DI container (with fallback to this.world)
+   */
+  getService(name) {
+    if (this.world.di?.has?.(name)) {
+      return this.world.di.get(name)
+    }
+    // Fallback for services that might not be in DI yet
+    return this.world[name]
+  }
+
+  /**
+   * Shortcut accessors for commonly used services
+   */
+  get entities() { return this.getService('entities') }
+  get events() { return this.getService('events') }
+  get network() { return this.getService('network') }
+  get prefs() { return this.getService('prefs') }
+
   add(msg, broadcast) {
     if (!msg.id) msg.id = uuid()
     if (!msg.createdAt) msg.createdAt = moment().toISOString()
@@ -21,27 +40,27 @@ export class Chat extends System {
     if (updated.length > 50) updated.shift()
 
     this.state.set('messages', updated)
-    if (msg.fromId) this.world.entities.getPlayer(msg.fromId)?.chat(msg.body)
-    this.world.events.emit('chat', Object.freeze({ ...msg }))
-    if (broadcast) this.world.network.send('chatAdded', msg)
+    if (msg.fromId) this.entities.getPlayer(msg.fromId)?.chat(msg.body)
+    this.events.emit('chat', Object.freeze({ ...msg }))
+    if (broadcast) this.network.send('chatAdded', msg)
   }
 
   command(text) {
-    if (this.world.network.isServer) return
+    if (this.network.isServer) return
     const args = text.slice(1).split(/\s+/).filter(Boolean)
-    if (args[0] === 'stats') this.world.prefs.setStats(!this.world.prefs.stats)
-    if (args[0] !== 'admin') this.world.events.emit('command', { playerId: this.world.network.id, args })
-    this.world.network.send('command', args)
+    if (args[0] === 'stats') this.prefs.setStats(!this.prefs.stats)
+    if (args[0] !== 'admin') this.events.emit('command', { playerId: this.network.id, args })
+    this.network.send('command', args)
   }
 
   clear(broadcast) {
     this.state.set('messages', [])
-    if (broadcast) this.world.network.send('chatCleared')
+    if (broadcast) this.network.send('chatCleared')
   }
 
   send(text) {
-    if (!this.world.network.isClient) return
-    const player = this.world.entities.player
+    if (!this.network.isClient) return
+    const player = this.entities.player
     const msg = { id: uuid(), from: player.data.name, fromId: player.data.id, body: text, createdAt: moment().toISOString() }
     this.add(msg, true)
     return msg
