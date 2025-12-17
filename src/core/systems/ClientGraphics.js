@@ -44,9 +44,25 @@ function getRenderer() {
  *
  */
 export class ClientGraphics extends System {
+  // DI Service Constants
+  static DEPS = {
+    camera: 'camera',
+    prefs: 'prefs',
+    events: 'events',
+    stage: 'stage',
+    settings: 'settings',
+  }
+
   constructor(world) {
     super(world)
   }
+
+  // DI Property Getters
+  get camera() { return this.getService(ClientGraphics.DEPS.camera) }
+  get prefs() { return this.getService(ClientGraphics.DEPS.prefs) }
+  get events() { return this.getService(ClientGraphics.DEPS.events) }
+  get stage() { return this.getService(ClientGraphics.DEPS.stage) }
+  get settings() { return this.getService(ClientGraphics.DEPS.settings) }
 
   async init({ viewport }) {
     this.viewport = viewport
@@ -56,7 +72,7 @@ export class ClientGraphics extends System {
     this.renderer = getRenderer()
     this.renderer.setSize(this.width, this.height)
     this.renderer.setClearColor(0xffffff, 0)
-    this.renderer.setPixelRatio(this.world.prefs.state.get('dpr'))
+    this.renderer.setPixelRatio(this.prefs.state.get('dpr'))
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.NoToneMapping
@@ -67,16 +83,16 @@ export class ClientGraphics extends System {
     this.renderer.xr.setFoveation(1)
     this.maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy()
     THREE.Texture.DEFAULT_ANISOTROPY = this.maxAnisotropy
-    this.usePostprocessing = this.world.prefs.state.get('postprocessing')
+    this.usePostprocessing = this.prefs.state.get('postprocessing')
     const context = this.renderer.getContext()
     const maxMultisampling = context.getParameter(context.MAX_SAMPLES)
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: THREE.HalfFloatType,
     })
-    this.renderPass = new RenderPass(this.world.stage.scene, this.world.camera)
+    this.renderPass = new RenderPass(this.stage.scene, this.camera)
     this.composer.addPass(this.renderPass)
-    this.aoPass = new N8AOPostPass(this.world.stage.scene, this.world.camera, this.width, this.height)
-    this.aoPass.enabled = this.world.settings.get('ao') && this.world.prefs.state.get('ao')
+    this.aoPass = new N8AOPostPass(this.stage.scene, this.camera, this.width, this.height)
+    this.aoPass.enabled = this.settings.get('ao') && this.prefs.state.get('ao')
     this.aoPass.autoDetectTransparency = false
     this.aoPass.configuration.halfRes = true
     this.aoPass.configuration.screenSpaceRadius = true
@@ -92,10 +108,10 @@ export class ClientGraphics extends System {
       intensity: 0.5,
       radius: 0.8,
     })
-    this.bloomEnabled = this.world.prefs.state.get('bloom')
+    this.bloomEnabled = this.prefs.state.get('bloom')
     this.smaa = new SMAAEffect({ preset: SMAAPreset.ULTRA })
     this.tonemapping = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
-    this.effectPass = new EffectPass(this.world.camera)
+    this.effectPass = new EffectPass(this.camera)
     this.updatePostProcessingEffects()
     this.composer.addPass(this.effectPass)
     this.resizer = new ResizeObserver(() => {
@@ -124,7 +140,7 @@ export class ClientGraphics extends System {
         this.updatePostProcessingEffects()
       },
       'ao': (value) => {
-        this.aoPass.enabled = value && this.world.settings.get('ao')
+        this.aoPass.enabled = value && this.settings.get('ao')
       },
     }
   }
@@ -132,32 +148,32 @@ export class ClientGraphics extends System {
   setupSettingRegistry() {
     this.settingHandlers = {
       'ao': (value) => {
-        this.aoPass.enabled = value && this.world.prefs.state.get('ao')
+        this.aoPass.enabled = value && this.prefs.state.get('ao')
       },
     }
   }
 
   start() {
-    this.world.events.on('prefChanged', this.onPrefChanged)
-    this.world.events.on('xrSession', this.onXRSession)
-    this.world.events.on('settingChanged', this.onSettingChanged)
+    this.events.on('prefChanged', this.onPrefChanged)
+    this.events.on('xrSession', this.onXRSession)
+    this.events.on('settingChanged', this.onSettingChanged)
   }
 
   resize(width, height) {
     this.width = width
     this.height = height
     this.aspect = this.width / this.height
-    this.world.camera.aspect = this.aspect
-    this.world.camera.updateProjectionMatrix()
+    this.camera.aspect = this.aspect
+    this.camera.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height)
     this.composer.setSize(this.width, this.height)
-    this.world.events.emit('graphicsResize', { width, height })
+    this.events.emit('graphicsResize', { width, height })
     this.render()
   }
 
   render() {
     if (this.renderer.xr.isPresenting || !this.usePostprocessing) {
-      this.renderer.render(this.world.stage.scene, this.world.camera)
+      this.renderer.render(this.stage.scene, this.camera)
     } else {
       this.composer.render()
     }
@@ -172,7 +188,7 @@ export class ClientGraphics extends System {
 
   preTick() {
     // calc world to screen factor
-    const camera = this.world.camera
+    const camera = this.camera
     const fovRadians = camera.fov * (Math.PI / 180)
     const rendererHeight = this.xrHeight || this.height
     this.worldToScreenFactor = (Math.tan(fovRadians / 2) * 2) / rendererHeight

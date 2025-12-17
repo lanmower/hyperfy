@@ -6,6 +6,12 @@ import { thickness } from 'three/src/nodes/TSL.js'
 const appPanes = ['app', 'script', 'nodes', 'meta']
 
 export class ClientUI extends System {
+  // DI Service Constants
+  static DEPS = {
+    controls: 'controls',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     this.state = {
@@ -19,8 +25,12 @@ export class ClientUI extends System {
     this.control = null
   }
 
+  // DI Property Getters
+  get controls() { return this.getService(ClientUI.DEPS.controls) }
+  get events() { return this.getService(ClientUI.DEPS.events) }
+
   start() {
-    this.control = this.world.controls.bind({ priority: ControlPriorities.CORE_UI })
+    this.control = this.controls.bind({ priority: ControlPriorities.CORE_UI })
   }
 
   update() {
@@ -95,20 +105,20 @@ export class ClientUI extends System {
   confirm(options) {
     const promise = new Promise(resolve => {
       options.confirm = () => {
-        this.world.events.emit('confirm', null)
+        this.events.emit('confirm', null)
         resolve(true)
       }
       options.cancel = () => {
-        this.world.events.emit('confirm', null)
+        this.events.emit('confirm', null)
         resolve(false)
       }
     })
-    this.world.events.emit('confirm', options)
+    this.events.emit('confirm', options)
     return promise
   }
 
   broadcast() {
-    this.world.events.emit('ui', { ...this.state })
+    this.events.emit('ui', { ...this.state })
   }
 
   destroy() {

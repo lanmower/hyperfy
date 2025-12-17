@@ -13,12 +13,24 @@ let worker
  *
  */
 export class Client extends System {
+  // DI Service Constants
+  static DEPS = {
+    graphics: 'graphics',
+    tick: 'tick',
+    events: 'events',
+  }
+
   constructor(world) {
     super(world)
     window.world = world
     window.THREE = THREE
     this.setupDebugGlobals()
   }
+
+  // DI Property Getters
+  get graphics() { return this.getService(Client.DEPS.graphics) }
+  get tick() { return this.getService(Client.DEPS.tick) }
+  get events() { return this.getService(Client.DEPS.events) }
 
   setupDebugGlobals() {
     const world = this.world
@@ -64,10 +76,10 @@ export class Client extends System {
   }
 
   start() {
-    this.world.graphics.renderer.setAnimationLoop(this.world.tick)
+    this.graphics.renderer.setAnimationLoop(this.tick)
     document.addEventListener('visibilitychange', this.onVisibilityChange)
 
-    this.world.events.on('settingChanged', this.onSettingChanged)
+    this.events.on('settingChanged', this.onSettingChanged)
   }
 
   onSettingChanged = ({ key, value }) => {
@@ -107,24 +119,24 @@ export class Client extends System {
       worker = new Worker(URL.createObjectURL(blob))
       worker.onmessage = () => {
         const time = performance.now()
-        this.world.tick(time)
+        this.tick(time)
       }
     }
     if (document.hidden) {
       // stop rAF
-      this.world.graphics.renderer.setAnimationLoop(null)
+      this.graphics.renderer.setAnimationLoop(null)
       // tell the worker to start
       worker.postMessage('start')
     } else {
       // tell the worker to stop
       worker.postMessage('stop')
       // resume rAF
-      this.world.graphics.renderer.setAnimationLoop(this.world.tick)
+      this.graphics.renderer.setAnimationLoop(this.tick)
     }
   }
 
   destroy() {
-    this.world.graphics.renderer.setAnimationLoop(null)
+    this.graphics.renderer.setAnimationLoop(null)
     worker?.postMessage('stop')
     worker = null
     document.removeEventListener('visibilitychange', this.onVisibilityChange)

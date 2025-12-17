@@ -69,6 +69,16 @@ THREE.ShaderChunk.fog_vertex = `
  *
  */
 export class ClientEnvironment extends BaseEnvironment {
+  // DI Service Constants
+  static DEPS = {
+    stage: 'stage',
+    rig: 'rig',
+    loader: 'loader',
+    events: 'events',
+    prefs: 'prefs',
+    camera: 'camera',
+  }
+
   constructor(world) {
     super(world)
     this.skys = []
@@ -78,6 +88,14 @@ export class ClientEnvironment extends BaseEnvironment {
     this.hdrUrl = null
   }
 
+  // DI Property Getters
+  get stage() { return this.getService(ClientEnvironment.DEPS.stage) }
+  get rig() { return this.getService(ClientEnvironment.DEPS.rig) }
+  get loader() { return this.getService(ClientEnvironment.DEPS.loader) }
+  get events() { return this.getService(ClientEnvironment.DEPS.events) }
+  get prefs() { return this.getService(ClientEnvironment.DEPS.prefs) }
+  get camera() { return this.getService(ClientEnvironment.DEPS.camera) }
+
   init({ baseEnvironment }) {
     this.base = baseEnvironment
   }
@@ -86,8 +104,8 @@ export class ClientEnvironment extends BaseEnvironment {
     this.buildCSM()
     this.updateSky()
 
-    this.world.events.on('prefChanged', this.onPrefChanged)
-    this.world.events.on('graphicsResize', this.onGraphicsResize)
+    this.events.on('prefChanged', this.onPrefChanged)
+    this.events.on('graphicsResize', this.onGraphicsResize)
   }
 
   addSky(node) {
@@ -121,7 +139,7 @@ export class ClientEnvironment extends BaseEnvironment {
       this.sky.matrixAutoUpdate = false
       this.sky.matrixWorldAutoUpdate = false
       this.sky.visible = false
-      this.world.stage.scene.add(this.sky)
+      this.stage.scene.add(this.sky)
     }
 
     const base = this.base
@@ -138,9 +156,9 @@ export class ClientEnvironment extends BaseEnvironment {
 
     const n = ++this.skyN
     let bgTexture
-    if (bgUrl) bgTexture = await this.world.loader.load('texture', bgUrl)
+    if (bgUrl) bgTexture = await this.loader.load('texture', bgUrl)
     let hdrTexture
-    if (hdrUrl) hdrTexture = await this.world.loader.load('hdr', hdrUrl)
+    if (hdrUrl) hdrTexture = await this.loader.load('hdr', hdrUrl)
     if (n !== this.skyN) return
 
     if (bgTexture) {
@@ -160,10 +178,10 @@ export class ClientEnvironment extends BaseEnvironment {
       // hdrTexture.colorSpace = THREE.SRGBColorSpace
       // hdrTexture.colorSpace = THREE.LinearSRGBColorSpace
       hdrTexture.mapping = THREE.EquirectangularReflectionMapping
-      this.world.stage.scene.environment = hdrTexture
+      this.stage.scene.environment = hdrTexture
     }
 
-    this.world.stage.scene.environmentRotation.y = rotationY
+    this.stage.scene.environmentRotation.y = rotationY
     this.sky.rotation.y = rotationY
     this.sky.matrixWorld.compose(this.sky.position, this.sky.quaternion, this.sky.scale)
 
@@ -176,9 +194,9 @@ export class ClientEnvironment extends BaseEnvironment {
 
     if (isNumber(fogNear) && isNumber(fogFar) && fogColor) {
       const color = new THREE.Color(fogColor)
-      this.world.stage.scene.fog = new THREE.Fog(color, fogNear, fogFar)
+      this.stage.scene.fog = new THREE.Fog(color, fogNear, fogFar)
     } else {
-      this.world.stage.scene.fog = null
+      this.stage.scene.fog = null
     }
 
     this.skyInfo = {
@@ -199,14 +217,14 @@ export class ClientEnvironment extends BaseEnvironment {
   }
 
   lateUpdate(delta) {
-    this.sky.position.x = this.world.rig.position.x
-    this.sky.position.z = this.world.rig.position.z
+    this.sky.position.x = this.rig.position.x
+    this.sky.position.z = this.rig.position.z
     this.sky.matrixWorld.setPosition(this.sky.position)
-    // this.sky.matrixWorld.copyPosition(this.world.rig.matrixWorld)
+    // this.sky.matrixWorld.copyPosition(this.rig.matrixWorld)
   }
 
   buildCSM() {
-    const options = csmLevels[this.world.prefs.shadows]
+    const options = csmLevels[this.prefs.shadows]
     if (this.csm) {
       this.csm.updateCascades(options.cascades)
       this.csm.updateShadowMapSize(options.shadowMapSize)
@@ -217,8 +235,8 @@ export class ClientEnvironment extends BaseEnvironment {
         light.castShadow = options.castShadow
       }
     } else {
-      const scene = this.world.stage.scene
-      const camera = this.world.camera
+      const scene = this.stage.scene
+      const camera = this.camera
       this.csm = new CSM({
         mode: 'practical', // uniform, logarithmic, practical, custom
         // mode: 'custom',
