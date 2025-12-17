@@ -3,28 +3,20 @@ import { bindRotations } from '../extras/bindRotations.js'
 import { buttons, codeToProp } from '../extras/buttons.js'
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
+import { ButtonStateManager } from './controls/ButtonStateManager.js'
+import { ControlBindingManager } from './controls/ControlBindingManager.js'
 
-const LMB = 1 // bitmask
-const RMB = 2 // bitmask
+const LMB = 1
+const RMB = 2
 const MouseLeft = 'mouseLeft'
 const MouseRight = 'mouseRight'
 const HandednessLeft = 'left'
 const HandednessRight = 'right'
 
-let actionIds = 0
-
-/**
- * Control System
- *
- * - runs on the client
- * - provides a layered priority control system for both input and output
- *
- */
 
 const isBrowser = typeof window !== 'undefined'
 
 const controlTypes = {
-  // key: createButton,
   mouseLeft: createButton,
   mouseRight: createButton,
   touchStick: createVector,
@@ -45,7 +37,6 @@ const controlTypes = {
 }
 
 export class ClientControls extends System {
-  // DI Service Constants
   static DEPS = {
     rig: 'rig',
     events: 'events',
@@ -77,7 +68,6 @@ export class ClientControls extends System {
     this.xrSession = null
   }
 
-  // DI Property Getters
   get rig() { return this.getService(ClientControls.DEPS.rig) }
   get events() { return this.getService(ClientControls.DEPS.events) }
   get camera() { return this.getService(ClientControls.DEPS.camera) }
@@ -87,17 +77,14 @@ export class ClientControls extends System {
   }
 
   preFixedUpdate() {
-    // mouse wheel delta
     for (const control of this.controls) {
       if (control.entries.scrollDelta) {
         control.entries.scrollDelta.value = this.scroll.delta
         if (control.entries.scrollDelta.capture) break
       }
     }
-    // xr
     if (this.xrSession) {
       this.xrSession.inputSources?.forEach(src => {
-        // left
         if (src.gamepad && src.handedness === HandednessLeft) {
           for (const control of this.controls) {
             if (control.entries.xrLeftStick) {
@@ -146,7 +133,6 @@ export class ClientControls extends System {
             }
           }
         }
-        // right
         if (src.gamepad && src.handedness === HandednessRight) {
           for (const control of this.controls) {
             if (control.entries.xrRightStick) {
@@ -200,11 +186,8 @@ export class ClientControls extends System {
   }
 
   postLateUpdate() {
-    // clear pointer delta
     this.pointer.delta.set(0, 0, 0)
-    // clear scroll delta
     this.scroll.delta = 0
-    // clear buttons
     for (const control of this.controls) {
       for (const key in control.entries) {
         const value = control.entries[key]
@@ -214,7 +197,6 @@ export class ClientControls extends System {
         }
       }
     }
-    // update camera
     let written
     for (const control of this.controls) {
       const camera = control.entries.camera
@@ -229,7 +211,6 @@ export class ClientControls extends System {
         camera.zoom = this.camera.position.z
       }
     }
-    // clear touch deltas
     for (const [id, info] of this.touches) {
       info.delta.set(0, 0, 0)
     }
@@ -295,33 +276,24 @@ export class ClientControls extends System {
         },
       },
     }
-    // insert at correct priority level
-    // - 0 is lowest priority generally for player controls
-    // - apps use higher priority
-    // - global systems use highest priority over everything
     const idx = this.controls.findIndex(c => c.options.priority <= options.priority)
     if (idx === -1) {
       this.controls.push(control)
     } else {
       this.controls.splice(idx, 0, control)
     }
-    // return proxy api
     return new Proxy(control, {
       get(target, prop) {
-        // internal property
         if (prop in target.api) {
           return target.api[prop]
         }
-        // existing item
         if (prop in entries) {
           return entries[prop]
         }
-        // new button item
         if (buttons.has(prop)) {
           entries[prop] = createButton(self, control, prop)
           return entries[prop]
         }
-        // new item based on type
         const createType = controlTypes[prop]
         if (createType) {
           entries[prop] = createType(self, control, prop)
@@ -333,7 +305,6 @@ export class ClientControls extends System {
   }
 
   releaseAllButtons() {
-    // release all down buttons because they can get stuck
     for (const control of this.controls) {
       for (const key in control.entries) {
         const value = control.entries[key]
@@ -352,7 +323,6 @@ export class ClientControls extends System {
       const actions = control.actions
       if (actions) {
         for (const action of actions) {
-          // ignore if already existing
           if (!action.type === 'custom') {
             const idx = this.actions.findIndex(a => a.type === action.type)
             if (idx !== -1) continue
@@ -424,7 +394,6 @@ export class ClientControls extends System {
     if (this.isInputFocused()) return
     const code = e.code
     if (code === 'Tab') {
-      // prevent default focus switching behavior
       e.preventDefault()
     }
     const prop = codeToProp[code]
@@ -448,8 +417,6 @@ export class ClientControls extends System {
     if (this.isInputFocused()) return
     const code = e.code
     if (code === 'MetaLeft' || code === 'MetaRight') {
-      // releasing a meta key while another key is down causes browsers not to ever
-      // trigger onKeyUp, so we just have to force all keys up
       return this.releaseAllButtons()
     }
     const prop = codeToProp[code]
@@ -497,7 +464,6 @@ export class ClientControls extends System {
         info.prevPosition.y = e.clientY
       }
     }
-    // this.checkPointerChanges(e)
     const rect = this.viewport.getBoundingClientRect()
     const offsetX = e.pageX - rect.left
     const offsetY = e.pageY - rect.top
@@ -526,7 +492,6 @@ export class ClientControls extends System {
 
   checkPointerChanges(e) {
     const lmb = !!(e.buttons & LMB)
-    // left mouse down
     if (!this.lmbDown && lmb) {
       this.lmbDown = true
       this.buttonsDown.add(MouseLeft)
@@ -540,7 +505,6 @@ export class ClientControls extends System {
         }
       }
     }
-    // left mouse up
     if (this.lmbDown && !lmb) {
       this.lmbDown = false
       this.buttonsDown.delete(MouseLeft)
@@ -554,7 +518,6 @@ export class ClientControls extends System {
       }
     }
     const rmb = !!(e.buttons & RMB)
-    // right mouse down
     if (!this.rmbDown && rmb) {
       this.rmbDown = true
       this.buttonsDown.add(MouseRight)
@@ -568,7 +531,6 @@ export class ClientControls extends System {
         }
       }
     }
-    // right mouse up
     if (this.rmbDown && !rmb) {
       this.rmbDown = false
       this.buttonsDown.delete(MouseRight)
@@ -615,7 +577,6 @@ export class ClientControls extends System {
     if (this.pointer.locked) return
     this.pointer.locked = true
     this.events.emit('pointerLockChanged', true)
-    // pointerlock is async so if its no longer meant to be locked, exit
     if (!this.pointer.shouldLock) this.unlockPointer()
   }
 
