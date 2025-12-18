@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { HintContext } from '../Hint.js'
 import { MenuContext } from '../MenuComponents/Menu.js'
+import { Curve } from '../../../core/extras/Curve.js'
 
 export function useMenuHint(hint) {
   const setHint = useContext(MenuContext)
@@ -290,4 +291,58 @@ export function useFieldSwitch(options, value, onChange) {
     onChange(safeOptions[nextIdx].value)
   }, [idx, safeOptions, onChange])
   return { selected, prev, next }
+}
+
+export function useFieldTextarea(value, onChange) {
+  const textareaRef = useRef()
+  const [localValue, setLocalValue] = useState(value)
+
+  useEffect(() => {
+    if (localValue !== value) setLocalValue(value)
+  }, [value])
+
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    function update() {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    }
+    update()
+    textarea.addEventListener('input', update)
+    return () => textarea.removeEventListener('input', update)
+  }, [])
+
+  return {
+    ref: textareaRef,
+    value: localValue || '',
+    onChange: e => setLocalValue(e.target.value),
+    onFocus: e => e.target.select(),
+    onKeyDown: e => {
+      if (e.metaKey && e.code === 'Enter') {
+        e.preventDefault()
+        onChange(localValue)
+        e.target.blur()
+      }
+    },
+    onBlur: () => onChange(localValue),
+  }
+}
+
+export function useFieldCurve(value, onChange) {
+  const curve = useMemo(() => new Curve().deserialize(value || '0,0.5,0,0|1,0.5,0,0'), [value])
+  const [edit, setEdit] = useState(false)
+
+  const toggleEdit = useCallback(() => {
+    setEdit(prev => prev ? null : curve.clone())
+  }, [curve])
+
+  const onCommit = useCallback(() => {
+    onChange(edit.serialize())
+    setEdit(null)
+  }, [edit, onChange])
+
+  const onCancel = useCallback(() => setEdit(null), [])
+
+  return { curve, edit, toggleEdit, onCommit, onCancel }
 }
