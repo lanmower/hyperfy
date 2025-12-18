@@ -3,7 +3,6 @@ import { isNumber } from 'lodash-es'
 
 import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
-import { Model } from './stage/Model.js'
 
 const raycasterVec2 = new THREE.Vector2()
 
@@ -130,7 +129,92 @@ export class Stage extends System {
   insertLinked({ geometry, material, castShadow, receiveShadow, node, matrix }) {
     const id = `${geometry.uuid}/${material.uuid}/${castShadow}/${receiveShadow}`
     if (!this.models.has(id)) {
-      const model = new Model(this, geometry, material, castShadow, receiveShadow)
+      const modelMaterial = this.createMaterial({ raw: material })
+      if (!geometry.boundsTree) geometry.computeBoundsTree()
+      const iMesh = new THREE.InstancedMesh(geometry, modelMaterial.raw, 10)
+      iMesh.castShadow = castShadow
+      iMesh.receiveShadow = receiveShadow
+      iMesh.matrixAutoUpdate = false
+      iMesh.matrixWorldAutoUpdate = false
+      iMesh.frustumCulled = false
+      const items = []
+      let dirty = true
+
+      const model = {
+        geometry,
+        material: modelMaterial,
+        iMesh,
+        items,
+        create: (node, matrix) => {
+          const item = {
+            idx: items.length,
+            node,
+            matrix,
+          }
+          items.push(item)
+          iMesh.setMatrixAt(item.idx, item.matrix)
+          dirty = true
+          const sItem = {
+            matrix,
+            geometry,
+            material: modelMaterial.raw,
+            getEntity: () => items[item.idx]?.node.ctx.entity,
+            node,
+          }
+          this.octree.insert(sItem)
+          return {
+            material: modelMaterial.proxy,
+            move: matrix => {
+              item.matrix.copy(matrix)
+              iMesh.setMatrixAt(item.idx, matrix)
+              dirty = true
+              this.octree.move(sItem)
+            },
+            destroy: () => {
+              const last = items[items.length - 1]
+              const isOnly = items.length === 1
+              const isLast = item === last
+              if (isOnly) {
+                items.length = 0
+                dirty = true
+              } else if (isLast) {
+                items.pop()
+                dirty = true
+              } else {
+                iMesh.setMatrixAt(item.idx, last.matrix)
+                last.idx = item.idx
+                items[item.idx] = last
+                items.pop()
+                dirty = true
+              }
+              this.octree.remove(sItem)
+            },
+          }
+        },
+        clean: () => {
+          if (!dirty) return
+          const size = iMesh.instanceMatrix.array.length / 16
+          const count = items.length
+          if (size < items.length) {
+            const newSize = count + 100
+            iMesh.resize(newSize)
+            for (let i = size; i < count; i++) {
+              iMesh.setMatrixAt(i, items[i].matrix)
+            }
+          }
+          iMesh.count = count
+          if (iMesh.parent && !count) {
+            this.scene.remove(iMesh)
+            dirty = false
+            return
+          }
+          if (!iMesh.parent && count) {
+            this.scene.add(iMesh)
+          }
+          iMesh.instanceMatrix.needsUpdate = true
+          dirty = false
+        },
+      }
       this.models.set(id, model)
     }
     return this.models.get(id).create(node, matrix)
