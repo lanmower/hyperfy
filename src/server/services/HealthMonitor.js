@@ -1,5 +1,5 @@
 
-import { Metrics } from '../../core/cli/Metrics.js'
+import { Metrics } from './Metrics.js'
 
 export class HealthMonitor {
   constructor(world) {
