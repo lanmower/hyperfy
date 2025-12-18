@@ -3,11 +3,6 @@ import { bindRotations } from '../extras/bindRotations.js'
 import { buttons, codeToProp } from '../extras/buttons.js'
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
-import { ButtonStateManager } from './controls/ButtonStateManager.js'
-import { ControlBindingManager } from './controls/ControlBindingManager.js'
-import { InputEventHandler } from './controls/InputEventHandler.js'
-import { PointerLockManager } from './controls/PointerLockManager.js'
-import { ControlFactory } from './controls/ControlFactory.js'
 
 const LMB = 1
 const RMB = 2
@@ -17,6 +12,7 @@ const HandednessLeft = 'left'
 const HandednessRight = 'right'
 
 const isBrowser = typeof window !== 'undefined'
+let actionIds = 0
 
 export class ClientControls extends System {
   static DEPS = {
@@ -73,9 +69,6 @@ export class ClientControls extends System {
       touchA: createButton,
       touchB: createButton,
     }
-    this.inputEventHandler = new InputEventHandler(this)
-    this.pointerLockManager = new PointerLockManager(this)
-    this.controlFactory = new ControlFactory(this)
   }
 
   start() {
@@ -242,11 +235,85 @@ export class ClientControls extends System {
   }
 
   bind(options = {}) {
-    return this.controlFactory.bind(options)
+    const self = this
+    const entries = {}
+    let reticleSupressor
+    const control = {
+      options,
+      entries,
+      actions: null,
+      api: {
+        hideReticle(value = true) {
+          if (reticleSupressor && value) return
+          if (!reticleSupressor && !value) return
+          if (reticleSupressor) {
+            reticleSupressor?.()
+            reticleSupressor = null
+          } else {
+            reticleSupressor = self.world.ui.suppressReticle()
+          }
+        },
+        setActions(value) {
+          if (value !== null && !Array.isArray(value)) {
+            throw new Error('[control] actions must be null or array')
+          }
+          control.actions = value
+          if (value) {
+            for (const action of value) {
+              action.id = ++actionIds
+            }
+          }
+          self.buildActions()
+        },
+        release: () => {
+          reticleSupressor?.()
+          const idx = self.controls.indexOf(control)
+          if (idx === -1) return
+          self.controls.splice(idx, 1)
+          options.onRelease?.()
+        },
+      },
+    }
+    const idx = self.controls.findIndex(c => c.options.priority <= options.priority)
+    if (idx === -1) {
+      self.controls.push(control)
+    } else {
+      self.controls.splice(idx, 0, control)
+    }
+    const controlTypes = self.controlTypes
+    return new Proxy(control, {
+      get(target, prop) {
+        if (prop in target.api) {
+          return target.api[prop]
+        }
+        if (prop in entries) {
+          return entries[prop]
+        }
+        if (buttons.has(prop)) {
+          entries[prop] = createButton(self, control, prop)
+          return entries[prop]
+        }
+        const createType = controlTypes[prop]
+        if (createType) {
+          entries[prop] = createType(self, control, prop)
+          return entries[prop]
+        }
+        return undefined
+      },
+    })
   }
 
   releaseAllButtons() {
-    return this.controlFactory.releaseAllButtons()
+    for (const control of this.controls) {
+      for (const key in control.entries) {
+        const value = control.entries[key]
+        if (value.$button && value.down) {
+          value.released = true
+          value.down = false
+          value.onRelease?.()
+        }
+      }
+    }
   }
 
   buildActions() {
@@ -321,55 +388,212 @@ export class ClientControls extends System {
   }
 
   onKeyDown = e => {
-    return this.inputEventHandler.onKeyDown(e)
+    if (e.repeat) return
+    if (this.isInputFocused()) return
+    const code = e.code
+    if (code === 'MetaLeft' || code === 'MetaRight') {
+      return this.releaseAllButtons()
+    }
+    const prop = codeToProp[code]
+    const text = e.key
+    this.buttonsDown.add(prop)
+    for (const control of this.controls) {
+      const button = control.entries[prop]
+      if (button?.$button) {
+        button.pressed = true
+        button.down = true
+        const capture = button.onPress?.()
+        if (capture || button.capture) break
+      }
+      const capture = control.onButtonPress?.(prop, text)
+      if (capture) break
+    }
   }
 
   onKeyUp = e => {
-    return this.inputEventHandler.onKeyUp(e)
+    if (e.repeat) return
+    if (this.isInputFocused()) return
+    const code = e.code
+    if (code === 'MetaLeft' || code === 'MetaRight') {
+      return this.releaseAllButtons()
+    }
+    const prop = codeToProp[code]
+    this.buttonsDown.delete(prop)
+    for (const control of this.controls) {
+      const button = control.entries[prop]
+      if (button?.$button && button.down) {
+        button.down = false
+        button.released = true
+        button.onRelease?.()
+      }
+    }
   }
 
   onPointerDown = e => {
-    return this.inputEventHandler.onPointerDown(e)
+    if (e.isCoreUI) return
+    if (e.pointerType === 'touch') {
+      e.preventDefault()
+      const info = {
+        id: e.pointerId,
+        position: new THREE.Vector3(e.clientX, e.clientY, 0),
+        prevPosition: new THREE.Vector3(e.clientX, e.clientY, 0),
+        delta: new THREE.Vector3(),
+        pointerType: e.pointerType,
+      }
+      this.touches.set(e.pointerId, info)
+      for (const control of this.controls) {
+        const consume = control.options.onTouch?.(info)
+        if (consume) break
+      }
+    }
+    this.checkPointerChanges(e)
   }
 
   onPointerMove = e => {
-    return this.inputEventHandler.onPointerMove(e)
+    if (e.isCoreUI) return
+    if (e.pointerType === 'touch') {
+      const info = this.touches.get(e.pointerId)
+      if (info) {
+        info.delta.x += e.clientX - info.prevPosition.x
+        info.delta.y += e.clientY - info.prevPosition.y
+        info.position.x = e.clientX
+        info.position.y = e.clientY
+        info.prevPosition.x = e.clientX
+        info.prevPosition.y = e.clientY
+      }
+    }
+    const rect = this.viewport.getBoundingClientRect()
+    const offsetX = e.pageX - rect.left
+    const offsetY = e.pageY - rect.top
+    this.pointer.coords.x = Math.max(0, Math.min(1, offsetX / rect.width))
+    this.pointer.coords.y = Math.max(0, Math.min(1, offsetY / rect.height))
+    this.pointer.position.x = offsetX
+    this.pointer.position.y = offsetY
+    this.pointer.delta.x += e.movementX
+    this.pointer.delta.y += e.movementY
   }
 
   onPointerUp = e => {
-    return this.inputEventHandler.onPointerUp(e)
+    if (e.isCoreUI) return
+    if (e.pointerType === 'touch') {
+      const info = this.touches.get(e.pointerId)
+      if (info) {
+        for (const control of this.controls) {
+          const consume = control.options.onTouchEnd?.(info)
+          if (consume) break
+        }
+        this.touches.delete(e.pointerId)
+      }
+    }
+    this.checkPointerChanges(e)
   }
 
   checkPointerChanges(e) {
-    return this.inputEventHandler.checkPointerChanges(e)
+    const lmb = !!(e.buttons & LMB)
+    if (!this.lmbDown && lmb) {
+      this.lmbDown = true
+      this.buttonsDown.add(MouseLeft)
+      for (const control of this.controls) {
+        const button = control.entries.mouseLeft
+        if (button) {
+          button.down = true
+          button.pressed = true
+          const capture = button.onPress?.()
+          if (capture || button.capture) break
+        }
+      }
+    }
+    if (this.lmbDown && !lmb) {
+      this.lmbDown = false
+      this.buttonsDown.delete(MouseLeft)
+      for (const control of this.controls) {
+        const button = control.entries.mouseLeft
+        if (button) {
+          button.down = false
+          button.released = true
+          button.onRelease?.()
+        }
+      }
+    }
+    const rmb = !!(e.buttons & RMB)
+    if (!this.rmbDown && rmb) {
+      this.rmbDown = true
+      this.buttonsDown.add(MouseRight)
+      for (const control of this.controls) {
+        const button = control.entries.mouseRight
+        if (button) {
+          button.down = true
+          button.pressed = true
+          const capture = button.onPress?.()
+          if (capture || button.capture) break
+        }
+      }
+    }
+    if (this.rmbDown && !rmb) {
+      this.rmbDown = false
+      this.buttonsDown.delete(MouseRight)
+      for (const control of this.controls) {
+        const button = control.entries.mouseRight
+        if (button) {
+          button.down = false
+          button.released = true
+          button.onRelease?.()
+        }
+      }
+    }
   }
 
   async lockPointer() {
-    return this.pointerLockManager.lockPointer()
+    if (isTouch) return
+    this.pointer.shouldLock = true
+    try {
+      await this.viewport.requestPointerLock()
+      return true
+    } catch (err) {
+      console.log('pointerlock denied, too quick?')
+      return false
+    }
   }
 
   unlockPointer() {
-    return this.pointerLockManager.unlockPointer()
+    this.pointer.shouldLock = false
+    if (!this.pointer.locked) return
+    document.exitPointerLock()
+    this.onPointerLockEnd()
   }
 
   onPointerLockChange = e => {
-    return this.pointerLockManager.onPointerLockChange(e)
+    const didPointerLock = !!document.pointerLockElement
+    if (didPointerLock) {
+      this.onPointerLockStart()
+    } else {
+      this.onPointerLockEnd()
+    }
   }
 
   onPointerLockStart() {
-    return this.pointerLockManager.onPointerLockStart()
+    if (this.pointer.locked) return
+    this.pointer.locked = true
+    this.events.emit('pointerLockChanged', true)
+    if (!this.pointer.shouldLock) this.unlockPointer()
   }
 
   onPointerLockEnd() {
-    return this.pointerLockManager.onPointerLockEnd()
+    if (!this.pointer.locked) return
+    this.pointer.locked = false
+    this.events.emit('pointerLockChanged', false)
   }
 
   onScroll = e => {
-    return this.inputEventHandler.onScroll(e)
+    if (e.isCoreUI) return
+    e.preventDefault()
+    let delta = e.shiftKey ? e.deltaX : e.deltaY
+    if (!this.isMac) delta = -delta
+    this.scroll.delta += delta
   }
 
   onContextMenu = e => {
-    return this.inputEventHandler.onContextMenu(e)
+    e.preventDefault()
   }
 
   onTouchStart = e => {
