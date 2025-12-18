@@ -9,10 +9,7 @@ import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
-import { BlueprintLoader } from './app/BlueprintLoader.js'
-import { ScriptExecutor } from './app/ScriptExecutor.js'
-import { EventManager } from './app/EventManager.js'
-import { ProxyFactory } from './app/ProxyFactory.js'
+import { createPlayerProxy } from '../extras/createPlayerProxy.js'
 
 const Modes = {
   ACTIVE: 'active',
@@ -41,10 +38,6 @@ export class App extends BaseEntity {
     this.hitResultsPool = []
     this.hitResults = []
     this.deadHook = { dead: false }
-    this.blueprintLoader = new BlueprintLoader(this)
-    this.scriptExecutor = new ScriptExecutor(this)
-    this.eventManager = new EventManager(this)
-    this.proxyFactory = new ProxyFactory(this)
     this.build()
   }
 
@@ -193,23 +186,42 @@ export class App extends BaseEntity {
   }
 
   on(name, callback) {
-    return this.eventManager.on(name, callback)
+    if (!this.listeners[name]) this.listeners[name] = new Set()
+    if (this.listeners[name].has(callback)) return
+    this.listeners[name].add(callback)
+    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
+    if (hotEventNames.includes(name)) {
+      this.hotEvents++
+      this.world.setHot(this, this.hotEvents > 0)
+    }
   }
 
   off(name, callback) {
-    return this.eventManager.off(name, callback)
+    if (!this.listeners[name]) return
+    if (!this.listeners[name].has(callback)) return
+    this.listeners[name].delete(callback)
+    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
+    if (hotEventNames.includes(name)) {
+      this.hotEvents--
+      this.world.setHot(this, this.hotEvents > 0)
+    }
   }
 
   emit(name, a1, a2) {
-    return this.eventManager.emit(name, a1, a2)
+    if (!this.listeners[name]) return
+    for (const callback of this.listeners[name]) {
+      callback(a1, a2)
+    }
   }
 
   onWorldEvent(name, callback) {
-    return this.eventManager.onWorldEvent(name, callback)
+    this.worldListeners.set(callback, name)
+    this.world.events.on(name, callback)
   }
 
   offWorldEvent(name, callback) {
-    return this.eventManager.offWorldEvent(name, callback)
+    this.worldListeners.delete(callback)
+    this.world.events.off(name, callback)
   }
 
   onEvent(version, name, data, networkId) {
