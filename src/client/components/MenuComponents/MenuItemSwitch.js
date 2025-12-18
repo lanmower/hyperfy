@@ -1,22 +1,10 @@
 import { css } from '@firebolt-dev/css'
 import { ChevronRightIcon } from '../Icons.js'
-import { useMenuHint } from '../hooks/index.js'
+import { useMenuHint, useFieldSwitch } from '../hooks/index.js'
 
 export function MenuItemSwitch({ label, hint, options, value, onChange }) {
   const hintProps = useMenuHint(hint)
-  options = options || []
-  const idx = options.findIndex(o => o.value === value)
-  const selected = options[idx]
-  const prev = () => {
-    let nextIdx = idx - 1
-    if (nextIdx < 0) nextIdx = options.length - 1
-    onChange(options[nextIdx].value)
-  }
-  const next = () => {
-    let nextIdx = idx + 1
-    if (nextIdx > options.length - 1) nextIdx = 0
-    onChange(options[nextIdx].value)
-  }
+  const { selected, prev, next } = useFieldSwitch(options, value, onChange)
   return (
     <div
       className='menuitemswitch'

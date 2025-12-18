@@ -1,23 +1,10 @@
 import { css } from '@firebolt-dev/css'
-import { useContext } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon } from '../Icons.js'
-import { HintContext } from '../Hint.js'
+import { useFieldHint, useFieldSwitch } from '../hooks/index.js'
 
 export function FieldSwitch({ label, hint, options, value, onChange }) {
-  options = options || []
-  const { setHint } = useContext(HintContext)
-  const idx = options.findIndex(o => o.value === value)
-  const selected = options[idx]
-  const prev = () => {
-    let nextIdx = idx - 1
-    if (nextIdx < 0) nextIdx = options.length - 1
-    onChange(options[nextIdx].value)
-  }
-  const next = () => {
-    let nextIdx = idx + 1
-    if (nextIdx > options.length - 1) nextIdx = 0
-    onChange(options[nextIdx].value)
-  }
+  const hintProps = useFieldHint(hint)
+  const { selected, prev, next } = useFieldSwitch(options, value, onChange)
   return (
     <div
       className='fieldswitch'
@@ -59,8 +46,7 @@ export function FieldSwitch({ label, hint, options, value, onChange }) {
           }
         }
       `}
-      onPointerEnter={() => setHint(hint)}
-      onPointerLeave={() => setHint(null)}
+      {...hintProps}
     >
       <div className='fieldswitch-label'>{label}</div>
       <div className='fieldswitch-btn left' onClick={prev}>
