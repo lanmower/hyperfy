@@ -9,6 +9,7 @@ import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { importApp } from '../extras/appTools.js'
 import { EVENT } from '../constants/EventNames.js'
+import { ACTION_CONFIGS, MODE_LABELS } from './builder/ActionConfigs.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const SNAP_DISTANCE = 1
@@ -16,12 +17,6 @@ const SNAP_DEGREES = 5
 const PROJECT_SPEED = 10
 const PROJECT_MIN = 3
 const PROJECT_MAX = 50
-const modeLabels = {
-  grab: 'Grab',
-  translate: 'Translate',
-  rotate: 'Rotate',
-  scale: 'Scale',
-}
 
 const v1 = new THREE.Vector3()
 const e1 = new THREE.Euler()
@@ -103,44 +98,20 @@ export class ClientBuilder extends System {
   }
 
   updateActions() {
-    const actions = []
     const mode = this.getMode()
+    let actions = []
 
     if (!this.enabled) {
-      if (this.canBuild()) {
-      }
-    }
-
-    if (this.enabled && !this.selected) {
-      actions.push({ type: 'mouseLeft', label: this.getModeLabel() })
-      actions.push({ type: 'mouseRight', label: 'Inspect' })
-      actions.push({ type: 'custom', btn: '1234', label: 'Grab / Translate / Rotate / Scale' })
-      actions.push({ type: 'keyR', label: 'Duplicate' })
-      actions.push({ type: 'keyP', label: 'Pin' })
-      actions.push({ type: 'keyX', label: 'Destroy' })
-      actions.push({ type: 'space', label: 'Jump / Fly (Double-Tap)' })
-    }
-
-    if (this.enabled && this.selected && mode === 'grab') {
-      actions.push({ type: 'mouseLeft', label: 'Place' })
-      actions.push({ type: 'mouseWheel', label: 'Rotate' })
-      actions.push({ type: 'mouseRight', label: 'Inspect' })
-      actions.push({ type: 'custom', btn: '1234', label: 'Grab / Translate / Rotate / Scale' })
-      actions.push({ type: 'keyF', label: 'Push' })
-      actions.push({ type: 'keyC', label: 'Pull' })
-      actions.push({ type: 'keyX', label: 'Destroy' })
-      actions.push({ type: 'controlLeft', label: 'No Snap (Hold)' })
-      actions.push({ type: 'space', label: 'Jump / Fly (Double-Tap)' })
-    }
-
-    if (this.enabled && this.selected && (mode === 'translate' || mode === 'rotate' || mode === 'scale')) {
-      actions.push({ type: 'mouseLeft', label: 'Select / Transform' })
-      actions.push({ type: 'mouseRight', label: 'Inspect' })
-      actions.push({ type: 'custom', btn: '1234', label: 'Grab / Translate / Rotate / Scale' })
-      actions.push({ type: 'keyT', label: this.getSpaceLabel() })
-      actions.push({ type: 'keyX', label: 'Destroy' })
-      actions.push({ type: 'controlLeft', label: 'No Snap (Hold)' })
-      actions.push({ type: 'space', label: 'Jump / Fly (Double-Tap)' })
+      actions = ACTION_CONFIGS.disabled
+    } else if (!this.selected) {
+      actions = [...ACTION_CONFIGS.noSelection]
+      actions[0].label = this.getModeLabel()
+    } else if (mode === 'grab') {
+      actions = ACTION_CONFIGS.grab
+    } else if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
+      actions = ACTION_CONFIGS.transform
+      const spaceAction = actions.find(a => a.type === 'keyT')
+      if (spaceAction) spaceAction.label = this.getSpaceLabel()
     }
 
     this.control.setActions(actions)
@@ -705,7 +676,7 @@ export class ClientBuilder extends System {
   }
 
   getModeLabel() {
-    return modeLabels[this.mode]
+    return MODE_LABELS[this.mode]
   }
 
   getEntityAtReticle() {
