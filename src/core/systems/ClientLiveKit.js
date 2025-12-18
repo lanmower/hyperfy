@@ -3,6 +3,8 @@ import { System } from './System.js'
 import { isBoolean } from 'lodash-es'
 import { Room, RoomEvent, ParticipantEvent, ScreenSharePresets } from 'livekit-client'
 import { EVENT } from '../constants/EventNames.js'
+import { TrackManager } from './livekit/TrackManager.js'
+import { ScreenManager } from './livekit/ScreenManager.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -36,8 +38,8 @@ export class ClientLiveKit extends System {
     this.levels = {}
     this.muted = new Set()
     this.voices = new Map()
-    this.screens = []
-    this.screenNodes = new Set()
+    this.trackManager = new TrackManager(this)
+    this.screenManager = new ScreenManager(this)
   }
 
   start() {
@@ -73,12 +75,12 @@ export class ClientLiveKit extends System {
         screenShareSimulcastLayers: [ScreenSharePresets.h1080fps30],
       },
     })
-    this.room.on(RoomEvent.TrackMuted, track => this.onTrackMuted(track))
-    this.room.on(RoomEvent.TrackUnmuted, track => this.onTrackUnmuted(track))
-    this.room.on(RoomEvent.LocalTrackPublished, pub => this.onLocalTrackPublished(pub))
-    this.room.on(RoomEvent.LocalTrackUnpublished, pub => this.onLocalTrackUnpublished(pub))
-    this.room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => this.onTrackSubscribed(track, pub, participant))
-    this.room.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => this.onTrackUnsubscribed(track, pub, participant))
+    this.room.on(RoomEvent.TrackMuted, track => this.trackManager.onTrackMuted(track))
+    this.room.on(RoomEvent.TrackUnmuted, track => this.trackManager.onTrackUnmuted(track))
+    this.room.on(RoomEvent.LocalTrackPublished, pub => this.trackManager.onLocalTrackPublished(pub))
+    this.room.on(RoomEvent.LocalTrackUnpublished, pub => this.trackManager.onLocalTrackUnpublished(pub))
+    this.room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => this.trackManager.onTrackSubscribed(track, pub, participant))
+    this.room.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => this.trackManager.onTrackUnsubscribed(track, pub, participant))
     this.room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, speaking => {
       const player = this.entities.player
       this.events.emit(EVENT.speaking, { playerId: player.data.id, speaking })
@@ -89,81 +91,6 @@ export class ClientLiveKit extends System {
       this.status.connected = true
       this.events.emit(EVENT.livekit, this.status)
     })
-  }
-
-  onTrackMuted(track) {
-    if (track.isLocal && track.source === 'microphone') {
-      this.status.mic = false
-      this.events.emit(EVENT.livekit, this.status)
-    }
-  }
-
-  onTrackUnmuted(track) {
-    if (track.isLocal && track.source === 'microphone') {
-      this.status.mic = true
-      this.events.emit(EVENT.livekit, this.status)
-    }
-  }
-
-  onLocalTrackPublished(publication) {
-    const track = publication.track
-    const playerId = this.network.id
-    if (publication.source === 'microphone') {
-      this.status.mic = true
-      this.events.emit(EVENT.livekit, this.status)
-    }
-    if (publication.source === 'screen_share') {
-      const metadata = JSON.parse(this.room.localParticipant.metadata || '{}')
-      const targetId = metadata.screenTargetId
-      this.status.screenshare = targetId
-      const screen = this.createPlayerScreen({ playerId, targetId, track, publication })
-      this.addScreen(screen)
-      this.events.emit(EVENT.livekit, this.status)
-    }
-  }
-
-  onLocalTrackUnpublished(publication) {
-    const playerId = this.network.id
-    if (publication.source === 'microphone') {
-      this.status.mic = false
-      this.events.emit(EVENT.livekit, this.status)
-    }
-    if (publication.source === 'screen_share') {
-      const screen = this.screens.find(s => s.playerId === playerId)
-      this.removeScreen(screen)
-      this.status.screenshare = null
-      this.events.emit(EVENT.livekit, this.status)
-    }
-  }
-
-  onTrackSubscribed(track, publication, participant) {
-    const playerId = participant.identity
-    const player = this.entities.getPlayer(playerId)
-    if (!player) return console.error('onTrackSubscribed failed: no player')
-    if (track.source === 'microphone') {
-      const level = this.levels[playerId] || this.defaultLevel
-      const muted = this.muted.has(playerId)
-      this.createVoiceController(player, level, muted, track, participant)
-    }
-    if (track.source === 'screen_share') {
-      const metadata = JSON.parse(participant.metadata || '{}')
-      const targetId = metadata.screenTargetId
-      const screen = this.createPlayerScreen({ playerId, targetId, track, publication })
-      this.addScreen(screen)
-    }
-  }
-
-  onTrackUnsubscribed(track, publication, participant) {
-    const playerId = participant.identity
-    if (track.source === 'microphone') {
-      const voice = this.voices.get(playerId)
-      voice?.destroy()
-      this.voices.delete(playerId)
-    }
-    if (track.source === 'screen_share') {
-      const screen = this.screens.find(s => s.playerId === playerId)
-      this.removeScreen(screen)
-    }
   }
 
   createVoiceController(player, level, muted, track, participant) {
@@ -244,40 +171,6 @@ export class ClientLiveKit extends System {
     this.voices.set(player.data.id, voice)
   }
 
-  addScreen(screen) {
-    this.screens.push(screen)
-    for (const node of this.screenNodes) {
-      if (node._screenId === screen.targetId) {
-        node.needsRebuild = true
-        node.setDirty()
-      }
-    }
-  }
-
-  removeScreen(screen) {
-    screen.destroy()
-    this.screens = this.screens.filter(s => s !== screen)
-    for (const node of this.screenNodes) {
-      if (node._screenId === screen.targetId) {
-        node.needsRebuild = true
-        node.setDirty()
-      }
-    }
-  }
-
-  createPlayerScreen({ playerId, targetId, track, publication }) {
-    const elem = document.createElement('video')
-    elem.playsInline = true
-    elem.muted = true
-    track.attach(elem)
-    const texture = new THREE.VideoTexture(elem)
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.minFilter = THREE.LinearFilter
-    texture.magFilter = THREE.LinearFilter
-    texture.anisotropy = this.world.graphics.maxAnisotropy
-    texture.needsUpdate = true
-    return { playerId, targetId, track, publication, texture, elem }
-  }
 
   setMuted(playerId, muted) {
     if (muted && this.muted.has(playerId)) return
@@ -328,31 +221,18 @@ export class ClientLiveKit extends System {
   }
 
   setScreenShareTarget(targetId = null) {
-    if (!this.room) return console.error('[livekit] setScreenShareTarget failed (not connected)')
-    if (this.status.screenshare === targetId) return
-    const metadata = JSON.stringify({ screenTargetId: targetId })
-    this.room.localParticipant.setMetadata(metadata)
-    this.room.localParticipant.setScreenShareEnabled(!!targetId, {})
+    this.screenManager.setScreenShareTarget(targetId)
   }
 
   registerScreenNode(node) {
-    this.screenNodes.add(node)
-    let match
-    for (const screen of this.screens) {
-      if (screen.targetId === node._screenId) {
-        match = screen
-      }
-    }
-    return match
+    return this.screenManager.registerScreenNode(node)
   }
 
   unregisterScreenNode(node) {
-    this.screenNodes.delete(node)
+    this.screenManager.unregisterScreenNode(node)
   }
 
   destroy() {
-    this.screens.forEach(screen => screen.destroy())
-    this.screens = []
-    this.screenNodes.clear()
+    this.screenManager.destroy()
   }
 }
