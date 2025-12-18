@@ -14,6 +14,7 @@ import { BlueprintLoader } from './app/BlueprintLoader.js'
 import { ScriptExecutor } from './app/ScriptExecutor.js'
 import { EventManager } from './app/EventManager.js'
 import { ProxyFactory } from './app/ProxyFactory.js'
+import { PropertyHandlerMixin } from '../mixins/PropertyHandlerMixin.js'
 
 const Modes = {
   ACTIVE: 'active',
@@ -121,50 +122,55 @@ export class App extends BaseEntity {
   }
 
   modify(data) {
-    let rebuild
-    if (data.hasOwnProperty('blueprint')) {
-      this.data.blueprint = data.blueprint
-      rebuild = true
+    const handlers = {
+      blueprint: (value) => {
+        this.data.blueprint = value
+        return true
+      },
+      uploader: (value) => {
+        this.data.uploader = value
+        return true
+      },
+      mover: (value) => {
+        this.data.mover = value
+        return true
+      },
+      position: (value) => {
+        this.data.position = value
+        if (this.data.mover) {
+          this.networkPos.pushArray(value)
+          return false
+        }
+        return true
+      },
+      quaternion: (value) => {
+        this.data.quaternion = value
+        if (this.data.mover) {
+          this.networkQuat.pushArray(value)
+          return false
+        }
+        return true
+      },
+      scale: (value) => {
+        this.data.scale = value
+        if (this.data.mover) {
+          this.networkSca.pushArray(value)
+          return false
+        }
+        return true
+      },
+      pinned: (value) => {
+        this.data.pinned = value
+        return false
+      },
+      state: (value) => {
+        this.data.state = value
+        return true
+      },
     }
-    if (data.hasOwnProperty('uploader')) {
-      this.data.uploader = data.uploader
-      rebuild = true
-    }
-    if (data.hasOwnProperty('mover')) {
-      this.data.mover = data.mover
-      rebuild = true
-    }
-    if (data.hasOwnProperty('position')) {
-      this.data.position = data.position
-      if (this.data.mover) {
-        this.networkPos.pushArray(data.position)
-      } else {
-        rebuild = true
-      }
-    }
-    if (data.hasOwnProperty('quaternion')) {
-      this.data.quaternion = data.quaternion
-      if (this.data.mover) {
-        this.networkQuat.pushArray(data.quaternion)
-      } else {
-        rebuild = true
-      }
-    }
-    if (data.hasOwnProperty('scale')) {
-      this.data.scale = data.scale
-      if (this.data.mover) {
-        this.networkSca.pushArray(data.scale)
-      } else {
-        rebuild = true
-      }
-    }
-    if (data.hasOwnProperty('pinned')) {
-      this.data.pinned = data.pinned
-    }
-    if (data.hasOwnProperty('state')) {
-      this.data.state = data.state
-      rebuild = true
-    }
+
+    const results = PropertyHandlerMixin.applyPropertyHandlers(this, data, handlers)
+    const rebuild = Object.values(results).some(v => v === true)
     if (rebuild) {
       this.build()
     }
