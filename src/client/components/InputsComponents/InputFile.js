@@ -1,85 +1,20 @@
 import { css } from '@firebolt-dev/css'
-import { useRef, useState } from 'react'
 import { FileIcon, LoaderIcon, XIcon } from 'lucide-react'
-import { hashFile } from '../../../core/utils-client.js'
-import { useUpdate } from '../useUpdate.js'
-
-export const fileKinds = {
-  avatar: {
-    type: 'avatar',
-    accept: '.vrm',
-    exts: ['vrm'],
-    placeholder: '.vrm',
-  },
-  emote: {
-    type: 'emote',
-    accept: '.glb',
-    exts: ['glb'],
-    placeholder: '.glb',
-  },
-  model: {
-    type: 'model',
-    accept: '.glb',
-    exts: ['glb'],
-    placeholder: '.glb',
-  },
-  texture: {
-    type: 'texture',
-    accept: '.jpg,.jpeg,.png,.webp',
-    exts: ['jpg', 'jpeg', 'png', 'webp'],
-    placeholder: '.jpg / .png / .webp',
-  },
-  hdr: {
-    type: 'hdr',
-    accept: '.hdr',
-    exts: ['hdr'],
-    placeholder: '.hdr',
-  },
-  audio: {
-    type: 'audio',
-    accept: '.mp3',
-    exts: ['mp3'],
-    placeholder: '.mp3',
-  },
-}
+import { useFileUpload } from '../hooks/index.js'
 
 export function InputFile({ world, kind: kindName, value, onChange }) {
-  const nRef = useRef(0)
-  const update = useUpdate()
-  const [loading, setLoading] = useState(null)
-  const kind = fileKinds[kindName]
+  const { kind, loading, set, remove } = useFileUpload(world, kindName)
+
   if (!kind) return null
-  const set = async e => {
-    const n = ++nRef.current
-    update()
-    const file = e.target.files[0]
-    if (!file) return
-    const ext = file.name.split('.').pop().toLowerCase()
-    if (!kind.exts.includes(ext)) {
-      return console.error(`attempted invalid file extension for ${kindName}: ${ext}`)
-    }
-    const hash = await hashFile(file)
-    const filename = `${hash}.${ext}`
-    const url = `asset://${filename}`
-    const newValue = {
-      type: kind.type,
-      name: file.name,
-      url,
-    }
-    setLoading(newValue)
-    await world.network.upload(file)
-    if (nRef.current !== n) return
-    world.loader.insert(kind.type, url, file)
-    setLoading(null)
-    onChange(newValue)
-  }
-  const remove = e => {
+
+  const label = loading?.name || value?.name
+
+  const onRemove = e => {
     e.preventDefault()
     e.stopPropagation()
-    onChange(null)
+    remove(onChange)
   }
-  const n = nRef.current
-  const label = loading?.name || value?.name
+
   return (
     <label
       className='inputfile'
@@ -98,9 +33,7 @@ export function InputFile({ world, kind: kindName, value, onChange }) {
           left: -9999px;
           opacity: 0;
         }
-        svg {
-          line-height: 0;
-        }
+        svg { line-height: 0; }
         .inputfile-placeholder {
           flex: 1;
           font-size: 14px;
@@ -130,16 +63,10 @@ export function InputFile({ world, kind: kindName, value, onChange }) {
           align-items: center;
           justify-content: center;
           @keyframes spin {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
           }
-          svg {
-            animation: spin 1s linear infinite;
-          }
+          svg { animation: spin 1s linear infinite; }
         }
       `}
     >
@@ -148,7 +75,7 @@ export function InputFile({ world, kind: kindName, value, onChange }) {
       {label && <div className='inputfile-name'>{label}</div>}
       {value && !loading && (
         <div className='inputfile-x'>
-          <XIcon size={14} onClick={remove} />
+          <XIcon size={14} onClick={onRemove} />
         </div>
       )}
       {loading && (
@@ -156,7 +83,7 @@ export function InputFile({ world, kind: kindName, value, onChange }) {
           <LoaderIcon size={14} />
         </div>
       )}
-      <input key={n} type='file' onChange={set} accept={kind.accept} />
+      <input type='file' onChange={e => set(e.target.files[0], onChange)} accept={kind.accept} />
     </label>
   )
 }
