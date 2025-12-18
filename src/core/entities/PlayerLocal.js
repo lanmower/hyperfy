@@ -12,10 +12,6 @@ import { isBoolean, isNumber } from 'lodash-es'
 import { hasRank, Ranks } from '../extras/ranks.js'
 import { Modes } from '../constants/AnimationModes.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
-import { PlayerPermissions } from './player/PlayerPermissions.js'
-import { PlayerInputHandler } from './player/PlayerInputHandler.js'
-import { PlayerUIManager } from './player/PlayerUIManager.js'
-import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
 import { PlayerCameraManager } from './player/PlayerCameraManager.js'
 import { EVENT } from '../constants/EventNames.js'
 
@@ -78,15 +74,38 @@ export class PlayerLocal extends BaseEntity {
     this.base.quaternion.fromArray(this.data.quaternion)
 
     this.aura = createNode('group')
-    this.ui = new PlayerUIManager(this, this.world)
-    this.ui.addToAura(this.aura)
 
-    Object.defineProperty(this, 'nametag', { get: () => this.ui.nametag })
-    Object.defineProperty(this, 'bubble', { get: () => this.ui.bubble })
-    Object.defineProperty(this, 'bubbleBox', { get: () => this.ui.bubbleBox })
-    Object.defineProperty(this, 'bubbleText', { get: () => this.ui.bubbleText })
-    Object.defineProperty(this, 'avatar', { get: () => this.avatarManager.avatar })
-    Object.defineProperty(this, 'avatarUrl', { get: () => this.avatarManager.avatarUrl, set: (v) => { this.avatarManager.avatarUrl = v } })
+    this.nametag = createNode('nametag', { label: '', health: this.data.health, active: false })
+    this.bubble = createNode('ui', {
+      id: 'bubble',
+      width: 300,
+      height: 512,
+      pivot: 'bottom-center',
+      billboard: 'full',
+      scaler: [3, 30],
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      active: false,
+    })
+    this.bubbleBox = createNode('uiview', {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      borderRadius: 10,
+      padding: 10,
+    })
+    this.bubbleText = createNode('uitext', {
+      color: 'white',
+      fontWeight: 100,
+      lineHeight: 1.4,
+      fontSize: 16,
+    })
+    this.bubble.add(this.bubbleBox)
+    this.bubbleBox.add(this.bubbleText)
+
+    this.aura.add(this.nametag)
+    this.aura.add(this.bubble)
+
+    this.avatar = null
+    this.avatarUrl = null
     Object.defineProperty(this, 'camHeight', { get: () => this.cam.camHeight, set: (v) => { this.cam.camHeight = v } })
 
     this.aura.activate({ world: this.world, entity: this })
@@ -107,11 +126,35 @@ export class PlayerLocal extends BaseEntity {
   }
 
   getAvatarUrl() {
-    return this.avatarManager.getAvatarUrl()
+    return this.data.sessionAvatar || this.data.avatar || 'asset://avatar.vrm'
   }
 
-  applyAvatar() {
-    return this.avatarManager.applyAvatar()
+  async applyAvatar() {
+    const avatarUrl = this.getAvatarUrl()
+    if (this.avatarUrl === avatarUrl) return
+
+    return new Promise((resolve, reject) => {
+      this.world.loader
+        .load('avatar', avatarUrl)
+        .then(src => {
+          if (this.avatar) this.avatar.deactivate()
+          this.avatar = src.toNodes().get('avatar')
+          this.avatar.disableRateCheck()
+          this.base.add(this.avatar)
+          this.avatarUrl = avatarUrl
+          this.camHeight = this.avatar.height * 0.9
+          this.nametag.position.y = this.avatar.getHeadToHeight() + 0.2
+          this.bubble.position.y = this.avatar.getHeadToHeight() + 0.2
+          if (!this.bubble.active) {
+            this.nametag.active = true
+          }
+          resolve(this.avatar)
+        })
+        .catch(err => {
+          console.error(err)
+          reject(err)
+        })
+    })
   }
 
   initCapsule() {
@@ -164,9 +207,6 @@ export class PlayerLocal extends BaseEntity {
     })
 
     this.physics = new PlayerPhysics(this.world, this)
-    this.permissions = new PlayerPermissions(this, this.world)
-    this.inputHandler = new PlayerInputHandler(this.world.camera, this.world)
-    this.avatarManager = new PlayerAvatarManager(this, this.world)
   }
 
   initControl() {
