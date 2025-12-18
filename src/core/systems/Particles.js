@@ -1,8 +1,11 @@
+// Particle system with instanced rendering, custom shaders, worker physics
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
-import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { DEG2RAD } from '../extras/general.js'
 import { uuid } from '../utils.js'
+import { ParticleGeometryBuilder } from './particles/ParticleGeometryBuilder.js'
+import { ParticleMaterialFactory } from './particles/ParticleMaterialFactory.js'
+import { ParticleWorkerCoordinator } from './particles/ParticleWorkerCoordinator.js'
 
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const v1 = new THREE.Vector3()
@@ -59,56 +62,13 @@ export class Particles extends System {
     const id = uuid()
     const config = node.getConfig()
 
-    const geometry = new THREE.PlaneGeometry(1, 1)
+    const { geometry, attributes } = ParticleGeometryBuilder.create(node._max)
+    const { aPosition, aRotation, aDirection, aSize, aColor, aAlpha, aEmissive, aUV } = attributes
 
-    const aPosition = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 3), 3)
-    aPosition.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aPosition', aPosition)
-
-    const aRotation = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 1), 1)
-    aRotation.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aRotation', aRotation)
-
-    const aDirection = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 3), 3)
-    aDirection.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aDirection', aDirection)
-
-    const aSize = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 1), 1)
-    aSize.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aSize', aSize)
-
-    const aColor = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 3), 3)
-    aColor.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aColor', aColor)
-
-    const aAlpha = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 1), 1)
-    aAlpha.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aAlpha', aAlpha)
-
-    const aEmissive = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 1), 1)
-    aEmissive.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aEmissive', aEmissive)
-
-    const aUV = new THREE.InstancedBufferAttribute(new Float32Array(node._max * 4), 4)
-    aUV.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('aUV', aUV)
-
-    const next = {
-      aPosition: new Float32Array(node._max * 3),
-      aRotation: new Float32Array(node._max * 1),
-      aDirection: new Float32Array(node._max * 3),
-      aSize: new Float32Array(node._max * 1),
-      aColor: new Float32Array(node._max * 3),
-      aAlpha: new Float32Array(node._max * 1),
-      aEmissive: new Float32Array(node._max * 1),
-      aUV: new Float32Array(node._max * 4),
-    }
-
-    const texture = new THREE.Texture()
-    texture.colorSpace = THREE.SRGBColorSpace
+    const next = ParticleGeometryBuilder.createNextBuffers(node._max)
 
     const uniforms = {
-      uTexture: { value: texture },
+      uTexture: { value: new THREE.Texture() },
       uBillboard: { value: billboardModeInts[node._billboard] },
       uOrientation: node._billboard === 'full' ? this.uOrientationFull : this.uOrientationY,
     }
@@ -117,106 +77,7 @@ export class Particles extends System {
       uniforms.uTexture.value = texture
     })
 
-    const material = new CustomShaderMaterial({
-      baseMaterial: node._lit ? THREE.MeshStandardMaterial : THREE.MeshBasicMaterial,
-      ...(node._lit ? { roughness: 1, metalness: 0 } : {}),
-      blending: node._blending === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
-      transparent: true,
-      premultipliedAlpha: true,
-      color: 'white',
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      depthTest: true,
-      uniforms,
-      vertexShader: `
-        attribute vec3 aPosition;
-        attribute float aRotation;
-        attribute vec3 aDirection;
-        attribute float aSize;
-        attribute vec3 aColor;
-        attribute float aAlpha;
-        attribute float aEmissive;
-        attribute vec4 aUV;
-
-        uniform float uBillboard;
-        uniform vec4 uOrientation;
-
-        varying vec2 vUv;
-        varying vec4 vColor;
-        varying float vEmissive;
-
-        const float DEG2RAD = ${DEG2RAD};
-
-        mat3 rotationFromDirection(vec3 dir) {
-          vec3 n = normalize(dir);
-          vec3 up = vec3(0.0, 1.0, 0.0);
-          if (abs(dot(n, up)) > 0.99) {
-            up = vec3(1.0, 0.0, 0.0);
-          }
-          vec3 right = normalize(cross(up, n));
-          up = cross(n, right);
-          return mat3(
-            right,
-            up,
-            n
-          );
-        }
-
-        vec3 applyQuaternion(vec3 pos, vec4 quat) {
-          vec3 qv = vec3(quat.x, quat.y, quat.z);
-          vec3 t = 2.0 * cross(qv, pos);
-          return pos + quat.w * t + cross(qv, t);
-        }
-
-        void main() {
-          vUv = vec2(
-            mix(aUV.x, aUV.z, uv.x),
-            mix(aUV.y, aUV.w, uv.y)
-          );
-
-          vec3 newPosition = position;
-
-          newPosition.xy *= aSize;
-
-          float rot = aRotation * DEG2RAD;
-          float cosRot = cos(rot);
-          float sinRot = sin(rot);
-          newPosition.xy = vec2(
-            newPosition.x * cosRot + newPosition.y * sinRot,
-            -newPosition.x * sinRot + newPosition.y * cosRot
-          );
-
-          if (uBillboard < 0.1) {
-            newPosition = applyQuaternion(newPosition, uOrientation);
-          } else if (uBillboard < 1.1) {
-            newPosition = applyQuaternion(newPosition, uOrientation);
-          } else {
-            newPosition = rotationFromDirection(aDirection) * newPosition;
-          }
-
-          newPosition += aPosition;
-
-          csm_Position = newPosition;
-
-          vColor = vec4(aColor.rgb, aAlpha);
-          vEmissive = aEmissive;
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D uTexture;
-
-        varying vec2 vUv;
-        varying vec4 vColor;
-        varying float vEmissive;
-
-        void main() {
-          vec4 texColor = texture(uTexture, vUv);
-          vec4 baseColor = texColor * vColor;
-          baseColor.rgb *= vEmissive;
-          csm_DiffuseColor = baseColor;
-        }
-      `,
-    })
+    const material = ParticleMaterialFactory.create(node, uniforms, this.loader)
     const mesh = new THREE.InstancedMesh(geometry, material, node._max)
     mesh._node = node
     mesh.count = 0
@@ -227,7 +88,6 @@ export class Particles extends System {
     this.stage.scene.add(mesh)
 
     let matrixWorld = node.matrixWorld
-
     let pending = false
     let skippedDelta = 0
 
