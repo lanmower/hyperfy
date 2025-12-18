@@ -1,11 +1,10 @@
-import moment from 'moment'
 import { emoteUrls } from '../extras/playerEmotes.js'
-import { readPacket, writePacket } from '../packets.js'
+import { writePacket } from '../packets.js'
 import { storage } from '../storage.js'
-import { uuid } from '../utils.js'
-import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
+import { ClientWebSocketManager } from './ClientNetwork/ClientWebSocketManager.js'
+import { ClientUploadManager } from './ClientNetwork/ClientUploadManager.js'
 
 export class ClientNetwork extends BaseNetwork {
   static DEPS = {
@@ -23,7 +22,8 @@ export class ClientNetwork extends BaseNetwork {
 
   constructor(world) {
     super(world, clientNetworkHandlers)
-    this.ws = null
+    this.wsManager = new ClientWebSocketManager(this)
+    this.uploadManager = new ClientUploadManager(this)
     this.apiUrl = null
     this.id = null
     this.isClient = true
@@ -34,15 +34,7 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   init({ wsUrl, name, avatar }) {
-    const authToken = storage.get('authToken')
-    let url = `${wsUrl}?authToken=${authToken}`
-    if (name) url += `&name=${encodeURIComponent(name)}`
-    if (avatar) url += `&avatar=${encodeURIComponent(avatar)}`
-    this.ws = new WebSocket(url)
-    this.ws.binaryType = 'arraybuffer'
-    this.ws.addEventListener('message', this.onPacket)
-    this.ws.addEventListener('close', this.onClose)
-    this.protocol.isConnected = true
+    this.wsManager.init({ wsUrl, name, avatar })
   }
 
   send(name, data) {
@@ -51,26 +43,11 @@ export class ClientNetwork extends BaseNetwork {
       console.log('->', name, data)
     }
     const packet = writePacket(name, data)
-    this.ws.send(packet)
+    this.wsManager.send(packet)
   }
 
   async upload(file) {
-    {
-      const hash = await hashFile(file)
-      const ext = file.name.split('.').pop().toLowerCase()
-      const filename = `${hash}.${ext}`
-      const url = `${this.apiUrl}/upload-check?filename=${filename}`
-      const resp = await fetch(url)
-      const data = await resp.json()
-      if (data.exists) return // console.log('already uploaded:', filename)
-    }
-    const form = new FormData()
-    form.append('file', file)
-    const url = `${this.apiUrl}/upload`
-    await fetch(url, {
-      method: 'POST',
-      body: form,
-    })
+    return this.uploadManager.upload(file)
   }
 
   enqueue(method, data) {
@@ -79,10 +56,6 @@ export class ClientNetwork extends BaseNetwork {
 
   getTime() {
     return (performance.now() + this.serverTimeOffset) / 1000
-  }
-
-  onPacket = e => {
-    this.protocol.processPacket(e.data)
   }
 
   onSnapshot(data) {
@@ -216,26 +189,7 @@ export class ClientNetwork extends BaseNetwork {
     this.send('clearErrors')
   }
 
-  onClose = code => {
-    this.chat.add({
-      id: uuid(),
-      from: null,
-      fromId: null,
-      body: `You have been disconnected.`,
-      createdAt: moment().toISOString(),
-    })
-    this.events.emit('disconnect', code || true)
-    console.log('disconnect', code)
-  }
-
   destroy() {
-    if (this.ws) {
-      this.ws.removeEventListener('message', this.onPacket)
-      this.ws.removeEventListener('close', this.onClose)
-      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-        this.ws.close()
-      }
-      this.ws = null
-    }
+    this.wsManager.destroy()
   }
 }

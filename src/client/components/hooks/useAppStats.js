@@ -33,21 +33,20 @@ function aggregateAppStats(world, refresh) {
   let items = []
   for (const [_, entity] of world.entities.items) {
     if (!entity.isApp) continue
-    const blueprint = world.blueprints.get(entity.data.blueprint)
-    if (!blueprint) continue
-    if (!blueprint.model) continue
+    const blueprint = entity.blueprint
+    if (!blueprint || !blueprint.model) continue
     let item = itemMap.get(blueprint.id)
     if (!item) {
-      let count = 0
       const type = blueprint.model.endsWith('.vrm') ? 'avatar' : 'model'
       const model = world.loader.get(type, blueprint.model)
-      const stats = model?.getStats() || defaultStats
+      if (!model) continue
+      const stats = model.getStats()
       const name = blueprint.name || '-'
       item = {
         blueprint,
         keywords: name.toLowerCase(),
         name,
-        count,
+        count: 0,
         geometries: stats.geometries.size,
         triangles: stats.triangles,
         textureBytes: stats.textureBytes,
@@ -80,9 +79,7 @@ export function useAppStats(world, { query, sortKey = 'count', ascending = false
   }, [items, sortKey, ascending, query])
 
   useEffect(() => {
-    function onChange() {
-      // Should trigger refresh update in parent
-    }
+    function onChange() {}
     world.entities.on('added', onChange)
     world.entities.on('removed', onChange)
     return () => {
@@ -96,3 +93,5 @@ export function useAppStats(world, { query, sortKey = 'count', ascending = false
     formatNumber,
   }
 }
+
+export { formatNumber }

@@ -1,10 +1,10 @@
 import * as THREE from '../extras/three.js'
-import { isNumber } from 'lodash-es'
 
 import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
-
-const vec2 = new THREE.Vector2()
+import { MaterialFactory } from './stage/MaterialFactory.js'
+import { RaycastManager } from './stage/RaycastManager.js'
+import { Model } from './stage/Model.js'
 
 export class Stage extends System {
   static DEPS = {
@@ -15,20 +15,17 @@ export class Stage extends System {
   constructor(world) {
     super(world)
     this.scene = new THREE.Scene()
-    this.models = new Map() // id -> Model
+    this.models = new Map()
     this.octree = new LooseOctree({
       scene: this.scene,
       center: new THREE.Vector3(0, 0, 0),
       size: 10,
     })
     this.defaultMaterial = null
-    this.raycaster = new THREE.Raycaster()
-    this.raycaster.firstHitOnly = true
-    this.raycastHits = []
-    this.maskNone = new THREE.Layers()
-    this.maskNone.enableAll()
     this.dirtyNodes = new Set()
     this.setupMaterial = world.setupMaterial
+    this.materialFactory = new MaterialFactory(world)
+    this.raycastManager = new RaycastManager(this)
   }
 
   init({ viewport }) {
@@ -41,11 +38,11 @@ export class Stage extends System {
   }
 
   postUpdate() {
-    this.clean() // after update all matrices should be up to date for next step
+    this.clean()
   }
 
   postLateUpdate() {
-    this.clean() // after lateUpdate all matrices should be up to date for next step
+    this.clean()
   }
 
   getDefaultMaterial() {
@@ -110,254 +107,18 @@ export class Stage extends System {
   }
 
   createMaterial(options = {}) {
-    const self = this
-    const material = {}
-    let raw
-    if (options.raw) {
-      raw = options.raw.clone()
-      raw.onBeforeCompile = options.raw.onBeforeCompile
-    } else if (options.unlit) {
-      raw = new THREE.MeshBasicMaterial({
-        color: options.color || 'white',
-      })
-    } else {
-      raw = new THREE.MeshStandardMaterial({
-        color: options.color || 'white',
-        metalness: isNumber(options.metalness) ? options.metalness : 0,
-        roughness: isNumber(options.roughness) ? options.roughness : 1,
-      })
-    }
-    raw.shadowSide = THREE.BackSide // fix csm shadow banding
-    const textures = []
-    if (raw.map) {
-      raw.map = raw.map.clone()
-      textures.push(raw.map)
-    }
-    if (raw.emissiveMap) {
-      raw.emissiveMap = raw.emissiveMap.clone()
-      textures.push(raw.emissiveMap)
-    }
-    if (raw.normalMap) {
-      raw.normalMap = raw.normalMap.clone()
-      textures.push(raw.normalMap)
-    }
-    if (raw.bumpMap) {
-      raw.bumpMap = raw.bumpMap.clone()
-      textures.push(raw.bumpMap)
-    }
-    if (raw.roughnessMap) {
-      raw.roughnessMap = raw.roughnessMap.clone()
-      textures.push(raw.roughnessMap)
-    }
-    if (raw.metalnessMap) {
-      raw.metalnessMap = raw.metalnessMap.clone()
-      textures.push(raw.metalnessMap)
-    }
-    this.world.setupMaterial(raw)
-    const proxy = {
-      get id() {
-        return raw.uuid
-      },
-      get textureX() {
-        return textures[0]?.offset.x
-      },
-      set textureX(val) {
-        for (const tex of textures) {
-          tex.offset.x = val
-        }
-        raw.needsUpdate = true
-      },
-      get textureY() {
-        return textures[0]?.offset.y
-      },
-      set textureY(val) {
-        for (const tex of textures) {
-          tex.offset.y = val
-        }
-        raw.needsUpdate = true
-      },
-      get color() {
-        return raw.color
-      },
-      set color(val) {
-        if (typeof val !== 'string') {
-          throw new Error('[material] color must be a string (e.g. "red", "#ff0000", "rgb(255,0,0)")')
-        }
-        raw.color.set(val)
-        raw.needsUpdate = true
-      },
-      get emissiveIntensity() {
-        return raw.emissiveIntensity
-      },
-      set emissiveIntensity(value) {
-        if (!isNumber(value)) {
-          throw new Error('[material] emissiveIntensity not a number')
-        }
-        raw.emissiveIntensity = value
-        raw.needsUpdate = true
-      },
-      get fog() {
-        return raw.fog
-      },
-      set fog(value) {
-        raw.fog = value
-        raw.needsUpdate = true
-      },
-      get _ref() {
-        if (world._allowMaterial) return material
-      },
-    }
-    material.raw = raw
-    material.proxy = proxy
-    return material
+    return this.materialFactory.createMaterial(options)
   }
 
-  raycastPointer(position, layers = this.maskNone, min = 0, max = Infinity) {
-    if (!this.viewport) throw new Error('no viewport')
-    const rect = this.viewport.getBoundingClientRect()
-    vec2.x = ((position.x - rect.left) / rect.width) * 2 - 1
-    vec2.y = -((position.y - rect.top) / rect.height) * 2 + 1
-    this.raycaster.setFromCamera(vec2, this.camera)
-    this.raycaster.layers = layers
-    this.raycaster.near = min
-    this.raycaster.far = max
-    this.raycastHits.length = 0
-    this.octree.raycast(this.raycaster, this.raycastHits)
-    return this.raycastHits
+  raycastPointer(position, layers, min, max) {
+    return this.raycastManager.raycastPointer(position, layers, min, max)
   }
 
-  raycastReticle(layers = this.maskNone, min = 0, max = Infinity) {
-    if (!this.viewport) throw new Error('no viewport')
-    vec2.x = 0
-    vec2.y = 0
-    this.raycaster.setFromCamera(vec2, this.world.camera)
-    this.raycaster.layers = layers
-    this.raycaster.near = min
-    this.raycaster.far = max
-    this.raycastHits.length = 0
-    this.octree.raycast(this.raycaster, this.raycastHits)
-    return this.raycastHits
+  raycastReticle(layers, min, max) {
+    return this.raycastManager.raycastReticle(layers, min, max)
   }
 
   destroy() {
     this.models.clear()
-  }
-}
-
-class Model {
-  constructor(stage, geometry, material, castShadow, receiveShadow) {
-    material = stage.createMaterial({ raw: material })
-
-    this.stage = stage
-    this.geometry = geometry
-    this.material = material
-    this.castShadow = castShadow
-    this.receiveShadow = receiveShadow
-
-    if (!this.geometry.boundsTree) this.geometry.computeBoundsTree()
-
-
-    this.iMesh = new THREE.InstancedMesh(this.geometry, this.material.raw, 10)
-    this.iMesh.castShadow = this.castShadow
-    this.iMesh.receiveShadow = this.receiveShadow
-    this.iMesh.matrixAutoUpdate = false
-    this.iMesh.matrixWorldAutoUpdate = false
-    this.iMesh.frustumCulled = false
-    this.iMesh.getEntity = this.getEntity.bind(this)
-    this.items = [] // { matrix, node }
-    this.dirty = true
-  }
-
-  create(node, matrix) {
-    const item = {
-      idx: this.items.length,
-      node,
-      matrix,
-    }
-    this.items.push(item)
-    this.iMesh.setMatrixAt(item.idx, item.matrix) // silently fails if too small, gets increased in clean()
-    this.dirty = true
-    const sItem = {
-      matrix,
-      geometry: this.geometry,
-      material: this.material.raw,
-      getEntity: () => this.items[item.idx]?.node.ctx.entity,
-      node,
-    }
-    this.stage.octree.insert(sItem)
-    return {
-      material: this.material.proxy,
-      move: matrix => {
-        this.move(item, matrix)
-        this.stage.octree.move(sItem)
-      },
-      destroy: () => {
-        this.destroy(item)
-        this.stage.octree.remove(sItem)
-      },
-    }
-  }
-
-  move(item, matrix) {
-    item.matrix.copy(matrix)
-    this.iMesh.setMatrixAt(item.idx, matrix)
-    this.dirty = true
-  }
-
-  destroy(item) {
-    const last = this.items[this.items.length - 1]
-    const isOnly = this.items.length === 1
-    const isLast = item === last
-    if (isOnly) {
-      this.items = []
-      this.dirty = true
-    } else if (isLast) {
-      this.items.pop()
-      this.dirty = true
-    } else {
-      this.iMesh.setMatrixAt(item.idx, last.matrix)
-      last.idx = item.idx
-      this.items[item.idx] = last
-      this.items.pop()
-      this.dirty = true
-    }
-  }
-
-  clean() {
-    if (!this.dirty) return
-    const size = this.iMesh.instanceMatrix.array.length / 16
-    const count = this.items.length
-    if (size < this.items.length) {
-      const newSize = count + 100
-      this.iMesh.resize(newSize)
-      for (let i = size; i < count; i++) {
-        this.iMesh.setMatrixAt(i, this.items[i].matrix)
-      }
-    }
-    this.iMesh.count = count
-    if (this.iMesh.parent && !count) {
-      this.stage.scene.remove(this.iMesh)
-      this.dirty = false
-      return
-    }
-    if (!this.iMesh.parent && count) {
-      this.stage.scene.add(this.iMesh)
-    }
-    this.iMesh.instanceMatrix.needsUpdate = true
-    this.dirty = false
-  }
-
-  getEntity(instanceId) {
-    console.warn('TODO: remove if you dont ever see this')
-    return this.items[instanceId]?.node.ctx.entity
-  }
-
-  getTriangles() {
-    const geometry = this.geometry
-    if (geometry.index !== null) {
-      return geometry.index.count / 3
-    } else {
-      return geometry.attributes.position.count / 3
-    }
   }
 }

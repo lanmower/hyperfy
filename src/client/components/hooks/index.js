@@ -2,6 +2,6 @@ export { useSyncedState, useSyncedBool, useSyncedNumber } from './useSyncedState
 export { useFileUpload, fileKinds } from './useFileUpload.js'
 export { useGraphicsOptions } from './useGraphicsOptions.js'
 export { usePlayerList } from './usePlayerList.js'
-export { useAppStats } from './useAppStats.js'
+export { useAppStats, formatNumber } from './useAppStats.js'
 export { useWorldEvent, useWorldEvents, useEntityEvent, useWorldReady, useControlsChange, usePrefsChange } from './useWorldEvent.js'
 export { useFieldHint, useFieldText, useFieldNumber, useFieldVec3, useFieldRange, useFieldSwitch, useFieldTextarea, useFieldCurve, fieldLabelCss, fieldWrapperCss, fieldInputCss, useMenuHint, menuLabelCss, menuWrapperCss, menuInputCss } from './useFieldInput.js'

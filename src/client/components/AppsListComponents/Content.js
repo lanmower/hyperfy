@@ -1,5 +1,5 @@
 import { css } from '@firebolt-dev/css'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BoxIcon,
   BrickWallIcon,
@@ -10,90 +10,14 @@ import {
   OctagonXIcon,
   TriangleIcon,
 } from 'lucide-react'
-import { orderBy } from 'lodash-es'
 import { cls } from '../cls.js'
-import { formatBytes } from '../../../core/extras/formatBytes.js'
-import { useWorldEvents } from '../hooks/index.js'
-
-const defaultStats = {
-  geometries: 0,
-  triangles: 0,
-  textureBytes: 0,
-  fileBytes: 0,
-}
-
-function formatNumber(num) {
-  if (num === null || num === undefined || isNaN(num)) {
-    return '0'
-  }
-  const million = 1000000
-  const thousand = 1000
-  let result
-  if (num >= million) {
-    result = (num / million).toFixed(1) + 'M'
-  } else if (num >= thousand) {
-    result = (num / thousand).toFixed(1) + 'K'
-  } else {
-    result = Math.round(num).toString()
-  }
-  return result
-    .replace(/\.0+([KM])?$/, '$1')
-    .replace(/(\.\d+[1-9])0+([KM])?$/, '$1$2')
-}
+import { useAppStats, formatNumber } from '../hooks/useAppStats.js'
 
 export function Content({ world, query, perf, refresh, setRefresh }) {
   const [sort, setSort] = useState('count')
   const [asc, setAsc] = useState(false)
   const [target, setTarget] = useState(null)
-  let items = useMemo(() => {
-    const itemMap = new Map()
-    let items = []
-    for (const [_, entity] of world.entities.items) {
-      if (!entity.isApp) continue
-      const blueprint = world.blueprints.get(entity.data.blueprint)
-      if (!blueprint) continue
-      if (!blueprint.model) continue
-      let item = itemMap.get(blueprint.id)
-      if (!item) {
-        let count = 0
-        const type = blueprint.model.endsWith('.vrm') ? 'avatar' : 'model'
-        const model = world.loader.get(type, blueprint.model)
-        const stats = model?.getStats() || defaultStats
-        const name = blueprint.name || '-'
-        item = {
-          blueprint,
-          keywords: name.toLowerCase(),
-          name,
-          count,
-          geometries: stats.geometries.size,
-          triangles: stats.triangles,
-          textureBytes: stats.textureBytes,
-          textureSize: formatBytes(stats.textureBytes),
-          code: blueprint.script ? 1 : 0,
-          fileBytes: stats.fileBytes,
-          fileSize: formatBytes(stats.fileBytes),
-        }
-        itemMap.set(blueprint.id, item)
-      }
-      item.count++
-    }
-    for (const [_, item] of itemMap) {
-      items.push(item)
-    }
-    return items
-  }, [refresh])
-  items = useMemo(() => {
-    let newItems = items
-    if (query) {
-      query = query.toLowerCase()
-      newItems = newItems.filter(item => item.keywords.includes(query))
-    }
-    newItems = orderBy(newItems, sort, asc ? 'asc' : 'desc')
-    return newItems
-  }, [items, sort, asc, query])
-
-  const handleEntityChange = () => setRefresh(n => n + 1)
-  useWorldEvents(world.entities, { added: handleEntityChange, removed: handleEntityChange })
+  const { items } = useAppStats(world, { query, sortKey: sort, ascending: asc, refresh })
 
   const reorder = key => {
     if (sort === key) {
