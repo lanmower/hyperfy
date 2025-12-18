@@ -15,6 +15,9 @@ import { serverNetworkHandlers } from '../config/HandlerRegistry.js'
 import { serializeForNetwork } from '../schemas/ChatMessage.schema.js'
 import { errorObserver } from '../../server/services/ErrorObserver.js'
 import { EVENT } from '../constants/EventNames.js'
+import { FileUploadHandler } from './server/FileUploadHandler.js'
+import { ErrorHandlingService } from './server/ErrorHandlingService.js'
+import { WorldSaveManager } from './server/WorldSaveManager.js'
 
 const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60') // seconds
 const PING_RATE = 1 // seconds
@@ -50,6 +53,9 @@ export class ServerNetwork extends BaseNetwork {
     this.protocol.isServer = true
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
+    this.fileUploadHandler = new FileUploadHandler(this)
+    this.errorHandlingService = new ErrorHandlingService(this)
+    this.worldSaveManager = new WorldSaveManager(this)
     this.setupHotReload()
   }
 
@@ -128,49 +134,9 @@ export class ServerNetwork extends BaseNetwork {
     return this.protocol.getTime()
   }
 
-  save = async () => {
-    const counts = { upsertedBlueprints: 0, upsertedApps: 0, deletedApps: 0 }
-    const now = moment().toISOString()
-    for (const id of this.dirtyBlueprints) {
-      const blueprint = this.blueprints.get(id)
-      try {
-        await this.persistence.saveBlueprint(blueprint.id, blueprint, now, now)
-        counts.upsertedBlueprints++
-        this.dirtyBlueprints.delete(id)
-      } catch (err) {
-        console.log(`error saving blueprint: ${blueprint.id}`)
-        console.error(err)
-      }
-    }
-    for (const id of this.dirtyApps) {
-      const entity = this.entities.get(id)
-      if (entity) {
-        if (entity.data.uploader || entity.data.mover) continue
-        try {
-          await this.persistence.saveEntity(entity.data.id, entity.data, now, now)
-          counts.upsertedApps++
-          this.dirtyApps.delete(id)
-        } catch (err) {
-          console.log(`error saving entity: ${entity.data.id}`)
-          console.error(err)
-        }
-      } else {
-        await this.persistence.deleteEntity(id)
-        counts.deletedApps++
-        this.dirtyApps.delete(id)
-      }
-    }
-    const didSave = counts.upsertedBlueprints > 0 || counts.upsertedApps > 0 || counts.deletedApps > 0
-    if (didSave) {
-      console.log(`world saved (${counts.upsertedBlueprints} blueprints, ${counts.upsertedApps} apps, ${counts.deletedApps} deleted)`)
-    }
-    this.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
-  }
+  save = () => this.worldSaveManager.save()
 
-  saveSettings = async () => {
-    const data = this.settings.serialize()
-    await this.persistence.setConfig('settings', JSON.stringify(data))
-  }
+  saveSettings = () => this.worldSaveManager.saveSettings()
 
   async onConnection(ws, params) {
     try {
@@ -416,167 +382,21 @@ export class ServerNetwork extends BaseNetwork {
     socket.send('pong', time)
   }
 
-  onErrorEvent = (socket, errorEvent) => {
-    const metadata = {
-      realTime: true,
-      clientId: socket.id,
-      userId: socket.player?.data?.id,
-      userName: socket.player?.data?.name,
-      clientIP: socket.ws?.remoteAddress || 'unknown',
-      timestamp: Date.now()
-    }
+  onErrorEvent = (socket, errorEvent) => this.errorHandlingService.onErrorEvent(socket, errorEvent)
 
-    errorObserver.recordClientError(socket.id, errorEvent, metadata)
+  onErrorReport = (socket, data) => this.errorHandlingService.onErrorReport(socket, data)
 
-    if (this.errorMonitor) {
-      this.errorMonitor.receiveClientError({
-        error: errorEvent,
-        ...metadata
-      })
-    }
+  onMcpSubscribeErrors = (socket, options = {}) => this.errorHandlingService.onMcpSubscribeErrors(socket, options)
 
-    this.sockets.forEach(mcpSocket => {
-      if (mcpSocket.mcpErrorSubscription?.active) {
-        mcpSocket.send('mcpErrorEvent', {
-          error: errorEvent,
-          ...metadata
-        })
-      }
-    })
-  }
+  onGetErrors = (socket, options = {}) => this.errorHandlingService.onGetErrors(socket, options)
 
-  onErrorReport = (socket, data) => {
-    const metadata = {
-      realTime: data.realTime || false,
-      clientId: socket.id,
-      userId: socket.player?.data?.id,
-      userName: socket.player?.data?.name,
-      clientIP: socket.ws?.remoteAddress || 'unknown',
-      timestamp: Date.now()
-    }
+  onClearErrors = (socket) => this.errorHandlingService.onClearErrors(socket)
 
-    errorObserver.recordClientError(socket.id, data.error || data, metadata)
+  onFileUpload = (socket, data) => this.fileUploadHandler.onFileUpload(socket, data)
 
-    if (this.errorMonitor) {
-      this.errorMonitor.receiveClientError({
-        error: data.error || data,
-        ...metadata
-      })
-    }
+  onFileUploadCheck = (socket, data) => this.fileUploadHandler.onFileUploadCheck(socket, data)
 
-    this.sockets.forEach(mcpSocket => {
-      if (mcpSocket.mcpErrorSubscription?.active) {
-        mcpSocket.send('mcpErrorEvent', {
-          error: data.error || data,
-          ...metadata,
-          timestamp: new Date().toISOString(),
-          side: 'client-reported'
-        })
-      }
-    })
-  }
-
-  onMcpSubscribeErrors = (socket, options = {}) => {
-    if (!this.errorMonitor) return
-
-    const errorListener = (event, errorData) => {
-      if (event === 'error' || event === 'critical') {
-        socket.send('mcpErrorEvent', errorData)
-      }
-    }
-
-    socket.mcpErrorListener = errorListener
-    socket.mcpErrorSubscription = { active: true, options }
-    this.errorMonitor.listeners.add(errorListener)
-  }
-
-  onGetErrors = (socket, options = {}) => {
-    if (!this.errorMonitor) {
-      socket.send('errors', { errors: [], stats: null })
-      return
-    }
-    const errors = this.errorMonitor.getErrors(options)
-    const stats = this.errorMonitor.getStats()
-    socket.send('errors', { errors, stats })
-  }
-
-  onClearErrors = (socket) => {
-    if (!this.errorMonitor) {
-      socket.send('clearErrors', { cleared: 0 })
-      return
-    }
-    const count = this.errorMonitor.clearErrors()
-    socket.send('clearErrors', { cleared: count })
-  }
-
-  onFileUpload = async (socket, data) => {
-    try {
-      const { buffer, filename, mimeType, metadata } = data
-      const bufferData = Buffer.from(buffer)
-
-      const result = await this.fileUploader.uploadFile(bufferData, filename, {
-        mimeType: mimeType || 'application/octet-stream',
-        uploader: socket.id,
-        metadata: metadata || {},
-        onProgress: (progress) => {
-          socket.send('fileUploadProgress', { filename, progress })
-        }
-      })
-
-      socket.send('fileUploadComplete', {
-        filename,
-        hash: result.hash,
-        url: result.url,
-        size: result.size,
-        deduplicated: result.deduplicated
-      })
-
-    } catch (error) {
-      console.error('File upload error:', error)
-      socket.send('fileUploadError', {
-        filename: data.filename,
-        error: error.message
-      })
-    }
-  }
-
-  onFileUploadCheck = async (socket, data) => {
-    try {
-      const { hash } = data
-      const exists = await this.fileUploader.checkExists(hash)
-      const record = exists ? await this.fileStorage.getRecord(hash) : null
-
-      socket.send('fileUploadCheckResult', {
-        hash,
-        exists,
-        record
-      })
-    } catch (error) {
-      console.error('File upload check error:', error)
-      socket.send('fileUploadCheckResult', {
-        hash: data.hash,
-        exists: false,
-        error: error.message
-      })
-    }
-  }
-
-  onFileUploadStats = async (socket) => {
-    try {
-      const stats = this.fileUploader.getStats()
-      const storageStats = await this.fileStorage.getStats()
-
-      socket.send('fileUploadStats', {
-        uploader: stats,
-        storage: storageStats
-      })
-    } catch (error) {
-      console.error('File upload stats error:', error)
-      socket.send('fileUploadStats', {
-        error: error.message
-      })
-    }
-  }
+  onFileUploadStats = (socket) => this.fileUploadHandler.onFileUploadStats(socket)
 
   onDisconnect = (socket, code) => {
     if (socket.mcpErrorListener && this.errorMonitor) {
