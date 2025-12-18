@@ -1,7 +1,30 @@
+import * as THREE from '../extras/three.js'
+import { N8AOPostPass } from 'n8ao'
+import {
+  EffectComposer,
+  EffectPass,
+  RenderPass,
+  SMAAPreset,
+  SMAAEffect,
+  ToneMappingEffect,
+  ToneMappingMode,
+  BloomEffect,
+  BlendFunction,
+} from 'postprocessing'
+
 import { System } from './System.js'
-import { GraphicsRenderer } from './graphics/GraphicsRenderer.js'
-import { GraphicsPostprocessing } from './graphics/GraphicsPostprocessing.js'
-import { GraphicsXR } from './graphics/GraphicsXR.js'
+
+let gRenderer
+
+function getRenderer() {
+  if (!gRenderer) {
+    gRenderer = new THREE.WebGLRenderer({
+      powerPreference: 'high-performance',
+      antialias: true,
+    })
+  }
+  return gRenderer
+}
 
 export class ClientGraphics extends System {
   static DEPS = {
@@ -20,40 +43,78 @@ export class ClientGraphics extends System {
 
   constructor(world) {
     super(world)
+    this.renderer = getRenderer()
+    this.resizer = null
+    this.xrSession = null
+    this.xrWidth = null
+    this.xrHeight = null
+    this.xrDimensionsNeeded = false
+    this.usePostprocessing = false
+    this.bloomEnabled = false
   }
 
   async init({ viewport }) {
     this.viewport = viewport
 
-    this.rendererModule = new GraphicsRenderer({
-      viewport,
-      prefs: this.prefs,
-    })
-    this.rendererModule.init()
-    this.renderer = this.rendererModule.renderer
-    this.width = this.rendererModule.width
-    this.height = this.rendererModule.height
-    this.aspect = this.rendererModule.aspect
-    this.maxAnisotropy = this.rendererModule.maxAnisotropy
+    this.renderer.setSize(viewport.offsetWidth, viewport.offsetHeight)
+    this.renderer.setClearColor(0xffffff, 0)
+    this.renderer.setPixelRatio(this.prefs.state.get('dpr'))
+    this.renderer.shadowMap.enabled = true
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.toneMapping = THREE.NoToneMapping
+    this.renderer.toneMappingExposure = 1
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy()
+    THREE.Texture.DEFAULT_ANISOTROPY = this.maxAnisotropy
+    this.viewport.appendChild(this.renderer.domElement)
 
-    this.xrModule = new GraphicsXR({
-      renderer: this.renderer,
-    })
-    this.xrModule.init()
+    this.width = viewport.offsetWidth
+    this.height = viewport.offsetHeight
+    this.aspect = this.width / this.height
 
-    this.postprocessingModule = new GraphicsPostprocessing({
-      renderer: this.renderer,
-      camera: this.camera,
-      scene: this.stage.scene,
-      width: this.width,
-      height: this.height,
-      prefs: this.prefs,
-      settings: this.settings,
-    })
-    this.postprocessingModule.init()
-    this.composer = this.postprocessingModule.composer
+    this.renderer.xr.enabled = true
+    this.renderer.xr.setReferenceSpaceType('local-floor')
+    this.renderer.xr.setFoveation(1)
 
-    this.rendererModule.setupResizeObserver((width, height) => {
+    const context = this.renderer.getContext()
+    const maxMultisampling = context.getParameter(context.MAX_SAMPLES)
+
+    this.composer = new EffectComposer(this.renderer, {
+      frameBufferType: THREE.HalfFloatType,
+    })
+
+    this.renderPass = new RenderPass(this.stage.scene, this.camera)
+    this.composer.addPass(this.renderPass)
+
+    this.aoPass = new N8AOPostPass(this.stage.scene, this.camera, this.width, this.height)
+    this.aoPass.enabled = this.settings.get('ao') && this.prefs.state.get('ao')
+    this.aoPass.autoDetectTransparency = false
+    this.aoPass.configuration.halfRes = true
+    this.aoPass.configuration.screenSpaceRadius = true
+    this.aoPass.configuration.aoRadius = 32
+    this.aoPass.configuration.distanceFalloff = 1
+    this.aoPass.configuration.intensity = 2
+    this.composer.addPass(this.aoPass)
+
+    this.bloom = new BloomEffect({
+      blendFunction: BlendFunction.ADD,
+      mipmapBlur: true,
+      luminanceThreshold: 1,
+      luminanceSmoothing: 0.3,
+      intensity: 0.5,
+      radius: 0.8,
+    })
+
+    this.smaa = new SMAAEffect({ preset: SMAAPreset.ULTRA })
+    this.tonemapping = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
+
+    this.effectPass = new EffectPass(this.camera)
+    this.usePostprocessing = this.prefs.state.get('postprocessing')
+    this.bloomEnabled = this.prefs.state.get('bloom')
+    this.updateEffects()
+    this.composer.addPass(this.effectPass)
+
+    this.setupResizeObserver((width, height) => {
       this.resize(width, height)
     })
 
@@ -61,20 +122,39 @@ export class ClientGraphics extends System {
     this.setupSettingRegistry()
   }
 
+  updateEffects() {
+    const effects = []
+    if (this.bloomEnabled) {
+      effects.push(this.bloom)
+    }
+    effects.push(this.smaa)
+    effects.push(this.tonemapping)
+    this.effectPass.setEffects(effects)
+    this.effectPass.recompile()
+  }
+
+  setupResizeObserver(callback) {
+    this.resizer = new ResizeObserver(() => {
+      callback(this.viewport.offsetWidth, this.viewport.offsetHeight)
+    })
+    this.resizer.observe(this.viewport)
+  }
+
   setupPrefRegistry() {
     this.prefHandlers = {
       'dpr': (value) => {
-        this.rendererModule.setDPR(value)
+        this.renderer.setPixelRatio(value)
         this.resize(this.width, this.height)
       },
       'postprocessing': (value) => {
-        this.postprocessingModule.setPostprocessingEnabled(value)
+        this.usePostprocessing = value
       },
       'bloom': (value) => {
-        this.postprocessingModule.setBloomEnabled(value)
+        this.bloomEnabled = value
+        this.updateEffects()
       },
       'ao': (value) => {
-        this.postprocessingModule.setAOEnabled(value)
+        this.aoPass.enabled = value && this.settings.get('ao')
       },
     }
   }
@@ -82,7 +162,7 @@ export class ClientGraphics extends System {
   setupSettingRegistry() {
     this.settingHandlers = {
       'ao': (value) => {
-        this.postprocessingModule.setAOFromSetting(value)
+        this.aoPass.enabled = value && this.prefs.state.get('ao')
       },
     }
   }
@@ -91,19 +171,46 @@ export class ClientGraphics extends System {
   }
 
   resize(width, height) {
-    this.rendererModule.resize(width, height, this.camera)
-    this.width = this.rendererModule.width
-    this.height = this.rendererModule.height
-    this.aspect = this.rendererModule.aspect
-    this.postprocessingModule.resize(width, height)
+    this.width = width
+    this.height = height
+    this.aspect = this.width / this.height
+    this.camera.aspect = this.aspect
+    this.camera.updateProjectionMatrix()
+    this.renderer.setSize(this.width, this.height)
+    this.composer.setSize(width, height)
     this.events.emit('graphicsResize', { width, height })
     this.render()
   }
 
   render() {
-    this.postprocessingModule.render(this.xrModule.isPresenting())
-    if (this.xrModule.needsDimensionCheck()) {
-      this.xrModule.checkDimensions()
+    const isPresenting = this.renderer.xr.isPresenting
+    if (isPresenting || !this.usePostprocessing) {
+      this.renderer.render(this.stage.scene, this.camera)
+    } else {
+      this.composer.render()
+    }
+    if (this.xrDimensionsNeeded) {
+      this.checkXRDimensions()
+    }
+  }
+
+  checkXRDimensions() {
+    const referenceSpace = this.renderer.xr.getReferenceSpace()
+    const frame = this.renderer.xr.getFrame()
+    if (frame && referenceSpace) {
+      const views = frame.getViewerPose(referenceSpace)?.views
+      if (views && views.length > 0) {
+        const projectionMatrix = views[0].projectionMatrix
+        const fovFactor = projectionMatrix[5]
+        const renderState = this.xrSession.renderState
+        const baseLayer = renderState.baseLayer
+        if (baseLayer) {
+          this.xrWidth = baseLayer.framebufferWidth
+          this.xrHeight = baseLayer.framebufferHeight
+          this.xrDimensionsNeeded = false
+          console.log({ xrWidth: this.xrWidth, xrHeight: this.xrHeight })
+        }
+      }
     }
   }
 
@@ -114,7 +221,7 @@ export class ClientGraphics extends System {
   preTick() {
     const camera = this.camera
     const fovRadians = camera.fov * (Math.PI / 180)
-    const rendererHeight = this.xrModule.getHeight() || this.height
+    const rendererHeight = this.xrHeight || this.height
     this.worldToScreenFactor = (Math.tan(fovRadians / 2) * 2) / rendererHeight
   }
 
@@ -124,9 +231,18 @@ export class ClientGraphics extends System {
   }
 
   onXRSession = session => {
-    this.xrModule.onSessionChange(session)
+    if (session) {
+      this.xrSession = session
+      this.xrWidth = null
+      this.xrHeight = null
+      this.xrDimensionsNeeded = true
+    } else {
+      this.xrSession = null
+      this.xrWidth = null
+      this.xrHeight = null
+      this.xrDimensionsNeeded = false
+    }
   }
-
 
   onSettingChanged = ({ key, value }) => {
     const handler = this.settingHandlers[key]
@@ -134,6 +250,9 @@ export class ClientGraphics extends System {
   }
 
   destroy() {
-    this.rendererModule.destroy()
+    if (this.resizer) {
+      this.resizer.disconnect()
+    }
+    this.viewport.removeChild(this.renderer.domElement)
   }
 }
