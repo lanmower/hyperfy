@@ -1,18 +1,17 @@
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
-import moment from 'moment'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 
 import { System } from './System.js'
-import { uuid, hashFile } from '../utils-client.js'
+import { uuid } from '../utils-client.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
-import { importApp } from '../extras/appTools.js'
 import { EVENT } from '../constants/EventNames.js'
 import { ACTION_CONFIGS, MODE_LABELS } from './builder/ActionConfigs.js'
 import { UndoManager } from './builder/UndoManager.js'
 import { ModeManager } from './builder/ModeManager.js'
 import { GizmoManager } from './builder/GizmoManager.js'
+import { FileDropHandler } from './builder/FileDropHandler.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const SNAP_DISTANCE = 1
@@ -57,19 +56,17 @@ export class ClientBuilder extends System {
     this.undoManager = new UndoManager()
     this.modeManager = new ModeManager()
     this.gizmoManager = null
-
-    this.dropTarget = null
-    this.dropping = false
-    this.dropFile = null
+    this.fileDropHandler = null
   }
 
   async init({ viewport }) {
     this.viewport = viewport
     this.gizmoManager = new GizmoManager(this.world, viewport)
-    this.viewport.addEventListener('dragover', this.onDragOver)
-    this.viewport.addEventListener('dragenter', this.onDragEnter)
-    this.viewport.addEventListener('dragleave', this.onDragLeave)
-    this.viewport.addEventListener('drop', this.onDrop)
+    this.fileDropHandler = new FileDropHandler(this)
+    this.viewport.addEventListener('dragover', this.fileDropHandler.onDragOver)
+    this.viewport.addEventListener('dragenter', this.fileDropHandler.onDragEnter)
+    this.viewport.addEventListener('dragleave', this.fileDropHandler.onDragLeave)
+    this.viewport.addEventListener('drop', this.fileDropHandler.onDrop)
   }
 
   start() {
@@ -711,342 +708,6 @@ export class ClientBuilder extends System {
     return hit
   }
 
-  onDragOver = e => {
-    e.preventDefault()
-  }
-
-  onDragEnter = e => {
-    this.dropTarget = e.target
-    this.dropping = true
-    this.dropFile = null
-  }
-
-  onDragLeave = e => {
-    if (e.target === this.dropTarget) {
-      this.dropping = false
-    }
-  }
-
-  onDrop = async e => {
-    e.preventDefault()
-    this.dropping = false
-
-    let file = await this._extractFileFromDrop(e)
-    if (!file) return
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    const ext = file.name.split('.').pop().toLowerCase()
-
-    if (ext === 'vrm' && !this.canBuild() && !this.world.settings.customAvatars) {
-      return
-    }
-
-    const maxSize = this.network.maxUploadSize * 1024 * 1024
-    if (file.size > maxSize) {
-      this.world.chat.add({
-        id: uuid(),
-        from: null,
-        fromId: null,
-        body: `File size too large (>${this.network.maxUploadSize}mb)`,
-        createdAt: moment().toISOString(),
-      })
-      console.error(`File too large. Maximum size is ${maxSize / (1024 * 1024)}MB`)
-      return
-    }
-
-    if (ext !== 'vrm' && !this.canBuild()) {
-      this.world.chat.add({
-        id: uuid(),
-        from: null,
-        fromId: null,
-        body: `You don't have permission to do that.`,
-        createdAt: moment().toISOString(),
-      })
-      return
-    }
-
-    if (ext !== 'vrm') {
-      this.toggle(true)
-    }
-
-    const transform = this.getSpawnTransform()
-
-    if (ext === 'hyp') {
-      await this.addApp(file, transform)
-    } else if (ext === 'glb') {
-      await this.addModel(file, transform)
-    } else if (ext === 'vrm') {
-      const canPlace = this.canBuild()
-      await this.addAvatar(file, transform, canPlace)
-    }
-  }
-
-  async _extractFileFromDrop(e) {
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      const item = e.dataTransfer.items[0]
-
-      if (item.kind === 'file') {
-        return item.getAsFile()
-      }
-
-      if (item.type === 'text/uri-list' || item.type === 'text/plain' || item.type === 'text/html') {
-        const text = await this._getAsString(item)
-        const url = text.trim().split('\n')[0]
-
-        if (url.startsWith('http')) {
-          try {
-            const resp = await fetch(url)
-            const blob = await resp.blob()
-            const filename = new URL(url).pathname.split('/').pop()
-            return new File([blob], filename, { type: resp.headers.get('content-type') })
-          } catch (err) {
-            console.error('Failed to fetch URL:', err)
-            return null
-          }
-        }
-      }
-    }
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      return e.dataTransfer.files[0]
-    }
-
-    return null
-  }
-
-  _getAsString(item) {
-    return new Promise(resolve => {
-      item.getAsString(resolve)
-    })
-  }
-
-  async addApp(file, transform) {
-    const info = await importApp(file)
-
-    for (const asset of info.assets) {
-      this.world.loader.insert(asset.type, asset.url, asset.file)
-    }
-
-    if (info.blueprint.scene) {
-      const confirmed = await this.world.ui.confirm({
-        title: 'Scene',
-        message: 'Do you want to replace your current scene with this one?',
-        confirmText: 'Replace',
-        cancelText: 'Cancel',
-      })
-      if (!confirmed) return
-
-      const blueprint = this.blueprints.getScene()
-      const change = {
-        id: blueprint.id,
-        version: blueprint.version + 1,
-        name: info.blueprint.name,
-        image: info.blueprint.image,
-        author: info.blueprint.author,
-        url: info.blueprint.url,
-        desc: info.blueprint.desc,
-        model: info.blueprint.model,
-        script: info.blueprint.script,
-        props: info.blueprint.props,
-        preload: info.blueprint.preload,
-        public: info.blueprint.public,
-        locked: info.blueprint.locked,
-        frozen: info.blueprint.frozen,
-        unique: info.blueprint.unique,
-        scene: info.blueprint.scene,
-        disabled: info.blueprint.disabled,
-      }
-
-      this.blueprints.modify(change)
-
-      const promises = info.assets.map(asset => this.network.upload(asset.file))
-      await Promise.all(promises)
-
-      this.network.send('blueprintModified', change)
-      return
-    }
-
-    const blueprint = {
-      id: uuid(),
-      version: 0,
-      name: info.blueprint.name,
-      image: info.blueprint.image,
-      author: info.blueprint.author,
-      url: info.blueprint.url,
-      desc: info.blueprint.desc,
-      model: info.blueprint.model,
-      script: info.blueprint.script,
-      props: info.blueprint.props,
-      preload: info.blueprint.preload,
-      public: info.blueprint.public,
-      locked: info.blueprint.locked,
-      frozen: info.blueprint.frozen,
-      unique: info.blueprint.unique,
-      scene: info.blueprint.scene,
-      disabled: info.blueprint.disabled,
-    }
-
-    const data = {
-      id: uuid(),
-      type: 'app',
-      blueprint: blueprint.id,
-      position: transform.position,
-      quaternion: transform.quaternion,
-      scale: [1, 1, 1],
-      mover: null,
-      uploader: this.network.id,
-      pinned: false,
-      state: {},
-    }
-
-    this.blueprints.add(blueprint, true)
-    const app = this.entities.add(data, true)
-
-    const promises = info.assets.map(asset => this.network.upload(asset.file))
-    try {
-      await Promise.all(promises)
-      app.onUploaded()
-    } catch (err) {
-      console.error('Failed to upload .hyp assets:', err)
-      app.destroy()
-    }
-  }
-
-  async addModel(file, transform) {
-    const hash = await hashFile(file)
-    const filename = `${hash}.glb`
-    const url = `asset://${filename}`
-
-    this.world.loader.insert('model', url, file)
-
-    const blueprint = {
-      id: uuid(),
-      version: 0,
-      name: file.name.split('.')[0],
-      image: null,
-      author: null,
-      url: null,
-      desc: null,
-      model: url,
-      script: null,
-      props: {},
-      preload: false,
-      public: false,
-      locked: false,
-      unique: false,
-      scene: false,
-      disabled: false,
-    }
-
-    this.blueprints.add(blueprint, true)
-
-    const data = {
-      id: uuid(),
-      type: 'app',
-      blueprint: blueprint.id,
-      position: transform.position,
-      quaternion: transform.quaternion,
-      scale: [1, 1, 1],
-      mover: null,
-      uploader: this.network.id,
-      pinned: false,
-      state: {},
-    }
-
-    const app = this.entities.add(data, true)
-
-    await this.network.upload(file)
-    app.onUploaded()
-  }
-
-  async addAvatar(file, transform, canPlace) {
-    const hash = await hashFile(file)
-    const filename = `${hash}.vrm`
-    const url = `asset://${filename}`
-
-    this.world.loader.insert('avatar', url, file)
-
-    this.events.emit('avatar', {
-      file,
-      url,
-      hash,
-      canPlace,
-      onPlace: async () => {
-        this.events.emit('avatar', null)
-        await this._placeAvatar(file, url, transform)
-      },
-      onEquip: async () => {
-        this.events.emit('avatar', null)
-        await this._equipAvatar(file, url)
-      },
-    })
-  }
-
-  async _placeAvatar(file, url, transform) {
-    const blueprint = {
-      id: uuid(),
-      version: 0,
-      name: file.name,
-      image: null,
-      author: null,
-      url: null,
-      desc: null,
-      model: url,
-      script: null,
-      props: {},
-      preload: false,
-      public: false,
-      locked: false,
-      unique: false,
-      scene: false,
-      disabled: false,
-    }
-
-    this.blueprints.add(blueprint, true)
-
-    const data = {
-      id: uuid(),
-      type: 'app',
-      blueprint: blueprint.id,
-      position: transform.position,
-      quaternion: transform.quaternion,
-      scale: [1, 1, 1],
-      mover: null,
-      uploader: this.network.id,
-      pinned: false,
-      state: {},
-    }
-
-    const app = this.entities.add(data, true)
-    await this.network.upload(file)
-    app.onUploaded()
-  }
-
-  async _equipAvatar(file, url) {
-    const player = this.entities.player
-    const prevUrl = player.data.avatar
-
-    player.modify({ avatar: url, sessionAvatar: null })
-
-    try {
-      await this.network.upload(file)
-    } catch (err) {
-      console.error('Failed to upload avatar:', err)
-      player.modify({ avatar: prevUrl })
-      return
-    }
-
-    if (player.data.avatar !== url) {
-      return
-    }
-
-    this.network.send('entityModified', {
-      id: player.data.id,
-      avatar: url,
-    })
-  }
-
   getSpawnTransform(atReticle) {
     const hit = atReticle
       ? this.world.stage.raycastReticle()[0]
@@ -1072,10 +733,10 @@ export class ClientBuilder extends System {
   }
 
   destroy() {
-    this.viewport.removeEventListener('dragover', this.onDragOver)
-    this.viewport.removeEventListener('dragenter', this.onDragEnter)
-    this.viewport.removeEventListener('dragleave', this.onDragLeave)
-    this.viewport.removeEventListener('drop', this.onDrop)
+    this.viewport.removeEventListener('dragover', this.fileDropHandler.onDragOver)
+    this.viewport.removeEventListener('dragenter', this.fileDropHandler.onDragEnter)
+    this.viewport.removeEventListener('dragleave', this.fileDropHandler.onDragLeave)
+    this.viewport.removeEventListener('drop', this.fileDropHandler.onDrop)
     this.detachGizmo()
   }
 }
