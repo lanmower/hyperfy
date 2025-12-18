@@ -1,8 +1,8 @@
 import { isTouch } from '../../client/utils.js'
-import { bindRotations } from '../extras/bindRotations.js'
 import { buttons, codeToProp } from '../extras/buttons.js'
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
+import { createButton, createVector, createValue, createPointer, createScreen, createCamera } from './controls/ControlFactories.js'
 
 const LMB = 1
 const RMB = 2
@@ -637,91 +637,5 @@ export class ClientControls extends System {
     window.removeEventListener('resize', this.onResize)
     window.removeEventListener('focus', this.onFocus)
     window.removeEventListener('blur', this.onBlur)
-  }
-}
-
-function createButton(controls, control, prop) {
-  const down = controls.buttonsDown.has(prop)
-  const pressed = down
-  const released = false
-  return {
-    $button: true,
-    down,
-    pressed,
-    released,
-    capture: false,
-    onPress: null,
-    onRelease: null,
-  }
-}
-
-function createVector(controls, control, prop) {
-  return {
-    $vector: true,
-    value: new THREE.Vector3(),
-    capture: false,
-  }
-}
-
-function createValue(controls, control, prop) {
-  return {
-    $value: true,
-    value: null,
-    capture: false,
-  }
-}
-
-function createPointer(controls, control, prop) {
-  const coords = new THREE.Vector3() // [0,0] to [1,1]
-  const position = new THREE.Vector3() // [0,0] to [viewportWidth,viewportHeight]
-  const delta = new THREE.Vector3() // position delta (pixels)
-  return {
-    get coords() {
-      return coords.copy(controls.pointer.coords)
-    },
-    get position() {
-      return position.copy(controls.pointer.position)
-    },
-    get delta() {
-      return delta.copy(controls.pointer.delta)
-    },
-    get locked() {
-      return controls.pointer.locked
-    },
-    lock() {
-      controls.lockPointer()
-    },
-    unlock() {
-      controls.unlockPointer()
-    },
-  }
-}
-
-function createScreen(controls, control) {
-  return {
-    $screen: true,
-    get width() {
-      return controls.screen.width
-    },
-    get height() {
-      return controls.screen.height
-    },
-  }
-}
-
-function createCamera(controls, control) {
-  const world = controls.world
-  const position = new THREE.Vector3().copy(world.rig.position)
-  const quaternion = new THREE.Quaternion().copy(world.rig.quaternion)
-  const rotation = new THREE.Euler(0, 0, 0, 'YXZ').copy(world.rig.rotation)
-  bindRotations(quaternion, rotation)
-  const zoom = world.camera.position.z
-  return {
-    $camera: true,
-    position,
-    quaternion,
-    rotation,
-    zoom,
-    write: false,
   }
 }
