@@ -10,6 +10,9 @@ import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { importApp } from '../extras/appTools.js'
 import { EVENT } from '../constants/EventNames.js'
 import { ACTION_CONFIGS, MODE_LABELS } from './builder/ActionConfigs.js'
+import { UndoManager } from './builder/UndoManager.js'
+import { ModeManager } from './builder/ModeManager.js'
+import { GizmoManager } from './builder/GizmoManager.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const SNAP_DISTANCE = 1
@@ -45,19 +48,15 @@ export class ClientBuilder extends System {
     this.enabled = false
     this.selected = null
     this.lastMoveSendTime = 0
-    this.undos = []
     this.justPointerLocked = false
 
     this.target = new THREE.Object3D()
     this.target.rotation.reorder('YXZ')
     this.target.limit = PROJECT_MAX
 
-    this.mode = 'grab'
-    this.localSpace = false
-    this.gizmo = null
-    this.gizmoTarget = null
-    this.gizmoHelper = null
-    this.gizmoActive = false
+    this.undoManager = new UndoManager()
+    this.modeManager = new ModeManager()
+    this.gizmoManager = null
 
     this.dropTarget = null
     this.dropping = false
@@ -66,6 +65,7 @@ export class ClientBuilder extends System {
 
   async init({ viewport }) {
     this.viewport = viewport
+    this.gizmoManager = new GizmoManager(this.world, viewport)
     this.viewport.addEventListener('dragover', this.onDragOver)
     this.viewport.addEventListener('dragenter', this.onDragEnter)
     this.viewport.addEventListener('dragleave', this.onDragLeave)
@@ -98,27 +98,27 @@ export class ClientBuilder extends System {
   }
 
   updateActions() {
-    const mode = this.getMode()
+    const mode = this.modeManager.getMode()
     let actions = []
 
     if (!this.enabled) {
       actions = ACTION_CONFIGS.disabled
     } else if (!this.selected) {
       actions = [...ACTION_CONFIGS.noSelection]
-      actions[0].label = this.getModeLabel()
+      actions[0].label = this.modeManager.getModeLabel()
     } else if (mode === 'grab') {
       actions = ACTION_CONFIGS.grab
     } else if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
       actions = ACTION_CONFIGS.transform
       const spaceAction = actions.find(a => a.type === 'keyT')
-      if (spaceAction) spaceAction.label = this.getSpaceLabel()
+      if (spaceAction) spaceAction.label = this.modeManager.getSpaceLabel()
     }
 
     this.control.setActions(actions)
   }
 
   update(delta) {
-    const mode = this.getMode()
+    const mode = this.modeManager.getMode()
 
     if (this.control.tab.pressed) {
       this.toggle()
