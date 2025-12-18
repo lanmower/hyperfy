@@ -14,17 +14,13 @@ import { Modes } from '../constants/AnimationModes.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
 import { PlayerCameraManager } from './player/PlayerCameraManager.js'
 import { EVENT } from '../constants/EventNames.js'
+import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 const SCALE_IDENTITY = new THREE.Vector3(1, 1, 1)
-const POINTER_LOOK_SPEED = 0.1
-const PAN_LOOK_SPEED = 0.4
-const ZOOM_SPEED = 2
-const MIN_ZOOM = 0
-const MAX_ZOOM = 8
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
 

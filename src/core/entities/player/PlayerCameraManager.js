@@ -2,20 +2,17 @@ import * as THREE from '../../extras/three.js'
 import { DEG2RAD } from '../../extras/general.js'
 import { bindRotations } from '../../extras/bindRotations.js'
 import { clamp } from '../../utils.js'
-
-const DEFAULT_CAM_HEIGHT = 1.2
-const POINTER_LOOK_SPEED = 0.1
-const PAN_LOOK_SPEED = 0.4
-const ZOOM_SPEED = 2
-const MIN_ZOOM = 0
-const MAX_ZOOM = 8
+import { DEFAULT_CAM_HEIGHT, POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './CameraConstants.js'
+import { XRInputStrategy } from './input/XRInputStrategy.js'
+import { PointerLockInputStrategy } from './input/PointerLockInputStrategy.js'
+import { TouchPanInputStrategy } from './input/TouchPanInputStrategy.js'
+import { ScrollZoomStrategy } from './input/ScrollZoomStrategy.js'
 
 export class PlayerCameraManager {
   constructor(player, base) {
     this.player = player
     this.base = base
     this.camHeight = DEFAULT_CAM_HEIGHT
-    this.didSnapTurn = false
     this.initCamera()
   }
 
@@ -35,36 +32,31 @@ export class PlayerCameraManager {
   }
 
   updateLook(delta, isXR, control, pan) {
+    const strategy = this.selectInputStrategy(isXR, control, pan)
+    if (strategy) {
+      strategy.updateLook(delta, control, { pan })
+    }
+
+    const zoomStrategy = new ScrollZoomStrategy(this)
+    if (!isXR) {
+      zoomStrategy.updateZoom(delta, control)
+    }
+  }
+
+  selectInputStrategy(isXR, control, pan) {
     if (isXR) {
-      this.rotation.x = 0
-      this.rotation.z = 0
-      if (control.xrRightStick.value.x === 0 && this.didSnapTurn) {
-        this.didSnapTurn = false
-      } else if (control.xrRightStick.value.x > 0 && !this.didSnapTurn) {
-        this.rotation.y -= 45 * DEG2RAD
-        this.didSnapTurn = true
-      } else if (control.xrRightStick.value.x < 0 && !this.didSnapTurn) {
-        this.rotation.y += 45 * DEG2RAD
-        this.didSnapTurn = true
-      }
-    } else if (control.pointer.locked) {
-      this.rotation.x += -control.pointer.delta.y * POINTER_LOOK_SPEED * delta
-      this.rotation.y += -control.pointer.delta.x * POINTER_LOOK_SPEED * delta
-      this.rotation.z = 0
-    } else if (pan) {
-      this.rotation.x += -pan.delta.y * PAN_LOOK_SPEED * delta
-      this.rotation.y += -pan.delta.x * PAN_LOOK_SPEED * delta
-      this.rotation.z = 0
+      if (!this.xrStrategy) this.xrStrategy = new XRInputStrategy(this)
+      return this.xrStrategy
     }
-
-    if (!isXR) {
-      this.rotation.x = clamp(this.rotation.x, -89 * DEG2RAD, 89 * DEG2RAD)
+    if (control.pointer.locked) {
+      if (!this.pointerStrategy) this.pointerStrategy = new PointerLockInputStrategy(this)
+      return this.pointerStrategy
     }
-
-    if (!isXR) {
-      this.zoom += -control.scrollDelta.value * ZOOM_SPEED * delta
-      this.zoom = clamp(this.zoom, MIN_ZOOM, MAX_ZOOM)
+    if (pan) {
+      if (!this.panStrategy) this.panStrategy = new TouchPanInputStrategy(this)
+      return this.panStrategy
     }
+    return null
   }
 
   update(deltaTime) {
