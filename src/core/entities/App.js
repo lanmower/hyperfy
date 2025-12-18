@@ -10,6 +10,10 @@ import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
 import { createPlayerProxy } from '../extras/createPlayerProxy.js'
+import { BlueprintLoader } from './app/BlueprintLoader.js'
+import { ScriptExecutor } from './app/ScriptExecutor.js'
+import { EventManager } from './app/EventManager.js'
+import { ProxyFactory } from './app/ProxyFactory.js'
 
 const Modes = {
   ACTIVE: 'active',
@@ -24,20 +28,20 @@ export class App extends BaseEntity {
     this.isApp = true
     this.n = 0
     this.worldNodes = new Set()
-    this.hotEvents = 0
-    this.worldListeners = new Map()
-    this.listeners = {}
-    this.eventQueue = []
     this.snaps = []
     this.root = createNode('group')
     this.fields = []
     this.target = null
     this.projectLimit = Infinity
     this.keepActive = false
-    this.playerProxies = new Map()
     this.hitResultsPool = []
     this.hitResults = []
     this.deadHook = { dead: false }
+    this.abortController = new AbortController()
+    this.blueprintLoader = new BlueprintLoader(this)
+    this.scriptExecutor = new ScriptExecutor(this)
+    this.eventManager = new EventManager(this)
+    this.proxyFactory = new ProxyFactory(this)
     this.build()
   }
 
@@ -80,18 +84,15 @@ export class App extends BaseEntity {
     this.emit('destroy')
     this.control?.release()
     this.control = null
-    this.playerProxies.forEach(player => {
-      player.$cleanup()
-    })
     this.root?.deactivate()
     for (const node of this.worldNodes) {
       node.deactivate()
     }
     this.worldNodes.clear()
     this.eventManager.clearEventListeners()
-    this.hotEvents = 0
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()
+    this.proxyFactory.clear()
     this.deadHook.dead = true
     this.deadHook = { dead: false }
     this.onFields?.([])
@@ -186,42 +187,23 @@ export class App extends BaseEntity {
   }
 
   on(name, callback) {
-    if (!this.listeners[name]) this.listeners[name] = new Set()
-    if (this.listeners[name].has(callback)) return
-    this.listeners[name].add(callback)
-    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
-    if (hotEventNames.includes(name)) {
-      this.hotEvents++
-      this.world.setHot(this, this.hotEvents > 0)
-    }
+    return this.eventManager.on(name, callback)
   }
 
   off(name, callback) {
-    if (!this.listeners[name]) return
-    if (!this.listeners[name].has(callback)) return
-    this.listeners[name].delete(callback)
-    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
-    if (hotEventNames.includes(name)) {
-      this.hotEvents--
-      this.world.setHot(this, this.hotEvents > 0)
-    }
+    return this.eventManager.off(name, callback)
   }
 
   emit(name, a1, a2) {
-    if (!this.listeners[name]) return
-    for (const callback of this.listeners[name]) {
-      callback(a1, a2)
-    }
+    return this.eventManager.emit(name, a1, a2)
   }
 
   onWorldEvent(name, callback) {
-    this.worldListeners.set(callback, name)
-    this.world.events.on(name, callback)
+    return this.eventManager.onWorldEvent(name, callback)
   }
 
   offWorldEvent(name, callback) {
-    this.worldListeners.delete(callback)
-    this.world.events.off(name, callback)
+    return this.eventManager.offWorldEvent(name, callback)
   }
 
   onEvent(version, name, data, networkId) {
@@ -272,7 +254,12 @@ export class App extends BaseEntity {
   }
 
   getPlayerProxy(playerId) {
-    return this.proxyFactory.getPlayerProxy(playerId)
+    if (!this.playerProxies) this.playerProxies = new Map()
+    if (!this.playerProxies.has(playerId)) {
+      const proxy = this.proxyFactory.getPlayerProxy(playerId)
+      if (proxy) this.playerProxies.set(playerId, proxy)
+    }
+    return this.playerProxies.get(playerId)
   }
 
   getWorldProxy() {
