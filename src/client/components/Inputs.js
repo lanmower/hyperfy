@@ -1,7 +1,0 @@
-export { InputText } from './InputsComponents/InputText.js'
-export { InputTextarea } from './InputsComponents/InputTextarea.js'
-export { InputNumber } from './InputsComponents/InputNumber.js'
-export { InputRange } from './InputsComponents/InputRange.js'
-export { InputSwitch } from './InputsComponents/InputSwitch.js'
-export { InputDropdown } from './InputsComponents/InputDropdown.js'
-export { InputFile, fileKinds } from './InputsComponents/InputFile.js'

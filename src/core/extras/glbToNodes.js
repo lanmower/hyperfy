@@ -1,5 +1,5 @@
 import { createNode } from './createNode.js'
-import * as THREE from '../extras/three.js'
+import * as THREE from './three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 
 const groupTypes = ['Scene', 'Group', 'Object3D']
@@ -95,7 +95,7 @@ export function glbToNodes(glb, world) {
           linked: !hasMorphTargets && !object3d.material.transparent,
           castShadow: props.castShadow,
           receiveShadow: props.receiveShadow,
-          visible: props.visible, // DEPRECATED: use Node.active
+          visible: props.visible,
           active: props.active,
           position: object3d.position.toArray(),
           quaternion: object3d.quaternion.toArray(),
@@ -147,7 +147,7 @@ function addWind(mesh, world) {
 
     const height = mesh.geometry.boundingBox.max.y * mesh.scale.y
 
-    shader.uniforms.height = { value: height } // prettier-ignore
+    shader.uniforms.height = { value: height }
     shader.uniforms.stiffness = { value: 0 }
 
 
@@ -197,11 +197,11 @@ const snoise = `
   vec4 permute(vec4 x){
     return mod(((x*34.0)+1.0)*x, 289.0);
   }
-  vec4 taylorInvSqrt(vec4 r){ 
-    return 1.79284291400159 - 0.85373472095314 * r; 
+  vec4 taylorInvSqrt(vec4 r){
+    return 1.79284291400159 - 0.85373472095314 * r;
   }
 
-  float snoise(vec3 v){ 
+  float snoise(vec3 v){
   const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
   const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
 
@@ -217,19 +217,19 @@ const snoise = `
   vec3 x2 = x0 - i2 + 2.0 * C.xxx;
   vec3 x3 = x0 - 1. + 3.0 * C.xxx;
 
-  i = mod(i, 289.0 ); 
-  vec4 p = permute( permute( permute( 
+  i = mod(i, 289.0 );
+  vec4 p = permute( permute( permute(
       i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-    + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
+    + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
     + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
 
-  float n_ = 1.0/7.0; // N=7
+  float n_ = 1.0/7.0;
   vec3  ns = n_ * D.wyz - D.xzx;
 
-  vec4 j = p - 49.0 * floor(p * ns.z *ns.z);  //  mod(p,N*N)
+  vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
 
   vec4 x_ = floor(j * ns.z);
-  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+  vec4 y_ = floor(j - 7.0 * x_ );
 
   vec4 x = x_ *ns.x + ns.yyyy;
   vec4 y = y_ *ns.x + ns.yyyy;
@@ -258,13 +258,13 @@ const snoise = `
 
   vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
   m = m * m;
-  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
+  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
                                 dot(p2,x2), dot(p3,x3) ) );
   }
 `
 
 function setupSplatmap(mesh) {
-  
+
   const original = mesh.material
   if (original.specularIntensityMap) original.specularIntensityMap.colorSpace = THREE.SRGBColorSpace
   if (original.transmissionMap) original.transmissionMap.colorSpace = THREE.SRGBColorSpace
@@ -318,7 +318,7 @@ function setupSplatmap(mesh) {
           vec4 yProjection = texture2D(tex, uv_y);
           vec4 zProjection = texture2D(tex, uv_z);
           vec3 weight = abs(normal);
-          weight = pow(weight, vec3(4.0)); // bias towards the major axis
+          weight = pow(weight, vec3(4.0));
           weight = weight / (weight.x + weight.y + weight.z);
           return xProjection * weight.x + yProjection * weight.y + zProjection * weight.z;
       }

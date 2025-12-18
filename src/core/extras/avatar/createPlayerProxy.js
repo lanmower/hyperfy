@@ -1,4 +1,4 @@
-import { clamp, uuid } from '../utils.js'
+import { clamp, uuid } from '../../utils/helpers/misc.js'
 import * as THREE from '../three.js'
 import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
 

@@ -1,11 +1,8 @@
 import { css } from '@firebolt-dev/css'
-import { useEffect, useState } from 'react'
+import { useFieldText } from '../hooks/index.js'
 
 export function InputText({ value, onChange, placeholder }) {
-  const [localValue, setLocalValue] = useState(value)
-  useEffect(() => {
-    if (localValue !== value) setLocalValue(value)
-  }, [value])
+  const inputProps = useFieldText(value, onChange)
   return (
     <label
       css={css`
@@ -14,28 +11,10 @@ export function InputText({ value, onChange, placeholder }) {
         border-radius: 10px;
         padding: 0 8px;
         cursor: text;
-        input {
-          height: 34px;
-          font-size: 14px;
-        }
+        input { height: 34px; font-size: 14px; }
       `}
     >
-      <input
-        type='text'
-        value={localValue || ''}
-        placeholder={placeholder}
-        onChange={e => setLocalValue(e.target.value)}
-        onKeyDown={e => {
-          if (e.code === 'Enter') {
-            e.preventDefault()
-            onChange(localValue)
-            e.target.blur()
-          }
-        }}
-        onBlur={e => {
-          onChange(localValue)
-        }}
-      />
+      <input type='text' placeholder={placeholder} {...inputProps} />
     </label>
   )
 }

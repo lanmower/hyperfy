@@ -1,17 +1,13 @@
 import { css } from '@firebolt-dev/css'
-import {
-  FieldRange,
-  FieldSwitch,
-  FieldText,
-  FieldToggle,
-  FieldBtn,
-} from '../Fields.js'
-import { useEffect, useState } from 'react'
+import { FieldRange, FieldSwitch, FieldText, FieldToggle, FieldBtn } from '../Fields.js'
+import { useState } from 'react'
 import { useFullscreen } from '../useFullscreen.js'
 import { useRank } from '../useRank.js'
 import { Pane } from './Pane.js'
 import { Group } from './Group.js'
 import { isTouch } from '../../utils.js'
+import { useSyncedState } from '../hooks/index.js'
+import { useGraphicsOptions } from '../hooks/index.js'
 
 const shadowOptions = [
   { label: 'None', value: 'none' },
@@ -24,58 +20,17 @@ export function Prefs({ world, hidden }) {
   const player = world.entities.player
   const { isAdmin, isBuilder } = useRank(world, player)
   const [name, setName] = useState(() => player.data.name)
-  const [dpr, setDPR] = useState(world.prefs.dpr)
-  const [shadows, setShadows] = useState(world.prefs.shadows)
-  const [postprocessing, setPostprocessing] = useState(world.prefs.postprocessing)
-  const [bloom, setBloom] = useState(world.prefs.bloom)
-  const [ao, setAO] = useState(world.prefs.ao)
-  const [music, setMusic] = useState(world.prefs.music)
-  const [sfx, setSFX] = useState(world.prefs.sfx)
-  const [voice, setVoice] = useState(world.prefs.voice)
-  const [ui, setUI] = useState(world.prefs.ui)
   const [canFullscreen, isFullscreen, toggleFullscreen] = useFullscreen()
-  const [actions, setActions] = useState(world.prefs.actions)
-  const [stats, setStats] = useState(world.prefs.stats)
+  const dprOptions = useGraphicsOptions(world)
+
+  const prefs = useSyncedState(world.prefs, [
+    'dpr', 'shadows', 'postprocessing', 'bloom', 'ao', 'music', 'sfx', 'voice', 'ui', 'actions', 'stats'
+  ])
 
   const changeName = name => {
     if (!name) return setName(player.data.name)
     player.setName(name)
   }
-
-  const dprOptions = useState(() => {
-    const width = world.graphics.width
-    const height = world.graphics.height
-    const dpr = window.devicePixelRatio
-    const options = []
-    const add = (label, dpr) => {
-      options.push({ label, value: dpr })
-    }
-    add('0.5x', 0.5)
-    add('1x', 1)
-    if (dpr >= 2) add('2x', 2)
-    if (dpr >= 3) add('3x', dpr)
-    return options
-  })[0]
-
-  useEffect(() => {
-    const onPrefsChange = changes => {
-      if (changes.dpr) setDPR(changes.dpr.value)
-      if (changes.shadows) setShadows(changes.shadows.value)
-      if (changes.postprocessing) setPostprocessing(changes.postprocessing.value)
-      if (changes.bloom) setBloom(changes.bloom.value)
-      if (changes.ao) setAO(changes.ao.value)
-      if (changes.music) setMusic(changes.music.value)
-      if (changes.sfx) setSFX(changes.sfx.value)
-      if (changes.voice) setVoice(changes.voice.value)
-      if (changes.ui) setUI(changes.ui.value)
-      if (changes.actions) setActions(changes.actions.value)
-      if (changes.stats) setStats(changes.stats.value)
-    }
-    world.prefs.on('change', onPrefsChange)
-    return () => {
-      world.prefs.off('change', onPrefsChange)
-    }
-  }, [])
 
   return (
     <Pane hidden={hidden}>
@@ -97,7 +52,7 @@ export function Prefs({ world, hidden }) {
           min={0.5}
           max={1.5}
           step={0.1}
-          value={ui}
+          value={prefs.ui}
           onChange={ui => world.prefs.setUI(ui)}
         />
         <FieldToggle
@@ -112,7 +67,7 @@ export function Prefs({ world, hidden }) {
           <FieldToggle
             label='Build Prompts'
             hint='Show or hide action prompts when in build mode'
-            value={actions}
+            value={prefs.actions}
             onChange={actions => world.prefs.setActions(actions)}
             trueLabel='Visible'
             falseLabel='Hidden'
@@ -121,7 +76,7 @@ export function Prefs({ world, hidden }) {
         <FieldToggle
           label='Stats'
           hint='Show or hide performance stats'
-          value={world.prefs.stats}
+          value={prefs.stats}
           onChange={stats => world.prefs.setStats(stats)}
           trueLabel='Visible'
           falseLabel='Hidden'
@@ -139,14 +94,14 @@ export function Prefs({ world, hidden }) {
           label='Resolution'
           hint='Change your display resolution'
           options={dprOptions}
-          value={dpr}
+          value={prefs.dpr}
           onChange={dpr => world.prefs.setDPR(dpr)}
         />
         <FieldSwitch
           label='Shadows'
           hint='Change the quality of shadows in the world'
           options={shadowOptions}
-          value={shadows}
+          value={prefs.shadows}
           onChange={shadows => world.prefs.setShadows(shadows)}
         />
         <FieldToggle
@@ -154,7 +109,7 @@ export function Prefs({ world, hidden }) {
           hint='Enable or disable all postprocessing effects'
           trueLabel='On'
           falseLabel='Off'
-          value={postprocessing}
+          value={prefs.postprocessing}
           onChange={postprocessing => world.prefs.setPostprocessing(postprocessing)}
         />
         <FieldToggle
@@ -162,7 +117,7 @@ export function Prefs({ world, hidden }) {
           hint='Enable or disable the bloom effect'
           trueLabel='On'
           falseLabel='Off'
-          value={bloom}
+          value={prefs.bloom}
           onChange={bloom => world.prefs.setBloom(bloom)}
         />
         {world.settings.ao && (
@@ -171,7 +126,7 @@ export function Prefs({ world, hidden }) {
             hint='Enable or disable the ambient occlusion effect'
             trueLabel='On'
             falseLabel='Off'
-            value={ao}
+            value={prefs.ao}
             onChange={ao => world.prefs.setAO(ao)}
           />
         )}
@@ -182,7 +137,7 @@ export function Prefs({ world, hidden }) {
           min={0}
           max={2}
           step={0.05}
-          value={music}
+          value={prefs.music}
           onChange={music => world.prefs.setMusic(music)}
         />
         <FieldRange
@@ -191,7 +146,7 @@ export function Prefs({ world, hidden }) {
           min={0}
           max={2}
           step={0.05}
-          value={sfx}
+          value={prefs.sfx}
           onChange={sfx => world.prefs.setSFX(sfx)}
         />
         <FieldRange
@@ -200,7 +155,7 @@ export function Prefs({ world, hidden }) {
           min={0}
           max={2}
           step={0.05}
-          value={voice}
+          value={prefs.voice}
           onChange={voice => world.prefs.setVoice(voice)}
         />
       </div>

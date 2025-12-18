@@ -2,24 +2,17 @@ import { css } from '@firebolt-dev/css'
 import { MessageSquareTextIcon, SendHorizonalIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { cls, isTouch } from '../../utils.js'
-import { ControlPriorities } from '../../../core/extras/assets/ControlPriorities.js'
+import { ControlPriorities } from '../../../core/extras/ControlPriorities.js'
 import { MiniMessages } from './MiniMessages.js'
 import { Messages } from './Messages.js'
+import { useWorldEvent } from '../hooks/index.js'
 
 export function Chat({ world }) {
   const inputRef = useRef()
   const [msg, setMsg] = useState('')
   const [active, setActive] = useState(false)
 
-  useEffect(() => {
-    const onToggle = () => {
-      setActive(value => !value)
-    }
-    world.on('sidebar-chat-toggle', onToggle)
-    return () => {
-      world.off('sidebar-chat-toggle', onToggle)
-    }
-  }, [])
+  useWorldEvent(world, 'sidebar-chat-toggle', () => setActive(v => !v))
 
   useEffect(() => {
     const control = world.controls.bind({ priority: ControlPriorities.CORE_UI })

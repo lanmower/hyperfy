@@ -1,7 +1,6 @@
 import { css } from '@firebolt-dev/css'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AvatarPane } from './AvatarPane.js'
-import { useElemSize } from './useElemSize.js'
 import { isTouch } from '../utils.js'
 import { Sidebar } from './Sidebar.js'
 import { ActionsBlock } from './CoreUIComponents/ActionsBlock.js'
@@ -14,6 +13,7 @@ import { Reticle } from './CoreUIComponents/Reticle.js'
 import { Toast } from './CoreUIComponents/Toast.js'
 import { TouchBtns } from './CoreUIComponents/TouchBtns.js'
 import { TouchStick } from './CoreUIComponents/TouchStick.js'
+import { useWorldEvents, usePrefsChange } from './hooks/index.js'
 
 export function CoreUI({ world }) {
   const ref = useRef()
@@ -27,30 +27,11 @@ export function CoreUI({ world }) {
   const [disconnected, setDisconnected] = useState(false)
   const [apps, setApps] = useState(false)
   const [kicked, setKicked] = useState(null)
-  useEffect(() => {
-    world.on('ready', setReady)
-    world.on('player', setPlayer)
-    world.on('ui', setUI)
-    world.on('menu', setMenu)
-    world.on('confirm', setConfirm)
-    world.on('code', setCode)
-    world.on('apps', setApps)
-    world.on('avatar', setAvatar)
-    world.on('kick', setKicked)
-    world.on('disconnect', setDisconnected)
-    return () => {
-      world.off('ready', setReady)
-      world.off('player', setPlayer)
-      world.off('ui', setUI)
-      world.off('menu', setMenu)
-      world.off('confirm', setConfirm)
-      world.off('code', setCode)
-      world.off('apps', setApps)
-      world.off('avatar', setAvatar)
-      world.off('kick', setKicked)
-      world.off('disconnect', setDisconnected)
-    }
-  }, [])
+  useWorldEvents(world, {
+    ready: setReady, player: setPlayer, ui: setUI, menu: setMenu,
+    confirm: setConfirm, code: setCode, apps: setApps, avatar: setAvatar,
+    kick: setKicked, disconnect: setDisconnected
+  })
 
   useEffect(() => {
     const elem = ref.current
@@ -64,17 +45,11 @@ export function CoreUI({ world }) {
     elem.addEventListener('pointerup', onEvent)
     elem.addEventListener('touchstart', onEvent)
   }, [])
+  usePrefsChange(world, changes => {
+    if (changes.ui) document.documentElement.style.fontSize = `${16 * world.prefs.ui}px`
+  })
   useEffect(() => {
     document.documentElement.style.fontSize = `${16 * world.prefs.ui}px`
-    function onChange(changes) {
-      if (changes.ui) {
-        document.documentElement.style.fontSize = `${16 * world.prefs.ui}px`
-      }
-    }
-    world.prefs.on('change', onChange)
-    return () => {
-      world.prefs.off('change', onChange)
-    }
   }, [])
   return (
     <div
