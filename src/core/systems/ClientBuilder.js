@@ -1,15 +1,13 @@
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
+import moment from 'moment'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 
 import { System } from './System.js'
-import { uuid } from '../utils.js'
+import { uuid, hashFile } from '../utils-client.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
-import { DEG2RAD } from '../extras/general.js'
-
-import { BuilderEntityCreator } from './builder/BuilderEntityCreator.js'
-import { BuilderEntityPicker } from './builder/BuilderEntityPicker.js'
-import { BuilderFileHandler } from './builder/BuilderFileHandler.js'
-import { BuilderModeManager } from './builder/BuilderModeManager.js'
+import { DEG2RAD, RAD2DEG } from '../extras/general.js'
+import { importApp } from '../extras/appTools.js'
 import { EVENT } from '../constants/EventNames.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
@@ -18,8 +16,16 @@ const SNAP_DEGREES = 5
 const PROJECT_SPEED = 10
 const PROJECT_MIN = 3
 const PROJECT_MAX = 50
+const modeLabels = {
+  grab: 'Grab',
+  translate: 'Translate',
+  rotate: 'Rotate',
+  scale: 'Scale',
+}
 
 const v1 = new THREE.Vector3()
+const e1 = new THREE.Euler()
+const q1 = new THREE.Quaternion()
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -50,20 +56,25 @@ export class ClientBuilder extends System {
     this.target = new THREE.Object3D()
     this.target.rotation.reorder('YXZ')
     this.target.limit = PROJECT_MAX
+
+    this.mode = 'grab'
+    this.localSpace = false
+    this.gizmo = null
+    this.gizmoTarget = null
+    this.gizmoHelper = null
+    this.gizmoActive = false
+
+    this.dropTarget = null
+    this.dropping = false
+    this.dropFile = null
   }
 
   async init({ viewport }) {
     this.viewport = viewport
-
-    this.picker = new BuilderEntityPicker(this.world, this)
-    this.creator = new BuilderEntityCreator(this.world, this)
-    this.fileHandler = new BuilderFileHandler(this.world, this, this.creator)
-    this.modeManager = new BuilderModeManager(this.world, this, this.picker)
-
-    this.viewport.addEventListener('dragover', this.fileHandler.onDragOver)
-    this.viewport.addEventListener('dragenter', this.fileHandler.onDragEnter)
-    this.viewport.addEventListener('dragleave', this.fileHandler.onDragLeave)
-    this.viewport.addEventListener('drop', this.fileHandler.onDrop)
+    this.viewport.addEventListener('dragover', this.onDragOver)
+    this.viewport.addEventListener('dragenter', this.onDragEnter)
+    this.viewport.addEventListener('dragleave', this.onDragLeave)
+    this.viewport.addEventListener('drop', this.onDrop)
   }
 
   start() {
@@ -93,7 +104,7 @@ export class ClientBuilder extends System {
 
   updateActions() {
     const actions = []
-    const mode = this.modeManager.getMode()
+    const mode = this.getMode()
 
     if (!this.enabled) {
       if (this.canBuild()) {
@@ -101,7 +112,7 @@ export class ClientBuilder extends System {
     }
 
     if (this.enabled && !this.selected) {
-      actions.push({ type: 'mouseLeft', label: this.modeManager.getModeLabel() })
+      actions.push({ type: 'mouseLeft', label: this.getModeLabel() })
       actions.push({ type: 'mouseRight', label: 'Inspect' })
       actions.push({ type: 'custom', btn: '1234', label: 'Grab / Translate / Rotate / Scale' })
       actions.push({ type: 'keyR', label: 'Duplicate' })
@@ -126,7 +137,7 @@ export class ClientBuilder extends System {
       actions.push({ type: 'mouseLeft', label: 'Select / Transform' })
       actions.push({ type: 'mouseRight', label: 'Inspect' })
       actions.push({ type: 'custom', btn: '1234', label: 'Grab / Translate / Rotate / Scale' })
-      actions.push({ type: 'keyT', label: this.modeManager.getSpaceLabel() })
+      actions.push({ type: 'keyT', label: this.getSpaceLabel() })
       actions.push({ type: 'keyX', label: 'Destroy' })
       actions.push({ type: 'controlLeft', label: 'No Snap (Hold)' })
       actions.push({ type: 'space', label: 'Jump / Fly (Double-Tap)' })
@@ -136,7 +147,7 @@ export class ClientBuilder extends System {
   }
 
   update(delta) {
-    const mode = this.modeManager.getMode()
+    const mode = this.getMode()
 
     if (this.control.tab.pressed) {
       this.toggle()
@@ -161,7 +172,7 @@ export class ClientBuilder extends System {
     this._handlePin()
 
     if (this.control.keyT.pressed && (mode === 'translate' || mode === 'rotate' || mode === 'scale')) {
-      this.modeManager.toggleSpace()
+      this.toggleSpace()
       this.updateActions()
     }
 
@@ -183,7 +194,7 @@ export class ClientBuilder extends System {
 
   _handleInspect() {
     if (this.control.mouseRight.pressed && this.control.pointer.locked) {
-      const entity = this.picker.getEntityAtReticle()
+      const entity = this.getEntityAtReticle()
       if (entity?.isApp) {
         this.select(null)
         this.control.pointer.unlock()
@@ -196,7 +207,7 @@ export class ClientBuilder extends System {
       }
     }
     else if (!this.selected && !this.control.pointer.locked && this.control.mouseRight.pressed) {
-      const entity = this.picker.getEntityAtPointer()
+      const entity = this.getEntityAtPointer()
       if (entity?.isApp) {
         this.select(null)
         this.control.pointer.unlock()
@@ -212,7 +223,7 @@ export class ClientBuilder extends System {
 
   _handleUnlink() {
     if (this.control.keyU.pressed && this.control.pointer.locked) {
-      const entity = this.selected || this.picker.getEntityAtReticle()
+      const entity = this.selected || this.getEntityAtReticle()
       if (entity?.isApp && entity.blueprint) {
         this.select(null)
         const blueprint = {
@@ -244,7 +255,7 @@ export class ClientBuilder extends System {
 
   _handlePin() {
     if (this.control.keyP.pressed && this.control.pointer.locked) {
-      const entity = this.selected || this.picker.getEntityAtReticle()
+      const entity = this.selected || this.getEntityAtReticle()
       if (entity?.isApp) {
         entity.data.pinned = !entity.data.pinned
         this.network.send('entityModified', {
@@ -260,7 +271,7 @@ export class ClientBuilder extends System {
   _handleSelection(delta, mode) {
     if (!this.justPointerLocked && this.control.pointer.locked && this.control.mouseLeft.pressed) {
       if (!this.selected) {
-        const entity = this.picker.getEntityAtReticle()
+        const entity = this.getEntityAtReticle()
         if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) this.select(entity)
       }
       else if (this.selected && mode === 'grab') {
@@ -269,9 +280,9 @@ export class ClientBuilder extends System {
       else if (
         this.selected &&
         (mode === 'translate' || mode === 'rotate' || mode === 'scale') &&
-        !this.modeManager.isGizmoActive()
+        !this.isGizmoActive()
       ) {
-        const entity = this.picker.getEntityAtReticle()
+        const entity = this.getEntityAtReticle()
         if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) this.select(entity)
         else this.select(null)
       }
@@ -288,7 +299,7 @@ export class ClientBuilder extends System {
       !this.control.metaLeft.down &&
       !this.control.controlLeft.down
     ) {
-      const entity = this.selected || this.picker.getEntityAtReticle()
+      const entity = this.selected || this.getEntityAtReticle()
       if (entity?.isApp && !entity.blueprint?.scene) {
         let blueprintId = entity.data.blueprint
         if (entity.blueprint?.unique) {
@@ -336,7 +347,7 @@ export class ClientBuilder extends System {
     }
 
     if (this.control.keyX.pressed) {
-      const entity = this.selected || this.picker.getEntityAtReticle()
+      const entity = this.selected || this.getEntityAtReticle()
       if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) {
         this.select(null)
         this.addUndo({
@@ -364,31 +375,31 @@ export class ClientBuilder extends System {
   _handleModeUpdates(delta, mode) {
     if (!this.selected) return
 
-    if (mode === 'translate' && this.modeManager.isGizmoActive()) {
+    if (mode === 'translate' && this.isGizmoActive()) {
       const app = this.selected
-      app.root.position.copy(this.modeManager.gizmoTarget.position)
-      app.root.quaternion.copy(this.modeManager.gizmoTarget.quaternion)
-      app.root.scale.copy(this.modeManager.gizmoTarget.scale)
+      app.root.position.copy(this.gizmoTarget.position)
+      app.root.quaternion.copy(this.gizmoTarget.quaternion)
+      app.root.scale.copy(this.gizmoTarget.scale)
     }
 
     if (mode === 'rotate') {
       if (this.control.controlLeft.pressed) {
-        this.modeManager.disableRotationSnap()
+        this.disableRotationSnap()
       }
       if (this.control.controlLeft.released) {
-        this.modeManager.enableRotationSnap()
+        this.enableRotationSnap()
       }
-      if (this.modeManager.isGizmoActive()) {
+      if (this.isGizmoActive()) {
         const app = this.selected
-        app.root.position.copy(this.modeManager.gizmoTarget.position)
-        app.root.quaternion.copy(this.modeManager.gizmoTarget.quaternion)
-        app.root.scale.copy(this.modeManager.gizmoTarget.scale)
+        app.root.position.copy(this.gizmoTarget.position)
+        app.root.quaternion.copy(this.gizmoTarget.quaternion)
+        app.root.scale.copy(this.gizmoTarget.scale)
       }
     }
 
-    if (mode === 'scale' && this.modeManager.isGizmoActive()) {
+    if (mode === 'scale' && this.isGizmoActive()) {
       const app = this.selected
-      app.root.scale.copy(this.modeManager.gizmoTarget.scale)
+      app.root.scale.copy(this.gizmoTarget.scale)
     }
 
     if (mode === 'grab') {
@@ -398,7 +409,7 @@ export class ClientBuilder extends System {
 
   _handleGrabMode(delta) {
     const app = this.selected
-    const hit = this.picker.getHitAtReticle(app, true)
+    const hit = this.getHitAtReticle(app, true)
 
     const camPos = this.rig.position
     const camDir = v1.copy(FORWARD).applyQuaternion(this.rig.quaternion)
@@ -515,7 +526,7 @@ export class ClientBuilder extends System {
   }
 
   setMode(mode) {
-    this.modeManager.setMode(mode)
+    this.setMode(mode)
   }
 
   select(app) {
@@ -540,13 +551,13 @@ export class ClientBuilder extends System {
         selected.build()
       }
       this.selected = null
-      const mode = this.modeManager.getMode()
+      const mode = this.getMode()
       if (mode === 'grab') {
         this.control.keyC.capture = false
         this.control.scrollDelta.capture = false
       }
       if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
-        this.modeManager.detachGizmo()
+        this.detachGizmo()
       }
     }
 
@@ -564,7 +575,7 @@ export class ClientBuilder extends System {
         this.network.send('entityModified', { id: app.data.id, mover: app.data.mover })
       }
       this.selected = app
-      const mode = this.modeManager.getMode()
+      const mode = this.getMode()
       if (mode === 'grab') {
         this.control.keyC.capture = true
         this.control.scrollDelta.capture = true
@@ -574,18 +585,526 @@ export class ClientBuilder extends System {
         this.target.limit = PROJECT_MAX
       }
       if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
-        this.modeManager.attachGizmo(app, mode)
+        this.attachGizmo(app, mode)
       }
     }
 
     this.updateActions()
   }
 
+  getMode() {
+    return this.mode
+  }
+
+  setMode(mode) {
+    if (this.selected) {
+      if (this.mode === 'grab') {
+        this.control.keyC.capture = false
+        this.control.scrollDelta.capture = false
+      }
+      if (this.mode === 'translate' || this.mode === 'rotate' || this.mode === 'scale') {
+        this.detachGizmo()
+      }
+    }
+
+    this.mode = mode
+
+    if (this.mode === 'grab') {
+      if (this.selected) {
+        this.control.keyC.capture = true
+        this.control.scrollDelta.capture = true
+        this.target.position.copy(this.selected.root.position)
+        this.target.quaternion.copy(this.selected.root.quaternion)
+        this.target.scale.copy(this.selected.root.scale)
+        this.target.limit = PROJECT_MAX
+      }
+    }
+
+    if (this.mode === 'translate' || this.mode === 'rotate' || this.mode === 'scale') {
+      if (this.selected) {
+        this.attachGizmo(this.selected, this.mode)
+      }
+    }
+
+    this.updateActions()
+  }
+
+  toggleSpace() {
+    this.localSpace = !this.localSpace
+    if (this.gizmo) {
+      this.gizmo.space = this.localSpace ? 'local' : 'world'
+    }
+  }
+
+  getSpaceLabel() {
+    return this.localSpace ? 'World Space' : 'Local Space'
+  }
+
+  attachGizmo(app, mode) {
+    if (this.gizmo) this.detachGizmo()
+
+    this.gizmo = new TransformControls(this.world.camera, this.viewport)
+    this.gizmo.setSize(0.7)
+    this.gizmo.space = this.localSpace ? 'local' : 'world'
+
+    this.gizmo._gizmo.helper.translate.scale.setScalar(0)
+    this.gizmo._gizmo.helper.rotate.scale.setScalar(0)
+    this.gizmo._gizmo.helper.scale.scale.setScalar(0)
+
+    this.gizmo.addEventListener('mouseDown', () => {
+      this.gizmoActive = true
+    })
+    this.gizmo.addEventListener('mouseUp', () => {
+      this.gizmoActive = false
+    })
+
+    this.gizmoTarget = new THREE.Object3D()
+    this.gizmoHelper = this.gizmo.getHelper()
+
+    this.gizmoTarget.position.copy(app.root.position)
+    this.gizmoTarget.quaternion.copy(app.root.quaternion)
+    this.gizmoTarget.scale.copy(app.root.scale)
+
+    this.world.stage.scene.add(this.gizmoTarget)
+    this.world.stage.scene.add(this.gizmoHelper)
+
+    this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
+    this.gizmo.attach(this.gizmoTarget)
+    this.gizmo.mode = mode
+  }
+
+  detachGizmo() {
+    if (!this.gizmo) return
+
+    this.world.stage.scene.remove(this.gizmoTarget)
+    this.world.stage.scene.remove(this.gizmoHelper)
+    this.gizmo.detach()
+    this.gizmo.disconnect()
+    this.gizmo.dispose()
+
+    this.gizmo = null
+    this.gizmoTarget = null
+    this.gizmoHelper = null
+    this.gizmoActive = false
+  }
+
+  disableRotationSnap() {
+    if (this.gizmo) {
+      this.gizmo.rotationSnap = null
+    }
+  }
+
+  enableRotationSnap() {
+    if (this.gizmo) {
+      this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
+    }
+  }
+
+  isGizmoActive() {
+    return this.gizmoActive
+  }
+
+  getModeLabel() {
+    return modeLabels[this.mode]
+  }
+
+  getEntityAtReticle() {
+    const hits = this.world.stage.raycastReticle()
+    let entity
+    for (const hit of hits) {
+      entity = hit.getEntity?.()
+      if (entity) break
+    }
+    return entity
+  }
+
+  getEntityAtPointer() {
+    const hits = this.world.stage.raycastPointer(this.control.pointer.position)
+    let entity
+    for (const hit of hits) {
+      entity = hit.getEntity?.()
+      if (entity) break
+    }
+    return entity
+  }
+
+  getHitAtReticle(ignoreEntity, ignorePlayers) {
+    const hits = this.world.stage.raycastReticle()
+    let hit
+    for (const _hit of hits) {
+      const entity = _hit.getEntity?.()
+      if (entity === ignoreEntity || (entity?.isPlayer && ignorePlayers)) continue
+      hit = _hit
+      break
+    }
+    return hit
+  }
+
+  onDragOver = e => {
+    e.preventDefault()
+  }
+
+  onDragEnter = e => {
+    this.dropTarget = e.target
+    this.dropping = true
+    this.dropFile = null
+  }
+
+  onDragLeave = e => {
+    if (e.target === this.dropTarget) {
+      this.dropping = false
+    }
+  }
+
+  onDrop = async e => {
+    e.preventDefault()
+    this.dropping = false
+
+    let file = await this._extractFileFromDrop(e)
+    if (!file) return
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const ext = file.name.split('.').pop().toLowerCase()
+
+    if (ext === 'vrm' && !this.canBuild() && !this.world.settings.customAvatars) {
+      return
+    }
+
+    const maxSize = this.network.maxUploadSize * 1024 * 1024
+    if (file.size > maxSize) {
+      this.world.chat.add({
+        id: uuid(),
+        from: null,
+        fromId: null,
+        body: `File size too large (>${this.network.maxUploadSize}mb)`,
+        createdAt: moment().toISOString(),
+      })
+      console.error(`File too large. Maximum size is ${maxSize / (1024 * 1024)}MB`)
+      return
+    }
+
+    if (ext !== 'vrm' && !this.canBuild()) {
+      this.world.chat.add({
+        id: uuid(),
+        from: null,
+        fromId: null,
+        body: `You don't have permission to do that.`,
+        createdAt: moment().toISOString(),
+      })
+      return
+    }
+
+    if (ext !== 'vrm') {
+      this.toggle(true)
+    }
+
+    const transform = this.getSpawnTransform()
+
+    if (ext === 'hyp') {
+      await this.addApp(file, transform)
+    } else if (ext === 'glb') {
+      await this.addModel(file, transform)
+    } else if (ext === 'vrm') {
+      const canPlace = this.canBuild()
+      await this.addAvatar(file, transform, canPlace)
+    }
+  }
+
+  async _extractFileFromDrop(e) {
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      const item = e.dataTransfer.items[0]
+
+      if (item.kind === 'file') {
+        return item.getAsFile()
+      }
+
+      if (item.type === 'text/uri-list' || item.type === 'text/plain' || item.type === 'text/html') {
+        const text = await this._getAsString(item)
+        const url = text.trim().split('\n')[0]
+
+        if (url.startsWith('http')) {
+          try {
+            const resp = await fetch(url)
+            const blob = await resp.blob()
+            const filename = new URL(url).pathname.split('/').pop()
+            return new File([blob], filename, { type: resp.headers.get('content-type') })
+          } catch (err) {
+            console.error('Failed to fetch URL:', err)
+            return null
+          }
+        }
+      }
+    }
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      return e.dataTransfer.files[0]
+    }
+
+    return null
+  }
+
+  _getAsString(item) {
+    return new Promise(resolve => {
+      item.getAsString(resolve)
+    })
+  }
+
+  async addApp(file, transform) {
+    const info = await importApp(file)
+
+    for (const asset of info.assets) {
+      this.world.loader.insert(asset.type, asset.url, asset.file)
+    }
+
+    if (info.blueprint.scene) {
+      const confirmed = await this.world.ui.confirm({
+        title: 'Scene',
+        message: 'Do you want to replace your current scene with this one?',
+        confirmText: 'Replace',
+        cancelText: 'Cancel',
+      })
+      if (!confirmed) return
+
+      const blueprint = this.blueprints.getScene()
+      const change = {
+        id: blueprint.id,
+        version: blueprint.version + 1,
+        name: info.blueprint.name,
+        image: info.blueprint.image,
+        author: info.blueprint.author,
+        url: info.blueprint.url,
+        desc: info.blueprint.desc,
+        model: info.blueprint.model,
+        script: info.blueprint.script,
+        props: info.blueprint.props,
+        preload: info.blueprint.preload,
+        public: info.blueprint.public,
+        locked: info.blueprint.locked,
+        frozen: info.blueprint.frozen,
+        unique: info.blueprint.unique,
+        scene: info.blueprint.scene,
+        disabled: info.blueprint.disabled,
+      }
+
+      this.blueprints.modify(change)
+
+      const promises = info.assets.map(asset => this.network.upload(asset.file))
+      await Promise.all(promises)
+
+      this.network.send('blueprintModified', change)
+      return
+    }
+
+    const blueprint = {
+      id: uuid(),
+      version: 0,
+      name: info.blueprint.name,
+      image: info.blueprint.image,
+      author: info.blueprint.author,
+      url: info.blueprint.url,
+      desc: info.blueprint.desc,
+      model: info.blueprint.model,
+      script: info.blueprint.script,
+      props: info.blueprint.props,
+      preload: info.blueprint.preload,
+      public: info.blueprint.public,
+      locked: info.blueprint.locked,
+      frozen: info.blueprint.frozen,
+      unique: info.blueprint.unique,
+      scene: info.blueprint.scene,
+      disabled: info.blueprint.disabled,
+    }
+
+    const data = {
+      id: uuid(),
+      type: 'app',
+      blueprint: blueprint.id,
+      position: transform.position,
+      quaternion: transform.quaternion,
+      scale: [1, 1, 1],
+      mover: null,
+      uploader: this.network.id,
+      pinned: false,
+      state: {},
+    }
+
+    this.blueprints.add(blueprint, true)
+    const app = this.entities.add(data, true)
+
+    const promises = info.assets.map(asset => this.network.upload(asset.file))
+    try {
+      await Promise.all(promises)
+      app.onUploaded()
+    } catch (err) {
+      console.error('Failed to upload .hyp assets:', err)
+      app.destroy()
+    }
+  }
+
+  async addModel(file, transform) {
+    const hash = await hashFile(file)
+    const filename = `${hash}.glb`
+    const url = `asset://${filename}`
+
+    this.world.loader.insert('model', url, file)
+
+    const blueprint = {
+      id: uuid(),
+      version: 0,
+      name: file.name.split('.')[0],
+      image: null,
+      author: null,
+      url: null,
+      desc: null,
+      model: url,
+      script: null,
+      props: {},
+      preload: false,
+      public: false,
+      locked: false,
+      unique: false,
+      scene: false,
+      disabled: false,
+    }
+
+    this.blueprints.add(blueprint, true)
+
+    const data = {
+      id: uuid(),
+      type: 'app',
+      blueprint: blueprint.id,
+      position: transform.position,
+      quaternion: transform.quaternion,
+      scale: [1, 1, 1],
+      mover: null,
+      uploader: this.network.id,
+      pinned: false,
+      state: {},
+    }
+
+    const app = this.entities.add(data, true)
+
+    await this.network.upload(file)
+    app.onUploaded()
+  }
+
+  async addAvatar(file, transform, canPlace) {
+    const hash = await hashFile(file)
+    const filename = `${hash}.vrm`
+    const url = `asset://${filename}`
+
+    this.world.loader.insert('avatar', url, file)
+
+    this.events.emit('avatar', {
+      file,
+      url,
+      hash,
+      canPlace,
+      onPlace: async () => {
+        this.events.emit('avatar', null)
+        await this._placeAvatar(file, url, transform)
+      },
+      onEquip: async () => {
+        this.events.emit('avatar', null)
+        await this._equipAvatar(file, url)
+      },
+    })
+  }
+
+  async _placeAvatar(file, url, transform) {
+    const blueprint = {
+      id: uuid(),
+      version: 0,
+      name: file.name,
+      image: null,
+      author: null,
+      url: null,
+      desc: null,
+      model: url,
+      script: null,
+      props: {},
+      preload: false,
+      public: false,
+      locked: false,
+      unique: false,
+      scene: false,
+      disabled: false,
+    }
+
+    this.blueprints.add(blueprint, true)
+
+    const data = {
+      id: uuid(),
+      type: 'app',
+      blueprint: blueprint.id,
+      position: transform.position,
+      quaternion: transform.quaternion,
+      scale: [1, 1, 1],
+      mover: null,
+      uploader: this.network.id,
+      pinned: false,
+      state: {},
+    }
+
+    const app = this.entities.add(data, true)
+    await this.network.upload(file)
+    app.onUploaded()
+  }
+
+  async _equipAvatar(file, url) {
+    const player = this.entities.player
+    const prevUrl = player.data.avatar
+
+    player.modify({ avatar: url, sessionAvatar: null })
+
+    try {
+      await this.network.upload(file)
+    } catch (err) {
+      console.error('Failed to upload avatar:', err)
+      player.modify({ avatar: prevUrl })
+      return
+    }
+
+    if (player.data.avatar !== url) {
+      return
+    }
+
+    this.network.send('entityModified', {
+      id: player.data.id,
+      avatar: url,
+    })
+  }
+
+  getSpawnTransform(atReticle) {
+    const hit = atReticle
+      ? this.world.stage.raycastReticle()[0]
+      : this.world.stage.raycastPointer(this.control.pointer.position)[0]
+
+    const position = hit ? hit.point.toArray() : [0, 0, 0]
+
+    let quaternion
+    if (hit) {
+      e1.copy(this.world.rig.rotation).reorder('YXZ')
+      e1.x = 0
+      e1.z = 0
+      const degrees = e1.y * RAD2DEG
+      const snappedDegrees = Math.round(degrees / SNAP_DEGREES) * SNAP_DEGREES
+      e1.y = snappedDegrees * DEG2RAD
+      q1.setFromEuler(e1)
+      quaternion = q1.toArray()
+    } else {
+      quaternion = [0, 0, 0, 1]
+    }
+
+    return { position, quaternion }
+  }
+
   destroy() {
-    this.viewport.removeEventListener('dragover', this.fileHandler.onDragOver)
-    this.viewport.removeEventListener('dragenter', this.fileHandler.onDragEnter)
-    this.viewport.removeEventListener('dragleave', this.fileHandler.onDragLeave)
-    this.viewport.removeEventListener('drop', this.fileHandler.onDrop)
-    this.modeManager.destroy()
+    this.viewport.removeEventListener('dragover', this.onDragOver)
+    this.viewport.removeEventListener('dragenter', this.onDragEnter)
+    this.viewport.removeEventListener('dragleave', this.onDragLeave)
+    this.viewport.removeEventListener('drop', this.onDrop)
+    this.detachGizmo()
   }
 }
