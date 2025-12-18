@@ -1,8 +1,5 @@
 import { css } from '@firebolt-dev/css'
 import {
-  ChevronDownIcon,
-} from '../Icons.js'
-import {
   BoxIcon,
   ChevronsUpDownIcon,
   DownloadIcon,
@@ -15,15 +12,14 @@ import {
 import { cls } from '../cls.js'
 import { useContext, useEffect, useState } from 'react'
 import { HintContext } from '../Hint.js'
-import { FieldVec3 } from '../Fields.js'
 import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { exportApp } from '../../../core/extras/appTools.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { isBoolean } from 'lodash-es'
-import { DEG2RAD, RAD2DEG } from '../../../core/extras/general.js'
-import * as THREE from '../../../core/extras/three.js'
 import { Pane } from './Pane.js'
 import { AppFields } from '../../AppFields.js'
+import { AppTransformFields } from './AppTransformFields.js'
+import { AppModelBtn } from './AppModelBtn.js'
 
 const extToType = {
   glb: 'model',
@@ -31,9 +27,6 @@ const extToType = {
 }
 const allowedModels = ['glb', 'vrm']
 let showTransforms = false
-
-const e1 = new THREE.Euler()
-const q1 = new THREE.Quaternion()
 
 export function App({ world, hidden }) {
   const { setHint } = useContext(HintContext)
@@ -189,7 +182,7 @@ export function App({ world, hidden }) {
             <DownloadIcon size='1.125rem' />
           </div>
           {!frozen && (
-            <AppModelBtn value={blueprint.model} onChange={changeModel}>
+            <AppModelBtn value={blueprint.model} onChange={changeModel} world={world}>
               <div
                 className='app-btn'
                 onPointerEnter={() => setHint('Change this apps base model')}
@@ -262,88 +255,5 @@ export function App({ world, hidden }) {
         </div>
       </div>
     </Pane>
-  )
-}
-
-function AppTransformFields({ app }) {
-  const [position, setPosition] = useState(app.root.position.toArray())
-  const [rotation, setRotation] = useState(app.root.rotation.toArray().map(n => n * RAD2DEG))
-  const [scale, setScale] = useState(app.root.scale.toArray())
-
-  return (
-    <>
-      <FieldVec3
-        label='Position'
-        dp={1}
-        step={0.1}
-        bigStep={1}
-        value={position}
-        onChange={value => {
-          setPosition(value)
-          app.modify({ position: value })
-          app.world.network.send('entityModified', { id: app.data.id, position: value })
-        }}
-      />
-      <FieldVec3
-        label='Rotation'
-        dp={1}
-        step={1}
-        bigStep={5}
-        value={rotation}
-        onChange={value => {
-          setRotation(value)
-          value = q1.setFromEuler(e1.fromArray(value.map(n => n * DEG2RAD))).toArray()
-          app.modify({ quaternion: value })
-          app.world.network.send('entityModified', { id: app.data.id, quaternion: value })
-        }}
-      />
-      <FieldVec3
-        label='Scale'
-        dp={1}
-        step={0.1}
-        bigStep={1}
-        value={scale}
-        onChange={value => {
-          setScale(value)
-          app.modify({ scale: value })
-          app.world.network.send('entityModified', { id: app.data.id, scale: value })
-        }}
-      />
-    </>
-  )
-}
-
-function AppModelBtn({ value, onChange, children }) {
-  const [key, setKey] = useState(0)
-
-  const handleDownload = e => {
-    if (e.shiftKey) {
-      e.preventDefault()
-      const file = world.loader.getFile(value)
-      if (!file) return
-      downloadFile(file)
-    }
-  }
-
-  const handleChange = e => {
-    setKey(n => n + 1)
-    onChange(e.target.files[0])
-  }
-
-  return (
-    <label
-      className='appmodelbtn'
-      css={css`
-        overflow: hidden;
-        input {
-          position: absolute;
-          top: -9999px;
-        }
-      `}
-      onClick={handleDownload}
-    >
-      <input key={key} type='file' accept='.glb,.vrm' onChange={handleChange} />
-      {children}
-    </label>
   )
 }
