@@ -1,10 +1,10 @@
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 
-import * as THREE from './three.js'
-import { DEG2RAD } from './general.js'
-import { getTrianglesFromGeometry } from './getTrianglesFromGeometry.js'
-import { getTextureBytesFromMaterial } from './getTextureBytesFromMaterial.js'
-import { Emotes } from './playerEmotes.js'
+import * as THREE from '../three.js'
+import { DEG2RAD } from '../general.js'
+import { getTrianglesFromGeometry } from '../getTrianglesFromGeometry.js'
+import { getTextureBytesFromMaterial } from '../getTextureBytesFromMaterial.js'
+import { Emotes } from '../playerEmotes.js'
 import { Modes } from '../constants/AnimationModes.js'
 import { DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_GAZE_DISTANCE, AimAxis, UpAxis } from './VRMFactoryConfig.js'
 
