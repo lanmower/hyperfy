@@ -1,22 +1,324 @@
-import { isFunction } from 'lodash-es'
+import { isFunction, isArray, isNumber } from 'lodash-es'
+import moment from 'moment'
+import * as THREE from '../extras/three.js'
 
 import { System } from './System.js'
-import { WorldProxy } from './apps/WorldProxy.js'
-import { AppProxy } from './apps/AppProxy.js'
+import { ControlPriorities } from '../extras/ControlPriorities.js'
+import { getRef } from '../nodes/Node.js'
+import { Layers } from '../extras/Layers.js'
+
+const isBrowser = typeof window !== 'undefined'
+
+const internalEvents = [
+  'fixedUpdate',
+  'updated',
+  'lateUpdate',
+  'destroy',
+  'enter',
+  'leave',
+  'chat',
+  'command',
+  'health',
+]
+
+const fileRemaps = {
+  avatar: field => {
+    field.type = 'file'
+    field.kind = 'avatar'
+  },
+  emote: field => {
+    field.type = 'file'
+    field.kind = 'emote'
+  },
+  model: field => {
+    field.type = 'file'
+    field.kind = 'model'
+  },
+  texture: field => {
+    field.type = 'file'
+    field.kind = 'texture'
+  },
+  image: field => {
+    field.type = 'file'
+    field.kind = 'image'
+  },
+  video: field => {
+    field.type = 'file'
+    field.kind = 'video'
+  },
+  hdr: field => {
+    field.type = 'file'
+    field.kind = 'hdr'
+  },
+  audio: field => {
+    field.type = 'file'
+    field.kind = 'audio'
+  },
+}
 
 export class Apps extends System {
   constructor(world) {
     super(world)
-    const worldProxy = new WorldProxy(world)
-    const appProxy = new AppProxy(world)
+    this.raycastHit = null
 
-    this.worldGetters = worldProxy.getGetters()
-    this.worldSetters = worldProxy.getSetters()
-    this.worldMethods = worldProxy.getMethods()
+    this.worldGetters = {
+      networkId: () => this.world.network.id,
+      isServer: () => this.world.network.isServer,
+      isClient: () => this.world.network.isClient,
+    }
 
-    this.appGetters = appProxy.getGetters()
-    this.appSetters = appProxy.getSetters()
-    this.appMethods = appProxy.getMethods()
+    this.worldSetters = {}
+
+    this.worldMethods = {
+      add: (entity, pNode) => {
+        const node = getRef(pNode)
+        if (!node) return
+        if (node.parent) {
+          node.parent.remove(node)
+        }
+        entity.worldNodes.add(node)
+        node.activate({ world: this.world, entity })
+      },
+      remove: (entity, pNode) => {
+        const node = getRef(pNode)
+        if (!node) return
+        if (node.parent) return
+        if (!entity.worldNodes.has(node)) return
+        entity.worldNodes.delete(node)
+        node.deactivate()
+      },
+      attach: (entity, pNode) => {
+        const node = getRef(pNode)
+        if (!node) return
+        const parent = node.parent
+        if (!parent) return
+        const finalMatrix = new THREE.Matrix4()
+        finalMatrix.copy(node.matrix)
+        let currentParent = node.parent
+        while (currentParent) {
+          finalMatrix.premultiply(currentParent.matrix)
+          currentParent = currentParent.parent
+        }
+        parent.remove(node)
+        finalMatrix.decompose(node.position, node.quaternion, node.scale)
+        node.activate({ world: this.world, entity })
+        entity.worldNodes.add(node)
+      },
+      on: (entity, name, callback) => {
+        entity.onWorldEvent(name, callback)
+      },
+      off: (entity, name, callback) => {
+        entity.offWorldEvent(name, callback)
+      },
+      emit: (entity, name, data) => {
+        if (internalEvents.includes(name)) {
+          return console.error(`apps cannot emit internal events (${name})`)
+        }
+        this.world.events.emit(name, data)
+      },
+      getTime: (entity) => this.world.network.getTime(),
+      getTimestamp: (entity, format) => {
+        if (!format) return moment().toISOString()
+        return moment().format(format)
+      },
+      chat: (entity, msg, broadcast) => {
+        if (!msg) return
+        this.world.chat.add(msg, broadcast)
+      },
+      getPlayer: (entity, playerId) => entity.getPlayerProxy(playerId),
+      getPlayers: (entity) => {
+        const players = []
+        this.world.entities.players.forEach(player => {
+          players.push(entity.getPlayerProxy(player.data.id))
+        })
+        return players
+      },
+      createLayerMask: (entity, ...groups) => {
+        let mask = 0
+        for (const group of groups) {
+          if (!Layers[group]) throw new Error(`[createLayerMask] invalid group: ${group}`)
+          mask |= Layers[group].group
+        }
+        return mask
+      },
+      raycast: (entity, origin, direction, maxDistance, layerMask) => {
+        if (!origin?.isVector3) throw new Error('[raycast] origin must be Vector3')
+        if (!direction?.isVector3) throw new Error('[raycast] direction must be Vector3')
+        if (maxDistance !== undefined && maxDistance !== null && !isNumber(maxDistance)) {
+          throw new Error('[raycast] maxDistance must be number')
+        }
+        if (layerMask !== undefined && layerMask !== null && !isNumber(layerMask)) {
+          throw new Error('[raycast] layerMask must be number')
+        }
+        const hit = this.world.physics.raycast(origin, direction, maxDistance, layerMask)
+        if (!hit) return null
+        if (!this.raycastHit) {
+          this.raycastHit = {
+            point: new THREE.Vector3(),
+            normal: new THREE.Vector3(),
+            distance: 0,
+            tag: null,
+            playerId: null,
+          }
+        }
+        this.raycastHit.point.copy(hit.point)
+        this.raycastHit.normal.copy(hit.normal)
+        this.raycastHit.distance = hit.distance
+        this.raycastHit.tag = hit.handle?.tag
+        this.raycastHit.playerId = hit.handle?.playerId
+        return this.raycastHit
+      },
+      overlapSphere: (entity, radius, origin, layerMask) => {
+        const hits = this.world.physics.overlapSphere(radius, origin, layerMask)
+        return hits.map(hit => hit.proxy)
+      },
+      get: (entity, key) => this.world.storage?.get(key),
+      set: (entity, key, value) => this.world.storage?.set(key, value),
+      open: (entity, url, newWindow = false) => {
+        if (!url) {
+          console.error('[world.open] URL is required')
+          return
+        }
+        if (this.world.network.isClient) {
+          try {
+            const resolvedUrl = this.world.resolveURL(url)
+            setTimeout(() => {
+              if (newWindow) {
+                window.open(resolvedUrl, '_blank')
+              } else {
+                window.location.href = resolvedUrl
+              }
+            }, 0)
+            console.log(`[world.open] Redirecting to: ${resolvedUrl} ${newWindow ? '(new window)' : ''}`)
+          } catch (e) {
+            console.error('[world.open] Failed to open URL:', e)
+          }
+        } else {
+          console.warn('[world.open] URL redirection only works on client side')
+        }
+      },
+      load: (entity, type, url) => {
+        return new Promise(async (resolve, reject) => {
+          const hook = entity.getDeadHook()
+          try {
+            const allowLoaders = ['avatar', 'model']
+            if (!allowLoaders.includes(type)) {
+              return reject(new Error(`cannot load type: ${type}`))
+            }
+            let glb = this.world.loader.get(type, url)
+            if (!glb) glb = await this.world.loader.load(type, url)
+            if (hook.dead) return
+            const root = glb.toNodes()
+            resolve(type === 'avatar' ? root.children[0] : root)
+          } catch (err) {
+            if (hook.dead) return
+            reject(err)
+          }
+        })
+      },
+      getQueryParam: (entity, key) => {
+        if (!isBrowser) {
+          console.error('getQueryParam() must be called in the browser')
+          return null
+        }
+        const urlParams = new URLSearchParams(window.location.search)
+        return urlParams.get(key)
+      },
+      setQueryParam: (entity, key, value) => {
+        if (!isBrowser) {
+          console.error('setQueryParam() must be called in the browser')
+          return null
+        }
+        const urlParams = new URLSearchParams(window.location.search)
+        if (value) {
+          urlParams.set(key, value)
+        } else {
+          urlParams.delete(key)
+        }
+        const newUrl = window.location.pathname + '?' + urlParams.toString()
+        window.history.replaceState({}, '', newUrl)
+      },
+    }
+
+    this.appGetters = {
+      instanceId: (entity) => entity.data.id,
+      version: (entity) => entity.blueprint.version,
+      modelUrl: (entity) => entity.blueprint.model,
+      state: (entity) => entity.data.state,
+      props: (entity) => entity.blueprint.props,
+      keepActive: (entity) => entity.keepActive,
+    }
+
+    this.appSetters = {
+      state: (entity, value) => {
+        entity.data.state = value
+      },
+      keepActive: (entity, value) => {
+        entity.keepActive = value
+      },
+    }
+
+    this.appMethods = {
+      on: (entity, name, callback) => {
+        entity.on(name, callback)
+      },
+      off: (entity, name, callback) => {
+        entity.off(name, callback)
+      },
+      send: (entity, name, data, ignoreSocketId) => {
+        if (internalEvents.includes(name)) {
+          return console.error(`apps cannot send internal events (${name})`)
+        }
+        const event = [entity.data.id, entity.blueprint.version, name, data]
+        this.world.network.send('entityEvent', event, ignoreSocketId)
+      },
+      sendTo: (entity, playerId, name, data) => {
+        if (internalEvents.includes(name)) {
+          return console.error(`apps cannot send internal events (${name})`)
+        }
+        if (!this.world.network.isServer) {
+          throw new Error('sendTo can only be called on the server')
+        }
+        const player = this.world.entities.get(playerId)
+        if (!player) return
+        const event = [entity.data.id, entity.blueprint.version, name, data]
+        this.world.network.sendTo(playerId, 'entityEvent', event)
+      },
+      emit: (entity, name, data) => {
+        if (internalEvents.includes(name)) {
+          return console.error(`apps cannot emit internal events (${name})`)
+        }
+        this.world.events.emit(name, data)
+      },
+      create: (entity, name, data) => {
+        const node = entity.createNode(name, data)
+        return node.getProxy()
+      },
+      control: (entity, options) => {
+        entity.control?.release()
+        entity.control = this.world.controls.bind({
+          ...options,
+          priority: ControlPriorities.APP,
+          object: entity,
+        })
+        return entity.control
+      },
+      configure: (entity, fields) => {
+        if (!isArray(fields)) {
+          entity.fields = []
+        } else {
+          entity.fields = fields
+        }
+        const props = entity.blueprint.props
+        for (const field of entity.fields) {
+          fileRemaps[field.type]?.(field)
+          if (field.initial !== undefined && props[field.key] === undefined) {
+            props[field.key] = field.initial
+          }
+        }
+        entity.onFields?.(entity.fields)
+      },
+    }
   }
 
   inject({ world, app }) {
@@ -55,4 +357,4 @@ export class Apps extends System {
   }
 }
 
-export { fileRemaps } from './apps/fileRemaps.js'
+export { fileRemaps }
