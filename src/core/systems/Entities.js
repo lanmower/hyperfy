@@ -1,16 +1,6 @@
-import { App } from '../entities/App.js'
-import { PlayerLocal } from '../entities/PlayerLocal.js'
-import { PlayerRemote } from '../entities/PlayerRemote.js'
 import { System } from './System.js'
-import { EVENT } from '../constants/EventNames.js'
-
-let hyperfyEntityValidation = null
-
-const Types = {
-  app: App,
-  playerLocal: PlayerLocal,
-  playerRemote: PlayerRemote,
-}
+import { EntitySpawner } from './entities/EntitySpawner.js'
+import { EntityLifecycle } from './entities/EntityLifecycle.js'
 
 export class Entities extends System {
   static DEPS = {
@@ -25,6 +15,8 @@ export class Entities extends System {
     this.player = null
     this.hot = new Set()
     this.removed = []
+    this.spawner = new EntitySpawner(world, this)
+    this.lifecycle = new EntityLifecycle(world, this)
   }
 
   get(id) {
@@ -36,73 +28,27 @@ export class Entities extends System {
   }
 
   add(data, local) {
-    if (hyperfyEntityValidation && data.type === 'app' && data.blueprint) {
-      const validation = hyperfyEntityValidation.validateEntityCreation(this.world, data)
-      if (!validation.valid) {
-        console.error('🚫 Entity creation rejected:', validation.error)
-        if (local && this.network && this.network.send) {
-          this.network.send('entityCreationFailed', validation.error)
-        }
-        return null // Don't create the entity
-      }
-    }
-
-    let Entity
-    if (data.type === 'player') {
-      Entity = Types[data.userId === this.network.id ? 'playerLocal' : 'playerRemote']
-    } else {
-      Entity = Types[data.type]
-    }
-    const entity = new Entity(this.world, data, local)
-    this.items.set(entity.data.id, entity)
-    if (data.type === 'player') {
-      this.players.set(entity.data.id, entity)
-      if (this.network.isClient && data.userId !== this.network.id) {
-        this.events.emit(EVENT.game.enter, { playerId: entity.data.id })
-      }
-    }
-    if (data.userId === this.network.id) {
-      this.player = entity
-      this.events.emit(EVENT.player, entity)
-    }
-    this.events.emit(EVENT.entity.added, entity)
-    return entity
+    return this.spawner.spawn(data, local)
   }
 
   remove(id) {
-    const entity = this.items.get(id)
-    if (!entity) return console.warn(`tried to remove entity that did not exist: ${id}`)
-    if (entity.isPlayer) this.players.delete(entity.data.id)
-    entity.destroy()
-    this.items.delete(id)
-    this.removed.push(id)
-    this.events.emit(EVENT.entity.removed, id)
+    this.lifecycle.remove(id)
   }
 
   setHot(entity, hot) {
-    if (hot) {
-      this.hot.add(entity)
-    } else {
-      this.hot.delete(entity)
-    }
+    this.lifecycle.setHot(entity, hot)
   }
 
   fixedUpdate(delta) {
-    for (const entity of this.hot) {
-      entity.fixedUpdate(delta)
-    }
+    this.lifecycle.fixedUpdate(delta)
   }
 
   update(delta) {
-    for (const entity of this.hot) {
-      entity.update(delta)
-    }
+    this.lifecycle.update(delta)
   }
 
   lateUpdate(delta) {
-    for (const entity of this.hot) {
-      entity.lateUpdate(delta)
-    }
+    this.lifecycle.lateUpdate(delta)
   }
 
   serialize() {
@@ -120,11 +66,6 @@ export class Entities extends System {
   }
 
   destroy() {
-    this.items.forEach(item => {
-      this.remove(item.data.id)
-    })
-    this.items.clear()
-    this.players.clear()
-    this.hot.clear()
+    this.lifecycle.destroy()
   }
 }

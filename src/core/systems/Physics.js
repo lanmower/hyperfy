@@ -4,11 +4,9 @@ import { loadPhysX } from '../loadPhysX.js'
 import { PhysicsQueries } from './physics/PhysicsQueries.js'
 import { PhysicsActorManager } from './physics/PhysicsActorManager.js'
 import { PhysicsSimulationEvents } from './physics/PhysicsSimulationEvents.js'
-import { PhysicsSceneSetup } from './physics/PhysicsSceneSetup.js'
-import { PhysicsControllerManager } from './physics/PhysicsControllerManager.js'
 import { PhysicsCallbackManager } from './physics/PhysicsCallbackManager.js'
 import { PhysicsInterpolationManager } from './physics/PhysicsInterpolationManager.js'
-
+import { Layers } from '../extras/Layers.js'
 
 export class Physics extends System {
   static DEPS = {
@@ -48,11 +46,36 @@ export class Physics extends System {
     this.actorManager = new PhysicsActorManager(this)
     const events = new PhysicsSimulationEvents(this)
 
-    const sceneSetup = new PhysicsSceneSetup(this)
-    this.scene = sceneSetup.createScene(events)
+    const sceneDesc = new PHYSX.PxSceneDesc(this.tolerances)
+    sceneDesc.gravity = new PHYSX.PxVec3(0, -9.81, 0)
+    sceneDesc.cpuDispatcher = PHYSX.DefaultCpuDispatcherCreate(0)
+    sceneDesc.filterShader = PHYSX.DefaultFilterShader()
+    sceneDesc.flags.raise(PHYSX.PxSceneFlagEnum.eENABLE_CCD, true)
+    sceneDesc.flags.raise(PHYSX.PxSceneFlagEnum.eENABLE_ACTIVE_ACTORS, true)
+    sceneDesc.solverType = PHYSX.PxSolverTypeEnum.eTGS
+    sceneDesc.simulationEventCallback = events.createSimulationEventCallback()
+    sceneDesc.broadPhaseType = PHYSX.PxBroadPhaseTypeEnum.eGPU
+    this.scene = this.physics.createScene(sceneDesc)
 
-    const controllerMgr = new PhysicsControllerManager(this)
-    controllerMgr.setup()
+    this.controllerManager = PHYSX.PxTopLevelFunctions.prototype.CreateControllerManager(this.scene)
+    this.controllerFilters = new PHYSX.PxControllerFilters()
+    this.controllerFilters.mFilterData = new PHYSX.PxFilterData(Layers.player.group, Layers.player.mask, 0, 0)
+    const filterCallback = new PHYSX.PxQueryFilterCallbackImpl()
+    filterCallback.simplePreFilter = (filterDataPtr, shapePtr, actor) => {
+      const filterData = PHYSX.wrapPointer(filterDataPtr, PHYSX.PxFilterData)
+      const shape = PHYSX.wrapPointer(shapePtr, PHYSX.PxShape)
+      const shapeFilterData = shape.getQueryFilterData()
+      if (filterData.word0 & shapeFilterData.word1 && shapeFilterData.word0 & filterData.word1) {
+        return PHYSX.PxQueryHitType.eBLOCK
+      }
+      return PHYSX.PxQueryHitType.eNONE
+    }
+    this.controllerFilters.mFilterCallback = filterCallback
+    const cctFilterCallback = new PHYSX.PxControllerFilterCallbackImpl()
+    cctFilterCallback.filter = (aPtr, bPtr) => {
+      return true
+    }
+    this.controllerFilters.mCCTFilterCallback = cctFilterCallback
   }
 
   start() {
@@ -102,7 +125,6 @@ export class Physics extends System {
   queueTriggerCallback = cb => {
     this.callbackManager.queueTriggerCallback(cb)
   }
-
 
   getMaterial(staticFriction, dynamicFriction, restitution) {
     const id = `${staticFriction}${dynamicFriction}${restitution}`

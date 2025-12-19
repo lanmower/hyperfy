@@ -10,9 +10,8 @@ import { RaycastUtilities } from './builder/RaycastUtilities.js'
 import { SpawnTransformCalculator } from './builder/SpawnTransformCalculator.js'
 import { BuilderActions } from './builder/BuilderActions.js'
 import { StateTransitionHandler } from './builder/StateTransitionHandler.js'
-import { UndoOperationExecutor } from './builder/UndoOperationExecutor.js'
-import { BuilderUpdateCoordinator } from './builder/BuilderUpdateCoordinator.js'
-import { BuilderControlSetup } from './builder/BuilderControlSetup.js'
+import { ControlPriorities } from '../extras/ControlPriorities.js'
+import { EVENT } from '../constants/EventNames.js'
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -42,7 +41,7 @@ export class ClientBuilder extends System {
     this.target.rotation.reorder('YXZ')
     this.target.limit = 50
 
-    this.undoManager = new UndoManager()
+    this.undoManager = new UndoManager(this)
     this.modeManager = new ModeManager()
     this.gizmoManager = null
     this.fileDropHandler = null
@@ -52,24 +51,37 @@ export class ClientBuilder extends System {
     this.spawnTransformCalculator = new SpawnTransformCalculator(this)
     this.builderActions = new BuilderActions(this)
     this.stateTransitionHandler = new StateTransitionHandler(this)
-    this.undoOperationExecutor = new UndoOperationExecutor(this)
-    this.updateCoordinator = new BuilderUpdateCoordinator(this)
-    this.controlSetup = new BuilderControlSetup(this)
   }
 
   async init({ viewport }) {
     this.viewport = viewport
     this.gizmoManager = new GizmoManager(this.world, viewport)
     this.fileDropHandler = new FileDropHandler(this)
-    this.controlSetup.setupFileDropListeners(viewport, this.fileDropHandler)
+    viewport.addEventListener('dragover', this.fileDropHandler.onDragOver)
+    viewport.addEventListener('dragenter', this.fileDropHandler.onDragEnter)
+    viewport.addEventListener('dragleave', this.fileDropHandler.onDragLeave)
+    viewport.addEventListener('drop', this.fileDropHandler.onDrop)
   }
 
   start() {
-    this.controlSetup.setupControls()
+    this.control = this.controls.bind({ priority: ControlPriorities.BUILDER })
+    this.control.mouseLeft.onPress = () => {
+      if (!this.control.pointer.locked) {
+        this.control.pointer.lock()
+        this.justPointerLocked = true
+        return true
+      }
+    }
+    this.updateActions()
   }
 
   checkLocalPlayer = () => {
-    this.controlSetup.checkLocalPlayer()
+    if (this.enabled && !this.canBuild()) {
+      this.select(null)
+      this.enabled = false
+      this.events.emit(EVENT.game.buildModeChanged, false)
+    }
+    this.updateActions()
   }
 
   canBuild() {
@@ -87,7 +99,42 @@ export class ClientBuilder extends System {
       this.toggle()
     }
 
-    this.updateCoordinator.handleFrameUpdate(delta, mode)
+    if (this.selected?.destroyed) {
+      this.select(null)
+    }
+
+    if (this.selected && this.selected?.data.mover !== this.network.id) {
+      this.select(null)
+    }
+
+    if (!this.enabled) {
+      if (this.justPointerLocked) {
+        this.justPointerLocked = false
+      }
+      return
+    }
+
+    this.selectionManager.handleInspect()
+    this.selectionManager.handleUnlink()
+    this.selectionManager.handlePin()
+    this.builderActions.handleSpaceToggle(mode)
+    this.builderActions.handleModeKeyPress()
+    this.selectionManager.handleSelection(delta, mode)
+
+    if (
+      this.control.keyZ.pressed &&
+      !this.control.shiftLeft.down &&
+      (this.control.metaLeft.down || this.control.controlLeft.down)
+    ) {
+      this.undo()
+    }
+
+    this.transformHandler.handleModeUpdates(delta, mode)
+    this.transformHandler.sendSelectedUpdates(delta)
+
+    if (this.justPointerLocked) {
+      this.justPointerLocked = false
+    }
   }
 
   addUndo(action) {
@@ -95,7 +142,7 @@ export class ClientBuilder extends System {
   }
 
   undo() {
-    this.undoOperationExecutor.execute()
+    this.undoManager.execute()
   }
 
   toggle(enabled) {
@@ -163,7 +210,10 @@ export class ClientBuilder extends System {
   }
 
   destroy() {
-    this.controlSetup.removeFileDropListeners(this.viewport, this.fileDropHandler)
+    this.viewport.removeEventListener('dragover', this.fileDropHandler.onDragOver)
+    this.viewport.removeEventListener('dragenter', this.fileDropHandler.onDragEnter)
+    this.viewport.removeEventListener('dragleave', this.fileDropHandler.onDragLeave)
+    this.viewport.removeEventListener('drop', this.fileDropHandler.onDrop)
     this.detachGizmo()
   }
 }

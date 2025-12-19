@@ -1,10 +1,10 @@
 import * as THREE from '../extras/three.js'
-
 import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
 import { MaterialFactory } from './stage/MaterialFactory.js'
-import { RaycastManager } from './stage/RaycastManager.js'
 import { MeshInserter } from './stage/MeshInserter.js'
+
+const raycasterVec2 = new THREE.Vector2()
 
 export class Stage extends System {
   static DEPS = {
@@ -24,8 +24,12 @@ export class Stage extends System {
     this.dirtyNodes = new Set()
     this.world = world
     this.materialFactory = new MaterialFactory(world)
-    this.raycastManager = new RaycastManager(this)
     this.meshInserter = new MeshInserter(this)
+    this.raycaster = new THREE.Raycaster()
+    this.raycaster.firstHitOnly = true
+    this.raycastHits = []
+    this.maskNone = new THREE.Layers()
+    this.maskNone.enableAll()
   }
 
   init({ viewport }) {
@@ -75,12 +79,31 @@ export class Stage extends System {
     return this.materialFactory.create(options)
   }
 
-  raycastPointer(position, layers, min, max) {
-    return this.raycastManager.raycastPointer(position, layers, min, max)
+  raycastPointer(position, layers = this.maskNone, min = 0, max = Infinity) {
+    if (!this.viewport) throw new Error('no viewport')
+    const rect = this.viewport.getBoundingClientRect()
+    raycasterVec2.x = ((position.x - rect.left) / rect.width) * 2 - 1
+    raycasterVec2.y = -((position.y - rect.top) / rect.height) * 2 + 1
+    this.raycaster.setFromCamera(raycasterVec2, this.camera)
+    this.raycaster.layers = layers
+    this.raycaster.near = min
+    this.raycaster.far = max
+    this.raycastHits.length = 0
+    this.octree.raycast(this.raycaster, this.raycastHits)
+    return this.raycastHits
   }
 
-  raycastReticle(layers, min, max) {
-    return this.raycastManager.raycastReticle(layers, min, max)
+  raycastReticle(layers = this.maskNone, min = 0, max = Infinity) {
+    if (!this.viewport) throw new Error('no viewport')
+    raycasterVec2.x = 0
+    raycasterVec2.y = 0
+    this.raycaster.setFromCamera(raycasterVec2, this.world.camera)
+    this.raycaster.layers = layers
+    this.raycaster.near = min
+    this.raycaster.far = max
+    this.raycastHits.length = 0
+    this.octree.raycast(this.raycaster, this.raycastHits)
+    return this.raycastHits
   }
 
   destroy() {

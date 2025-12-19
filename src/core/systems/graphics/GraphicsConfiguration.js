@@ -10,7 +10,7 @@ export class GraphicsConfiguration {
     this.prefHandlers = {
       'dpr': (value) => {
         renderer.setPixelRatio(value)
-        this.graphics.resize(this.graphics.width, this.graphics.height)
+        this.graphics.resize(this.graphics.renderState.width, this.graphics.renderState.height)
       },
       'postprocessing': (value) => {
         this.graphics.usePostprocessing = value

@@ -2,6 +2,9 @@ import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { PostProcessingSetup } from './graphics/PostProcessingSetup.js'
 import { GraphicsConfiguration } from './graphics/GraphicsConfiguration.js'
+import { RenderStateManager } from './graphics/RenderStateManager.js'
+import { ViewportResizer } from './graphics/ViewportResizer.js'
+import { XRGraphicsAdapter } from './graphics/XRGraphicsAdapter.js'
 
 let gRenderer
 
@@ -33,11 +36,10 @@ export class ClientGraphics extends System {
   constructor(world) {
     super(world)
     this.renderer = getRenderer()
+    this.viewport = null
+    this.renderState = new RenderStateManager()
     this.resizer = null
-    this.xrSession = null
-    this.xrWidth = null
-    this.xrHeight = null
-    this.xrDimensionsNeeded = false
+    this.xrAdapter = null
     this.usePostprocessing = false
     this.bloomEnabled = false
     this.postProcessing = new PostProcessingSetup(this)
@@ -46,90 +48,53 @@ export class ClientGraphics extends System {
 
   async init({ viewport }) {
     this.viewport = viewport
-
     this.renderer.setSize(viewport.offsetWidth, viewport.offsetHeight)
-    this.renderer.setClearColor(0xffffff, 0)
-    this.renderer.setPixelRatio(this.prefs.state.get('dpr'))
-    this.renderer.shadowMap.enabled = true
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-    this.renderer.toneMapping = THREE.NoToneMapping
-    this.renderer.toneMappingExposure = 1
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy()
-    THREE.Texture.DEFAULT_ANISOTROPY = this.maxAnisotropy
+    this.maxAnisotropy = this.renderState.initialize(this.renderer, viewport, this.prefs.state.get('dpr'))
+    this.renderState.initializeXR(this.renderer)
     this.viewport.appendChild(this.renderer.domElement)
 
-    this.width = viewport.offsetWidth
-    this.height = viewport.offsetHeight
-    this.aspect = this.width / this.height
-
-    this.renderer.xr.enabled = true
-    this.renderer.xr.setReferenceSpaceType('local-floor')
-    this.renderer.xr.setFoveation(1)
+    this.xrAdapter = new XRGraphicsAdapter(this.renderer, this.renderState)
 
     this.usePostprocessing = this.prefs.state.get('postprocessing')
     this.bloomEnabled = this.prefs.state.get('bloom')
-    this.postProcessing.initialize(this.renderer, this.stage, this.camera, this.width, this.height, this.settings, this.prefs)
+    this.postProcessing.initialize(
+      this.renderer, this.stage, this.camera,
+      this.renderState.width, this.renderState.height,
+      this.settings, this.prefs
+    )
 
     this.configuration = new GraphicsConfiguration(this, this.postProcessing)
     this.configuration.setupPrefHandlers(this.renderer, this.settings, this.prefs)
     this.configuration.setupSettingHandlers(this.settings, this.prefs)
 
-    this.setupResizeObserver((width, height) => {
-      this.resize(width, height)
-    })
+    this.resizer = new ViewportResizer(viewport, (w, h) => this.resize(w, h))
+    this.resizer.start()
   }
 
-  setupResizeObserver(callback) {
-    this.resizer = new ResizeObserver(() => {
-      callback(this.viewport.offsetWidth, this.viewport.offsetHeight)
-    })
-    this.resizer.observe(this.viewport)
-  }
+  get width() { return this.renderState.width }
+  get height() { return this.renderState.height }
+  get aspect() { return this.renderState.aspect }
+  get xrWidth() { return this.renderState.xrWidth }
+  get xrHeight() { return this.renderState.xrHeight }
+  get worldToScreenFactor() { return this.renderState.worldToScreenFactor }
 
-  start() {
-  }
+  start() {}
 
   resize(width, height) {
-    this.width = width
-    this.height = height
-    this.aspect = this.width / this.height
-    this.camera.aspect = this.aspect
+    this.renderState.updateSize(width, height)
+    this.camera.aspect = this.renderState.aspect
     this.camera.updateProjectionMatrix()
-    this.renderer.setSize(this.width, this.height)
+    this.renderer.setSize(width, height)
     this.postProcessing.setSize(width, height)
     this.events.emit('graphicsResize', { width, height })
     this.render()
   }
 
   render() {
-    const isPresenting = this.renderer.xr.isPresenting
     if (!this.postProcessing.render(this.renderer, this.usePostprocessing)) {
       this.renderer.render(this.stage.scene, this.camera)
     }
-    if (this.xrDimensionsNeeded) {
-      this.checkXRDimensions()
-    }
-  }
-
-  checkXRDimensions() {
-    const referenceSpace = this.renderer.xr.getReferenceSpace()
-    const frame = this.renderer.xr.getFrame()
-    if (frame && referenceSpace) {
-      const views = frame.getViewerPose(referenceSpace)?.views
-      if (views && views.length > 0) {
-        const projectionMatrix = views[0].projectionMatrix
-        const fovFactor = projectionMatrix[5]
-        const renderState = this.xrSession.renderState
-        const baseLayer = renderState.baseLayer
-        if (baseLayer) {
-          this.xrWidth = baseLayer.framebufferWidth
-          this.xrHeight = baseLayer.framebufferHeight
-          this.xrDimensionsNeeded = false
-          console.log({ xrWidth: this.xrWidth, xrHeight: this.xrHeight })
-        }
-      }
-    }
+    this.xrAdapter?.checkDimensions()
   }
 
   commit() {
@@ -137,10 +102,7 @@ export class ClientGraphics extends System {
   }
 
   preTick() {
-    const camera = this.camera
-    const fovRadians = camera.fov * (Math.PI / 180)
-    const rendererHeight = this.xrHeight || this.height
-    this.worldToScreenFactor = (Math.tan(fovRadians / 2) * 2) / rendererHeight
+    this.renderState.updateWorldToScreenFactor(this.camera)
   }
 
   onPrefChanged = ({ key, value }) => {
@@ -148,17 +110,7 @@ export class ClientGraphics extends System {
   }
 
   onXRSession = session => {
-    if (session) {
-      this.xrSession = session
-      this.xrWidth = null
-      this.xrHeight = null
-      this.xrDimensionsNeeded = true
-    } else {
-      this.xrSession = null
-      this.xrWidth = null
-      this.xrHeight = null
-      this.xrDimensionsNeeded = false
-    }
+    this.renderState.handleXRSession(session)
   }
 
   onSettingChanged = ({ key, value }) => {
@@ -166,9 +118,7 @@ export class ClientGraphics extends System {
   }
 
   destroy() {
-    if (this.resizer) {
-      this.resizer.disconnect()
-    }
+    this.resizer?.stop()
     this.viewport.removeChild(this.renderer.domElement)
   }
 }

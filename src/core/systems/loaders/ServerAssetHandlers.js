@@ -1,8 +1,8 @@
+import fs from 'fs-extra'
 import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'
 import { createEmoteFactory } from '../../extras/createEmoteFactory.js'
-import { ServerAssetFetcher } from './ServerAssetFetcher.js'
 
 export class ServerAssetHandlers {
   constructor(world, errorMonitor, scripts) {
@@ -12,85 +12,76 @@ export class ServerAssetHandlers {
     this.gltfLoader = new GLTFLoader()
   }
 
+  async fetchArrayBuffer(url) {
+    const isRemote = url.startsWith('http://') || url.startsWith('https://')
+    if (isRemote) {
+      const response = await fetch(url)
+      return await response.arrayBuffer()
+    }
+    const buffer = await fs.readFile(url)
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+  }
+
+  async fetchText(url) {
+    const isRemote = url.startsWith('http://') || url.startsWith('https://')
+    if (isRemote) {
+      const response = await fetch(url)
+      return await response.text()
+    }
+    return await fs.readFile(url, { encoding: 'utf8' })
+  }
+
   handleModel = (url) => new Promise(async (resolve, reject) => {
     try {
-      const arrayBuffer = await ServerAssetFetcher.fetchArrayBuffer(url)
+      const arrayBuffer = await this.fetchArrayBuffer(url)
       this.gltfLoader.parse(arrayBuffer, '',
-        glb => {
-          const node = glbToNodes(glb, this.world)
-          resolve({
-            toNodes() {
-              return node.clone(true)
-            },
-          })
-        },
+        glb => resolve({ toNodes: () => glbToNodes(glb, this.world).clone(true) }),
         err => {
-          if (this.errorMonitor) {
-            this.errorMonitor.captureError('gltfloader.error', {
-              message: err.message || String(err),
-              url: url,
-              type: 'model'
-            }, err.stack)
-          }
+          this.errorMonitor?.captureError('gltfloader.error', {
+            message: err.message || String(err), url, type: 'model'
+          }, err.stack)
           reject(err)
         }
       )
     } catch (err) {
-      if (this.errorMonitor) {
-        this.errorMonitor.captureError('model.load.error', {
-          message: err.message || String(err),
-          url: url,
-          type: 'model'
-        }, err.stack)
-      }
+      this.errorMonitor?.captureError('model.load.error', {
+        message: err.message || String(err), url, type: 'model'
+      }, err.stack)
       reject(err)
     }
   })
 
   handleEmote = (url) => new Promise(async (resolve, reject) => {
     try {
-      const arrayBuffer = await ServerAssetFetcher.fetchArrayBuffer(url)
+      const arrayBuffer = await this.fetchArrayBuffer(url)
       this.gltfLoader.parse(arrayBuffer, '',
         glb => {
           const factory = createEmoteFactory(glb, url)
-          resolve({
-            toClip(options) {
-              return factory.toClip(options)
-            },
-          })
+          resolve({ toClip: options => factory.toClip(options) })
         },
         err => {
-          if (this.errorMonitor) {
-            this.errorMonitor.captureError('gltfloader.error', {
-              message: err.message || String(err),
-              url: url,
-              type: 'emote'
-            }, err.stack)
-          }
+          this.errorMonitor?.captureError('gltfloader.error', {
+            message: err.message || String(err), url, type: 'emote'
+          }, err.stack)
           reject(err)
         }
       )
     } catch (err) {
-      if (this.errorMonitor) {
-        this.errorMonitor.captureError('emote.load.error', {
-          message: err.message || String(err),
-          url: url,
-          type: 'emote'
-        }, err.stack)
-      }
+      this.errorMonitor?.captureError('emote.load.error', {
+        message: err.message || String(err), url, type: 'emote'
+      }, err.stack)
       reject(err)
     }
   })
 
-  handleAvatar = (url) => new Promise(async (resolve, reject) => {
+  handleAvatar = (url) => new Promise((resolve, reject) => {
     try {
       let node
       resolve({
         toNodes: () => {
           if (!node) {
             node = createNode('group')
-            const node2 = createNode('avatar', { id: 'avatar', factory: null })
-            node.add(node2)
+            node.add(createNode('avatar', { id: 'avatar', factory: null }))
           }
           return node.clone(true)
         },
@@ -100,19 +91,12 @@ export class ServerAssetHandlers {
     }
   })
 
-  handleScript = (url) => new Promise(async (resolve, reject) => {
-    try {
-      const code = await ServerAssetFetcher.fetchText(url)
-      const script = this.scripts.evaluate(code)
-      resolve(script)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  handleScript = async (url) => {
+    const code = await this.fetchText(url)
+    return this.scripts.evaluate(code)
+  }
 
-  handleAudio = (url) => new Promise(async (resolve, reject) => {
-    reject(null)
-  })
+  handleAudio = (url) => Promise.reject(null)
 
   getHandlers() {
     return {

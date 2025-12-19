@@ -1,5 +1,6 @@
 export class UndoManager {
-  constructor() {
+  constructor(builder) {
+    this.builder = builder
     this.undos = []
   }
 
@@ -22,6 +23,36 @@ export class UndoManager {
         position: undo.position,
         quaternion: undo.quaternion
       }
+    }
+  }
+
+  execute() {
+    const result = this.undo()
+    if (!result) return
+    if (this.builder.selected) this.builder.select(null)
+    if (result.type === 'add-entity') {
+      this.builder.entities.add(result.data, true)
+      return
+    }
+    if (result.type === 'move-entity') {
+      const entity = this.builder.entities.get(result.entityId)
+      if (!entity) return
+      entity.data.position = result.position
+      entity.data.quaternion = result.quaternion
+      this.builder.network.send('entityModified', {
+        id: result.entityId,
+        position: entity.data.position,
+        quaternion: entity.data.quaternion,
+        scale: entity.data.scale,
+      })
+      entity.build()
+      return
+    }
+    if (result.type === 'remove-entity') {
+      const entity = this.builder.entities.get(result.entityId)
+      if (!entity) return
+      entity.destroy(true)
+      return
     }
   }
 

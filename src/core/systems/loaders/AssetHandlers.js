@@ -7,22 +7,42 @@ import { createNode } from '../../extras/createNode.js'
 import { createVideoFactory } from './VideoFactory.js'
 
 export class AssetHandlers {
-  constructor(clientLoader) {
+  constructor(clientLoader, world) {
     this.clientLoader = clientLoader
     this.rgbeLoader = new RGBELoader()
     this.texLoader = new THREE.TextureLoader()
     this.gltfLoader = clientLoader.gltfLoader
     this.audio = clientLoader.audio
     this.scripts = clientLoader.scripts
-    this.world = clientLoader.world
-    this.resolveURL = clientLoader.resolveURL
-    this.setupMaterial = clientLoader.setupMaterial
+    this.world = world
+    this.resolveURL = world.resolveURL
+    this.setupMaterial = world.setupMaterial
     this.results = clientLoader.results
     this.vrmHooks = null
   }
 
   setVRMHooks(hooks) {
     this.vrmHooks = hooks
+  }
+
+  handle(type, url, file, key) {
+    const handlers = {
+      video: () => this.handleVideo(url, file, key),
+      hdr: () => this.handleHDR(url, file, key),
+      image: () => this.handleImage(url, file, key),
+      texture: () => this.handleTexture(url, file, key),
+      model: () => this.handleModel(url, file, key),
+      emote: () => this.handleEmote(url, file, key),
+      avatar: () => this.handleAvatar(url, file, key),
+      script: () => this.handleScript(url, file, key),
+      audio: () => this.handleAudio(url, file, key),
+    }
+    return handlers[type]?.()
+  }
+
+  handleInsert(type, localUrl, url, file, key) {
+    const handlers = this.getInsertHandlers(localUrl, url, file, key)
+    return handlers[type]?.()
   }
 
   handleVideo(url, file, key) {
@@ -75,17 +95,7 @@ export class AssetHandlers {
   handleModel(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const node = glbToNodes(glb, this.world)
-      const model = {
-        toNodes() {
-          return node.clone(true)
-        },
-        getStats() {
-          const stats = node.getStats(true)
-          stats.fileBytes = file.size
-          return stats
-        },
-      }
+      const model = this.createModelResult(glbToNodes(glb, this.world), file)
       this.results.set(key, model)
       return model
     })
@@ -94,12 +104,7 @@ export class AssetHandlers {
   handleEmote(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const factory = createEmoteFactory(glb, url)
-      const emote = {
-        toClip(options) {
-          return factory.toClip(options)
-        },
-      }
+      const emote = { toClip: options => createEmoteFactory(glb, url).toClip(options) }
       this.results.set(key, emote)
       return emote
     })
@@ -108,27 +113,7 @@ export class AssetHandlers {
   handleAvatar(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const factory = createVRMFactory(glb, this.setupMaterial)
-      const hooks = this.vrmHooks
-      const node = createNode('group', { id: '$root' })
-      const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
-      node.add(node2)
-      const avatar = {
-        factory,
-        hooks,
-        toNodes(customHooks) {
-          const clone = node.clone(true)
-          if (customHooks) {
-            clone.get('avatar').hooks = customHooks
-          }
-          return clone
-        },
-        getStats() {
-          const stats = node.getStats(true)
-          stats.fileBytes = file.size
-          return stats
-        },
-      }
+      const avatar = this.createAvatarResult(createVRMFactory(glb, this.setupMaterial), file)
       this.results.set(key, avatar)
       return avatar
     })
@@ -151,6 +136,36 @@ export class AssetHandlers {
     })
   }
 
+  createModelResult(node, file) {
+    return {
+      toNodes() { return node.clone(true) },
+      getStats() {
+        const stats = node.getStats(true)
+        stats.fileBytes = file.size
+        return stats
+      },
+    }
+  }
+
+  createAvatarResult(factory, file) {
+    const node = createNode('group', { id: '$root' })
+    node.add(createNode('avatar', { id: 'avatar', factory, hooks: this.vrmHooks }))
+    return {
+      factory,
+      hooks: this.vrmHooks,
+      toNodes(customHooks) {
+        const clone = node.clone(true)
+        if (customHooks) clone.get('avatar').hooks = customHooks
+        return clone
+      },
+      getStats() {
+        const stats = node.getStats(true)
+        stats.fileBytes = file.size
+        return stats
+      },
+    }
+  }
+
   getInsertHandlers(localUrl, url, file, key) {
     return {
       hdr: () => this.rgbeLoader.loadAsync(localUrl).then(texture => {
@@ -165,65 +180,34 @@ export class AssetHandlers {
         }
         img.src = localUrl
       }),
-      video: () => new Promise(resolve => {
-        const factory = createVideoFactory(localUrl, this.world)
-        resolve(factory)
-      }),
+      video: () => Promise.resolve(createVideoFactory(localUrl, this.world)),
       texture: () => this.texLoader.loadAsync(localUrl).then(texture => {
         this.results.set(key, texture)
         return texture
       }),
       model: () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const node = glbToNodes(glb, this.world)
-        const model = {
-          toNodes() { return node.clone(true) },
-          getStats() {
-            const stats = node.getStats(true)
-            stats.fileBytes = file.size
-            return stats
-          },
-        }
+        const model = this.createModelResult(glbToNodes(glb, this.world), file)
         this.results.set(key, model)
         return model
       }),
       emote: () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const factory = createEmoteFactory(glb, url)
-        const emote = { toClip(options) { return factory.toClip(options) } }
+        const emote = { toClip: options => createEmoteFactory(glb, url).toClip(options) }
         this.results.set(key, emote)
         return emote
       }),
       avatar: () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const factory = createVRMFactory(glb, this.setupMaterial)
-        const hooks = this.vrmHooks
-        const node = createNode('group', { id: '$root' })
-        const node2 = createNode('avatar', { id: 'avatar', factory, hooks })
-        node.add(node2)
-        const avatar = {
-          factory,
-          hooks,
-          toNodes(customHooks) {
-            const clone = node.clone(true)
-            if (customHooks) clone.get('avatar').hooks = customHooks
-            return clone
-          },
-          getStats() {
-            const stats = node.getStats(true)
-            stats.fileBytes = file.size
-            return stats
-          },
-        }
+        const avatar = this.createAvatarResult(createVRMFactory(glb, this.setupMaterial), file)
         this.results.set(key, avatar)
         return avatar
       }),
-      script: () => Promise.resolve().then(async () => {
-        const code = await file.text()
+      script: () => file.text().then(code => {
         const script = this.scripts.evaluate(code)
         this.results.set(key, script)
         return script
       }),
-      audio: () => Promise.resolve().then(async () => {
-        const arrayBuffer = await file.arrayBuffer()
-        const audioBuffer = await this.audio.ctx.decodeAudioData(arrayBuffer)
+      audio: () => file.arrayBuffer().then(buffer =>
+        this.audio.ctx.decodeAudioData(buffer)
+      ).then(audioBuffer => {
         this.results.set(key, audioBuffer)
         return audioBuffer
       }),
