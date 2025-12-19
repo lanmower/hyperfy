@@ -4,12 +4,12 @@ import { getTrianglesFromGeometry } from '../getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../getTextureBytesFromMaterial.js'
 import { MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
 import { cloneGLB, getSkinnedMeshes, createCapsule } from './VRMUtilities.js'
-import { VRMAnimationMixer } from './VRMAnimationMixer.js'
-import { VRMLocomotionController } from './VRMLocomotionController.js'
-import { VRMGazeController } from './VRMGazeController.js'
+import { createAnimationSystem, createAimSystem } from './VRMControllers.js'
+import { Emotes } from '../playerEmotes.js'
 
 const v1 = new THREE.Vector3()
 const material = new THREE.MeshBasicMaterial()
+const v2 = new THREE.Vector3()
 
 export function createVRMFactory(glb, setupMaterial) {
   glb.scene.matrixAutoUpdate = false
@@ -123,62 +123,43 @@ export function createVRMFactory(glb, setupMaterial) {
       return glb.userData.vrm.humanoid.getRawBoneNode(vrmBoneName)?.name
     }
 
-    const locomotionController = new VRMLocomotionController(null, hooks, rootToHips, version, getBoneName)
-    const animationMixer = new VRMAnimationMixer(skinnedMeshes, hooks, rootToHips, version, getBoneName, () =>
-      locomotionController.clearLocomotion()
-    )
-    locomotionController.mixer = animationMixer.mixer
-    const gazeController = new VRMGazeController(skeleton, glb.userData.vrm, vrm.scene.matrixWorld)
+    const animationSystem = createAnimationSystem(skinnedMeshes, hooks, rootToHips, version, getBoneName)
+    const gazeController = createAimSystem(vrm.scene.matrixWorld, glb.userData.vrm, skeleton)
 
-    const bonesByName = {}
-    const findBone = name => {
-      if (!bonesByName[name]) {
-        const actualName = glb.userData.vrm.humanoid.getRawBoneNode(name)?.name
-        bonesByName[name] = skeleton.getBoneByName(actualName)
-      }
-      return bonesByName[name]
-    }
+    animationSystem.poseSystem.addPose('idle', Emotes.IDLE)
+    animationSystem.poseSystem.addPose('walk', Emotes.WALK)
+    animationSystem.poseSystem.addPose('walkLeft', Emotes.WALK_LEFT)
+    animationSystem.poseSystem.addPose('walkBack', Emotes.WALK_BACK)
+    animationSystem.poseSystem.addPose('walkRight', Emotes.WALK_RIGHT)
+    animationSystem.poseSystem.addPose('run', Emotes.RUN)
+    animationSystem.poseSystem.addPose('runLeft', Emotes.RUN_LEFT)
+    animationSystem.poseSystem.addPose('runBack', Emotes.RUN_BACK)
+    animationSystem.poseSystem.addPose('runRight', Emotes.RUN_RIGHT)
+    animationSystem.poseSystem.addPose('jump', Emotes.JUMP)
+    animationSystem.poseSystem.addPose('fall', Emotes.FALL)
+    animationSystem.poseSystem.addPose('fly', Emotes.FLY)
+    animationSystem.poseSystem.addPose('talk', Emotes.TALK)
 
     const mt = new THREE.Matrix4()
     const getBoneTransform = boneName => {
-      const bone = findBone(boneName)
+      const bone = gazeController.findBone(boneName)
       if (!bone) return null
       return mt.multiplyMatrices(vrm.scene.matrixWorld, bone.matrixWorld)
     }
 
-    locomotionController.addPose('idle', Emotes.IDLE)
-    locomotionController.addPose('walk', Emotes.WALK)
-    locomotionController.addPose('walkLeft', Emotes.WALK_LEFT)
-    locomotionController.addPose('walkBack', Emotes.WALK_BACK)
-    locomotionController.addPose('walkRight', Emotes.WALK_RIGHT)
-    locomotionController.addPose('run', Emotes.RUN)
-    locomotionController.addPose('runLeft', Emotes.RUN_LEFT)
-    locomotionController.addPose('runBack', Emotes.RUN_BACK)
-    locomotionController.addPose('runRight', Emotes.RUN_RIGHT)
-    locomotionController.addPose('jump', Emotes.JUMP)
-    locomotionController.addPose('fall', Emotes.FALL)
-    locomotionController.addPose('fly', Emotes.FLY)
-    locomotionController.addPose('talk', Emotes.TALK)
-
     const updateRate = () => {
-      animationMixer.updateRate(vrm.scene.matrix, hooks.camera.matrixWorld)
+      animationSystem.updateRate(vrm.scene.matrix, hooks.camera.matrixWorld)
     }
 
     const update = delta => {
-      const shouldUpdate = animationMixer.update(delta)
+      const shouldUpdate = animationSystem.update(delta)
       if (shouldUpdate) {
         skeleton.bones.forEach(bone => bone.updateMatrixWorld())
         skeleton.update = THREE.Skeleton.prototype.update
-        if (!animationMixer.getCurrentEmote()) {
-          locomotionController.updateLocomotion(delta)
-        }
-        const loco = locomotionController.getLocomotionState()
-        const distance = animationMixer.getDistance()
-        if (
-          loco.gazeDir &&
-          distance < MAX_GAZE_DISTANCE &&
-          (animationMixer.getCurrentEmote() ? animationMixer.getCurrentEmote().gaze : true)
-        ) {
+        const loco = animationSystem.getLocomotionState()
+        const distance = animationSystem.getDistance()
+        const currentEmote = animationSystem.getCurrentEmote()
+        if (loco.gazeDir && distance < MAX_GAZE_DISTANCE && (currentEmote ? currentEmote.gaze : true)) {
           gazeController.aimBone('neck', loco.gazeDir, delta, {
             minAngle: -30,
             maxAngle: 30,
@@ -201,17 +182,17 @@ export function createVRMFactory(glb, setupMaterial) {
     let firstPersonActive = false
     const setFirstPerson = active => {
       if (firstPersonActive === active) return
-      const head = findBone('neck')
+      const head = gazeController.findBone('neck')
       head.scale.setScalar(active ? 0 : 1)
       firstPersonActive = active
     }
 
     const setLocomotion = (mode, axis, gazeDir) => {
-      locomotionController.setLocomotion(mode, axis, gazeDir)
+      animationSystem.setLocomotion(mode, axis, gazeDir)
     }
 
     const setEmote = url => {
-      animationMixer.setEmote(url)
+      animationSystem.setEmote(url)
     }
 
     return {
@@ -234,7 +215,7 @@ export function createVRMFactory(glb, setupMaterial) {
         hooks.octree?.move(sItem)
       },
       disableRateCheck() {
-        animationMixer.disableRateCheck()
+        animationSystem.disableRateCheck()
       },
       destroy() {
         hooks.scene.remove(vrm.scene)
