@@ -1,9 +1,17 @@
-
 import * as THREE from '../../extras/three.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
+import { Layers } from '../../extras/Layers.js'
 import { PlayerPlatformTracker } from './PlayerPlatformTracker.js'
-import { PlayerGroundDetector } from './PlayerGroundDetector.js'
 import { PlayerPhysicsState } from './PlayerPhysicsState.js'
+
+const RAD2DEG = 180 / Math.PI
+const UP = new THREE.Vector3(0, 1, 0)
+const DOWN = new THREE.Vector3(0, -1, 0)
+
+const v1 = new THREE.Vector3()
+const v2 = new THREE.Vector3()
+const v3 = new THREE.Vector3()
+const v4 = new THREE.Vector3()
 
 export class PlayerPhysics {
   constructor(world, player) {
@@ -53,7 +61,6 @@ export class PlayerPhysics {
     this.lastJumpAt = 0
 
     this.platformTracker = new PlayerPlatformTracker(world, player, this.platform)
-    this.groundDetector = new PlayerGroundDetector(world, player, this)
     this.physicsState = new PlayerPhysicsState(world, player, this)
   }
 
@@ -93,17 +100,161 @@ export class PlayerPhysics {
 
   updateStandardPhysics(delta, snare) {
     this.platformTracker.update(this.grounded)
-    this.groundDetector.detect()
-    this.groundDetector.handleSteepSlopes()
+    this.detectGround()
+    this.handleSteepSlopes()
     this.physicsState.updateMaterialFriction()
     this.physicsState.updateJumpFallState(delta)
-    this.physicsState.updateGravityAndVelocity(delta, snare)
+    this.updateGravityAndVelocity(delta, snare)
     this.physicsState.applyMovementForce(snare)
     this.physicsState.handleJump()
   }
 
+  detectGround() {
+    const geometry = this.player.groundSweepGeometry
+    const pose = this.player.capsule.getGlobalPose()
+    const origin = v1.copy(pose.p)
+    origin.y += this.groundSweepRadius + 0.12
+    const direction = DOWN
+    const maxDistance = 0.12 + 0.1
+    const hitMask = Layers.environment.group | Layers.prop.group
+
+    const sweepHit = this.world.physics.sweep(
+      geometry,
+      origin,
+      direction,
+      maxDistance,
+      hitMask
+    )
+
+    if (sweepHit) {
+      this.justLeftGround = false
+      this.grounded = true
+      this.groundNormal.copy(sweepHit.normal)
+      this.groundAngle = UP.angleTo(this.groundNormal) * RAD2DEG
+    } else {
+      this.justLeftGround = !!this.grounded
+      this.grounded = false
+      this.groundNormal.copy(UP)
+      this.groundAngle = 0
+    }
+  }
+
+  handleSteepSlopes() {
+    if (this.grounded && this.groundAngle > 60) {
+      this.justLeftGround = false
+      this.grounded = false
+      this.groundNormal.copy(UP)
+      this.groundAngle = 0
+      this.slipping = true
+    } else {
+      this.slipping = false
+    }
+  }
+
+  updateGravityAndVelocity(delta, snare) {
+    const PHYSX = this.world.PHYSX
+
+    if (this.grounded) {
+      if (this.platform.actor) {
+        const isStatic = this.platform.actor instanceof PHYSX.PxRigidStatic
+        const isKinematic = this.platform.actor
+          .getRigidBodyFlags?.()
+          .isSet(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC)
+
+        if (!isKinematic && !isStatic) {
+          const amount = -9.81 * 0.2
+          const force = v1.set(0, amount, 0)
+          PHYSX.PxRigidBodyExt.prototype.addForceAtPos(
+            this.platform.actor,
+            force.toPxVec3(),
+            this.player.capsule.getGlobalPose().p,
+            PHYSX.PxForceModeEnum.eFORCE,
+            true
+          )
+        }
+      }
+    } else {
+      const force = v1.set(0, -this.effectiveGravity, 0)
+      this.player.capsule.addForce(force.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
+    }
+
+    const velocity = v1.copy(this.player.capsule.getLinearVelocity())
+
+    const dragCoeff = 10 * delta
+    const perpComponent = v2.copy(this.groundNormal).multiplyScalar(velocity.dot(this.groundNormal))
+    const parallelComponent = v3.copy(velocity).sub(perpComponent)
+    parallelComponent.multiplyScalar(1 - dragCoeff)
+    velocity.copy(parallelComponent.add(perpComponent))
+
+    if (this.grounded && !this.jumping) {
+      const projectedLength = velocity.dot(this.groundNormal)
+      const projectedVector = v2.copy(this.groundNormal).multiplyScalar(projectedLength)
+      velocity.sub(projectedVector)
+    }
+
+    if (this.justLeftGround && !this.jumping) {
+      velocity.y = -5
+    }
+
+    if (this.slipping) {
+      velocity.y -= 0.5
+    }
+
+    if (this.pushForce) {
+      if (!this.pushForceInit) {
+        this.pushForceInit = true
+        if (this.pushForce.y) {
+          this.jumped = true
+          this.jumping = false
+          this.falling = false
+          this.airJumped = false
+          this.airJumping = false
+        }
+      }
+      velocity.add(this.pushForce)
+
+      const drag = 20
+      const decayFactor = 1 - drag * delta
+      if (decayFactor < 0) {
+        this.pushForce.set(0, 0, 0)
+      } else {
+        this.pushForce.multiplyScalar(Math.max(decayFactor, 0))
+      }
+
+      if (this.pushForce.length() < 0.01) {
+        this.pushForce = null
+      }
+    }
+
+    this.player.capsule.setLinearVelocity(velocity.toPxVec3())
+  }
+
   updateFlyingPhysics(delta) {
-    this.physicsState.updateFlyingPhysics(delta)
+    const PHYSX = this.world.PHYSX
+
+    if (this.moving || this.player.jumpDown || this.player.control?.keyC?.down) {
+      const flySpeed = this.flyForce * (this.player.running ? 2 : 1)
+      const force = v1.copy(this.flyDir).multiplyScalar(flySpeed)
+
+      if (this.player.jumpDown) {
+        force.y = flySpeed
+      } else if (this.player.control?.keyC?.down) {
+        force.y = -flySpeed
+      }
+
+      this.player.capsule.addForce(force.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
+    }
+
+    const velocity = v2.copy(this.player.capsule.getLinearVelocity())
+    const dragForce = v3.copy(velocity).multiplyScalar(-this.flyDrag * delta)
+    this.player.capsule.addForce(dragForce.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
+
+    const zeroAngular = v4.set(0, 0, 0)
+    this.player.capsule.setAngularVelocity(zeroAngular.toPxVec3())
+
+    if (!this.world.builder?.enabled) {
+      this.flying = false
+    }
   }
 
   updateBuildModeFlying() {

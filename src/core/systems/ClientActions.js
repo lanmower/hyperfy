@@ -4,6 +4,7 @@ import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { EVENT } from '../constants/EventNames.js'
 import { isTouch } from '../../client/utils.js'
 import { clamp } from '../utils.js'
+import { CanvasDrawUtils } from './actions/CanvasDrawUtils.js'
 
 const BATCH_SIZE = 500
 const sizes = [128, 256, 512, 2048, 4096]
@@ -98,57 +99,11 @@ export class ClientActions extends System {
     this.updateAction(delta)
   }
 
-  drawBox(x, y, width, height, radius, color) {
-    x *= this.pr; y *= this.pr; width *= this.pr; height *= this.pr; radius *= this.pr
-    this.ctx.fillStyle = color
-    this.ctx.beginPath()
-    this.ctx.moveTo(x + radius, y)
-    this.ctx.arcTo(x + width, y, x + width, y + height, radius)
-    this.ctx.arcTo(x + width, y + height, x, y + height, radius)
-    this.ctx.arcTo(x, y + height, x, y, radius)
-    this.ctx.arcTo(x, y, x + width, y, radius)
-    this.ctx.closePath()
-    this.ctx.fill()
-  }
-
-  drawCircle(x, y, radius, color) {
-    x *= this.pr; y *= this.pr; radius *= this.pr
-    const centerX = x + radius, centerY = y + radius
-    this.ctx.beginPath()
-    this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
-    this.ctx.fillStyle = color
-    this.ctx.fill()
-  }
-
-  drawPie(x, y, radius, percent, color, offset = 0) {
-    x *= this.pr; y *= this.pr; radius *= this.pr
-    const offsetRadians = (offset * Math.PI) / 180
-    const startAngle = -0.5 * Math.PI + offsetRadians
-    const endAngle = startAngle + (percent / 100) * 2 * Math.PI
-    this.ctx.beginPath()
-    this.ctx.moveTo(x + radius, y + radius)
-    this.ctx.arc(x + radius, y + radius, radius, startAngle, endAngle)
-    this.ctx.lineTo(x + radius, y + radius)
-    this.ctx.closePath()
-    this.ctx.fillStyle = color
-    this.ctx.fill()
-  }
-
-  measureText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') {
-    fontSize *= this.pr
-    this.ctx.font = `${fontWeight} ${fontSize}px ${font}`
-    const metrics = this.ctx.measureText(text)
-    return { width: metrics.width / this.pr }
-  }
-
-  drawText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') {
-    x *= this.pr; y *= this.pr; fontSize *= this.pr
-    this.ctx.fillStyle = color
-    this.ctx.font = `${fontWeight} ${fontSize}px ${font}`
-    this.ctx.textAlign = 'left'
-    this.ctx.textBaseline = 'top'
-    this.ctx.fillText(text, x, y)
-  }
+  drawBox(x, y, width, height, radius, color) { CanvasDrawUtils.drawBox(this.ctx, this.pr, x, y, width, height, radius, color) }
+  drawCircle(x, y, radius, color) { CanvasDrawUtils.drawCircle(this.ctx, this.pr, x, y, radius, color) }
+  drawPie(x, y, radius, percent, color, offset = 0) { CanvasDrawUtils.drawPie(this.ctx, this.pr, x, y, radius, percent, color, offset) }
+  measureText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') { return CanvasDrawUtils.measureText(this.ctx, this.pr, x, y, text, color, fontSize, fontWeight, font) }
+  drawText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') { CanvasDrawUtils.drawText(this.ctx, this.pr, x, y, text, color, fontSize, fontWeight, font) }
 
   getMesh() {
     if (this.mesh) return this.mesh
