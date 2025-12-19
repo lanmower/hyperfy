@@ -85,35 +85,27 @@ export class ClientLiveKit extends System {
         this.events.emit(EVENT.livekit, this.status)
       }
     })
-    room.on(RoomEvent.LocalTrackPublished, pub => {
-      const track = pub.track
-      const playerId = this.network.id
+    const handleLocalTrack = (pub, isPublish) => {
       if (pub.source === 'microphone') {
-        this.status.mic = true
+        this.status.mic = isPublish
+        this.events.emit(EVENT.livekit, this.status)
+      } else if (pub.source === 'screen_share') {
+        if (isPublish) {
+          const metadata = JSON.parse(room.localParticipant.metadata || '{}')
+          const targetId = metadata.screenTargetId
+          this.status.screenshare = targetId
+          const screen = this.createPlayerScreen({ playerId: this.network.id, targetId, track: pub.track, publication: pub })
+          this.addScreen(screen)
+        } else {
+          const screen = this.screens.find(s => s.playerId === this.network.id)
+          this.removeScreen(screen)
+          this.status.screenshare = null
+        }
         this.events.emit(EVENT.livekit, this.status)
       }
-      if (pub.source === 'screen_share') {
-        const metadata = JSON.parse(room.localParticipant.metadata || '{}')
-        const targetId = metadata.screenTargetId
-        this.status.screenshare = targetId
-        const screen = this.createPlayerScreen({ playerId, targetId, track, publication: pub })
-        this.addScreen(screen)
-        this.events.emit(EVENT.livekit, this.status)
-      }
-    })
-    room.on(RoomEvent.LocalTrackUnpublished, pub => {
-      const playerId = this.network.id
-      if (pub.source === 'microphone') {
-        this.status.mic = false
-        this.events.emit(EVENT.livekit, this.status)
-      }
-      if (pub.source === 'screen_share') {
-        const screen = this.screens.find(s => s.playerId === playerId)
-        this.removeScreen(screen)
-        this.status.screenshare = null
-        this.events.emit(EVENT.livekit, this.status)
-      }
-    })
+    }
+    room.on(RoomEvent.LocalTrackPublished, pub => handleLocalTrack(pub, true))
+    room.on(RoomEvent.LocalTrackUnpublished, pub => handleLocalTrack(pub, false))
     const handleTrack = (track, pub, participant, isSubscribe) => {
       const playerId = participant.identity
       if (track.source === 'microphone') {
