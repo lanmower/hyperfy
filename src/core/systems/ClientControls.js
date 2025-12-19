@@ -3,6 +3,8 @@ import { buttons, codeToProp } from '../extras/buttons.js'
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { createButton, createVector, createValue, createPointer, createScreen, createCamera } from './controls/ControlFactories.js'
+import { XRInputHandler } from './controls/XRInputHandler.js'
+import { TouchHandler } from './controls/TouchHandler.js'
 
 const LMB = 1
 const RMB = 2
@@ -50,6 +52,8 @@ export class ClientControls extends System {
     this.xrSession = null
     this.lmbDown = false
     this.rmbDown = false
+    this.xrInputHandler = new XRInputHandler(this)
+    this.touchHandler = new TouchHandler(this)
     this.controlTypes = {
       mouseLeft: createButton,
       mouseRight: createButton,
@@ -81,106 +85,7 @@ export class ClientControls extends System {
         if (control.entries.scrollDelta.capture) break
       }
     }
-    if (this.xrSession) {
-      this.xrSession.inputSources?.forEach(src => {
-        if (src.gamepad && src.handedness === HandednessLeft) {
-          for (const control of this.controls) {
-            if (control.entries.xrLeftStick) {
-              control.entries.xrLeftStick.value.x = src.gamepad.axes[2]
-              control.entries.xrLeftStick.value.z = src.gamepad.axes[3]
-              if (control.entries.xrLeftStick.capture) break
-            }
-            if (control.entries.xrLeftTrigger) {
-              const button = control.entries.xrLeftTrigger
-              const down = src.gamepad.buttons[0].pressed
-              if (down && !button.down) {
-                button.pressed = true
-                button.onPress?.()
-              }
-              if (!down && button.down) {
-                button.released = true
-                button.onRelease?.()
-              }
-              button.down = down
-            }
-            if (control.entries.xrLeftBtn1) {
-              const button = control.entries.xrLeftBtn1
-              const down = src.gamepad.buttons[4].pressed
-              if (down && !button.down) {
-                button.pressed = true
-                button.onPress?.()
-              }
-              if (!down && button.down) {
-                button.released = true
-                button.onRelease?.()
-              }
-              button.down = down
-            }
-            if (control.entries.xrLeftBtn2) {
-              const button = control.entries.xrLeftBtn2
-              const down = src.gamepad.buttons[5].pressed
-              if (down && !button.down) {
-                button.pressed = true
-                button.onPress?.()
-              }
-              if (!down && button.down) {
-                button.released = true
-                button.onRelease?.()
-              }
-              button.down = down
-            }
-          }
-        }
-        if (src.gamepad && src.handedness === HandednessRight) {
-          for (const control of this.controls) {
-            if (control.entries.xrRightStick) {
-              control.entries.xrRightStick.value.x = src.gamepad.axes[2]
-              control.entries.xrRightStick.value.z = src.gamepad.axes[3]
-              if (control.entries.xrRightStick.capture) break
-            }
-            if (control.entries.xrRightTrigger) {
-              const button = control.entries.xrRightTrigger
-              const down = src.gamepad.buttons[0].pressed
-              if (down && !button.down) {
-                button.pressed = true
-                button.onPress?.()
-              }
-              if (!down && button.down) {
-                button.released = true
-                button.onRelease?.()
-              }
-              button.down = down
-            }
-            if (control.entries.xrRightBtn1) {
-              const button = control.entries.xrRightBtn1
-              const down = src.gamepad.buttons[4].pressed
-              if (down && !button.down) {
-                button.pressed = true
-                button.onPress?.()
-              }
-              if (!down && button.down) {
-                button.released = true
-                button.onRelease?.()
-              }
-              button.down = down
-            }
-            if (control.entries.xrRightBtn2) {
-              const button = control.entries.xrRightBtn2
-              const down = src.gamepad.buttons[5].pressed
-              if (down && !button.down) {
-                button.pressed = true
-                button.onPress?.()
-              }
-              if (!down && button.down) {
-                button.released = true
-                button.onRelease?.()
-              }
-              button.down = down
-            }
-          }
-        }
-      })
-    }
+    this.xrInputHandler.processXRInput()
   }
 
   postLateUpdate() {
