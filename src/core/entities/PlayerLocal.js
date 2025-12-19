@@ -213,7 +213,6 @@ export class PlayerLocal extends BaseEntity {
   }
 
   lateUpdate(delta) {
-    const isXR = this.world.xr?.session
     const anchor = this.getAnchorMatrix()
     if (anchor) {
       this.base.position.setFromMatrixPosition(anchor)
@@ -223,8 +222,7 @@ export class PlayerLocal extends BaseEntity {
       this.capsuleHandle.snap(pose)
     }
     this.cam.position.copy(this.base.position)
-    if (isXR) {
-    } else {
+    if (!this.world.xr?.session) {
       this.cam.position.y += this.camHeight
       if (!this.firstPerson) {
         const forward = v1.copy(FORWARD).applyQuaternion(this.cam.quaternion)
@@ -244,43 +242,19 @@ export class PlayerLocal extends BaseEntity {
     }
   }
 
-  teleport({ position, rotationY }) {
-    this.teleportHandler.teleport({ position, rotationY })
-  }
-
-  setEffect(effect, onEnd) {
-    this.effectManager.setEffect(effect, onEnd)
-  }
-
-  setSpeaking(speaking) {
-    return this.chatBubble.setSpeaking(speaking)
-  }
-
+  teleport({ position, rotationY }) { this.teleportHandler.teleport({ position, rotationY }) }
+  setEffect(effect, onEnd) { this.effectManager.setEffect(effect, onEnd) }
+  setSpeaking(speaking) { return this.chatBubble.setSpeaking(speaking) }
   push(force) {
     force = v1.fromArray(force)
-    if (this.pushForce) {
-      this.pushForce.add(force)
-    }
-    else {
-      this.pushForce = force.clone()
-      this.pushForceInit = false
-    }
+    if (this.pushForce) this.pushForce.add(force)
+    else { this.pushForce = force.clone(); this.pushForceInit = false }
   }
-
   setName(name) {
     this.modifyHandler.modify({ name })
     this.world.network.send('entityModified', { id: this.data.id, name })
   }
-
-  setSessionAvatar(avatar) {
-    return this.avatarManager.setSessionAvatar(avatar)
-  }
-
-  chat(msg) {
-    return this.chatBubble.chat(msg)
-  }
-
-  modify(data) {
-    this.modifyHandler.modify(data)
-  }
+  setSessionAvatar(avatar) { return this.avatarManager.setSessionAvatar(avatar) }
+  chat(msg) { return this.chatBubble.chat(msg) }
+  modify(data) { this.modifyHandler.modify(data) }
 }

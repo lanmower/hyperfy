@@ -3,8 +3,6 @@ import { PhysicsConfig } from '../../config/SystemConfig.js'
 import { VelocityCalculator } from './VelocityCalculator.js'
 
 const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
 const UP = new THREE.Vector3(0, 1, 0)
 
 export class PlayerPhysicsState {
@@ -15,39 +13,40 @@ export class PlayerPhysicsState {
   }
 
   updateJumpFallState(delta) {
-    if (this.physics.jumped && !this.physics.grounded) {
-      this.physics.jumped = false
-      this.physics.jumping = true
+    const { physics, player } = this
+
+    if (physics.jumped && !physics.grounded) {
+      physics.jumped = false
+      physics.jumping = true
     }
 
-    if (!this.physics.grounded && this.player.capsule.getLinearVelocity().y < 0) {
-      this.physics.fallTimer += delta
+    if (!physics.grounded && player.capsule.getLinearVelocity().y < 0) {
+      physics.fallTimer += delta
     } else {
-      this.physics.fallTimer = 0
+      physics.fallTimer = 0
     }
 
-    if (this.physics.fallTimer > 0.1 && !this.physics.falling) {
-      this.physics.jumping = false
-      this.physics.airJumping = false
-      this.physics.falling = true
-      this.physics.fallStartY = this.player.base.position.y
+    if (physics.fallTimer > 0.1 && !physics.falling) {
+      physics.jumping = false
+      physics.airJumping = false
+      physics.falling = true
+      physics.fallStartY = player.base.position.y
     }
 
-    if (this.physics.falling) {
-      this.physics.fallDistance = this.physics.fallStartY - this.player.base.position.y
+    if (physics.falling) {
+      physics.fallDistance = physics.fallStartY - player.base.position.y
+      if (physics.grounded) {
+        physics.falling = false
+      }
     }
 
-    if (this.physics.falling && this.physics.grounded) {
-      this.physics.falling = false
+    if (physics.jumping && physics.grounded) {
+      physics.jumping = false
     }
 
-    if (this.physics.jumping && this.physics.grounded) {
-      this.physics.jumping = false
-    }
-
-    if (this.physics.airJumped && this.physics.grounded) {
-      this.physics.airJumped = false
-      this.physics.airJumping = false
+    if (physics.airJumped && physics.grounded) {
+      physics.airJumped = false
+      physics.airJumping = false
     }
   }
 
