@@ -5,7 +5,6 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { System } from './System.js'
 import { uuid } from '../utils-client.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
-import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { EVENT } from '../constants/EventNames.js'
 import { ACTION_CONFIGS, MODE_LABELS } from './builder/ActionConfigs.js'
 import { UndoManager } from './builder/UndoManager.js'
@@ -14,12 +13,8 @@ import { GizmoManager } from './builder/GizmoManager.js'
 import { FileDropHandler } from './builder/FileDropHandler.js'
 import { SelectionManager } from './builder/SelectionManager.js'
 import { TransformHandler } from './builder/TransformHandler.js'
-
-const SNAP_DISTANCE = 1
-const SNAP_DEGREES = 5
-
-const e1 = new THREE.Euler()
-const q1 = new THREE.Quaternion()
+import { RaycastUtilities } from './builder/RaycastUtilities.js'
+import { SpawnTransformCalculator } from './builder/SpawnTransformCalculator.js'
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -55,6 +50,8 @@ export class ClientBuilder extends System {
     this.fileDropHandler = null
     this.selectionManager = new SelectionManager(this)
     this.transformHandler = new TransformHandler(this)
+    this.raycastUtilities = new RaycastUtilities(this)
+    this.spawnTransformCalculator = new SpawnTransformCalculator(this)
   }
 
   async init({ viewport }) {
@@ -374,59 +371,19 @@ export class ClientBuilder extends System {
   }
 
   getEntityAtReticle() {
-    const hits = this.world.stage.raycastReticle()
-    let entity
-    for (const hit of hits) {
-      entity = hit.getEntity?.()
-      if (entity) break
-    }
-    return entity
+    return this.raycastUtilities.getEntityAtReticle()
   }
 
   getEntityAtPointer() {
-    const hits = this.world.stage.raycastPointer(this.control.pointer.position)
-    let entity
-    for (const hit of hits) {
-      entity = hit.getEntity?.()
-      if (entity) break
-    }
-    return entity
+    return this.raycastUtilities.getEntityAtPointer()
   }
 
   getHitAtReticle(ignoreEntity, ignorePlayers) {
-    const hits = this.world.stage.raycastReticle()
-    let hit
-    for (const _hit of hits) {
-      const entity = _hit.getEntity?.()
-      if (entity === ignoreEntity || (entity?.isPlayer && ignorePlayers)) continue
-      hit = _hit
-      break
-    }
-    return hit
+    return this.raycastUtilities.getHitAtReticle(ignoreEntity, ignorePlayers)
   }
 
   getSpawnTransform(atReticle) {
-    const hit = atReticle
-      ? this.world.stage.raycastReticle()[0]
-      : this.world.stage.raycastPointer(this.control.pointer.position)[0]
-
-    const position = hit ? hit.point.toArray() : [0, 0, 0]
-
-    let quaternion
-    if (hit) {
-      e1.copy(this.world.rig.rotation).reorder('YXZ')
-      e1.x = 0
-      e1.z = 0
-      const degrees = e1.y * RAD2DEG
-      const snappedDegrees = Math.round(degrees / SNAP_DEGREES) * SNAP_DEGREES
-      e1.y = snappedDegrees * DEG2RAD
-      q1.setFromEuler(e1)
-      quaternion = q1.toArray()
-    } else {
-      quaternion = [0, 0, 0, 1]
-    }
-
-    return { position, quaternion }
+    return this.spawnTransformCalculator.calculate(atReticle)
   }
 
   destroy() {
