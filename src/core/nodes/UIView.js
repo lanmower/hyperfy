@@ -2,7 +2,8 @@ import { every, isArray, isNumber } from 'lodash-es'
 import { UIContainerNode, uiContainerDefaults, createYogaPropertyHandlers } from './base/UINodeBase.js'
 import { fillRoundRect } from '../extras/roundRect.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
 const defaults = uiContainerDefaults
@@ -72,9 +73,6 @@ export class UIView extends UIContainerNode {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema)
   }
 }

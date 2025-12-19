@@ -3,7 +3,8 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import Yoga from 'yoga-layout'
 
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import {
   isAlignContent,
@@ -191,9 +192,6 @@ export class UI extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema)
   }
 }

@@ -1,4 +1,4 @@
-import { ErrorPatterns } from '../../utils/errorPatterns.js'
+import { ErrorPatterns } from '../../utils/validation/errorPatterns.js'
 
 export class BlueprintErrorMonitor {
   constructor(world, blueprints) {

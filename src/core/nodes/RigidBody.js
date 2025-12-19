@@ -2,7 +2,8 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { PhysicsForces } from './physics/PhysicsForces.js'
 import { PhysicsProperties } from './physics/PhysicsProperties.js'
@@ -225,29 +226,26 @@ export class RigidBody extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          addForce: this.addForce,
-          addForceAtPos: this.addForceAtPos,
-          addForceAtLocalPos: this.addForceAtLocalPos,
-          addTorque: this.addTorque,
-          getPosition: this.getPosition,
-          setPosition: this.setPosition,
-          getQuaternion: this.getQuaternion,
-          setQuaternion: this.setQuaternion,
-          getLinearVelocity: this.getLinearVelocity,
-          setLinearVelocity: this.setLinearVelocity,
-          getAngularVelocity: this.getAngularVelocity,
-          setAngularVelocity: this.setAngularVelocity,
-          getVelocityAtPos: this.getVelocityAtPos,
-          getLocalVelocityAtLocalPos: this.getLocalVelocityAtLocalPos,
-          setCenterOfMass: this.setCenterOfMass,
-          setKinematicTarget: this.setKinematicTarget,
-        },
-        { sleeping: function() { return this.sleeping } }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      {
+        addForce: this.addForce,
+        addForceAtPos: this.addForceAtPos,
+        addForceAtLocalPos: this.addForceAtLocalPos,
+        addTorque: this.addTorque,
+        getPosition: this.getPosition,
+        setPosition: this.setPosition,
+        getQuaternion: this.getQuaternion,
+        setQuaternion: this.setQuaternion,
+        getLinearVelocity: this.getLinearVelocity,
+        setLinearVelocity: this.setLinearVelocity,
+        getAngularVelocity: this.getAngularVelocity,
+        setAngularVelocity: this.setAngularVelocity,
+        getVelocityAtPos: this.getVelocityAtPos,
+        getLocalVelocityAtLocalPos: this.getLocalVelocityAtLocalPos,
+        setCenterOfMass: this.setCenterOfMass,
+        setKinematicTarget: this.setKinematicTarget,
+      },
+      { sleeping: function() { return this.sleeping } }
+    )
   }
 }

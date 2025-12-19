@@ -1,7 +1,8 @@
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
@@ -222,19 +223,16 @@ export class SkinnedMesh extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          play: this.play,
-          stop: this.stop,
-          getBone: this.getBone,
-          getBoneTransform: this.getBoneTransform,
-        },
-        {
-          anims: function() { return this.anims },
-        }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      {
+        play: this.play,
+        stop: this.stop,
+        getBone: this.getBone,
+        getBoneTransform: this.getBoneTransform,
+      },
+      {
+        anims: function() { return this.anims },
+      }
+    )
   }
 }

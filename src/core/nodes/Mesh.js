@@ -4,7 +4,8 @@ import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
-import { defineProps, onSetRebuildIf, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps, onSetRebuildIf } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
 const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')
@@ -156,15 +157,12 @@ export class Mesh extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        { setSize: this.setSize },
-        {
-          geometry: { get: function() { return this.geometry }, set: function(v) { this.geometry = v } },
-          material: { get: function() { return this.material }, set: function() { throw new Error('[mesh] set material not supported') } },
-        }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      { setSize: this.setSize },
+      {
+        geometry: { get: function() { return this.geometry }, set: function(v) { this.geometry = v } },
+        material: { get: function() { return this.material }, set: function() { throw new Error('[mesh] set material not supported') } },
+      }
+    )
   }
 }

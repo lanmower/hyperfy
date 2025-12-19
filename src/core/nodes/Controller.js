@@ -6,7 +6,8 @@ import { DEG2RAD } from '../extras/general.js'
 
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
-import { defineProps, validators, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
 const defaults = {
@@ -156,20 +157,17 @@ export class Controller extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          teleport: this.teleport,
-          move: this.move,
-        },
-        {
-          layer: { get: function() { return this.layer }, set: function(v) { if (v === 'player') throw new Error('[controller] layer invalid: player'); this.layer = v } },
-          isGrounded: function() { return this.isGrounded },
-          isCeiling: function() { return this.isCeiling },
-        }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      {
+        teleport: this.teleport,
+        move: this.move,
+      },
+      {
+        layer: { get: function() { return this.layer }, set: function(v) { if (v === 'player') throw new Error('[controller] layer invalid: player'); this.layer = v } },
+        isGrounded: function() { return this.isGrounded },
+        isCeiling: function() { return this.isCeiling },
+      }
+    )
   }
 }
 

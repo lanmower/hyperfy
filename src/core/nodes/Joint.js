@@ -4,7 +4,8 @@ import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
 import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { q } from '../utils/TempVectors.js'
 import { isNumber } from 'lodash-es'
@@ -184,49 +185,46 @@ export class Joint extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      const self = this
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {},
-        {
-          body0: {
-            get() { return self.body0?.getProxy() },
-            set(value) {
-              if (value) {
-                self.ctx.world._allowRefs = true
-                self.body0 = value?._ref
-                self.ctx.world._allowRefs = false
-              } else {
-                self.body0 = null
-              }
-              self.needsRebuild = true
-              self.setDirty()
+    const self = this
+    return createSchemaProxy(this, propertySchema,
+      {},
+      {
+        body0: {
+          get() { return self.body0?.getProxy() },
+          set(value) {
+            if (value) {
+              self.ctx.world._allowRefs = true
+              self.body0 = value?._ref
+              self.ctx.world._allowRefs = false
+            } else {
+              self.body0 = null
             }
-          },
-          offset0: function() { return self.offset0 },
-          quaternion0: function() { return self.quaternion0 },
-          rotation0: function() { return self.rotation0 },
-          body1: {
-            get() { return self.body1?.getProxy() },
-            set(value) {
-              if (value) {
-                self.ctx.world._allowRefs = true
-                self.body1 = value?._ref
-                self.ctx.world._allowRefs = false
-              } else {
-                self.body1 = null
-              }
-              self.needsRebuild = true
-              self.setDirty()
+            self.needsRebuild = true
+            self.setDirty()
+          }
+        },
+        offset0: function() { return self.offset0 },
+        quaternion0: function() { return self.quaternion0 },
+        rotation0: function() { return self.rotation0 },
+        body1: {
+          get() { return self.body1?.getProxy() },
+          set(value) {
+            if (value) {
+              self.ctx.world._allowRefs = true
+              self.body1 = value?._ref
+              self.ctx.world._allowRefs = false
+            } else {
+              self.body1 = null
             }
-          },
-          offset1: function() { return self.offset1 },
-          quaternion1: function() { return self.quaternion1 },
-          rotation1: function() { return self.rotation1 },
-          axis: function() { return self.axis },
-        }
-      )
-    }
-    return this.proxy
+            self.needsRebuild = true
+            self.setDirty()
+          }
+        },
+        offset1: function() { return self.offset1 },
+        quaternion1: function() { return self.quaternion1 },
+        rotation1: function() { return self.rotation1 },
+        axis: function() { return self.axis },
+      }
+    )
   }
 }

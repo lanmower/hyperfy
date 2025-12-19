@@ -1,5 +1,6 @@
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { createImageSchema } from '../utils/validation/createNodeSchema.js'
 import { ImageRenderer } from './image/ImageRenderer.js'
 
@@ -34,9 +35,6 @@ export class Image extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema)
   }
 }

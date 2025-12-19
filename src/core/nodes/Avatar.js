@@ -1,5 +1,6 @@
 import { isBoolean, isString } from 'lodash-es'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { Node } from './Node.js'
 import * as THREE from 'three'
@@ -113,20 +114,17 @@ export class Avatar extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          getHeight: this.getHeight,
-          getHeadToHeight: this.getHeadToHeight,
-          getBoneTransform: this.getBoneTransform,
-          setLocomotion: this.setLocomotion,
-          setEmote: this.setEmote,
-        },
-        {
-          height: function() { return this.height },
-        }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      {
+        getHeight: this.getHeight,
+        getHeadToHeight: this.getHeadToHeight,
+        getBoneTransform: this.getBoneTransform,
+        setLocomotion: this.setLocomotion,
+        setEmote: this.setEmote,
+      },
+      {
+        height: function() { return this.height },
+      }
+    )
   }
 }

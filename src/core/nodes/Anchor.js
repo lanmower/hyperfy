@@ -1,5 +1,5 @@
 import { Node } from './Node.js'
-import { createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 
 export class Anchor extends Node {
   constructor(data = {}) {
@@ -17,9 +17,6 @@ export class Anchor extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, {}, super.getProxy(), {}, { anchorId: function() { return this.anchorId } })
-    }
-    return this.proxy
+    return createSchemaProxy(this, {}, {}, { anchorId: function() { return this.anchorId } })
   }
 }

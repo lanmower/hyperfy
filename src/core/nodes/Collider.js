@@ -1,7 +1,8 @@
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, onSetRebuildIf, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps, onSetRebuildIf } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
 import { Layers } from '../extras/Layers.js'
@@ -137,19 +138,16 @@ export class Collider extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          setSize: this.setSize,
-          setMaterial: this.setMaterial,
-          requestRebuild: this.requestRebuild,
-        },
-        {
-          geometry: { get: function() { return this.geometry }, set: function(v) { this.geometry = v } },
-          layer: { get: function() { return this.layer }, set: function(v) { if (v === 'player') throw new Error('[collider] layer invalid: player'); this.layer = v } },
-        }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      {
+        setSize: this.setSize,
+        setMaterial: this.setMaterial,
+        requestRebuild: this.requestRebuild,
+      },
+      {
+        geometry: { get: function() { return this.geometry }, set: function(v) { this.geometry = v } },
+        layer: { get: function() { return this.layer }, set: function(v) { if (v === 'player') throw new Error('[collider] layer invalid: player'); this.layer = v } },
+      }
+    )
   }
 }

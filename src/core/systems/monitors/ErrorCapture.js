@@ -1,5 +1,5 @@
 import { ErrorLevels, ErrorSources } from '../../schemas/ErrorEvent.schema.js'
-import { ErrorPatterns } from '../../utils/errorPatterns.js'
+import { ErrorPatterns } from '../../utils/validation/errorPatterns.js'
 import { Serialization } from '../../utils/serialization.js'
 
 export class ErrorCapture {

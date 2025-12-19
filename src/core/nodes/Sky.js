@@ -1,5 +1,6 @@
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import * as THREE from '../extras/three.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
@@ -42,9 +43,6 @@ export class Sky extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema)
   }
 }

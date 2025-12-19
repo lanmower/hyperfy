@@ -1,6 +1,7 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
-import { defineProps, createPropertyProxy, validators } from '../utils/helpers/defineProperty.js'
+import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { Node } from './Node.js'
 
@@ -41,9 +42,6 @@ export class Action extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy())
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema)
   }
 }

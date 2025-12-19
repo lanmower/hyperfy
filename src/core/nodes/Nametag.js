@@ -1,6 +1,7 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
-import { defineProps, validators, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
 const defaults = {
@@ -68,18 +69,15 @@ export class Nametag extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      const self = this
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {},
-        {
-          label: {
-            get() { return self.label },
-            set(value) { self.label = value }
-          },
-        }
-      )
-    }
-    return this.proxy
+    const self = this
+    return createSchemaProxy(this, propertySchema,
+      {},
+      {
+        label: {
+          get() { return self.label },
+          set(value) { self.label = value }
+        },
+      }
+    )
   }
 }

@@ -1,5 +1,6 @@
 import { Node } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { AudioPlaybackController } from './audio/AudioPlaybackController.js'
 import { AudioPannerController } from './audio/AudioPannerController.js'
@@ -86,15 +87,12 @@ export class Audio extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(), {
-        play: this.play,
-        pause: this.pause,
-        stop: this.stop,
-        setPlaybackRate: this.setPlaybackRate,
-      })
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema, {
+      play: this.play,
+      pause: this.pause,
+      stop: this.stop,
+      setPlaybackRate: this.setPlaybackRate,
+    })
   }
 }
 

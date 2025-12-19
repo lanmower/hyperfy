@@ -1,5 +1,5 @@
 import { Node } from './Node.js'
-import { createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 
 export class Group extends Node {
   constructor(data = {}) {
@@ -8,9 +8,6 @@ export class Group extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, {}, super.getProxy())
-    }
-    return this.proxy
+    return createSchemaProxy(this, {})
   }
 }

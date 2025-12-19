@@ -2,7 +2,8 @@ import { isBoolean, isNumber, isString } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { VideoRenderer } from './video/VideoRenderer.js'
 import { VideoAudioController } from './video/VideoAudioController.js'
@@ -233,23 +234,20 @@ export class Video extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          play: this.play,
-          pause: this.pause,
-          stop: this.stop,
-        },
-        {
-          loading: function() { return this.loading },
-          duration: function() { return this.duration },
-          playing: function() { return this.playing },
-          time: { get: function() { return this.time }, set: function(v) { this.time = v } },
-          material: { get: function() { return this.material }, set: function(v) { this.material = v } },
-          onLoad: { get: function() { return this.onLoad }, set: function(v) { this.onLoad = v } },
-        }
-      )
-    }
-    return this.proxy
+    return createSchemaProxy(this, propertySchema,
+      {
+        play: this.play,
+        pause: this.pause,
+        stop: this.stop,
+      },
+      {
+        loading: function() { return this.loading },
+        duration: function() { return this.duration },
+        playing: function() { return this.playing },
+        time: { get: function() { return this.time }, set: function(v) { this.time = v } },
+        material: { get: function() { return this.material }, set: function(v) { this.material = v } },
+        onLoad: { get: function() { return this.onLoad }, set: function(v) { this.onLoad = v } },
+      }
+    )
   }
 }

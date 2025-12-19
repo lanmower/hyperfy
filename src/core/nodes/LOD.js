@@ -2,7 +2,8 @@ import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node } from './Node.js'
-import { defineProps, validators, createPropertyProxy } from '../utils/helpers/defineProperty.js'
+import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { v } from '../utils/TempVectors.js'
 
@@ -85,18 +86,15 @@ export class LOD extends Node {
   }
 
   getProxy() {
-    if (!this.proxy) {
-      const self = this
-      this.proxy = createPropertyProxy(this, propertySchema, super.getProxy(),
-        {
-          insert(pNode, maxDistance) {
-            const node = getRef(pNode)
-            self.insert(node, maxDistance)
-            return this
-          },
-        }
-      )
-    }
-    return this.proxy
+    const self = this
+    return createSchemaProxy(this, propertySchema,
+      {
+        insert(pNode, maxDistance) {
+          const node = getRef(pNode)
+          self.insert(node, maxDistance)
+          return this
+        },
+      }
+    )
   }
 }
