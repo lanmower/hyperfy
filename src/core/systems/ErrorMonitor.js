@@ -2,10 +2,11 @@ import { System } from './System.js'
 import { StateManager } from '../state/StateManager.js'
 import { ErrorEventBus } from '../utils/ErrorEventBus.js'
 import { ErrorLevels, ErrorSources } from '../schemas/ErrorEvent.schema.js'
-import { ErrorPatterns } from '../utils/errorPatterns.js'
-import { Serialization } from '../utils/serialization.js'
 import { errorObserver } from '../../server/services/ErrorObserver.js'
 import { errorFormatter } from '../../server/utils/ErrorFormatter.js'
+import { ErrorCapture } from './monitors/ErrorCapture.js'
+import { ErrorForwarder } from './monitors/ErrorForwarder.js'
+import { ErrorAnalytics } from './monitors/ErrorAnalytics.js'
 
 export class ErrorMonitor extends System {
   static DEPS = {
@@ -23,6 +24,10 @@ export class ErrorMonitor extends System {
     this.maxErrors = 500
     this.errorBus = new ErrorEventBus()
     this.listeners = new Set()
+
+    this.capture = new ErrorCapture(this)
+    this.forwarder = new ErrorForwarder(this)
+    this.analytics = new ErrorAnalytics(this)
 
     this.setupErrorBusForwarding()
     this.interceptGlobalErrors()
@@ -79,172 +84,19 @@ export class ErrorMonitor extends System {
   }
 
   captureError(type, args, stack) {
-    const error = {
-      message: this.extractMessage(args),
-      stack: this.cleanStack(stack)
-    }
-
-    const context = {
-      category: type,
-      source: this.isClient ? ErrorSources.CLIENT : ErrorSources.SERVER,
-      ...this.getContext()
-    }
-
-    const level = this.isCriticalError(type, args) ? ErrorLevels.ERROR : ErrorLevels.WARN
-
-    this.errorBus.emit(error, context, level)
-
-    const errorId = this.state.get('errorId') + 1
-    this.state.set('errorId', errorId)
-  }
-
-  extractMessage(args) {
-    if (typeof args === 'string') return args
-    if (args?.message) return String(args.message)
-    if (Array.isArray(args)) return args.join(' ')
-    return JSON.stringify(args)
-  }
-
-  cleanStack(stack) {
-    return Serialization.cleanStack(stack)
-  }
-
-  getContext() {
-    const context = {
-      timestamp: Date.now(),
-      url: this.isClient ? window.location?.href : null,
-      userAgent: this.isClient ? navigator?.userAgent : null,
-      memory: this.getMemoryUsage(),
-      entities: this.entities?.count || 0,
-      blueprints: this.blueprints?.count || 0
-    }
-
-    if (typeof performance !== 'undefined') {
-      context.performance = {
-        now: performance.now(),
-        memory: performance.memory ? {
-          used: performance.memory.usedJSHeapSize,
-          total: performance.memory.totalJSHeapSize,
-          limit: performance.memory.jsHeapSizeLimit
-        } : null
-      }
-    }
-
-    return context
-  }
-
-  getMemoryUsage() {
-    if (this.isServer && typeof process !== 'undefined') {
-      const usage = process.memoryUsage()
-      return {
-        rss: usage.rss,
-        heapTotal: usage.heapTotal,
-        heapUsed: usage.heapUsed,
-        external: usage.external
-      }
-    }
-
-    if (this.isClient && typeof performance !== 'undefined' && performance.memory) {
-      return {
-        used: performance.memory.usedJSHeapSize,
-        total: performance.memory.totalJSHeapSize,
-        limit: performance.memory.jsHeapSizeLimit
-      }
-    }
-
-    return null
+    return this.capture.captureError(type, args, stack)
   }
 
   isCriticalError(type, args) {
-    let message = ''
-    if (Array.isArray(args)) {
-      message = args.join(' ')
-    } else if (args && typeof args === 'string') {
-      message = args
-    } else if (args && typeof args === 'object') {
-      message = JSON.stringify(args)
-    } else {
-      message = String(args || '')
-    }
-    return ErrorPatterns.isCritical(type, message)
+    return this.capture.isCriticalError(type, args)
   }
 
   forwardErrorEvent(event, isDuplicate) {
-    const errorEntry = {
-      id: event.id,
-      timestamp: new Date(event.timestamp).toISOString(),
-      type: event.category,
-      side: event.source === ErrorSources.SDK ? 'client' : event.source,
-      args: { message: event.message, context: event.context },
-      stack: event.stack,
-      context: event.context,
-      networkId: this.network?.id,
-      playerId: this.entities?.player?.data?.id,
-      level: event.level,
-      count: event.count
-    }
-
-    const errors = this.state.get('errors')
-    const updated = [...errors, errorEntry]
-    if (updated.length > this.maxErrors) updated.shift()
-    this.state.set('errors', updated)
-
-    this.events.emit('errorCaptured', errorEntry)
-
-    for (const listener of this.listeners) {
-      try {
-        listener('error', errorEntry)
-      } catch (err) {
-        console.error('Error in listener:', err)
-      }
-    }
-
-    if (event.level === ErrorLevels.ERROR && !isDuplicate) {
-      if (this.isClient && this.network) {
-        this.sendErrorToServer(errorEntry)
-      }
-
-      if (this.enableRealTimeStreaming && this.mcpEndpoint) {
-        this.streamToMCP(errorEntry)
-      }
-    }
-  }
-
-  sendErrorToServer(errorEntry) {
-    try {
-      this.network.send('errorReport', {
-        error: errorEntry,
-        realTime: true
-      })
-    } catch (err) {
-    }
+    return this.forwarder.forwardErrorEvent(event, isDuplicate)
   }
 
   handleCriticalError(errorEntry) {
-    this.events.emit('criticalError', errorEntry)
-
-    if (this.isClient && this.network) {
-      this.network.send('errorReport', {
-        critical: true,
-        error: errorEntry
-      })
-    }
-  }
-
-  streamToMCP(errorEntry) {
-    if (typeof fetch !== 'undefined') {
-      fetch(this.mcpEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'error',
-          data: errorEntry
-        })
-      }).catch(() => {
-      })
-    }
+    return this.forwarder.handleCriticalError(errorEntry)
   }
 
   onErrorReport = (socket, errorData) => {
@@ -379,71 +231,19 @@ export class ErrorMonitor extends System {
   }
 
   getErrors(options = {}) {
-    const {
-      limit = 50,
-      type = null,
-      since = null,
-      side = null,
-      critical = null
-    } = options
-
-    let filtered = this.state.get('errors')
-
-    if (type) filtered = filtered.filter(error => error.type === type)
-    if (since) {
-      const sinceTime = new Date(since).getTime()
-      filtered = filtered.filter(error => new Date(error.timestamp).getTime() >= sinceTime)
-    }
-    if (side) filtered = filtered.filter(error => error.side === side)
-    if (critical !== null) {
-      filtered = filtered.filter(error => this.isCriticalError(error.type, error.args) === critical)
-    }
-
-    return filtered
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, limit)
+    return this.analytics.getErrors(options)
   }
 
   clearErrors() {
-    const count = this.state.get('errors').length
-    this.state.set('errors', [])
-    this.state.set('errorId', 0)
-    return count
+    return this.analytics.clearErrors()
   }
 
   getStats() {
-    const busStats = this.errorBus.getStats()
-    const errors = this.state.get('errors')
-
-    const now = Date.now()
-    const hourAgo = now - (60 * 60 * 1000)
-    const recent = errors.filter(error =>
-      new Date(error.timestamp).getTime() >= hourAgo
-    )
-
-    const byType = {}
-    recent.forEach(error => {
-      byType[error.type] = (byType[error.type] || 0) + 1
-    })
-
-    return {
-      total: errors.length,
-      recent: recent.length,
-      critical: recent.filter(error =>
-        this.isCriticalError(error.type, error.args)
-      ).length,
-      byType,
-      unified: busStats
-    }
+    return this.analytics.getStats()
   }
 
   cleanup() {
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000)
-    const errors = this.state.get('errors')
-    const cleaned = errors.filter(error =>
-      new Date(error.timestamp).getTime() >= cutoff
-    )
-    this.state.set('errors', cleaned)
+    return this.analytics.cleanup()
   }
 
   addListener(listener) {
