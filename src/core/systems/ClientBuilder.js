@@ -13,15 +13,11 @@ import { ModeManager } from './builder/ModeManager.js'
 import { GizmoManager } from './builder/GizmoManager.js'
 import { FileDropHandler } from './builder/FileDropHandler.js'
 import { SelectionManager } from './builder/SelectionManager.js'
+import { TransformHandler } from './builder/TransformHandler.js'
 
-const FORWARD = new THREE.Vector3(0, 0, -1)
 const SNAP_DISTANCE = 1
 const SNAP_DEGREES = 5
-const PROJECT_SPEED = 10
-const PROJECT_MIN = 3
-const PROJECT_MAX = 50
 
-const v1 = new THREE.Vector3()
 const e1 = new THREE.Euler()
 const q1 = new THREE.Quaternion()
 
@@ -47,18 +43,18 @@ export class ClientBuilder extends System {
     super(world)
     this.enabled = false
     this.selected = null
-    this.lastMoveSendTime = 0
     this.justPointerLocked = false
 
     this.target = new THREE.Object3D()
     this.target.rotation.reorder('YXZ')
-    this.target.limit = PROJECT_MAX
+    this.target.limit = 50
 
     this.undoManager = new UndoManager()
     this.modeManager = new ModeManager()
     this.gizmoManager = null
     this.fileDropHandler = null
     this.selectionManager = new SelectionManager(this)
+    this.transformHandler = new TransformHandler(this)
   }
 
   async init({ viewport }) {
@@ -187,109 +183,11 @@ export class ClientBuilder extends System {
   }
 
   _handleModeUpdates(delta, mode) {
-    if (!this.selected) return
-
-    if (mode === 'translate' && this.isGizmoActive()) {
-      const app = this.selected
-      app.root.position.copy(this.gizmoTarget.position)
-      app.root.quaternion.copy(this.gizmoTarget.quaternion)
-      app.root.scale.copy(this.gizmoTarget.scale)
-    }
-
-    if (mode === 'rotate') {
-      if (this.control.controlLeft.pressed) {
-        this.disableRotationSnap()
-      }
-      if (this.control.controlLeft.released) {
-        this.enableRotationSnap()
-      }
-      if (this.isGizmoActive()) {
-        const app = this.selected
-        app.root.position.copy(this.gizmoTarget.position)
-        app.root.quaternion.copy(this.gizmoTarget.quaternion)
-        app.root.scale.copy(this.gizmoTarget.scale)
-      }
-    }
-
-    if (mode === 'scale' && this.isGizmoActive()) {
-      const app = this.selected
-      app.root.scale.copy(this.gizmoTarget.scale)
-    }
-
-    if (mode === 'grab') {
-      this._handleGrabMode(delta)
-    }
-  }
-
-  _handleGrabMode(delta) {
-    const app = this.selected
-    const hit = this.getHitAtReticle(app, true)
-
-    const camPos = this.rig.position
-    const camDir = v1.copy(FORWARD).applyQuaternion(this.rig.quaternion)
-    const hitDistance = hit ? hit.point.distanceTo(camPos) : 0
-
-    if (hit && hitDistance < this.target.limit) {
-      this.target.position.copy(hit.point)
-    } else {
-      this.target.position.copy(camPos).add(camDir.multiplyScalar(this.target.limit))
-    }
-
-    let project = this.control.keyF.down ? 1 : this.control.keyC.down ? -1 : null
-    if (project) {
-      const multiplier = this.control.shiftLeft.down ? 4 : 1
-      this.target.limit += project * PROJECT_SPEED * delta * multiplier
-      if (this.target.limit < PROJECT_MIN) this.target.limit = PROJECT_MIN
-      if (hitDistance && this.target.limit > hitDistance) this.target.limit = hitDistance
-    }
-
-    if (this.control.shiftLeft.down) {
-      const scaleFactor = 1 + this.control.scrollDelta.value * 0.1 * delta
-      this.target.scale.multiplyScalar(scaleFactor)
-    }
-    else {
-      this.target.rotation.y += this.control.scrollDelta.value * 0.1 * delta
-    }
-
-    app.root.position.copy(this.target.position)
-    app.root.quaternion.copy(this.target.quaternion)
-    app.root.scale.copy(this.target.scale)
-
-    if (!this.control.controlLeft.down) {
-      const newY = this.target.rotation.y
-      const degrees = newY / DEG2RAD
-      const snappedDegrees = Math.round(degrees / SNAP_DEGREES) * SNAP_DEGREES
-      app.root.rotation.y = snappedDegrees * DEG2RAD
-    }
-
-    app.root.clean()
-
-    if (!this.control.controlLeft.down) {
-      for (const pos of app.snaps) {
-        const result = this.snaps.octree.query(pos, SNAP_DISTANCE)[0]
-        if (result) {
-          const offset = v1.copy(result.position).sub(pos)
-          app.root.position.add(offset)
-          break
-        }
-      }
-    }
+    this.transformHandler.handleModeUpdates(delta, mode)
   }
 
   _sendSelectedUpdates(delta) {
-    if (!this.selected) return
-
-    this.lastMoveSendTime += delta
-    if (this.lastMoveSendTime > this.networkRate) {
-      const app = this.selected
-      this.network.send('entityModified', {
-        id: app.data.id,
-        position: app.root.position.toArray(),
-        quaternion: app.root.quaternion.toArray(),
-        scale: app.root.scale.toArray(),
-      })
-      this.lastMoveSendTime = 0
-    }
+    this.transformHandler.sendSelectedUpdates(delta)
   }
 
   addUndo(action) {
@@ -444,78 +342,31 @@ export class ClientBuilder extends System {
   }
 
   toggleSpace() {
-    this.localSpace = !this.localSpace
-    if (this.gizmo) {
-      this.gizmo.space = this.localSpace ? 'local' : 'world'
-    }
+    this.transformHandler.toggleSpace()
   }
 
   getSpaceLabel() {
-    return this.localSpace ? 'World Space' : 'Local Space'
+    return this.transformHandler.getSpaceLabel()
   }
 
   attachGizmo(app, mode) {
-    if (this.gizmo) this.detachGizmo()
-
-    this.gizmo = new TransformControls(this.world.camera, this.viewport)
-    this.gizmo.setSize(0.7)
-    this.gizmo.space = this.localSpace ? 'local' : 'world'
-
-    this.gizmo._gizmo.helper.translate.scale.setScalar(0)
-    this.gizmo._gizmo.helper.rotate.scale.setScalar(0)
-    this.gizmo._gizmo.helper.scale.scale.setScalar(0)
-
-    this.gizmo.addEventListener('mouseDown', () => {
-      this.gizmoActive = true
-    })
-    this.gizmo.addEventListener('mouseUp', () => {
-      this.gizmoActive = false
-    })
-
-    this.gizmoTarget = new THREE.Object3D()
-    this.gizmoHelper = this.gizmo.getHelper()
-
-    this.gizmoTarget.position.copy(app.root.position)
-    this.gizmoTarget.quaternion.copy(app.root.quaternion)
-    this.gizmoTarget.scale.copy(app.root.scale)
-
-    this.world.stage.scene.add(this.gizmoTarget)
-    this.world.stage.scene.add(this.gizmoHelper)
-
-    this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
-    this.gizmo.attach(this.gizmoTarget)
-    this.gizmo.mode = mode
+    this.transformHandler.attachGizmo(app, mode)
   }
 
   detachGizmo() {
-    if (!this.gizmo) return
-
-    this.world.stage.scene.remove(this.gizmoTarget)
-    this.world.stage.scene.remove(this.gizmoHelper)
-    this.gizmo.detach()
-    this.gizmo.disconnect()
-    this.gizmo.dispose()
-
-    this.gizmo = null
-    this.gizmoTarget = null
-    this.gizmoHelper = null
-    this.gizmoActive = false
+    this.transformHandler.detachGizmo()
   }
 
   disableRotationSnap() {
-    if (this.gizmo) {
-      this.gizmo.rotationSnap = null
-    }
+    this.transformHandler.disableRotationSnap()
   }
 
   enableRotationSnap() {
-    if (this.gizmo) {
-      this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
-    }
+    this.transformHandler.enableRotationSnap()
   }
 
   isGizmoActive() {
-    return this.gizmoActive
+    return this.transformHandler.isActive()
   }
 
   getModeLabel() {
