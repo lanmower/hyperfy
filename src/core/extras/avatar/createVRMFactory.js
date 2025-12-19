@@ -1,12 +1,11 @@
-import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
-
 import * as THREE from '../three.js'
 import { DEG2RAD } from '../general.js'
 import { getTrianglesFromGeometry } from '../getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../getTextureBytesFromMaterial.js'
-import { Emotes } from '../playerEmotes.js'
 import { Modes } from '../constants/AnimationModes.js'
 import { DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_GAZE_DISTANCE, AimAxis, UpAxis } from './VRMFactoryConfig.js'
+import { cloneGLB, getSkinnedMeshes, createCapsule, getQueryParams } from './VRMUtilities.js'
+import { VRMAnimationController } from './VRMAnimationController.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -513,38 +512,4 @@ export function createVRMFactory(glb, setupMaterial) {
       },
     }
   }
-}
-
-function cloneGLB(glb) {
-  return { ...glb, scene: SkeletonUtils.clone(glb.scene) }
-}
-
-function getSkinnedMeshes(scene) {
-  let meshes = []
-  scene.traverse(o => {
-    if (o.isSkinnedMesh) {
-      meshes.push(o)
-    }
-  })
-  return meshes
-}
-
-function createCapsule(radius, height) {
-  const fullHeight = radius + height + radius
-  const geometry = new THREE.CapsuleGeometry(radius, height)
-  geometry.translate(0, fullHeight / 2, 0)
-  return geometry
-}
-
-let queryParams = {}
-function getQueryParams(url) {
-  if (!queryParams[url]) {
-    url = new URL(url)
-    const params = {}
-    for (const [key, value] of url.searchParams.entries()) {
-      params[key] = value
-    }
-    queryParams[url] = params
-  }
-  return queryParams[url]
 }
