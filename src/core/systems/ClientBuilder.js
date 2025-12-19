@@ -15,6 +15,7 @@ import { SelectionManager } from './builder/SelectionManager.js'
 import { TransformHandler } from './builder/TransformHandler.js'
 import { RaycastUtilities } from './builder/RaycastUtilities.js'
 import { SpawnTransformCalculator } from './builder/SpawnTransformCalculator.js'
+import { BuilderActions } from './builder/BuilderActions.js'
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -52,6 +53,7 @@ export class ClientBuilder extends System {
     this.transformHandler = new TransformHandler(this)
     this.raycastUtilities = new RaycastUtilities(this)
     this.spawnTransformCalculator = new SpawnTransformCalculator(this)
+    this.builderActions = new BuilderActions(this)
   }
 
   async init({ viewport }) {
@@ -90,23 +92,7 @@ export class ClientBuilder extends System {
   }
 
   updateActions() {
-    const mode = this.modeManager.getMode()
-    let actions = []
-
-    if (!this.enabled) {
-      actions = ACTION_CONFIGS.disabled
-    } else if (!this.selected) {
-      actions = [...ACTION_CONFIGS.noSelection]
-      actions[0].label = this.modeManager.getModeLabel()
-    } else if (mode === 'grab') {
-      actions = ACTION_CONFIGS.grab
-    } else if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
-      actions = ACTION_CONFIGS.transform
-      const spaceAction = actions.find(a => a.type === 'keyT')
-      if (spaceAction) spaceAction.label = this.modeManager.getSpaceLabel()
-    }
-
-    this.control.setActions(actions)
+    this.builderActions.updateActions()
   }
 
   update(delta) {
@@ -134,15 +120,8 @@ export class ClientBuilder extends System {
 
     this._handlePin()
 
-    if (this.control.keyT.pressed && (mode === 'translate' || mode === 'rotate' || mode === 'scale')) {
-      this.toggleSpace()
-      this.updateActions()
-    }
-
-    if (this.control.digit1.pressed) this.setMode('grab')
-    if (this.control.digit2.pressed) this.setMode('translate')
-    if (this.control.digit3.pressed) this.setMode('rotate')
-    if (this.control.digit4.pressed) this.setMode('scale')
+    this.builderActions.handleSpaceToggle(mode)
+    this.builderActions.handleModeKeyPress()
 
     this._handleSelection(delta, mode)
 
@@ -188,27 +167,24 @@ export class ClientBuilder extends System {
   }
 
   addUndo(action) {
-    this.undos.push(action)
-    if (this.undos.length > 50) {
-      this.undos.shift()
-    }
+    this.undoManager.addUndo(action)
   }
 
   undo() {
-    const undo = this.undos.pop()
-    if (!undo) return
+    const result = this.undoManager.undo()
+    if (!result) return
     if (this.selected) this.select(null)
-    if (undo.name === 'add-entity') {
-      this.entities.add(undo.data, true)
+    if (result.type === 'add-entity') {
+      this.entities.add(result.data, true)
       return
     }
-    if (undo.name === 'move-entity') {
-      const entity = this.entities.get(undo.entityId)
+    if (result.type === 'move-entity') {
+      const entity = this.entities.get(result.entityId)
       if (!entity) return
-      entity.data.position = undo.position
-      entity.data.quaternion = undo.quaternion
+      entity.data.position = result.position
+      entity.data.quaternion = result.quaternion
       this.network.send('entityModified', {
-        id: undo.entityId,
+        id: result.entityId,
         position: entity.data.position,
         quaternion: entity.data.quaternion,
         scale: entity.data.scale,
@@ -216,8 +192,8 @@ export class ClientBuilder extends System {
       entity.build()
       return
     }
-    if (undo.name === 'remove-entity') {
-      const entity = this.entities.get(undo.entityId)
+    if (result.type === 'remove-entity') {
+      const entity = this.entities.get(result.entityId)
       if (!entity) return
       entity.destroy(true)
       return
@@ -232,10 +208,6 @@ export class ClientBuilder extends System {
     if (!this.enabled) this.select(null)
     this.updateActions()
     this.events.emit(EVENT.game.buildModeChanged, enabled)
-  }
-
-  setMode(mode) {
-    this.setMode(mode)
   }
 
   select(app) {
@@ -260,7 +232,7 @@ export class ClientBuilder extends System {
         selected.build()
       }
       this.selected = null
-      const mode = this.getMode()
+      const mode = this.modeManager.getMode()
       if (mode === 'grab') {
         this.control.keyC.capture = false
         this.control.scrollDelta.capture = false
@@ -284,7 +256,7 @@ export class ClientBuilder extends System {
         this.network.send('entityModified', { id: app.data.id, mover: app.data.mover })
       }
       this.selected = app
-      const mode = this.getMode()
+      const mode = this.modeManager.getMode()
       if (mode === 'grab') {
         this.control.keyC.capture = true
         this.control.scrollDelta.capture = true
@@ -302,23 +274,24 @@ export class ClientBuilder extends System {
   }
 
   getMode() {
-    return this.mode
+    return this.modeManager.getMode()
   }
 
   setMode(mode) {
     if (this.selected) {
-      if (this.mode === 'grab') {
+      const currentMode = this.modeManager.getMode()
+      if (currentMode === 'grab') {
         this.control.keyC.capture = false
         this.control.scrollDelta.capture = false
       }
-      if (this.mode === 'translate' || this.mode === 'rotate' || this.mode === 'scale') {
+      if (currentMode === 'translate' || currentMode === 'rotate' || currentMode === 'scale') {
         this.detachGizmo()
       }
     }
 
-    this.mode = mode
+    this.modeManager.setMode(mode)
 
-    if (this.mode === 'grab') {
+    if (mode === 'grab') {
       if (this.selected) {
         this.control.keyC.capture = true
         this.control.scrollDelta.capture = true
@@ -329,9 +302,9 @@ export class ClientBuilder extends System {
       }
     }
 
-    if (this.mode === 'translate' || this.mode === 'rotate' || this.mode === 'scale') {
+    if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
       if (this.selected) {
-        this.attachGizmo(this.selected, this.mode)
+        this.attachGizmo(this.selected, mode)
       }
     }
 
@@ -367,7 +340,7 @@ export class ClientBuilder extends System {
   }
 
   getModeLabel() {
-    return MODE_LABELS[this.mode]
+    return this.modeManager.getModeLabel()
   }
 
   getEntityAtReticle() {

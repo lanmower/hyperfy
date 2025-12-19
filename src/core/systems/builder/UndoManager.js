@@ -15,6 +15,13 @@ export class UndoManager {
       return { type: 'remove-entity', entityId: undo.entityId }
     } else if (undo.name === 'add-entity') {
       return { type: 'add-entity', data: undo.data }
+    } else if (undo.name === 'move-entity') {
+      return {
+        type: 'move-entity',
+        entityId: undo.entityId,
+        position: undo.position,
+        quaternion: undo.quaternion
+      }
     }
   }
 
