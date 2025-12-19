@@ -1,7 +1,5 @@
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
-import { ControlPriorities } from '../extras/ControlPriorities.js'
-import { EVENT } from '../constants/EventNames.js'
 import { UndoManager } from './builder/UndoManager.js'
 import { ModeManager } from './builder/ModeManager.js'
 import { GizmoManager } from './builder/GizmoManager.js'
@@ -13,6 +11,8 @@ import { SpawnTransformCalculator } from './builder/SpawnTransformCalculator.js'
 import { BuilderActions } from './builder/BuilderActions.js'
 import { StateTransitionHandler } from './builder/StateTransitionHandler.js'
 import { UndoOperationExecutor } from './builder/UndoOperationExecutor.js'
+import { BuilderUpdateCoordinator } from './builder/BuilderUpdateCoordinator.js'
+import { BuilderControlSetup } from './builder/BuilderControlSetup.js'
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -53,37 +53,23 @@ export class ClientBuilder extends System {
     this.builderActions = new BuilderActions(this)
     this.stateTransitionHandler = new StateTransitionHandler(this)
     this.undoOperationExecutor = new UndoOperationExecutor(this)
+    this.updateCoordinator = new BuilderUpdateCoordinator(this)
+    this.controlSetup = new BuilderControlSetup(this)
   }
 
   async init({ viewport }) {
     this.viewport = viewport
     this.gizmoManager = new GizmoManager(this.world, viewport)
     this.fileDropHandler = new FileDropHandler(this)
-    this.viewport.addEventListener('dragover', this.fileDropHandler.onDragOver)
-    this.viewport.addEventListener('dragenter', this.fileDropHandler.onDragEnter)
-    this.viewport.addEventListener('dragleave', this.fileDropHandler.onDragLeave)
-    this.viewport.addEventListener('drop', this.fileDropHandler.onDrop)
+    this.controlSetup.setupFileDropListeners(viewport, this.fileDropHandler)
   }
 
   start() {
-    this.control = this.controls.bind({ priority: ControlPriorities.BUILDER })
-    this.control.mouseLeft.onPress = () => {
-      if (!this.control.pointer.locked) {
-        this.control.pointer.lock()
-        this.justPointerLocked = true
-        return true
-      }
-    }
-    this.updateActions()
+    this.controlSetup.setupControls()
   }
 
   checkLocalPlayer = () => {
-    if (this.enabled && !this.canBuild()) {
-      this.select(null)
-      this.enabled = false
-      this.events.emit(EVENT.game.buildModeChanged, false)
-    }
-    this.updateActions()
+    this.controlSetup.checkLocalPlayer()
   }
 
   canBuild() {
@@ -101,68 +87,7 @@ export class ClientBuilder extends System {
       this.toggle()
     }
 
-    if (this.selected?.destroyed) {
-      this.select(null)
-    }
-
-    if (this.selected && this.selected?.data.mover !== this.network.id) {
-      this.select(null)
-    }
-
-    if (!this.enabled) {
-      return
-    }
-
-    this._handleInspect()
-
-    this._handleUnlink()
-
-    this._handlePin()
-
-    this.builderActions.handleSpaceToggle(mode)
-    this.builderActions.handleModeKeyPress()
-
-    this._handleSelection(delta, mode)
-
-    this._handleModeUpdates(delta, mode)
-
-    this._sendSelectedUpdates(delta)
-
-    if (this.justPointerLocked) {
-      this.justPointerLocked = false
-    }
-  }
-
-  _handleInspect() {
-    this.selectionManager.handleInspect()
-  }
-
-  _handleUnlink() {
-    this.selectionManager.handleUnlink()
-  }
-
-  _handlePin() {
-    this.selectionManager.handlePin()
-  }
-
-  _handleSelection(delta, mode) {
-    this.selectionManager.handleSelection(delta, mode)
-
-    if (
-      this.control.keyZ.pressed &&
-      !this.control.shiftLeft.down &&
-      (this.control.metaLeft.down || this.control.controlLeft.down)
-    ) {
-      this.undo()
-    }
-  }
-
-  _handleModeUpdates(delta, mode) {
-    this.transformHandler.handleModeUpdates(delta, mode)
-  }
-
-  _sendSelectedUpdates(delta) {
-    this.transformHandler.sendSelectedUpdates(delta)
+    this.updateCoordinator.handleFrameUpdate(delta, mode)
   }
 
   addUndo(action) {
@@ -238,10 +163,7 @@ export class ClientBuilder extends System {
   }
 
   destroy() {
-    this.viewport.removeEventListener('dragover', this.fileDropHandler.onDragOver)
-    this.viewport.removeEventListener('dragenter', this.fileDropHandler.onDragEnter)
-    this.viewport.removeEventListener('dragleave', this.fileDropHandler.onDragLeave)
-    this.viewport.removeEventListener('drop', this.fileDropHandler.onDrop)
+    this.controlSetup.removeFileDropListeners(this.viewport, this.fileDropHandler)
     this.detachGizmo()
   }
 }
