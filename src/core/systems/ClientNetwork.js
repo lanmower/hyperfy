@@ -1,11 +1,12 @@
 import moment from 'moment'
-import { emoteUrls } from '../extras/playerEmotes.js'
 import { writePacket } from '../packets.js'
-import { storage } from '../storage.js'
 import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
+import { WebSocketManager } from './network/WebSocketManager.js'
+import { SnapshotProcessor } from './network/SnapshotProcessor.js'
+import { storage } from '../storage.js'
 
 export class ClientNetwork extends BaseNetwork {
   static DEPS = {
@@ -23,7 +24,6 @@ export class ClientNetwork extends BaseNetwork {
 
   constructor(world) {
     super(world, clientNetworkHandlers)
-    this.ws = null
     this.apiUrl = null
     this.id = null
     this.isClient = true
@@ -31,18 +31,12 @@ export class ClientNetwork extends BaseNetwork {
     this.protocol.isClient = true
     this.protocol.flushTarget = this
     this.assetsUrl = world.assetsUrl
+    this.wsManager = new WebSocketManager(this)
+    this.snapshotProcessor = new SnapshotProcessor(this)
   }
 
   init({ wsUrl, name, avatar }) {
-    const authToken = storage.get('authToken')
-    let url = `${wsUrl}?authToken=${authToken}`
-    if (name) url += `&name=${encodeURIComponent(name)}`
-    if (avatar) url += `&avatar=${encodeURIComponent(avatar)}`
-    this.ws = new WebSocket(url)
-    this.ws.binaryType = 'arraybuffer'
-    this.ws.addEventListener('message', this.onPacket)
-    this.ws.addEventListener('close', this.onClose)
-    this.protocol.isConnected = true
+    this.wsManager.init(wsUrl, name, avatar)
   }
 
   send(name, data) {
@@ -51,7 +45,7 @@ export class ClientNetwork extends BaseNetwork {
       console.log('->', name, data)
     }
     const packet = writePacket(name, data)
-    this.ws.send(packet)
+    this.wsManager.send(packet)
   }
 
   async upload(file) {
@@ -88,17 +82,6 @@ export class ClientNetwork extends BaseNetwork {
     console.log('disconnect', code)
   }
 
-  destroyWebSocket() {
-    if (this.ws) {
-      this.ws.removeEventListener('message', this.onPacket)
-      this.ws.removeEventListener('close', this.onClose)
-      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-        this.ws.close()
-      }
-      this.ws = null
-    }
-  }
-
   enqueue(method, data) {
     this.protocol.enqueue(method, data)
   }
@@ -113,44 +96,7 @@ export class ClientNetwork extends BaseNetwork {
     this.apiUrl = data.apiUrl
     this.maxUploadSize = data.maxUploadSize
     this.assetsUrl = data.assetsUrl
-
-    if (data.settings.avatar) {
-      this.loader.preload('avatar', data.settings.avatar.url)
-    }
-    for (const item of data.blueprints) {
-      if (item.preload && !item.disabled) {
-        if (item.model) {
-          const type = item.model.endsWith('.vrm') ? 'avatar' : 'model'
-          this.loader.preload(type, item.model)
-        }
-        if (item.script) {
-          this.loader.preload('script', item.script)
-        }
-        for (const value of Object.values(item.props || {})) {
-          if (value === undefined || value === null || !value?.url || !value?.type) continue
-          this.loader.preload(value.type, value.url)
-        }
-      }
-    }
-    for (const url of emoteUrls) {
-      this.loader.preload('emote', url)
-    }
-    for (const item of data.entities) {
-      if (item.type === 'player' && item.userId === this.id) {
-        const url = item.sessionAvatar || item.avatar
-        this.loader.preload('avatar', url)
-      }
-    }
-    this.loader.execPreload()
-
-    this.collections.deserialize(data.collections)
-    this.settings.deserialize(data.settings)
-    this.settings.setHasAdminCode(data.hasAdminCode)
-    this.chat.deserialize(data.chat)
-    this.blueprints.deserialize(data.blueprints)
-    this.entities.deserialize(data.entities)
-    this.livekit?.deserialize(data.livekit)
-    storage.set('authToken', data.authToken)
+    this.snapshotProcessor.process(data)
   }
 
   onSettingsModified = data => {
