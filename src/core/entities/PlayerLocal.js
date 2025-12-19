@@ -264,92 +264,11 @@ export class PlayerLocal extends BaseEntity {
     const freeze = this.data.effect?.freeze
     const anchor = this.getAnchorMatrix()
 
-    if (isXR) {
-      this.cam.rotation.x = 0
-      this.cam.rotation.z = 0
-      if (this.control.xrRightStick.value.x === 0 && this.didSnapTurn) {
-        this.didSnapTurn = false
-      } else if (this.control.xrRightStick.value.x > 0 && !this.didSnapTurn) {
-        this.cam.rotation.y -= 45 * DEG2RAD
-        this.didSnapTurn = true
-      } else if (this.control.xrRightStick.value.x < 0 && !this.didSnapTurn) {
-        this.cam.rotation.y += 45 * DEG2RAD
-        this.didSnapTurn = true
-      }
-    } else if (this.control.pointer.locked) {
-      this.cam.rotation.x += -this.control.pointer.delta.y * POINTER_LOOK_SPEED * delta
-      this.cam.rotation.y += -this.control.pointer.delta.x * POINTER_LOOK_SPEED * delta
-      this.cam.rotation.z = 0
-    } else if (this.pan) {
-      this.cam.rotation.x += -this.pan.delta.y * PAN_LOOK_SPEED * delta
-      this.cam.rotation.y += -this.pan.delta.x * PAN_LOOK_SPEED * delta
-      this.cam.rotation.z = 0
-    }
-
-    if (!isXR) {
-      this.cam.rotation.x = clamp(this.cam.rotation.x, -89 * DEG2RAD, 89 * DEG2RAD)
-    }
-
-    if (!isXR) {
-      this.cam.zoom += -this.control.scrollDelta.value * ZOOM_SPEED * delta
-      this.cam.zoom = clamp(this.cam.zoom, MIN_ZOOM, MAX_ZOOM)
-    }
-
-    if (isXR && !this.xrActive) {
-      this.cam.zoom = 0
-      this.xrActive = true
-    } else if (!isXR && this.xrActive) {
-      this.cam.zoom = 1
-      this.xrActive = false
-    }
-
-    if (this.cam.zoom < 1 && !this.firstPerson) {
-      this.cam.zoom = 0
-      this.firstPerson = true
-      this.avatar.visible = false
-    } else if (this.cam.zoom > 0 && this.firstPerson) {
-      this.cam.zoom = 1
-      this.firstPerson = false
-      this.avatar.visible = true
-    }
-
-    if (this.stick && !this.stick.active) {
-      this.stick.active = this.stick.center.distanceTo(this.stick.touch.position) > 3
-    }
-
-    this.jumpDown = isXR ? this.control.xrRightBtn1.down : this.control.space.down || this.control.touchA.down
-    if (isXR ? this.control.xrRightBtn1.pressed : this.control.space.pressed || this.control.touchA.pressed) {
-      this.jumpPressed = true
-    }
-
-    this.physics.moveDir.set(0, 0, 0)
-    if (isXR) {
-      this.physics.moveDir.x = this.control.xrLeftStick.value.x
-      this.physics.moveDir.z = this.control.xrLeftStick.value.z
-    } else if (this.stick?.active) {
-      const touchX = this.stick.touch.position.x
-      const touchY = this.stick.touch.position.y
-      const centerX = this.stick.center.x
-      const centerY = this.stick.center.y
-      const dx = centerX - touchX
-      const dy = centerY - touchY
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const moveRadius = STICK_OUTER_RADIUS - STICK_INNER_RADIUS
-      if (distance > moveRadius) {
-        this.stick.center.x = touchX + (moveRadius * dx) / distance
-        this.stick.center.y = touchY + (moveRadius * dy) / distance
-      }
-      const stickX = (touchX - this.stick.center.x) / moveRadius
-      const stickY = (touchY - this.stick.center.y) / moveRadius
-      this.physics.moveDir.x = stickX
-      this.physics.moveDir.z = stickY
-      this.world.events.emit('stick', this.stick)
-    } else {
-      if (this.control.keyW.down || this.control.arrowUp.down) this.physics.moveDir.z -= 1
-      if (this.control.keyS.down || this.control.arrowDown.down) this.physics.moveDir.z += 1
-      if (this.control.keyA.down || this.control.arrowLeft.down) this.physics.moveDir.x -= 1
-      if (this.control.keyD.down || this.control.arrowRight.down) this.physics.moveDir.x += 1
-    }
+    this.inputProcessor.processCamera(delta)
+    this.inputProcessor.processZoom(delta)
+    this.inputProcessor.processStickActivation()
+    this.inputProcessor.processJump()
+    this.inputProcessor.processMovement(delta)
 
     this.physics.moving = this.physics.moveDir.length() > 0
 
@@ -362,58 +281,9 @@ export class PlayerLocal extends BaseEntity {
       this.physics.moving = false
     }
 
-    if (this.stick?.active || isXR) {
-      this.running = this.physics.moving && this.physics.moveDir.length() > 0.9
-    } else {
-      this.running = this.physics.moving && (this.control.shiftLeft.down || this.control.shiftRight.down)
-    }
-
-    this.physics.moveDir.normalize()
-
-    if (isXR) {
-      this.physics.flyDir.copy(this.physics.moveDir)
-      this.physics.flyDir.applyQuaternion(this.world.xr.camera.quaternion)
-    } else {
-      this.physics.flyDir.copy(this.physics.moveDir)
-      this.physics.flyDir.applyQuaternion(this.cam.quaternion)
-    }
-
-    this.axis.copy(this.physics.moveDir)
-
-    const moveRad = Math.atan2(this.axis.x, -this.axis.z)
-    let moveDeg = moveRad * RAD2DEG
-    if (moveDeg < 0) moveDeg += 360
-
-    if (isXR) {
-      e1.copy(this.world.xr.camera.rotation).reorder('YXZ')
-      e1.y += this.cam.rotation.y
-      const yQuaternion = q1.setFromAxisAngle(UP, e1.y)
-      this.physics.moveDir.applyQuaternion(yQuaternion)
-    } else {
-      const yQuaternion = q1.setFromAxisAngle(UP, this.cam.rotation.y)
-      this.physics.moveDir.applyQuaternion(yQuaternion)
-    }
-
-    let rotY = 0
-    let applyRotY
-    if (isXR) {
-      e1.copy(this.world.xr.camera.rotation).reorder('YXZ')
-      rotY = e1.y + this.cam.rotation.y
-    } else {
-      rotY = this.cam.rotation.y
-    }
-    if (this.data.effect?.turn) {
-      applyRotY = true
-    } else if (this.physics.moving || this.firstPerson) {
-      applyRotY = true
-    }
-
-    if (applyRotY) {
-      e1.set(0, rotY, 0)
-      q1.setFromEuler(e1)
-      const alpha = 1 - Math.pow(0.00000001, delta)
-      this.base.quaternion.slerp(q1, alpha)
-    }
+    this.inputProcessor.processRunning()
+    this.inputProcessor.applyMovementRotation()
+    this.inputProcessor.applyBodyRotation()
 
     let emote
     if (this.data.effect?.emote) {
