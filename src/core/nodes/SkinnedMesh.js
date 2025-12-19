@@ -16,6 +16,61 @@ const propertySchema = schema('castShadow', 'receiveShadow')
   })
   .build()
 
+function createAnimationManager(ctx, obj, clips, animations) {
+  let mixer = null
+  let action = null
+  const actions = {}
+
+  return {
+    get mixer() { return mixer },
+
+    play({ name, fade = 0.15, speed, loop = true }) {
+      if (!mixer) {
+        mixer = new THREE.AnimationMixer(obj)
+        ctx.world.setHot(ctx.node, true)
+      }
+      if (action?._clip.name === name) {
+        return
+      }
+      if (action) {
+        action.fadeOut(fade)
+      }
+      action = actions[name]
+      if (!action) {
+        const clip = clips[name]
+        if (!clip) return console.warn(`[skinnedmesh] animation not found: ${name}`)
+        action = mixer.clipAction(clip)
+        actions[name] = action
+      }
+      if (speed !== undefined) action.timeScale = speed
+      action.clampWhenFinished = !loop
+      action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
+      action.reset().fadeIn(fade).play()
+    },
+
+    stop(opts = defaultStopOpts) {
+      if (!action) return
+      action.fadeOut(opts.fade)
+      action = null
+    },
+
+    update(delta) {
+      mixer?.update(delta)
+    },
+
+    cleanup() {
+      if (mixer) {
+        mixer.stopAllAction()
+        mixer.uncacheRoot(obj)
+        mixer = null
+        ctx.world.setHot(ctx.node, false)
+        Object.keys(clips).forEach(k => delete clips[k])
+        Object.keys(actions).forEach(k => delete actions[k])
+      }
+    }
+  }
+}
+
 export class SkinnedMesh extends Node {
   constructor(data = {}) {
     super(data)
@@ -27,15 +82,14 @@ export class SkinnedMesh extends Node {
     defineProps(this, propertySchema, data)
 
     this.clips = {}
-    this.actions = {}
     this.bones = null
     this.animNames = []
     this.boneHandles = {}
+    this.animManager = null
   }
 
   mount() {
     this.clips = {}
-    this.actions = {}
     this.bones = null
     this.animNames = []
 
@@ -54,6 +108,7 @@ export class SkinnedMesh extends Node {
       this.clips[clip.name] = clip
       this.animNames.push(clip.name)
     }
+    this.animManager = createAnimationManager({ world: this.ctx.world, node: this }, this.obj, this.clips, this._animations)
     this.needsRebuild = false
   }
 
@@ -71,14 +126,8 @@ export class SkinnedMesh extends Node {
 
   unmount() {
     if (this.obj) {
-      if (this.mixer) {
-        this.mixer.stopAllAction()
-        this.mixer.uncacheRoot(this.obj)
-        this.mixer = null
-        this.ctx.world.setHot(this, false)
-        this.clips = {}
-        this.actions = {}
-      }
+      this.animManager?.cleanup()
+      this.animManager = null
       this.ctx.world.stage.scene.remove(this.obj)
       this.obj = null
       this.bones = null
@@ -87,7 +136,7 @@ export class SkinnedMesh extends Node {
   }
 
   update(delta) {
-    this.mixer?.update(delta)
+    this.animManager?.update(delta)
   }
 
   copy(source, recursive) {
@@ -102,34 +151,12 @@ export class SkinnedMesh extends Node {
     return this.animNames.slice()
   }
 
-  play({ name, fade = 0.15, speed, loop = true }) {
-    if (!this.mixer) {
-      this.mixer = new THREE.AnimationMixer(this.obj)
-      this.ctx.world.setHot(this, true)
-    }
-    if (this.action?._clip.name === name) {
-      return
-    }
-    if (this.action) {
-      this.action.fadeOut(fade)
-    }
-    this.action = this.actions[name]
-    if (!this.action) {
-      const clip = this.clips[name]
-      if (!clip) return console.warn(`[skinnedmesh] animation not found: ${name}`)
-      this.action = this.mixer.clipAction(clip)
-      this.actions[name] = this.action
-    }
-    if (speed !== undefined) this.action.timeScale = speed
-    this.action.clampWhenFinished = !loop
-    this.action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-    this.action.reset().fadeIn(fade).play()
+  play(opts) {
+    this.animManager?.play(opts)
   }
 
-  stop(opts = defaultStopOpts) {
-    if (!this.action) return
-    this.action.fadeOut(opts.fade)
-    this.action = null
+  stop(opts) {
+    this.animManager?.stop(opts)
   }
 
   readBone(name) {
