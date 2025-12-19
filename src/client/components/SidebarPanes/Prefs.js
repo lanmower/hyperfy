@@ -1,4 +1,3 @@
-import { css } from '@firebolt-dev/css'
 import { FieldRange, FieldSwitch, FieldText, FieldToggle, FieldBtn } from '../Fields.js'
 import { useState } from 'react'
 import { useFullscreen } from '../useFullscreen.js'
@@ -8,6 +7,7 @@ import { Group } from './Group.js'
 import { isTouch } from '../../utils.js'
 import { useSyncedState } from '../hooks/index.js'
 import { useGraphicsOptions } from '../hooks/index.js'
+import { prefsStyles } from './PrefsStyles.js'
 
 const shadowOptions = [
   { label: 'None', value: 'none' },
@@ -34,16 +34,7 @@ export function Prefs({ world, hidden }) {
 
   return (
     <Pane hidden={hidden}>
-      <div
-        className='prefs noscrollbar'
-        css={css`
-          overflow-y: auto;
-          background: rgba(11, 10, 21, 0.9);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 1.375rem;
-          padding: 0.6rem 0;
-        `}
-      >
+      <div className='prefs noscrollbar' css={prefsStyles}>
         <FieldText label='Name' hint='Change your name' value={name} onChange={changeName} />
         <Group label='Interface' />
         <FieldRange
