@@ -104,11 +104,13 @@ let spawn
     minify: false,
     sourcemap: true,
     packages: 'external',
+    external: ['dotenv-flow'],
     define: {
       'process.env.CLIENT': 'false',
       'process.env.SERVER': 'true',
     },
     plugins: [
+      polyfillNode({}),
       {
         name: 'server-finalize-plugin',
         setup(build) {
@@ -125,7 +127,7 @@ let spawn
             if (dev) {
               // (re)start server
               spawn?.kill('SIGTERM')
-              spawn = fork(path.join(rootDir, 'build/index.js'))
+              spawn = fork(path.join(rootDir, 'build/index.js'), [], { env: process.env })
             } else {
               process.exit(0)
             }

@@ -52,7 +52,7 @@ let spawn
             if (dev) {
               // (re)start server
               spawn?.kill('SIGTERM')
-              spawn = fork(path.join(rootDir, 'build/world-node-client.js'))
+              spawn = fork(path.join(rootDir, 'build/world-node-client.js'), [], { env: process.env })
             } else {
               process.exit(0)
             }
