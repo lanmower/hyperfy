@@ -1,12 +1,7 @@
 import * as THREE from '../extras/three.js'
-import { isBoolean } from 'lodash-es'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
-
 import { System } from './System.js'
-import { uuid } from '../utils-client.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { EVENT } from '../constants/EventNames.js'
-import { ACTION_CONFIGS, MODE_LABELS } from './builder/ActionConfigs.js'
 import { UndoManager } from './builder/UndoManager.js'
 import { ModeManager } from './builder/ModeManager.js'
 import { GizmoManager } from './builder/GizmoManager.js'
@@ -16,6 +11,8 @@ import { TransformHandler } from './builder/TransformHandler.js'
 import { RaycastUtilities } from './builder/RaycastUtilities.js'
 import { SpawnTransformCalculator } from './builder/SpawnTransformCalculator.js'
 import { BuilderActions } from './builder/BuilderActions.js'
+import { StateTransitionHandler } from './builder/StateTransitionHandler.js'
+import { UndoOperationExecutor } from './builder/UndoOperationExecutor.js'
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -54,6 +51,8 @@ export class ClientBuilder extends System {
     this.raycastUtilities = new RaycastUtilities(this)
     this.spawnTransformCalculator = new SpawnTransformCalculator(this)
     this.builderActions = new BuilderActions(this)
+    this.stateTransitionHandler = new StateTransitionHandler(this)
+    this.undoOperationExecutor = new UndoOperationExecutor(this)
   }
 
   async init({ viewport }) {
@@ -72,7 +71,7 @@ export class ClientBuilder extends System {
       if (!this.control.pointer.locked) {
         this.control.pointer.lock()
         this.justPointerLocked = true
-        return true // capture
+        return true
       }
     }
     this.updateActions()
@@ -171,106 +170,15 @@ export class ClientBuilder extends System {
   }
 
   undo() {
-    const result = this.undoManager.undo()
-    if (!result) return
-    if (this.selected) this.select(null)
-    if (result.type === 'add-entity') {
-      this.entities.add(result.data, true)
-      return
-    }
-    if (result.type === 'move-entity') {
-      const entity = this.entities.get(result.entityId)
-      if (!entity) return
-      entity.data.position = result.position
-      entity.data.quaternion = result.quaternion
-      this.network.send('entityModified', {
-        id: result.entityId,
-        position: entity.data.position,
-        quaternion: entity.data.quaternion,
-        scale: entity.data.scale,
-      })
-      entity.build()
-      return
-    }
-    if (result.type === 'remove-entity') {
-      const entity = this.entities.get(result.entityId)
-      if (!entity) return
-      entity.destroy(true)
-      return
-    }
+    this.undoOperationExecutor.execute()
   }
 
   toggle(enabled) {
-    if (!this.canBuild()) return
-    enabled = isBoolean(enabled) ? enabled : !this.enabled
-    if (this.enabled === enabled) return
-    this.enabled = enabled
-    if (!this.enabled) this.select(null)
-    this.updateActions()
-    this.events.emit(EVENT.game.buildModeChanged, enabled)
+    this.stateTransitionHandler.toggle(enabled)
   }
 
   select(app) {
-    if (this.selected === app) return
-
-    if (this.selected && this.selected !== app) {
-      if (!this.selected.dead && this.selected.data.mover === this.network.id) {
-        const selected = this.selected
-        selected.data.mover = null
-        selected.data.position = selected.root.position.toArray()
-        selected.data.quaternion = selected.root.quaternion.toArray()
-        selected.data.scale = selected.root.scale.toArray()
-        selected.data.state = {}
-        this.network.send('entityModified', {
-          id: selected.data.id,
-          mover: null,
-          position: selected.data.position,
-          quaternion: selected.data.quaternion,
-          scale: selected.data.scale,
-          state: selected.data.state,
-        })
-        selected.build()
-      }
-      this.selected = null
-      const mode = this.modeManager.getMode()
-      if (mode === 'grab') {
-        this.control.keyC.capture = false
-        this.control.scrollDelta.capture = false
-      }
-      if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
-        this.detachGizmo()
-      }
-    }
-
-    if (app) {
-      this.addUndo({
-        name: 'move-entity',
-        entityId: app.data.id,
-        position: app.data.position.slice(),
-        quaternion: app.data.quaternion.slice(),
-        scale: app.data.scale.slice(),
-      })
-      if (app.data.mover !== this.network.id) {
-        app.data.mover = this.network.id
-        app.build()
-        this.network.send('entityModified', { id: app.data.id, mover: app.data.mover })
-      }
-      this.selected = app
-      const mode = this.modeManager.getMode()
-      if (mode === 'grab') {
-        this.control.keyC.capture = true
-        this.control.scrollDelta.capture = true
-        this.target.position.copy(app.root.position)
-        this.target.quaternion.copy(app.root.quaternion)
-        this.target.scale.copy(app.root.scale)
-        this.target.limit = PROJECT_MAX
-      }
-      if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
-        this.attachGizmo(app, mode)
-      }
-    }
-
-    this.updateActions()
+    this.stateTransitionHandler.select(app)
   }
 
   getMode() {
@@ -278,37 +186,7 @@ export class ClientBuilder extends System {
   }
 
   setMode(mode) {
-    if (this.selected) {
-      const currentMode = this.modeManager.getMode()
-      if (currentMode === 'grab') {
-        this.control.keyC.capture = false
-        this.control.scrollDelta.capture = false
-      }
-      if (currentMode === 'translate' || currentMode === 'rotate' || currentMode === 'scale') {
-        this.detachGizmo()
-      }
-    }
-
-    this.modeManager.setMode(mode)
-
-    if (mode === 'grab') {
-      if (this.selected) {
-        this.control.keyC.capture = true
-        this.control.scrollDelta.capture = true
-        this.target.position.copy(this.selected.root.position)
-        this.target.quaternion.copy(this.selected.root.quaternion)
-        this.target.scale.copy(this.selected.root.scale)
-        this.target.limit = PROJECT_MAX
-      }
-    }
-
-    if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
-      if (this.selected) {
-        this.attachGizmo(this.selected, mode)
-      }
-    }
-
-    this.updateActions()
+    this.stateTransitionHandler.setMode(mode)
   }
 
   toggleSpace() {

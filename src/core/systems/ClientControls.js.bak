@@ -1,3 +1,4 @@
+import { buttons } from '../extras/buttons.js'
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { createButton, createVector, createValue, createPointer, createScreen, createCamera } from './controls/ControlFactories.js'
@@ -5,10 +6,16 @@ import { XRInputHandler } from './controls/XRInputHandler.js'
 import { TouchHandler } from './controls/TouchHandler.js'
 import { InputEventHandler } from './controls/InputEventHandler.js'
 import { PointerLockManager } from './controls/PointerLockManager.js'
-import { ButtonStateManager } from './controls/ButtonStateManager.js'
-import { ControlManager } from './controls/ControlManager.js'
+
+const LMB = 1
+const RMB = 2
+const MouseLeft = 'mouseLeft'
+const MouseRight = 'mouseRight'
+const HandednessLeft = 'left'
+const HandednessRight = 'right'
 
 const isBrowser = typeof window !== 'undefined'
+let actionIds = 0
 
 export class ClientControls extends System {
   static DEPS = {
@@ -44,12 +51,12 @@ export class ClientControls extends System {
       delta: 0,
     }
     this.xrSession = null
+    this.lmbDown = false
+    this.rmbDown = false
     this.xrInputHandler = new XRInputHandler(this)
     this.touchHandler = new TouchHandler(this)
     this.inputEventHandler = new InputEventHandler(this)
     this.pointerLockManager = new PointerLockManager(this)
-    this.buttonStateManager = new ButtonStateManager(this)
-    this.controlManager = new ControlManager(this)
     this.controlTypes = {
       mouseLeft: createButton,
       mouseRight: createButton,
@@ -136,27 +143,211 @@ export class ClientControls extends System {
   }
 
   bind(options = {}) {
-    return this.controlManager.bind(options)
+    const self = this
+    const entries = {}
+    let reticleSupressor
+    const control = {
+      options,
+      entries,
+      actions: null,
+      api: {
+        hideReticle(value = true) {
+          if (reticleSupressor && value) return
+          if (!reticleSupressor && !value) return
+          if (reticleSupressor) {
+            reticleSupressor?.()
+            reticleSupressor = null
+          } else {
+            reticleSupressor = self.world.ui.suppressReticle()
+          }
+        },
+        setActions(value) {
+          if (value !== null && !Array.isArray(value)) {
+            throw new Error('[control] actions must be null or array')
+          }
+          control.actions = value
+          if (value) {
+            for (const action of value) {
+              action.id = ++actionIds
+            }
+          }
+          self.buildActions()
+        },
+        release: () => {
+          reticleSupressor?.()
+          const idx = self.controls.indexOf(control)
+          if (idx === -1) return
+          self.controls.splice(idx, 1)
+          options.onRelease?.()
+        },
+      },
+    }
+    const idx = self.controls.findIndex(c => c.options.priority <= options.priority)
+    if (idx === -1) {
+      self.controls.push(control)
+    } else {
+      self.controls.splice(idx, 0, control)
+    }
+    const controlTypes = self.controlTypes
+    return new Proxy(control, {
+      get(target, prop) {
+        if (prop in target.api) {
+          return target.api[prop]
+        }
+        if (prop in entries) {
+          return entries[prop]
+        }
+        if (buttons.has(prop)) {
+          entries[prop] = createButton(self, control, prop)
+          return entries[prop]
+        }
+        const createType = controlTypes[prop]
+        if (createType) {
+          entries[prop] = createType(self, control, prop)
+          return entries[prop]
+        }
+        return undefined
+      },
+    })
   }
 
   releaseAllButtons() {
-    return this.buttonStateManager.releaseAllButtons()
+    for (const control of this.controls) {
+      for (const key in control.entries) {
+        const value = control.entries[key]
+        if (value.$button && value.down) {
+          value.released = true
+          value.down = false
+          value.onRelease?.()
+        }
+      }
+    }
   }
 
   buildActions() {
-    return this.controlManager.buildActions()
+    this.actions = []
+    for (const control of this.controls) {
+      const actions = control.actions
+      if (actions) {
+        for (const action of actions) {
+          if (!action.type === 'custom') {
+            const idx = this.actions.findIndex(a => a.type === action.type)
+            if (idx !== -1) continue
+          }
+          this.actions.push(action)
+        }
+      }
+    }
+    this.events.emit('actions', this.actions)
   }
 
   setTouchBtn(prop, down) {
-    return this.buttonStateManager.setTouchBtn(prop, down)
+    if (down) {
+      this.buttonsDown.add(prop)
+      for (const control of this.controls) {
+        const button = control.entries[prop]
+        if (button?.$button) {
+          button.pressed = true
+          button.down = true
+          const capture = button.onPress?.()
+          if (capture || button.capture) break
+        }
+      }
+    } else {
+      this.buttonsDown.delete(prop)
+      for (const control of this.controls) {
+        const button = control.entries[prop]
+        if (button?.$button && button.down) {
+          button.down = false
+          button.released = true
+          button.onRelease?.()
+        }
+      }
+    }
   }
 
   simulateButton(prop, pressed) {
-    return this.buttonStateManager.simulateButton(prop, pressed)
+    if (pressed) {
+      if (this.buttonsDown.has(prop)) return
+      this.buttonsDown.add(prop)
+      for (const control of this.controls) {
+        const button = control.entries[prop]
+        if (button?.$button) {
+          button.pressed = true
+          button.down = true
+          const capture = button.onPress?.()
+          if (capture || button.capture) break
+        }
+        const capture = control.onButtonPress?.(prop, text)
+        if (capture) break
+      }
+    } else {
+      if (!this.buttonsDown.has(prop)) return
+      this.buttonsDown.delete(prop)
+      for (const control of this.controls) {
+        const button = control.entries[prop]
+        if (button?.$button && button.down) {
+          button.down = false
+          button.released = true
+          button.onRelease?.()
+        }
+      }
+    }
   }
 
   checkPointerChanges(e) {
-    return this.buttonStateManager.checkPointerChanges(e)
+    const lmb = !!(e.buttons & LMB)
+    if (!this.lmbDown && lmb) {
+      this.lmbDown = true
+      this.buttonsDown.add(MouseLeft)
+      for (const control of this.controls) {
+        const button = control.entries.mouseLeft
+        if (button) {
+          button.down = true
+          button.pressed = true
+          const capture = button.onPress?.()
+          if (capture || button.capture) break
+        }
+      }
+    }
+    if (this.lmbDown && !lmb) {
+      this.lmbDown = false
+      this.buttonsDown.delete(MouseLeft)
+      for (const control of this.controls) {
+        const button = control.entries.mouseLeft
+        if (button) {
+          button.down = false
+          button.released = true
+          button.onRelease?.()
+        }
+      }
+    }
+    const rmb = !!(e.buttons & RMB)
+    if (!this.rmbDown && rmb) {
+      this.rmbDown = true
+      this.buttonsDown.add(MouseRight)
+      for (const control of this.controls) {
+        const button = control.entries.mouseRight
+        if (button) {
+          button.down = true
+          button.pressed = true
+          const capture = button.onPress?.()
+          if (capture || button.capture) break
+        }
+      }
+    }
+    if (this.rmbDown && !rmb) {
+      this.rmbDown = false
+      this.buttonsDown.delete(MouseRight)
+      for (const control of this.controls) {
+        const button = control.entries.mouseRight
+        if (button) {
+          button.down = false
+          button.released = true
+          button.onRelease?.()
+        }
+      }
+    }
   }
 
   lockPointer = () => this.pointerLockManager.lockPointer()
