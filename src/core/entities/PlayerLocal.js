@@ -13,6 +13,9 @@ import { hasRank, Ranks } from '../extras/ranks.js'
 import { Modes } from '../constants/AnimationModes.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
 import { PlayerCameraManager } from './player/PlayerCameraManager.js'
+import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
+import { PlayerChatBubble } from './player/PlayerChatBubble.js'
+import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 
@@ -108,12 +111,15 @@ export class PlayerLocal extends BaseEntity {
     this.base.activate({ world: this.world, entity: this })
 
     this.cam = new PlayerCameraManager(this, this.base)
+    this.avatarManager = new PlayerAvatarManager(this)
+    this.chatBubble = new PlayerChatBubble(this)
+    this.inputProcessor = new PlayerInputProcessor(this)
 
     if (this.world.loader?.preloader) {
       await this.world.loader.preloader
     }
 
-    this.applyAvatar()
+    await this.avatarManager.applyAvatar()
     this.initCapsule()
     this.initControl()
 
@@ -122,35 +128,11 @@ export class PlayerLocal extends BaseEntity {
   }
 
   getAvatarUrl() {
-    return this.data.sessionAvatar || this.data.avatar || 'asset://avatar.vrm'
+    return this.avatarManager.getAvatarUrl()
   }
 
   async applyAvatar() {
-    const avatarUrl = this.getAvatarUrl()
-    if (this.avatarUrl === avatarUrl) return
-
-    return new Promise((resolve, reject) => {
-      this.world.loader
-        .load('avatar', avatarUrl)
-        .then(src => {
-          if (this.avatar) this.avatar.deactivate()
-          this.avatar = src.toNodes().get('avatar')
-          this.avatar.disableRateCheck()
-          this.base.add(this.avatar)
-          this.avatarUrl = avatarUrl
-          this.camHeight = this.avatar.height * 0.9
-          this.nametag.position.y = this.avatar.getHeadToHeight() + 0.2
-          this.bubble.position.y = this.avatar.getHeadToHeight() + 0.2
-          if (!this.bubble.active) {
-            this.nametag.active = true
-          }
-          resolve(this.avatar)
-        })
-        .catch(err => {
-          console.error(err)
-          reject(err)
-        })
-    })
+    return this.avatarManager.applyAvatar()
   }
 
   initCapsule() {
@@ -602,9 +584,7 @@ export class PlayerLocal extends BaseEntity {
   }
 
   setSpeaking(speaking) {
-    if (this.speaking === speaking) return
-    if (speaking && this.isMuted()) return
-    this.speaking = speaking
+    return this.chatBubble.setSpeaking(speaking)
   }
 
   push(force) {
@@ -624,23 +604,11 @@ export class PlayerLocal extends BaseEntity {
   }
 
   setSessionAvatar(avatar) {
-    this.data.sessionAvatar = avatar
-    this.applyAvatar()
-    this.world.network.send('entityModified', {
-      id: this.data.id,
-      sessionAvatar: avatar,
-    })
+    return this.avatarManager.setSessionAvatar(avatar)
   }
 
   chat(msg) {
-    this.nametag.active = false
-    this.bubbleText.value = msg
-    this.bubble.active = true
-    clearTimeout(this.chatTimer)
-    this.chatTimer = setTimeout(() => {
-      this.bubble.active = false
-      this.nametag.active = true
-    }, 5000)
+    return this.chatBubble.chat(msg)
   }
 
   modify(data) {
