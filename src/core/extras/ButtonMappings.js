@@ -1,4 +1,4 @@
-export const codeToProp = {
+const baseCodeToProp = {
   KeyA: 'keyA',
   KeyB: 'keyB',
   KeyC: 'keyC',
@@ -72,81 +72,7 @@ export const codeToProp = {
   MetaLeft: 'metaLeft',
 }
 
-export const propToCode = {
-  keyA: 'KeyA',
-  keyB: 'KeyB',
-  keyC: 'KeyC',
-  keyD: 'KeyD',
-  keyE: 'KeyE',
-  keyF: 'KeyF',
-  keyG: 'KeyG',
-  keyH: 'KeyH',
-  keyI: 'KeyI',
-  keyJ: 'KeyJ',
-  keyK: 'KeyK',
-  keyL: 'KeyL',
-  keyM: 'KeyM',
-  keyN: 'KeyN',
-  keyO: 'KeyO',
-  keyP: 'KeyP',
-  keyQ: 'KeyQ',
-  keyR: 'KeyR',
-  keyS: 'KeyS',
-  keyT: 'KeyT',
-  keyU: 'KeyU',
-  keyV: 'KeyV',
-  keyW: 'KeyW',
-  keyX: 'KeyX',
-  keyY: 'KeyY',
-  keyZ: 'KeyZ',
-  digit0: 'Digit0',
-  digit1: 'Digit1',
-  digit2: 'Digit2',
-  digit3: 'Digit3',
-  digit4: 'Digit4',
-  digit5: 'Digit5',
-  digit6: 'Digit6',
-  digit7: 'Digit7',
-  digit8: 'Digit8',
-  digit9: 'Digit9',
-  minus: 'Minus',
-  equal: 'Equal',
-  bracketLeft: 'BracketLeft',
-  bracketRight: 'BracketRight',
-  backslash: 'Backslash',
-  semicolon: 'Semicolon',
-  quote: 'Quote',
-  backquote: 'Backquote',
-  comma: 'Comma',
-  period: 'Period',
-  slash: 'Slash',
-  arrowUp: 'ArrowUp',
-  arrowDown: 'ArrowDown',
-  arrowLeft: 'ArrowLeft',
-  arrowRight: 'ArrowRight',
-  home: 'Home',
-  end: 'End',
-  pageUp: 'PageUp',
-  pageDown: 'PageDown',
-  tab: 'Tab',
-  capsLock: 'CapsLock',
-  shiftLeft: 'ShiftLeft',
-  shiftRight: 'ShiftRight',
-  controlLeft: 'ControlLeft',
-  controlRight: 'ControlRight',
-  altLeft: 'AltLeft',
-  altRight: 'AltRight',
-  enter: 'Enter',
-  space: 'Space',
-  backspace: 'Backspace',
-  delete: 'Delete',
-  escape: 'Escape',
-  mouseLeft: 'MouseLeft',
-  mouseRight: 'MouseRight',
-  metaLeft: 'MetaLeft',
-}
-
-export const propToLabel = {
+const basePropToLabel = {
   keyA: 'A',
   keyB: 'B',
   keyC: 'C',
@@ -219,3 +145,15 @@ export const propToLabel = {
   mouseRight: 'RMB',
   metaLeft: 'Cmd',
 }
+
+function generateInverse(mapping) {
+  const inverse = {}
+  for (const [key, value] of Object.entries(mapping)) {
+    inverse[value] = key
+  }
+  return inverse
+}
+
+export const codeToProp = baseCodeToProp
+export const propToCode = generateInverse(baseCodeToProp)
+export const propToLabel = basePropToLabel

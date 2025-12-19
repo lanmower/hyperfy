@@ -6,6 +6,7 @@ import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } fr
 const UP = new THREE.Vector3(0, 1, 0)
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
+const STICK_DEAD_ZONE = 0.2
 
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const q1 = new THREE.Quaternion()
@@ -118,7 +119,7 @@ export class PlayerInputProcessor {
       if (control.keyD.down || control.arrowRight.down) physics.moveDir.x += 1
     }
 
-    physics.moving = physics.moveDir.length() > 0
+    physics.moving = physics.moveDir.length() > STICK_DEAD_ZONE
   }
 
   processStickActivation() {

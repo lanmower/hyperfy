@@ -1,5 +1,18 @@
 import * as THREE from '../../extras/three.js'
-import { CSM } from '../../libs/csm/CSM.js'
+
+let CSM = null
+let csmLoading = null
+
+async function loadCSM() {
+  if (CSM) return CSM
+  if (csmLoading) return csmLoading
+  csmLoading = import('../../libs/csm/CSM.js').then(module => {
+    CSM = module.CSM
+    csmLoading = null
+    return CSM
+  })
+  return csmLoading
+}
 
 export class ShadowManager {
   constructor(environment) {
@@ -7,14 +20,15 @@ export class ShadowManager {
     this.csm = null
   }
 
-  build(shadowLevel) {
+  async build(shadowLevel) {
     const options = this.environment.csmLevels[shadowLevel] || this.environment.csmLevels.med
     if (this.csm) {
       this.csm.updateCascades(options.cascades)
       this.csm.updateShadowMapSize(options.shadowMapSize)
       return
     }
-    this.csm = new CSM({
+    const CSMClass = await loadCSM()
+    this.csm = new CSMClass({
       mode: 'practical',
       cascades: 3,
       maxCascades: 3,

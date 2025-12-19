@@ -36,12 +36,12 @@ export class ClientEnvironment extends System {
   async start() {
     this.shadowManager = new ShadowManager(this)
     this.skyManager = new SkyManager(this)
-    this.shadowManager.build(this.prefs.shadows)
+    await this.shadowManager.build(this.prefs.shadows)
     this.skyManager.update(this.base.sunDirection, this.base.sunIntensity, this.base.sunColor)
   }
 
-  buildCSM(shadowLevel) {
-    this.shadowManager?.build(shadowLevel)
+  async buildCSM(shadowLevel) {
+    await this.shadowManager?.build(shadowLevel)
   }
 
   updateCSM(shadowLevel, sunDirection, sunIntensity, sunColor) {
@@ -68,9 +68,9 @@ export class ClientEnvironment extends System {
     this.updateSkyPosition(this.rig.position)
   }
 
-  onPrefChanged = ({ key, value }) => {
+  onPrefChanged = async ({ key, value }) => {
     if (key === 'shadows') {
-      this.buildCSM(value)
+      await this.buildCSM(value)
       const skyInfo = this.skyManager?.skyInfo
       if (skyInfo) {
         this.updateCSM(value, skyInfo.sunDirection, skyInfo.sunIntensity, skyInfo.sunColor)

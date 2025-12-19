@@ -2,14 +2,11 @@ import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { buttons } from '../extras/buttons.js'
 import { bindRotations } from '../extras/bindRotations.js'
+import { XRControllerManager } from './controls/XRControllerManager.js'
+import { TouchInputHandler } from './controls/TouchInputHandler.js'
+import { ButtonStateTracker } from './controls/ButtonStateTracker.js'
 
 const isBrowser = typeof window !== 'undefined'
-const LMB = 1
-const RMB = 2
-const MouseLeft = 'mouseLeft'
-const MouseRight = 'mouseRight'
-const HandednessLeft = 'left'
-const HandednessRight = 'right'
 
 let actionIds = 0
 
@@ -70,12 +67,12 @@ export class ClientControls extends System {
     this.isUserGesture = false
     this.isMac = /Mac/.test(navigator.platform)
     this.pointer = { locked: false, shouldLock: false, coords: new THREE.Vector3(), position: new THREE.Vector3(), delta: new THREE.Vector3() }
-    this.touches = new Map()
     this.screen = { width: 0, height: 0 }
     this.scroll = { delta: 0 }
     this.xrSession = null
-    this.lmbDown = false
-    this.rmbDown = false
+    this.xrManager = new XRControllerManager(this)
+    this.touchHandler = new TouchInputHandler(this)
+    this.buttonTracker = new ButtonStateTracker(this)
     this.controlTypes = {
       mouseLeft: createButton, mouseRight: createButton, touchStick: createVector, scrollDelta: createValue,
       pointer: createPointer, screen: createScreen, camera: createCamera, xrLeftStick: createVector,
@@ -93,62 +90,7 @@ export class ClientControls extends System {
         if (control.entries.scrollDelta.capture) break
       }
     }
-    if (this.xrSession) {
-      this.xrSession.inputSources?.forEach(src => {
-        if (src.gamepad && src.handedness === HandednessLeft) this.processLeftController(src)
-        if (src.gamepad && src.handedness === HandednessRight) this.processRightController(src)
-      })
-    }
-  }
-
-  processLeftController(src) {
-    for (const control of this.controls) {
-      if (control.entries.xrLeftStick) {
-        control.entries.xrLeftStick.value.x = src.gamepad.axes[2]
-        control.entries.xrLeftStick.value.z = src.gamepad.axes[3]
-        if (control.entries.xrLeftStick.capture) break
-      }
-      if (control.entries.xrLeftTrigger) {
-        this.processXRButton(control.entries.xrLeftTrigger, src.gamepad.buttons[0].pressed)
-        if (control.entries.xrLeftTrigger.capture) break
-      }
-      if (control.entries.xrLeftBtn1) {
-        this.processXRButton(control.entries.xrLeftBtn1, src.gamepad.buttons[4].pressed)
-        if (control.entries.xrLeftBtn1.capture) break
-      }
-      if (control.entries.xrLeftBtn2) {
-        this.processXRButton(control.entries.xrLeftBtn2, src.gamepad.buttons[5].pressed)
-        if (control.entries.xrLeftBtn2.capture) break
-      }
-    }
-  }
-
-  processRightController(src) {
-    for (const control of this.controls) {
-      if (control.entries.xrRightStick) {
-        control.entries.xrRightStick.value.x = src.gamepad.axes[2]
-        control.entries.xrRightStick.value.z = src.gamepad.axes[3]
-        if (control.entries.xrRightStick.capture) break
-      }
-      if (control.entries.xrRightTrigger) {
-        this.processXRButton(control.entries.xrRightTrigger, src.gamepad.buttons[0].pressed)
-        if (control.entries.xrRightTrigger.capture) break
-      }
-      if (control.entries.xrRightBtn1) {
-        this.processXRButton(control.entries.xrRightBtn1, src.gamepad.buttons[4].pressed)
-        if (control.entries.xrRightBtn1.capture) break
-      }
-      if (control.entries.xrRightBtn2) {
-        this.processXRButton(control.entries.xrRightBtn2, src.gamepad.buttons[5].pressed)
-        if (control.entries.xrRightBtn2.capture) break
-      }
-    }
-  }
-
-  processXRButton(button, down) {
-    if (down && !button.down) { button.pressed = true; button.onPress?.() }
-    if (!down && button.down) { button.released = true; button.onRelease?.() }
-    button.down = down
+    if (this.xrSession) this.xrManager.processInputSources(this.xrSession.inputSources)
   }
 
   postLateUpdate() {
@@ -174,7 +116,7 @@ export class ClientControls extends System {
         camera.zoom = this.camera.position.z
       }
     }
-    for (const [id, info] of this.touches) info.delta.set(0, 0, 0)
+    this.touchHandler.resetDeltas()
   }
 
   async init({ viewport }) {
@@ -310,44 +252,7 @@ export class ClientControls extends System {
   }
 
   checkPointerChanges(e) {
-    const lmb = !!(e.buttons & LMB)
-    if (!this.lmbDown && lmb) {
-      this.lmbDown = true; this.buttonsDown.add(MouseLeft)
-      for (const control of this.controls) {
-        const button = control.entries.mouseLeft
-        if (button) {
-          button.down = true; button.pressed = true
-          const capture = button.onPress?.()
-          if (capture || button.capture) break
-        }
-      }
-    }
-    if (this.lmbDown && !lmb) {
-      this.lmbDown = false; this.buttonsDown.delete(MouseLeft)
-      for (const control of this.controls) {
-        const button = control.entries.mouseLeft
-        if (button) { button.down = false; button.released = true; button.onRelease?.() }
-      }
-    }
-    const rmb = !!(e.buttons & RMB)
-    if (!this.rmbDown && rmb) {
-      this.rmbDown = true; this.buttonsDown.add(MouseRight)
-      for (const control of this.controls) {
-        const button = control.entries.mouseRight
-        if (button) {
-          button.down = true; button.pressed = true
-          const capture = button.onPress?.()
-          if (capture || button.capture) break
-        }
-      }
-    }
-    if (this.rmbDown && !rmb) {
-      this.rmbDown = false; this.buttonsDown.delete(MouseRight)
-      for (const control of this.controls) {
-        const button = control.entries.mouseRight
-        if (button) { button.down = false; button.released = true; button.onRelease?.() }
-      }
-    }
+    this.buttonTracker.checkPointerChanges(e)
   }
 
   lockPointer = () => {
@@ -411,7 +316,7 @@ export class ClientControls extends System {
       const consume = control.options.onPointerDown?.(e)
       if (consume) break
       if (e.pointerType === 'touch') {
-        const consume = this.processTouchStart(control, e)
+        const consume = this.touchHandler.processTouchStart(control, e)
         if (consume) break
       }
     }
@@ -433,7 +338,7 @@ export class ClientControls extends System {
       const consume = control.options.onPointerMove?.(e)
       if (consume) break
       if (e.pointerType === 'touch') {
-        const consume = this.processTouchMove(control, e)
+        const consume = this.touchHandler.processTouchMove(control, e)
         if (consume) break
       }
     }
@@ -445,7 +350,7 @@ export class ClientControls extends System {
       const consume = control.options.onPointerUp?.(e)
       if (consume) break
       if (e.pointerType === 'touch') {
-        const consume = this.processTouchEnd(control, e)
+        const consume = this.touchHandler.processTouchEnd(control, e)
         if (consume) break
       }
     }
@@ -457,43 +362,6 @@ export class ClientControls extends System {
   }
 
   onContextMenu = e => e.preventDefault()
-
-  processTouchStart(control, touch) {
-    const id = touch.pointerId
-    if (!this.touches.has(id)) {
-      const info = { id, touch, position: { x: touch.clientX, y: touch.clientY }, delta: { x: 0, y: 0 } }
-      this.touches.set(id, info)
-      const consume = control.options.onTouch?.(info)
-      if (consume) return true
-    }
-    return false
-  }
-
-  processTouchMove(control, touch) {
-    const id = touch.pointerId
-    const info = this.touches.get(id)
-    if (info) {
-      const newPos = { x: touch.clientX, y: touch.clientY }
-      info.delta.x = newPos.x - info.position.x
-      info.delta.y = newPos.y - info.position.y
-      info.position.x = newPos.x
-      info.position.y = newPos.y
-      const consume = control.options.onTouchMove?.(info)
-      if (consume) return true
-    }
-    return false
-  }
-
-  processTouchEnd(control, touch) {
-    const id = touch.pointerId
-    const info = this.touches.get(id)
-    if (info) {
-      const consume = control.options.onTouchEnd?.(info)
-      this.touches.delete(id)
-      if (consume) return true
-    }
-    return false
-  }
 
   onTouchStart = e => {
     if (e.isCoreUI) return
