@@ -12,6 +12,7 @@ import { UndoManager } from './builder/UndoManager.js'
 import { ModeManager } from './builder/ModeManager.js'
 import { GizmoManager } from './builder/GizmoManager.js'
 import { FileDropHandler } from './builder/FileDropHandler.js'
+import { SelectionManager } from './builder/SelectionManager.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const SNAP_DISTANCE = 1
@@ -57,6 +58,7 @@ export class ClientBuilder extends System {
     this.modeManager = new ModeManager()
     this.gizmoManager = null
     this.fileDropHandler = null
+    this.selectionManager = new SelectionManager(this)
   }
 
   async init({ viewport }) {
@@ -161,181 +163,25 @@ export class ClientBuilder extends System {
   }
 
   _handleInspect() {
-    if (this.control.mouseRight.pressed && this.control.pointer.locked) {
-      const entity = this.getEntityAtReticle()
-      if (entity?.isApp) {
-        this.select(null)
-        this.control.pointer.unlock()
-        this.ui.setApp(entity)
-      }
-      if (entity?.isPlayer) {
-        this.select(null)
-        this.control.pointer.unlock()
-        this.ui.togglePane('players')
-      }
-    }
-    else if (!this.selected && !this.control.pointer.locked && this.control.mouseRight.pressed) {
-      const entity = this.getEntityAtPointer()
-      if (entity?.isApp) {
-        this.select(null)
-        this.control.pointer.unlock()
-        this.ui.setApp(entity)
-      }
-      if (entity?.isPlayer) {
-        this.select(null)
-        this.control.pointer.unlock()
-        this.ui.togglePane('players')
-      }
-    }
+    this.selectionManager.handleInspect()
   }
 
   _handleUnlink() {
-    if (this.control.keyU.pressed && this.control.pointer.locked) {
-      const entity = this.selected || this.getEntityAtReticle()
-      if (entity?.isApp && entity.blueprint) {
-        this.select(null)
-        const blueprint = {
-          id: uuid(),
-          version: 0,
-          name: entity.blueprint.name,
-          image: entity.blueprint.image,
-          author: entity.blueprint.author,
-          url: entity.blueprint.url,
-          desc: entity.blueprint.desc,
-          model: entity.blueprint.model,
-          script: entity.blueprint.script,
-          props: JSON.parse(JSON.stringify(entity.blueprint.props)),
-          preload: entity.blueprint.preload,
-          public: entity.blueprint.public,
-          locked: entity.blueprint.locked,
-          frozen: entity.blueprint.frozen,
-          unique: entity.blueprint.unique,
-          scene: entity.blueprint.scene,
-          disabled: entity.blueprint.disabled,
-        }
-        this.blueprints.add(blueprint, true)
-        entity.modify({ blueprint: blueprint.id })
-        this.network.send('entityModified', { id: entity.data.id, blueprint: blueprint.id })
-        this.events.emit('toast', 'Unlinked')
-      }
-    }
+    this.selectionManager.handleUnlink()
   }
 
   _handlePin() {
-    if (this.control.keyP.pressed && this.control.pointer.locked) {
-      const entity = this.selected || this.getEntityAtReticle()
-      if (entity?.isApp) {
-        entity.data.pinned = !entity.data.pinned
-        this.network.send('entityModified', {
-          id: entity.data.id,
-          pinned: entity.data.pinned,
-        })
-        this.events.emit('toast', entity.data.pinned ? 'Pinned' : 'Un-pinned')
-        this.select(null)
-      }
-    }
+    this.selectionManager.handlePin()
   }
 
   _handleSelection(delta, mode) {
-    if (!this.justPointerLocked && this.control.pointer.locked && this.control.mouseLeft.pressed) {
-      if (!this.selected) {
-        const entity = this.getEntityAtReticle()
-        if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) this.select(entity)
-      }
-      else if (this.selected && mode === 'grab') {
-        this.select(null)
-      }
-      else if (
-        this.selected &&
-        (mode === 'translate' || mode === 'rotate' || mode === 'scale') &&
-        !this.isGizmoActive()
-      ) {
-        const entity = this.getEntityAtReticle()
-        if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) this.select(entity)
-        else this.select(null)
-      }
-    }
-
-    if (this.selected && !this.control.pointer.locked) {
-      this.select(null)
-    }
-
-    if (
-      !this.justPointerLocked &&
-      this.control.pointer.locked &&
-      this.control.keyR.pressed &&
-      !this.control.metaLeft.down &&
-      !this.control.controlLeft.down
-    ) {
-      const entity = this.selected || this.getEntityAtReticle()
-      if (entity?.isApp && !entity.blueprint?.scene) {
-        let blueprintId = entity.data.blueprint
-        if (entity.blueprint?.unique) {
-          const blueprint = {
-            id: uuid(),
-            version: 0,
-            name: entity.blueprint.name,
-            image: entity.blueprint.image,
-            author: entity.blueprint.author,
-            url: entity.blueprint.url,
-            desc: entity.blueprint.desc,
-            model: entity.blueprint.model,
-            script: entity.blueprint.script,
-            props: JSON.parse(JSON.stringify(entity.blueprint.props)),
-            preload: entity.blueprint.preload,
-            public: entity.blueprint.public,
-            locked: entity.blueprint.locked,
-            frozen: entity.blueprint.frozen,
-            unique: entity.blueprint.unique,
-            scene: entity.blueprint.scene,
-            disabled: entity.blueprint.disabled,
-          }
-          this.blueprints.add(blueprint, true)
-          blueprintId = blueprint.id
-        }
-        const data = {
-          id: uuid(),
-          type: 'app',
-          blueprint: blueprintId,
-          position: entity.root.position.toArray(),
-          quaternion: entity.root.quaternion.toArray(),
-          scale: entity.root.scale.toArray(),
-          mover: this.network.id,
-          uploader: null,
-          pinned: false,
-          state: {},
-        }
-        const dup = this.entities.add(data, true)
-        this.select(dup)
-        this.addUndo({
-          name: 'remove-entity',
-          entityId: data.id,
-        })
-      }
-    }
-
-    if (this.control.keyX.pressed) {
-      const entity = this.selected || this.getEntityAtReticle()
-      if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) {
-        this.select(null)
-        this.addUndo({
-          name: 'add-entity',
-          data: JSON.parse(JSON.stringify(entity.data)),
-        })
-        entity?.destroy(true)
-      }
-    }
+    this.selectionManager.handleSelection(delta, mode)
 
     if (
       this.control.keyZ.pressed &&
       !this.control.shiftLeft.down &&
       (this.control.metaLeft.down || this.control.controlLeft.down)
     ) {
-      console.log('undo', {
-        shiftLeft: this.control.shiftLeft.down,
-        metaLeft: this.control.metaLeft.down,
-        controlLeft: this.control.controlLeft.down,
-      })
       this.undo()
     }
   }
