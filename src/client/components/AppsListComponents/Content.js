@@ -1,5 +1,5 @@
 import { css } from '@firebolt-dev/css'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
   BoxIcon,
   BrickWallIcon,
@@ -12,12 +12,16 @@ import {
 } from 'lucide-react'
 import { cls } from '../cls.js'
 import { useAppStats, formatNumber } from '../hooks/useAppStats.js'
+import { EntityTargeting } from './EntityTargeting.js'
+import { AppActions } from './AppActions.js'
 
 export function Content({ world, query, perf, refresh, setRefresh }) {
   const [sort, setSort] = useState('count')
   const [asc, setAsc] = useState(false)
-  const [target, setTarget] = useState(null)
   const { items } = useAppStats(world, { query, sortKey: sort, ascending: asc, refresh })
+
+  const entityTargeting = useMemo(() => new EntityTargeting(world), [world])
+  const appActions = useMemo(() => new AppActions(world, world.network, world.blueprints, entityTargeting, setRefresh), [world, entityTargeting, setRefresh])
 
   const reorder = key => {
     if (sort === key) {
@@ -27,46 +31,21 @@ export function Content({ world, query, perf, refresh, setRefresh }) {
       setAsc(false)
     }
   }
+
   useEffect(() => {
-    return () => world.target.hide()
-  }, [])
-  const getClosest = item => {
-    const playerPosition = world.rig.position
-    let closestEntity
-    let closestDistance = null
-    for (const [_, entity] of world.entities.items) {
-      if (entity.blueprint === item.blueprint) {
-        const distance = playerPosition.distanceTo(entity.root.position)
-        if (closestDistance === null || closestDistance > distance) {
-          closestEntity = entity
-          closestDistance = distance
-        }
-      }
-    }
-    return closestEntity
+    return () => entityTargeting.hide()
+  }, [entityTargeting])
+
+  const handleToggleTarget = item => {
+    entityTargeting.toggle(item)
   }
-  const toggleTarget = item => {
-    if (target === item) {
-      world.target.hide()
-      setTarget(null)
-      return
-    }
-    const entity = getClosest(item)
-    if (!entity) return
-    world.target.show(entity.root.position)
-    setTarget(item)
+
+  const handleInspect = item => {
+    appActions.inspect(item)
   }
-  const inspect = item => {
-    const entity = getClosest(item)
-    world.ui.setApp(entity)
-  }
-  const toggle = item => {
-    const blueprint = world.blueprints.get(item.blueprint.id)
-    const version = blueprint.version + 1
-    const disabled = !blueprint.disabled
-    world.blueprints.modify({ id: blueprint.id, version, disabled })
-    world.network.send('blueprintModified', { id: blueprint.id, version, disabled })
-    setRefresh(n => n + 1)
+
+  const handleToggle = item => {
+    appActions.toggle(item)
   }
   return (
     <div
@@ -242,7 +221,7 @@ export function Content({ world, query, perf, refresh, setRefresh }) {
       <div className='appslist-rows'>
         {items.map(item => (
           <div key={item.blueprint.id} className='appslist-row'>
-            <div className='appslist-rowitem name' onClick={() => inspect(item)}>
+            <div className='appslist-rowitem name' onClick={() => handleInspect(item)}>
               <span>{item.name}</span>
             </div>
             <div className='appslist-rowitem count'>
@@ -268,13 +247,13 @@ export function Content({ world, query, perf, refresh, setRefresh }) {
                 <>
                   <div
                     className={cls('appslist-action', { active: item.blueprint.disabled })}
-                    onClick={() => toggle(item)}
+                    onClick={() => handleToggle(item)}
                   >
                     <OctagonXIcon size='1rem' />
                   </div>
                   <div
-                    className={cls('appslist-action', { active: target === item })}
-                    onClick={() => toggleTarget(item)}
+                    className={cls('appslist-action', { active: entityTargeting.isTargeting(item) })}
+                    onClick={() => handleToggleTarget(item)}
                   >
                     <CrosshairIcon size='1rem' />
                   </div>
