@@ -1,66 +1,11 @@
 import * as THREE from '../extras/three.js'
-import { isNumber } from 'lodash-es'
 
 import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
+import { MaterialFactory } from './stage/MaterialFactory.js'
+import { InstancedMeshManager } from './stage/InstancedMeshManager.js'
 
 const raycasterVec2 = new THREE.Vector2()
-
-function createMaterialProxy(raw, textures, material, world) {
-  return {
-    get id() {
-      return raw.uuid
-    },
-    get textureX() {
-      return textures[0]?.offset.x
-    },
-    set textureX(val) {
-      for (const tex of textures) {
-        tex.offset.x = val
-      }
-      raw.needsUpdate = true
-    },
-    get textureY() {
-      return textures[0]?.offset.y
-    },
-    set textureY(val) {
-      for (const tex of textures) {
-        tex.offset.y = val
-      }
-      raw.needsUpdate = true
-    },
-    get color() {
-      return raw.color
-    },
-    set color(val) {
-      if (typeof val !== 'string') {
-        throw new Error('[material] color must be a string (e.g. "red", "#ff0000", "rgb(255,0,0)")')
-      }
-      raw.color.set(val)
-      raw.needsUpdate = true
-    },
-    get emissiveIntensity() {
-      return raw.emissiveIntensity
-    },
-    set emissiveIntensity(value) {
-      if (!isNumber(value)) {
-        throw new Error('[material] emissiveIntensity not a number')
-      }
-      raw.emissiveIntensity = value
-      raw.needsUpdate = true
-    },
-    get fog() {
-      return raw.fog
-    },
-    set fog(value) {
-      raw.fog = value
-      raw.needsUpdate = true
-    },
-    get _ref() {
-      if (world._allowMaterial) return material
-    },
-  }
-}
 
 export class Stage extends System {
   static DEPS = {
@@ -85,6 +30,7 @@ export class Stage extends System {
     this.raycastHits = []
     this.maskNone = new THREE.Layers()
     this.maskNone.enableAll()
+    this.materialFactory = new MaterialFactory(world)
   }
 
   init({ viewport }) {
@@ -106,7 +52,7 @@ export class Stage extends System {
 
   getDefaultMaterial() {
     if (!this.defaultMaterial) {
-      this.defaultMaterial = this.createMaterial()
+      this.defaultMaterial = this.materialFactory.create()
     }
     return this.defaultMaterial
   }
@@ -129,99 +75,22 @@ export class Stage extends System {
   insertLinked({ geometry, material, castShadow, receiveShadow, node, matrix }) {
     const id = `${geometry.uuid}/${material.uuid}/${castShadow}/${receiveShadow}`
     if (!this.models.has(id)) {
-      const modelMaterial = this.createMaterial({ raw: material })
-      if (!geometry.boundsTree) geometry.computeBoundsTree()
-      const iMesh = new THREE.InstancedMesh(geometry, modelMaterial.raw, 10)
-      iMesh.castShadow = castShadow
-      iMesh.receiveShadow = receiveShadow
-      iMesh.matrixAutoUpdate = false
-      iMesh.matrixWorldAutoUpdate = false
-      iMesh.frustumCulled = false
-      const items = []
-      let dirty = true
-
-      const model = {
+      const modelMaterial = this.materialFactory.create({ raw: material })
+      const manager = new InstancedMeshManager(this, geometry, modelMaterial, castShadow, receiveShadow)
+      this.models.set(id, {
         geometry,
         material: modelMaterial,
-        iMesh,
-        items,
-        create: (node, matrix) => {
-          const item = {
-            idx: items.length,
-            node,
-            matrix,
-          }
-          items.push(item)
-          iMesh.setMatrixAt(item.idx, item.matrix)
-          dirty = true
-          const sItem = {
-            matrix,
-            geometry,
-            material: modelMaterial.raw,
-            getEntity: () => items[item.idx]?.node.ctx.entity,
-            node,
-          }
-          this.octree.insert(sItem)
-          return {
-            material: modelMaterial.proxy,
-            move: matrix => {
-              item.matrix.copy(matrix)
-              iMesh.setMatrixAt(item.idx, matrix)
-              dirty = true
-              this.octree.move(sItem)
-            },
-            destroy: () => {
-              const last = items[items.length - 1]
-              const isOnly = items.length === 1
-              const isLast = item === last
-              if (isOnly) {
-                items.length = 0
-                dirty = true
-              } else if (isLast) {
-                items.pop()
-                dirty = true
-              } else {
-                iMesh.setMatrixAt(item.idx, last.matrix)
-                last.idx = item.idx
-                items[item.idx] = last
-                items.pop()
-                dirty = true
-              }
-              this.octree.remove(sItem)
-            },
-          }
-        },
-        clean: () => {
-          if (!dirty) return
-          const size = iMesh.instanceMatrix.array.length / 16
-          const count = items.length
-          if (size < items.length) {
-            const newSize = count + 100
-            iMesh.resize(newSize)
-            for (let i = size; i < count; i++) {
-              iMesh.setMatrixAt(i, items[i].matrix)
-            }
-          }
-          iMesh.count = count
-          if (iMesh.parent && !count) {
-            this.scene.remove(iMesh)
-            dirty = false
-            return
-          }
-          if (!iMesh.parent && count) {
-            this.scene.add(iMesh)
-          }
-          iMesh.instanceMatrix.needsUpdate = true
-          dirty = false
-        },
-      }
-      this.models.set(id, model)
+        iMesh: manager.iMesh,
+        items: manager.items,
+        create: (node, matrix) => manager.create(node, matrix),
+        clean: () => manager.clean(),
+      })
     }
     return this.models.get(id).create(node, matrix)
   }
 
   insertSingle({ geometry, material, castShadow, receiveShadow, node, matrix }) {
-    material = this.createMaterial({ raw: material })
+    material = this.materialFactory.create({ raw: material })
     const mesh = new THREE.Mesh(geometry, material.raw)
     mesh.castShadow = castShadow
     mesh.receiveShadow = receiveShadow
@@ -251,53 +120,7 @@ export class Stage extends System {
   }
 
   createMaterial(options = {}) {
-    const material = {}
-    let raw
-    if (options.raw) {
-      raw = options.raw.clone()
-      raw.onBeforeCompile = options.raw.onBeforeCompile
-    } else if (options.unlit) {
-      raw = new THREE.MeshBasicMaterial({
-        color: options.color || 'white',
-      })
-    } else {
-      raw = new THREE.MeshStandardMaterial({
-        color: options.color || 'white',
-        metalness: isNumber(options.metalness) ? options.metalness : 0,
-        roughness: isNumber(options.roughness) ? options.roughness : 1,
-      })
-    }
-    raw.shadowSide = THREE.BackSide
-    const textures = []
-    if (raw.map) {
-      raw.map = raw.map.clone()
-      textures.push(raw.map)
-    }
-    if (raw.emissiveMap) {
-      raw.emissiveMap = raw.emissiveMap.clone()
-      textures.push(raw.emissiveMap)
-    }
-    if (raw.normalMap) {
-      raw.normalMap = raw.normalMap.clone()
-      textures.push(raw.normalMap)
-    }
-    if (raw.bumpMap) {
-      raw.bumpMap = raw.bumpMap.clone()
-      textures.push(raw.bumpMap)
-    }
-    if (raw.roughnessMap) {
-      raw.roughnessMap = raw.roughnessMap.clone()
-      textures.push(raw.roughnessMap)
-    }
-    if (raw.metalnessMap) {
-      raw.metalnessMap = raw.metalnessMap.clone()
-      textures.push(raw.metalnessMap)
-    }
-    this.world.setupMaterial(raw)
-    const proxy = createMaterialProxy(raw, textures, material, this.world)
-    material.raw = raw
-    material.proxy = proxy
-    return material
+    return this.materialFactory.create(options)
   }
 
   raycastPointer(position, layers = this.maskNone, min = 0, max = Infinity) {
