@@ -114,34 +114,33 @@ export class ClientLiveKit extends System {
         this.events.emit(EVENT.livekit, this.status)
       }
     })
-    room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
-      const playerId = participant.identity
-      const player = this.entities.getPlayer(playerId)
-      if (!player) return console.error('onTrackSubscribed failed: no player')
-      if (track.source === 'microphone') {
-        const level = this.levels[playerId] || this.defaultLevel
-        const muted = this.muted.has(playerId)
-        this.createVoiceController(player, level, muted, track, participant)
-      }
-      if (track.source === 'screen_share') {
-        const metadata = JSON.parse(participant.metadata || '{}')
-        const targetId = metadata.screenTargetId
-        const screen = this.createPlayerScreen({ playerId, targetId, track, publication: pub })
-        this.addScreen(screen)
-      }
-    })
-    room.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
+    const handleTrack = (track, pub, participant, isSubscribe) => {
       const playerId = participant.identity
       if (track.source === 'microphone') {
-        const voice = this.voices.get(playerId)
-        voice?.destroy()
-        this.voices.delete(playerId)
+        if (isSubscribe) {
+          const player = this.entities.getPlayer(playerId)
+          if (!player) return console.error('onTrackSubscribed failed: no player')
+          const level = this.levels[playerId] || this.defaultLevel
+          const muted = this.muted.has(playerId)
+          this.createVoiceController(player, level, muted, track, participant)
+        } else {
+          this.voices.get(playerId)?.destroy()
+          this.voices.delete(playerId)
+        }
+      } else if (track.source === 'screen_share') {
+        if (isSubscribe) {
+          const metadata = JSON.parse(participant.metadata || '{}')
+          const targetId = metadata.screenTargetId
+          const screen = this.createPlayerScreen({ playerId, targetId, track, publication: pub })
+          this.addScreen(screen)
+        } else {
+          const screen = this.screens.find(s => s.playerId === playerId)
+          this.removeScreen(screen)
+        }
       }
-      if (track.source === 'screen_share') {
-        const screen = this.screens.find(s => s.playerId === playerId)
-        this.removeScreen(screen)
-      }
-    })
+    }
+    room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => handleTrack(track, pub, participant, true))
+    room.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => handleTrack(track, pub, participant, false))
     room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, speaking => {
       const player = this.entities.player
       this.events.emit(EVENT.speaking, { playerId: player.data.id, speaking })
@@ -172,64 +171,51 @@ export class ClientLiveKit extends System {
     root.connect(panner)
     panner.connect(gain)
     track.attach()
-    const voice = {
-      player,
-      level,
-      muted,
-      track,
-      participant,
-      root,
-      panner,
-      gain,
-      setMuted: (val) => {
-        if (voice.muted === val) return
-        voice.muted = val
-        voice.apply()
-      },
-      setLevel: (val) => {
-        if (voice.level === val) return
-        voice.level = val
-        voice.apply()
-      },
-      apply: () => {
-        if (voice.muted || voice.level === 'disabled') {
-          voice.root.gain.value = 0
-          voice.track.setWebAudioPlugins([voice.root])
-        } else if (voice.level === 'spatial') {
-          voice.root.gain.value = 1
-          voice.track.setWebAudioPlugins([voice.panner])
-        } else if (voice.level === 'global') {
-          voice.root.gain.value = 1
-          voice.track.setWebAudioPlugins([voice.root])
-        }
-      },
-      lateUpdate: (delta) => {
-        if (voice.muted || voice.level !== 'spatial') return
-        const matrix = voice.player.base.matrixWorld
-        const pos = v1.setFromMatrixPosition(matrix)
-        const qua = q1.setFromRotationMatrix(matrix)
-        const dir = v2.set(0, 0, -1).applyQuaternion(qua)
-        if (voice.panner.positionX) {
-          const endTime = this.audio.ctx.currentTime + this.audio.lastDelta
-          voice.panner.positionX.linearRampToValueAtTime(pos.x, endTime)
-          voice.panner.positionY.linearRampToValueAtTime(pos.y, endTime)
-          voice.panner.positionZ.linearRampToValueAtTime(pos.z, endTime)
-          voice.panner.orientationX.linearRampToValueAtTime(dir.x, endTime)
-          voice.panner.orientationY.linearRampToValueAtTime(dir.y, endTime)
-          voice.panner.orientationZ.linearRampToValueAtTime(dir.z, endTime)
-        } else {
-          voice.panner.setPosition(pos.x, pos.y, pos.z)
-          voice.panner.setOrientation(dir.x, dir.y, dir.z)
-        }
-      },
-      destroy: () => {
-        this.events.emit(EVENT.speaking, { playerId: voice.player.data.id, speaking: false })
-        voice.player.setSpeaking(false)
-        voice.track.detach()
-      },
+    const applyAudioSettings = () => {
+      if (muted || level === 'disabled') {
+        root.gain.value = 0
+        track.setWebAudioPlugins([root])
+      } else if (level === 'spatial') {
+        root.gain.value = 1
+        track.setWebAudioPlugins([panner])
+      } else {
+        root.gain.value = 1
+        track.setWebAudioPlugins([root])
+      }
     }
-    voice.apply()
-    this.voices.set(player.data.id, voice)
+    const updateSpatialAudio = () => {
+      if (muted || level !== 'spatial') return
+      const matrix = player.base.matrixWorld
+      const pos = v1.setFromMatrixPosition(matrix)
+      const qua = q1.setFromRotationMatrix(matrix)
+      const dir = v2.set(0, 0, -1).applyQuaternion(qua)
+      if (panner.positionX) {
+        const endTime = this.audio.ctx.currentTime + this.audio.lastDelta
+        panner.positionX.linearRampToValueAtTime(pos.x, endTime)
+        panner.positionY.linearRampToValueAtTime(pos.y, endTime)
+        panner.positionZ.linearRampToValueAtTime(pos.z, endTime)
+        panner.orientationX.linearRampToValueAtTime(dir.x, endTime)
+        panner.orientationY.linearRampToValueAtTime(dir.y, endTime)
+        panner.orientationZ.linearRampToValueAtTime(dir.z, endTime)
+      } else {
+        panner.setPosition(pos.x, pos.y, pos.z)
+        panner.setOrientation(dir.x, dir.y, dir.z)
+      }
+    }
+    applyAudioSettings()
+    this.voices.set(player.data.id, {
+      player, track, participant, root, panner, gain,
+      get level() { return level },
+      get muted() { return muted },
+      setMuted: val => { if (muted !== val) { muted = val; applyAudioSettings() } },
+      setLevel: val => { if (level !== val) { level = val; applyAudioSettings() } },
+      lateUpdate: updateSpatialAudio,
+      destroy: () => {
+        this.events.emit(EVENT.speaking, { playerId: player.data.id, speaking: false })
+        player.setSpeaking(false)
+        track.detach()
+      },
+    })
   }
 
   createPlayerScreen({ playerId, targetId, track, publication }) {
