@@ -9,7 +9,7 @@ export class Image extends Node {
   constructor(data = {}) {
     super(data)
     this.name = 'image'
-    defineProps(this, propertySchema, defaults, data)
+    defineProps(this, propertySchema, data)
     this.renderer = new ImageRenderer(this)
   }
 
