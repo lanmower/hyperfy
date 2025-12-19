@@ -5,6 +5,8 @@ import { hasRank, Ranks } from '../extras/ranks.js'
 import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
 import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
 import { EVENT } from '../constants/EventNames.js'
+import { AvatarSynchronizer } from './PlayerRemote/AvatarSynchronizer.js'
+import { RemoteAnimationController } from './PlayerRemote/RemoteAnimationController.js'
 
 let capsuleGeometry
 {
@@ -20,6 +22,8 @@ export class PlayerRemote extends BaseEntity {
     super(world, data, local)
     this.isPlayer = true
     this.isRemote = true
+    this.avatarSync = new AvatarSynchronizer(this)
+    this.animationCtrl = new RemoteAnimationController(this)
     this.init()
   }
 
@@ -39,66 +43,27 @@ export class PlayerRemote extends BaseEntity {
     })
     this.body.add(this.collider)
 
-
-    this.aura = createNode('group')
-    this.nametag = createNode('nametag', { label: this.data.name, health: this.data.health, active: false })
-    this.aura.add(this.nametag)
-
-    this.bubble = createNode('ui', {
-      width: 300,
-      height: 512,
-      pivot: 'bottom-center',
-      billboard: 'full',
-      scaler: [3, 30],
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      active: false,
-    })
-    this.bubbleBox = createNode('uiview', {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      borderRadius: 10,
-      padding: 10,
-    })
-    this.bubbleText = createNode('uitext', {
-      color: 'white',
-      fontWeight: 100,
-      lineHeight: 1.4,
-      fontSize: 16,
-    })
-    this.bubble.add(this.bubbleBox)
-    this.bubbleBox.add(this.bubbleText)
-    this.aura.add(this.bubble)
+    const { aura, nametag, bubble, bubbleBox, bubbleText } = this.avatarSync.createAura()
+    this.aura = aura
+    this.nametag = nametag
+    this.bubble = bubble
+    this.bubbleBox = bubbleBox
+    this.bubbleText = bubbleText
 
     this.aura.activate({ world: this.world, entity: this })
     this.base.activate({ world: this.world, entity: this })
 
-    this.applyAvatar()
+    this.avatarSync.applyAvatar()
 
     this.position = new BufferedLerpVector3(this.base.position, this.world.networkRate * 1.5)
     this.quaternion = new BufferedLerpQuaternion(this.base.quaternion, this.world.networkRate * 1.5)
     this.teleport = 0
 
-    this.mode = 0
-    this.axis = new THREE.Vector3()
-    this.gaze = new THREE.Vector3()
-
     this.world.setHot(this, true)
   }
 
   applyAvatar() {
-    const avatarUrl = this.data.sessionAvatar || this.data.avatar || 'asset://avatar.vrm'
-    if (this.avatarUrl === avatarUrl) return
-    this.world.loader.load('avatar', avatarUrl).then(src => {
-      if (this.avatar) this.avatar.deactivate()
-      this.avatar = src.toNodes().get('avatar')
-      this.base.add(this.avatar)
-      this.nametag.position.y = this.avatar.getHeadToHeight() + 0.2
-      this.bubble.position.y = this.avatar.getHeadToHeight() + 0.2
-      if (!this.bubble.active) {
-        this.nametag.active = true
-      }
-      this.avatarUrl = avatarUrl
-    })
+    this.avatarSync.applyAvatar()
   }
 
   getAnchorMatrix() {
@@ -133,8 +98,7 @@ export class PlayerRemote extends BaseEntity {
       this.position.update(delta)
       this.quaternion.update(delta)
     }
-    this.avatar?.setEmote(this.data.emote)
-    this.avatar?.instance?.setLocomotion(this.mode, this.axis, this.gaze)
+    this.animationCtrl.updateAnimation(delta)
   }
 
   lateUpdate(delta) {
@@ -146,12 +110,7 @@ export class PlayerRemote extends BaseEntity {
       this.base.quaternion.setFromRotationMatrix(anchor)
       this.base.clean()
     }
-    if (this.avatar) {
-      const matrix = this.avatar.getBoneTransform('head')
-      if (matrix) {
-        this.aura.position.setFromMatrixPosition(matrix)
-      }
-    }
+    this.avatarSync.updateHeadPosition()
   }
 
   setEffect(effect, onEnd) {
@@ -166,15 +125,10 @@ export class PlayerRemote extends BaseEntity {
   }
 
   setSpeaking(speaking) {
-    if (this.speaking === speaking) return
-    if (speaking && this.isMuted()) return
-    this.speaking = speaking
-    const name = this.data.name
-    this.nametag.label = speaking ? `» ${name} «` : name
+    this.animationCtrl.setSpeaking(speaking)
   }
 
   modify(data) {
-    let avatarChanged
     if (data.hasOwnProperty('t')) {
       this.teleport++
     }
@@ -186,21 +140,7 @@ export class PlayerRemote extends BaseEntity {
       this.data.quaternion = data.q
       this.quaternion.push(data.q, this.teleport)
     }
-    if (data.hasOwnProperty('m')) {
-      this.data.mode = data.m
-      this.mode = data.m
-    }
-    if (data.hasOwnProperty('a')) {
-      this.data.axis = data.a
-      this.axis.fromArray(data.a)
-    }
-    if (data.hasOwnProperty('g')) {
-      this.data.gaze = data.g
-      this.gaze.fromArray(data.g)
-    }
-    if (data.hasOwnProperty('e')) {
-      this.data.emote = data.e
-    }
+    this.animationCtrl.updateAnimationFromData(data)
     if (data.hasOwnProperty('ef')) {
       this.setEffect(data.ef)
     }
@@ -214,20 +154,10 @@ export class PlayerRemote extends BaseEntity {
       this.nametag.health = data.health
       this.world.events.emit(EVENT.health, { playerId: this.data.id, health: data.health })
     }
-    if (data.hasOwnProperty('avatar')) {
-      this.data.avatar = data.avatar
-      avatarChanged = true
-    }
-    if (data.hasOwnProperty('sessionAvatar')) {
-      this.data.sessionAvatar = data.sessionAvatar
-      avatarChanged = true
-    }
+    this.avatarSync.updateAvatarFromData(data)
     if (data.hasOwnProperty('rank')) {
       this.data.rank = data.rank
       this.world.events.emit(EVENT.rank, { playerId: this.data.id, rank: this.data.rank })
-    }
-    if (avatarChanged) {
-      this.applyAvatar()
     }
   }
 
