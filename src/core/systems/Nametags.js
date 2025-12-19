@@ -1,8 +1,7 @@
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { System } from './System.js'
-import { NametagCanvas } from './nametags/NametagCanvas.js'
-import { NametagManager } from './nametags/NametagManager.js'
+import { fillRoundRect } from '../extras/roundRect.js'
 
 const RES = 2
 const NAMETAG_WIDTH = 200 * RES
@@ -20,15 +19,8 @@ const HEALTH_BORDER = 1.5 * RES
 const HEALTH_BORDER_RADIUS = 20 * RES
 
 export class Nametags extends System {
-  static DEPS = {
-    rig: 'rig',
-    stage: 'stage',
-    events: 'events',
-  }
-
-  static EVENTS = {
-    xrSession: 'onXRSession',
-  }
+  static DEPS = { rig: 'rig', stage: 'stage', events: 'events' }
+  static EVENTS = { xrSession: 'onXRSession' }
 
   constructor(world) {
     super(world)
@@ -39,19 +31,12 @@ export class Nametags extends System {
     this.texture.colorSpace = THREE.SRGBColorSpace
     this.texture.flipY = false
     this.texture.needsUpdate = true
-    this.uniforms = {
-      uAtlas: { value: this.texture },
-      uXR: { value: 0 },
-      uOrientation: { value: this.rig.quaternion },
-    }
-    this.canvas = new NametagCanvas(domCanvas, this.texture)
-    this.manager = null
+    this.uniforms = { uAtlas: { value: this.texture }, uXR: { value: 0 }, uOrientation: { value: this.rig.quaternion } }
+    this.canvas = domCanvas
+    this.ctx = domCanvas.getContext('2d')
+    this.nametags = []
     this.material = new CustomShaderMaterial({
-      baseMaterial: THREE.MeshBasicMaterial,
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
-      uniforms: this.uniforms,
+      baseMaterial: THREE.MeshBasicMaterial, transparent: true, depthWrite: false, depthTest: false, uniforms: this.uniforms,
       vertexShader: `
         attribute vec2 coords;
         uniform float uXR;
@@ -67,90 +52,48 @@ export class Nametags extends System {
         vec4 lookAtQuaternion(vec3 instancePos) {
           vec3 up = vec3(0.0, 1.0, 0.0);
           vec3 forward = normalize(cameraPosition - instancePos);
-          
-          if(length(forward) < 0.001) {
-            return vec4(0.0, 0.0, 0.0, 1.0);
-          }
-          
+          if(length(forward) < 0.001) return vec4(0.0, 0.0, 0.0, 1.0);
           vec3 right = normalize(cross(up, forward));
           up = cross(forward, right);
-          
-          float m00 = right.x;
-          float m01 = right.y;
-          float m02 = right.z;
-          float m10 = up.x;
-          float m11 = up.y;
-          float m12 = up.z;
-          float m20 = forward.x;
-          float m21 = forward.y;
-          float m22 = forward.z;
-          
+          float m00 = right.x, m01 = right.y, m02 = right.z, m10 = up.x, m11 = up.y, m12 = up.z, m20 = forward.x, m21 = forward.y, m22 = forward.z;
           float trace = m00 + m11 + m22;
           vec4 quat;
-          
           if(trace > 0.0) {
             float s = 0.5 / sqrt(trace + 1.0);
-            quat = vec4(
-              (m12 - m21) * s,
-              (m20 - m02) * s,
-              (m01 - m10) * s,
-              0.25 / s
-            );
+            quat = vec4((m12 - m21) * s, (m20 - m02) * s, (m01 - m10) * s, 0.25 / s);
           } else if(m00 > m11 && m00 > m22) {
             float s = 2.0 * sqrt(1.0 + m00 - m11 - m22);
-            quat = vec4(
-              0.25 * s,
-              (m01 + m10) / s,
-              (m20 + m02) / s,
-              (m12 - m21) / s
-            );
+            quat = vec4(0.25 * s, (m01 + m10) / s, (m20 + m02) / s, (m12 - m21) / s);
           } else if(m11 > m22) {
             float s = 2.0 * sqrt(1.0 + m11 - m00 - m22);
-            quat = vec4(
-              (m01 + m10) / s,
-              0.25 * s,
-              (m12 + m21) / s,
-              (m20 - m02) / s
-            );
+            quat = vec4((m01 + m10) / s, 0.25 * s, (m12 + m21) / s, (m20 - m02) / s);
           } else {
             float s = 2.0 * sqrt(1.0 + m22 - m00 - m11);
-            quat = vec4(
-              (m20 + m02) / s,
-              (m12 + m21) / s,
-              0.25 * s,
-              (m01 - m10) / s
-            );
+            quat = vec4((m20 + m02) / s, (m12 + m21) / s, 0.25 * s, (m01 - m10) / s);
           }
-          
           return normalize(quat);
         }
 
         void main() {
           vec3 newPosition = position;
           if (uXR > 0.5) {
-            vec3 instancePos = vec3(
-              instanceMatrix[3][0],
-              instanceMatrix[3][1],
-              instanceMatrix[3][2]
-            );
+            vec3 instancePos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
             vec4 lookAtQuat = lookAtQuaternion(instancePos);
             newPosition = applyQuaternion(newPosition, lookAtQuat);
           } else {
             newPosition = applyQuaternion(newPosition, uOrientation);
           }
           csm_Position = newPosition;
-          
-          vec2 atlasUV = uv; // original UVs are 0-1 for the plane
+          vec2 atlasUV = uv;
           atlasUV.y = 1.0 - atlasUV.y;
           atlasUV /= vec2(${PER_ROW}, ${PER_COLUMN});
           atlasUV += coords;
-          vUv = atlasUV;          
+          vUv = atlasUV;
         }
       `,
       fragmentShader: `
         uniform sampler2D uAtlas;
         varying vec2 vUv;
-        
         void main() {
           vec4 texColor = texture2D(uAtlas, vUv);
           csm_FragColor = texColor;
@@ -158,7 +101,7 @@ export class Nametags extends System {
       `,
     })
     this.geometry = new THREE.PlaneGeometry(1, NAMETAG_HEIGHT / NAMETAG_WIDTH)
-    this.geometry.setAttribute('coords', new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2)) // xy coordinates in atlas
+    this.geometry.setAttribute('coords', new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2))
     this.mesh = new THREE.InstancedMesh(this.geometry, this.material, MAX_INSTANCES)
     this.mesh.renderOrder = 9999
     this.mesh.matrixAutoUpdate = false
@@ -167,21 +110,121 @@ export class Nametags extends System {
     this.mesh.count = 0
   }
 
-  start() {
-    this.stage.scene.add(this.mesh)
-    this.manager = new NametagManager(this.mesh, this.canvas)
-  }
+  start() { this.stage.scene.add(this.mesh) }
 
   add({ name, health }) {
-    return this.manager.add(name, health)
+    const idx = this.nametags.length
+    if (idx >= MAX_INSTANCES) return console.error('nametags: reached max')
+    this.mesh.count++
+    this.mesh.instanceMatrix.needsUpdate = true
+    const row = Math.floor(idx / PER_ROW), col = idx % PER_ROW
+    const coords = this.mesh.geometry.attributes.coords
+    coords.setXY(idx, col / PER_ROW, row / PER_COLUMN)
+    coords.needsUpdate = true
+    const matrix = new THREE.Matrix4()
+    matrix.compose(new THREE.Vector3(), new THREE.Quaternion(0, 0, 0, 1), new THREE.Vector3(1, 1, 1))
+    const nametag = {
+      idx, name, health, matrix,
+      move: newMatrix => {
+        matrix.elements[12] = newMatrix.elements[12]
+        matrix.elements[13] = newMatrix.elements[13]
+        matrix.elements[14] = newMatrix.elements[14]
+        this.mesh.setMatrixAt(nametag.idx, matrix)
+        this.mesh.instanceMatrix.needsUpdate = true
+      },
+      setName: name => {
+        if (nametag.name === name) return
+        nametag.name = name
+        this.draw(nametag)
+      },
+      setHealth: health => {
+        if (nametag.health === health) return
+        nametag.health = health
+        this.draw(nametag)
+      },
+      destroy: () => this.remove(nametag),
+    }
+    this.nametags[idx] = nametag
+    this.draw(nametag)
+    return nametag
   }
 
   remove(nametag) {
-    this.manager.remove(nametag)
+    if (!this.nametags.includes(nametag)) return console.warn('nametags: attempted to remove non-existent nametag')
+    const last = this.nametags[this.nametags.length - 1]
+    const isLast = nametag === last
+    if (isLast) {
+      this.nametags.pop()
+      this.clear(nametag)
+    } else {
+      this.clear(last)
+      last.idx = nametag.idx
+      this.draw(last)
+      const coords = this.mesh.geometry.attributes.coords
+      const row = Math.floor(nametag.idx / PER_ROW), col = nametag.idx % PER_ROW
+      coords.setXY(nametag.idx, col / PER_ROW, row / PER_COLUMN)
+      coords.needsUpdate = true
+      this.mesh.setMatrixAt(last.idx, last.matrix)
+      this.nametags[last.idx] = last
+      this.nametags.pop()
+    }
+    this.mesh.count--
+    this.mesh.instanceMatrix.needsUpdate = true
   }
 
-
-  onXRSession = session => {
-    this.uniforms.uXR.value = session ? 1 : 0
+  draw(nametag) {
+    const idx = nametag.idx, row = Math.floor(idx / PER_ROW), col = idx % PER_ROW
+    const x = col * NAMETAG_WIDTH, y = row * NAMETAG_HEIGHT
+    this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
+    this.ctx.font = `800 ${NAME_FONT_SIZE}px Rubik`
+    this.ctx.fillStyle = 'white'
+    this.ctx.textAlign = 'center'
+    this.ctx.textBaseline = 'top'
+    this.ctx.lineWidth = NAME_OUTLINE_SIZE
+    this.ctx.strokeStyle = 'rgba(0,0,0,0.5)'
+    const text = this.fitText(nametag.name, NAMETAG_WIDTH)
+    this.ctx.save()
+    this.ctx.globalCompositeOperation = 'xor'
+    this.ctx.globalAlpha = 1
+    this.ctx.strokeText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2)
+    this.ctx.restore()
+    this.ctx.fillText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2)
+    if (nametag.health < HEALTH_MAX) {
+      {
+        const fillStyle = 'rgba(0, 0, 0, 0.6)', width = HEALTH_WIDTH, height = HEALTH_HEIGHT
+        const left = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2, top = y + NAME_FONT_SIZE + 5, borderRadius = HEALTH_BORDER_RADIUS
+        fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
+      }
+      {
+        const fillStyle = '#229710', maxWidth = HEALTH_WIDTH - HEALTH_BORDER * 2, perc = nametag.health / HEALTH_MAX
+        const width = maxWidth * perc, height = HEALTH_HEIGHT - HEALTH_BORDER * 2
+        const left = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2 + HEALTH_BORDER, top = y + NAME_FONT_SIZE + 5 + HEALTH_BORDER, borderRadius = HEALTH_BORDER_RADIUS
+        fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
+      }
+    }
+    this.texture.needsUpdate = true
   }
+
+  fitText(text, maxWidth) {
+    const width = this.ctx.measureText(text).width
+    if (width <= maxWidth) return text
+    const ellipsis = '...'
+    let truncated = text
+    const ellipsisWidth = this.ctx.measureText(ellipsis).width
+    while (truncated.length > 0) {
+      truncated = truncated.slice(0, -1)
+      const truncatedWidth = this.ctx.measureText(truncated).width
+      if (truncatedWidth + ellipsisWidth <= maxWidth) return truncated + ellipsis
+    }
+    return ellipsis
+  }
+
+  clear(nametag) {
+    const idx = nametag.idx, row = Math.floor(idx / PER_ROW), col = idx % PER_ROW
+    const x = col * NAMETAG_WIDTH, y = row * NAMETAG_HEIGHT
+    this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
+    this.texture.needsUpdate = true
+  }
+
+  onXRSession = session => { this.uniforms.uXR.value = session ? 1 : 0 }
 }

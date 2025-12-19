@@ -1,8 +1,7 @@
-import { isEqual, merge } from 'lodash-es'
+import { isEqual } from 'lodash-es'
 import { System } from './System.js'
-import { ErrorPatterns } from '../utils/errorPatterns.js'
-import { AppValidator } from '../validators/AppValidator.js'
-import { normalizeBlueprint } from '../schemas/AppBlueprint.schema.js'
+import { BlueprintParser } from './blueprints/BlueprintParser.js'
+import { BlueprintErrorMonitor } from './blueprints/BlueprintErrorMonitor.js'
 
 export class Blueprints extends System {
   static DEPS = {
@@ -15,6 +14,8 @@ export class Blueprints extends System {
   constructor(world) {
     super(world)
     this.items = new Map()
+    this.parser = new BlueprintParser(world, this)
+    this.monitor = new BlueprintErrorMonitor(world, this)
   }
 
   get(id) {
@@ -26,71 +27,16 @@ export class Blueprints extends System {
   }
 
   async add(data, local) {
-    const validation = AppValidator.validateBlueprint(data)
-    if (!validation.valid) {
-      console.warn(`Blueprint validation warning for ${data.id}:`, validation.error)
-    }
-
-    const normalized = normalizeBlueprint(data)
-    this.items.set(normalized.id, normalized)
+    this.parser.validate(data)
+    const normalized = this.parser.normalize(data)
+    this.parser.store(normalized)
 
     if (local) {
-      const response = await this.executeWithErrorMonitoring(normalized.id, async () => {
+      const response = await this.monitor.executeWithErrorMonitoring(normalized.id, async () => {
         return { ...normalized, success: true }
       })
       this.network.send('blueprintAdded', response)
     }
-  }
-
-  
-  isBlueprintRelatedError(error, blueprintId) {
-    if (ErrorPatterns.EXPLICIT_ERRORS.includes(error.type)) {
-      return true
-    }
-    const errorMessage = error.args ? error.args.join(' ') : ''
-    const stack = error.stack || ''
-    if (ErrorPatterns.matchesPatterns(errorMessage, blueprintId) || ErrorPatterns.matchesPatterns(stack, blueprintId)) {
-      return true
-    }
-    return true
-  }
-
-  async executeWithErrorMonitoring(blueprintId, operation) {
-    const errorMonitor = this.errorMonitor
-    if (!errorMonitor) return await operation()
-
-    const errorsBefore = errorMonitor.getErrors({ limit: 1000 }).length
-    const result = await operation()
-
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    const errorsAfter = errorMonitor.getErrors({ limit: 1000 }).length
-    if (errorsAfter > errorsBefore) {
-      const newErrors = errorMonitor.getErrors({ limit: 1000 }).slice(errorsBefore)
-      const blueprintErrors = newErrors.filter(error =>
-        this.isBlueprintRelatedError(error, blueprintId)
-      )
-
-      if (blueprintErrors.length > 0) {
-        return {
-          ...result,
-          success: false,
-          errors: blueprintErrors.map(error => ({
-            type: error.type,
-            message: error.args.join(' '),
-            stack: error.stack,
-            timestamp: error.timestamp,
-            critical: errorMonitor.isCriticalError(error.type, error.args),
-            timeFromOperation: new Date(error.timestamp) - Date.now() + 1000
-          })),
-          errorCaptureWindow: '1000ms',
-          totalErrorsCaptured: newErrors.length,
-          blueprintRelatedErrors: blueprintErrors.length
-        }
-      }
-    }
-
-    return result
   }
 
   async modify(data) {
@@ -103,7 +49,7 @@ export class Blueprints extends System {
     if (!changed) return
     this.items.set(blueprint.id, modified)
 
-    const response = await this.executeWithErrorMonitoring(blueprint.id, async () => {
+    const response = await this.monitor.executeWithErrorMonitoring(blueprint.id, async () => {
       for (const [_, entity] of this.entities.items) {
         if (entity.data.blueprint === blueprint.id) {
           entity.data.state = {}
