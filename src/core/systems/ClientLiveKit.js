@@ -1,14 +1,10 @@
-import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { isBoolean } from 'lodash-es'
 import { Room, RoomEvent, ParticipantEvent, ScreenSharePresets } from 'livekit-client'
 import { EVENT } from '../constants/EventNames.js'
 import { TrackManager } from './livekit/TrackManager.js'
 import { ScreenManager } from './livekit/ScreenManager.js'
-
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
+import { VoiceController } from './livekit/VoiceController.js'
 
 export class ClientLiveKit extends System {
   static DEPS = {
@@ -40,6 +36,7 @@ export class ClientLiveKit extends System {
     this.voices = new Map()
     this.trackManager = new TrackManager(this)
     this.screenManager = new ScreenManager(this)
+    this.voiceController = new VoiceController(this)
   }
 
   start() {
@@ -94,81 +91,7 @@ export class ClientLiveKit extends System {
   }
 
   createVoiceController(player, level, muted, track, participant) {
-    track.setAudioContext(this.audio.ctx)
-    const root = this.audio.ctx.createGain()
-    const panner = this.audio.ctx.createPanner()
-    panner.panningModel = 'HRTF'
-    panner.distanceModel = 'inverse'
-    panner.refDistance = 1
-    panner.maxDistance = 40
-    panner.rolloffFactor = 3
-    panner.coneInnerAngle = 360
-    panner.coneOuterAngle = 360
-    panner.coneOuterGain = 0
-    const gain = this.audio.groupGains.voice
-    root.connect(gain)
-    root.connect(panner)
-    panner.connect(gain)
-    track.attach()
-
-    const voice = {
-      player,
-      level,
-      muted,
-      track,
-      participant,
-      root,
-      panner,
-      gain,
-      setMuted: (val) => {
-        if (voice.muted === val) return
-        voice.muted = val
-        voice.apply()
-      },
-      setLevel: (val) => {
-        if (voice.level === val) return
-        voice.level = val
-        voice.apply()
-      },
-      apply: () => {
-        if (voice.muted || voice.level === 'disabled') {
-          voice.root.gain.value = 0
-          voice.track.setWebAudioPlugins([voice.root])
-        } else if (voice.level === 'spatial') {
-          voice.root.gain.value = 1
-          voice.track.setWebAudioPlugins([voice.panner])
-        } else if (voice.level === 'global') {
-          voice.root.gain.value = 1
-          voice.track.setWebAudioPlugins([voice.root])
-        }
-      },
-      lateUpdate: (delta) => {
-        if (voice.muted || voice.level !== 'spatial') return
-        const matrix = voice.player.base.matrixWorld
-        const pos = v1.setFromMatrixPosition(matrix)
-        const qua = q1.setFromRotationMatrix(matrix)
-        const dir = v2.set(0, 0, -1).applyQuaternion(qua)
-        if (voice.panner.positionX) {
-          const endTime = this.audio.ctx.currentTime + this.audio.lastDelta
-          voice.panner.positionX.linearRampToValueAtTime(pos.x, endTime)
-          voice.panner.positionY.linearRampToValueAtTime(pos.y, endTime)
-          voice.panner.positionZ.linearRampToValueAtTime(pos.z, endTime)
-          voice.panner.orientationX.linearRampToValueAtTime(dir.x, endTime)
-          voice.panner.orientationY.linearRampToValueAtTime(dir.y, endTime)
-          voice.panner.orientationZ.linearRampToValueAtTime(dir.z, endTime)
-        } else {
-          voice.panner.setPosition(pos.x, pos.y, pos.z)
-          voice.panner.setOrientation(dir.x, dir.y, dir.z)
-        }
-      },
-      destroy: () => {
-        this.events.emit(EVENT.speaking, { playerId: voice.player.data.id, speaking: false })
-        voice.player.setSpeaking(false)
-        voice.track.detach()
-      },
-    }
-    voice.apply()
-    this.voices.set(player.data.id, voice)
+    this.voiceController.create(player, level, muted, track, participant)
   }
 
 
