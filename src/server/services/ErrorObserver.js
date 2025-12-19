@@ -1,21 +1,17 @@
 import { ErrorLevels } from '../../core/schemas/ErrorEvent.schema.js'
 import { errorFormatter } from '../utils/ErrorFormatter.js'
-import { stderrLogger } from '../utils/StderrLogger.js'
+import { ErrorPatternTracker } from './ErrorPatternTracker.js'
+import { ErrorAlertManager } from './ErrorAlertManager.js'
 
 export class ErrorObserver {
   constructor() {
     this.errors = []
     this.errorsByClient = new Map()
     this.errorsByCategory = new Map()
-    this.errorPatterns = new Map()
     this.maxErrors = 1000
-    this.alertThresholds = {
-      warning: 10,
-      critical: 25,
-      cascade: 5
-    }
-    this.lastAlertTime = new Map()
-    this.alertCooldown = 60000
+
+    this.patternTracker = new ErrorPatternTracker()
+    this.alertManager = new ErrorAlertManager(this)
   }
 
   recordClientError(clientId, error, metadata = {}) {
@@ -47,7 +43,7 @@ export class ErrorObserver {
     }
     this.errorsByCategory.get(errorEntry.category).push(errorEntry)
 
-    this.trackErrorPattern(errorEntry)
+    this.patternTracker.track(errorEntry)
 
     if (this.errors.length > this.maxErrors) {
       this.errors.shift()
@@ -55,46 +51,9 @@ export class ErrorObserver {
 
     this.reportToStderr(errorEntry, metadata)
 
-    this.checkAlertThresholds(errorEntry)
+    this.alertManager.check(errorEntry)
 
     return errorEntry
-  }
-
-  trackErrorPattern(error) {
-    const patternKey = `${error.category}:${error.message}`
-
-    if (!this.errorPatterns.has(patternKey)) {
-      this.errorPatterns.set(patternKey, {
-        category: error.category,
-        message: error.message,
-        count: 0,
-        clients: new Set(),
-        firstSeen: error.timestamp,
-        lastSeen: error.timestamp
-      })
-    }
-
-    const pattern = this.errorPatterns.get(patternKey)
-    pattern.count += error.count || 1
-    pattern.clients.add(error.clientId)
-    pattern.lastSeen = error.timestamp
-
-    if (this.errorPatterns.size > 500) {
-      this.cleanupPatterns()
-    }
-  }
-
-  cleanupPatterns() {
-    const cutoff = Date.now() - (60 * 60 * 1000)
-    const toDelete = []
-
-    for (const [key, pattern] of this.errorPatterns.entries()) {
-      if (pattern.lastSeen < cutoff) {
-        toDelete.push(key)
-      }
-    }
-
-    toDelete.forEach(key => this.errorPatterns.delete(key))
   }
 
   reportToStderr(error, metadata) {
@@ -109,65 +68,6 @@ export class ErrorObserver {
 
     const formatted = errorFormatter.formatForStderr(error, context)
     process.stderr.write(formatted)
-  }
-
-  checkAlertThresholds(error) {
-    const now = Date.now()
-
-    const recentErrors = this.getRecentErrors(60000)
-    if (recentErrors.length >= this.alertThresholds.critical) {
-      this.triggerAlert('CRITICAL', `${recentErrors.length} errors in last minute`, {
-        errorCount: recentErrors.length,
-        threshold: this.alertThresholds.critical
-      })
-    } else if (recentErrors.length >= this.alertThresholds.warning) {
-      this.triggerAlert('WARNING', `${recentErrors.length} errors in last minute`, {
-        errorCount: recentErrors.length,
-        threshold: this.alertThresholds.warning
-      })
-    }
-
-    const categoryErrors = this.getErrorsByCategory(error.category).filter(
-      e => now - e.timestamp < 60000
-    )
-
-    if (categoryErrors.length >= this.alertThresholds.cascade) {
-      this.triggerAlert('WARNING', `Cascading failures detected in ${error.category}`, {
-        category: error.category,
-        count: categoryErrors.length,
-        clients: new Set(categoryErrors.map(e => e.clientId)).size
-      })
-    }
-
-    const clientErrors = this.getErrorsByClient(error.clientId).filter(
-      e => now - e.timestamp < 60000
-    )
-
-    if (clientErrors.length >= this.alertThresholds.warning) {
-      this.triggerAlert('WARNING', `Client experiencing high error rate`, {
-        clientId: error.clientId,
-        count: clientErrors.length
-      })
-    }
-  }
-
-  triggerAlert(level, message, details = {}) {
-    const alertKey = `${level}:${message}`
-    const lastAlert = this.lastAlertTime.get(alertKey)
-    const now = Date.now()
-
-    if (lastAlert && now - lastAlert < this.alertCooldown) {
-      return
-    }
-
-    this.lastAlertTime.set(alertKey, now)
-
-    const formatted = errorFormatter.formatAlert(message, level)
-    process.stderr.write(formatted)
-
-    if (Object.keys(details).length > 0) {
-      stderrLogger.info('Alert details:', details)
-    }
   }
 
   getRecentErrors(timeWindow = 60000) {
@@ -197,18 +97,7 @@ export class ErrorObserver {
       byClient[error.clientId] = (byClient[error.clientId] || 0) + 1
     })
 
-    const topPatterns = Array.from(this.errorPatterns.values())
-      .filter(p => p.lastSeen >= oneHourAgo)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10)
-      .map(p => ({
-        category: p.category,
-        message: p.message.substring(0, 100),
-        count: p.count,
-        affectedClients: p.clients.size,
-        firstSeen: p.firstSeen,
-        lastSeen: p.lastSeen
-      }))
+    const topPatterns = this.patternTracker.getTopPatterns(10, 60 * 60 * 1000)
 
     return {
       total: this.errors.length,
@@ -244,8 +133,7 @@ export class ErrorObserver {
   }
 
   getErrorPatterns() {
-    return Array.from(this.errorPatterns.values())
-      .sort((a, b) => b.count - a.count)
+    return this.patternTracker.getPatterns()
   }
 
   clearErrors() {
@@ -253,8 +141,8 @@ export class ErrorObserver {
     this.errors = []
     this.errorsByClient.clear()
     this.errorsByCategory.clear()
-    this.errorPatterns.clear()
-    this.lastAlertTime.clear()
+    this.patternTracker.clear()
+    this.alertManager.clear()
     return count
   }
 
@@ -337,7 +225,7 @@ export class ErrorObserver {
   getStatus() {
     const stats = this.getErrorStats()
     return {
-      healthy: stats.lastMinute < this.alertThresholds.warning,
+      healthy: stats.lastMinute < this.alertManager.alertThresholds.warning,
       errorRate: stats.lastMinute,
       totalErrors: stats.total,
       criticalErrors: stats.critical,
