@@ -16,6 +16,8 @@ import { PlayerCameraManager } from './player/PlayerCameraManager.js'
 import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
 import { PlayerChatBubble } from './player/PlayerChatBubble.js'
 import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
+import { AnimationController } from './player/AnimationController.js'
+import { NetworkSynchronizer } from './player/NetworkSynchronizer.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 
@@ -114,6 +116,8 @@ export class PlayerLocal extends BaseEntity {
     this.avatarManager = new PlayerAvatarManager(this)
     this.chatBubble = new PlayerChatBubble(this)
     this.inputProcessor = new PlayerInputProcessor(this)
+    this.animationController = new AnimationController(this)
+    this.networkSynchronizer = new NetworkSynchronizer(this)
 
     if (this.world.loader?.preloader) {
       await this.world.loader.preloader
@@ -260,7 +264,6 @@ export class PlayerLocal extends BaseEntity {
   }
 
   update(delta) {
-    const isXR = this.world.xr?.session
     const freeze = this.data.effect?.freeze
     const anchor = this.getAnchorMatrix()
 
@@ -285,104 +288,13 @@ export class PlayerLocal extends BaseEntity {
     this.inputProcessor.applyMovementRotation()
     this.inputProcessor.applyBodyRotation()
 
-    let emote
-    if (this.data.effect?.emote) {
-      emote = this.data.effect.emote
-    }
-    if (this.emote !== emote) {
-      this.emote = emote
-    }
-    this.avatar?.setEmote(this.emote)
+    this.animationController.updateEmote()
+    this.mode = this.animationController.updateAnimationMode()
+    this.animationController.updateGaze()
+    this.animationController.applyAvatarLocomotion()
 
-    let mode
-    if (this.data.effect?.emote) {
-    } else if (this.physics.flying) {
-      mode = Modes.FLY
-    } else if (this.physics.airJumping) {
-      mode = Modes.FLIP
-    } else if (this.physics.jumping) {
-      mode = Modes.JUMP
-    } else if (this.physics.falling) {
-      mode = this.physics.fallDistance > 1.6 ? Modes.FALL : Modes.JUMP
-    } else if (this.physics.moving) {
-      mode = this.running ? Modes.RUN : Modes.WALK
-    } else if (this.speaking) {
-      mode = Modes.TALK
-    }
-    if (!mode) mode = Modes.IDLE
-    this.mode = mode
-
-    if (isXR) {
-      this.gaze.copy(FORWARD).applyQuaternion(this.world.xr.camera.quaternion)
-    } else {
-      this.gaze.copy(FORWARD).applyQuaternion(this.cam.quaternion)
-      if (!this.firstPerson) {
-        v1.copy(gazeTiltAxis).applyQuaternion(this.cam.quaternion) // tilt in cam space
-        this.gaze.applyAxisAngle(v1, gazeTiltAngle) // positive for upward tilt
-      }
-    }
-
-    this.avatar?.instance?.setLocomotion(this.mode, this.axis, this.gaze)
-
-    this.lastSendAt += delta
-    if (this.lastSendAt >= this.world.networkRate) {
-      if (!this.lastState) {
-        this.lastState = {
-          id: this.data.id,
-          p: this.base.position.clone(),
-          q: this.base.quaternion.clone(),
-          m: this.mode,
-          a: this.axis.clone(),
-          g: this.gaze.clone(),
-          e: null,
-        }
-      }
-      const data = {
-        id: this.data.id,
-      }
-      let hasChanges
-      if (!this.lastState.p.equals(this.base.position)) {
-        data.p = this.base.position.toArray()
-        this.lastState.p.copy(this.base.position)
-        hasChanges = true
-      }
-      if (!this.lastState.q.equals(this.base.quaternion)) {
-        data.q = this.base.quaternion.toArray()
-        this.lastState.q.copy(this.base.quaternion)
-        hasChanges = true
-      }
-      if (this.lastState.m !== this.mode) {
-        data.m = this.mode
-        this.lastState.m = this.mode
-        hasChanges = true
-      }
-      if (!this.lastState.a.equals(this.axis)) {
-        data.a = this.axis.toArray()
-        this.lastState.a.copy(this.axis)
-        hasChanges = true
-      }
-      if (!this.lastState.g.equals(this.gaze)) {
-        data.g = this.gaze.toArray()
-        this.lastState.g.copy(this.gaze)
-        hasChanges = true
-      }
-      if (this.lastState.e !== this.emote) {
-        data.e = this.emote
-        this.lastState.e = this.emote
-        hasChanges = true
-      }
-      if (hasChanges) {
-        this.world.network.send('entityModified', data)
-      }
-      this.lastSendAt = 0
-    }
-
-    if (this.data.effect?.duration) {
-      this.data.effect.duration -= delta
-      if (this.data.effect.duration <= 0) {
-        this.setEffect(null)
-      }
-    }
+    this.networkSynchronizer.sync(delta)
+    this.networkSynchronizer.updateEffectDuration(delta)
   }
 
   lateUpdate(delta) {
