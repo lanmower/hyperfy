@@ -4,7 +4,6 @@ import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
 import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
-import { RigidBodySetup } from './physics/RigidBodySetup.js'
 import { PhysicsForces } from './physics/PhysicsForces.js'
 import { PhysicsProperties } from './physics/PhysicsProperties.js'
 
@@ -41,7 +40,60 @@ export class RigidBody extends Node {
   }
 
   mount() {
-    RigidBodySetup.mount(this, this.ctx)
+    this.needsRebuild = false
+    if (this.ctx.moving) return
+
+    this.matrixWorld.decompose(v[0], q[0], v[1])
+    this.transform = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
+    v[0].toPxTransform(this.transform)
+    q[0].toPxTransform(this.transform)
+
+    if (this._type === 'static') {
+      this.actor = this.ctx.world.physics.physics.createRigidStatic(this.transform)
+    } else if (this._type === 'kinematic') {
+      this.actor = this.ctx.world.physics.physics.createRigidDynamic(this.transform)
+      this.actor.setRigidBodyFlag(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC, true)
+      PHYSX.PxRigidBodyExt.prototype.setMassAndUpdateInertia(this.actor, this._mass)
+    } else if (this._type === 'dynamic') {
+      this.actor = this.ctx.world.physics.physics.createRigidDynamic(this.transform)
+      PHYSX.PxRigidBodyExt.prototype.setMassAndUpdateInertia(this.actor, this._mass)
+      if (this._centerOfMass) {
+        const pose = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
+        this._centerOfMass.toPxTransform(pose)
+        this.actor.setCMassLocalPose(pose)
+      }
+      this.actor.setLinearDamping(this._linearDamping)
+      this.actor.setAngularDamping(this._angularDamping)
+    }
+
+    for (const shape of this.shapes) {
+      this.actor.attachShape(shape)
+    }
+
+    const playerId = this.ctx.entity?.isPlayer ? this.ctx.entity.data.id : null
+    this.actorHandle = this.ctx.world.physics.addActor(this.actor, {
+      onInterpolate: this._type === 'kinematic' || this._type === 'dynamic' ? this.onInterpolate : null,
+      node: this,
+      get tag() {
+        return this.node._tag
+      },
+      get playerId() {
+        return playerId
+      },
+      get onContactStart() {
+        return this.node._onContactStart
+      },
+      get onContactEnd() {
+        return this.node._onContactEnd
+      },
+      get onTriggerEnter() {
+        return this.node._onTriggerEnter
+      },
+      get onTriggerLeave() {
+        return this.node._onTriggerLeave
+      },
+    })
+
     this.physicsForces = new PhysicsForces(this.actor)
     this.physicsProperties = new PhysicsProperties(this.actor, this.tempVec3, this.tempQuat)
   }
@@ -70,7 +122,12 @@ export class RigidBody extends Node {
   }
 
   unmount() {
-    RigidBodySetup.unmount(this)
+    if (this.actor) {
+      this.actorHandle?.destroy()
+      this.actorHandle = null
+      this.actor.release()
+      this.actor = null
+    }
     this.physicsForces = null
     this.physicsProperties = null
   }

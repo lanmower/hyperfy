@@ -139,13 +139,8 @@ export class PlayerLocal extends BaseEntity {
     this.world.events.emit('ready', true)
   }
 
-  getAvatarUrl() {
-    return this.avatarManager.getAvatarUrl()
-  }
-
-  async applyAvatar() {
-    return this.avatarManager.applyAvatar()
-  }
+  getAvatarUrl() { return this.avatarManager.getAvatarUrl() }
+  async applyAvatar() { return this.avatarManager.applyAvatar() }
 
   initCapsule() {
     const { capsule, capsuleHandle, material } = this.capsuleFactory.createCapsule(this)
@@ -155,21 +150,10 @@ export class PlayerLocal extends BaseEntity {
     this.physics = new PlayerPhysics(this.world, this)
   }
 
-  get stick() {
-    return this.controlBinder.stick
-  }
-
-  set stick(value) {
-    this.controlBinder.stick = value
-  }
-
-  get pan() {
-    return this.controlBinder.pan
-  }
-
-  set pan(value) {
-    this.controlBinder.pan = value
-  }
+  get stick() { return this.controlBinder.stick }
+  set stick(value) { this.controlBinder.stick = value }
+  get pan() { return this.controlBinder.pan }
+  set pan(value) { this.controlBinder.pan = value }
 
   toggleFlying(value) {
     value = isBoolean(value) ? value : !this.physics.flying
@@ -182,36 +166,17 @@ export class PlayerLocal extends BaseEntity {
     }
   }
 
-  getAnchorMatrix() {
-    if (this.data.effect?.anchorId) {
-      return this.world.anchors.get(this.data.effect.anchorId)
-    }
-    return null
-  }
-
+  getAnchorMatrix() { return this.data.effect?.anchorId ? this.world.anchors.get(this.data.effect.anchorId) : null }
   outranks(otherPlayer) {
     const rank = Math.max(this.data.rank, this.world.settings.effectiveRank)
     const otherRank = Math.max(otherPlayer.data.rank, this.world.settings.effectiveRank)
     return rank > otherRank
   }
+  isAdmin() { return hasRank(Math.max(this.data.rank, this.world.settings.effectiveRank), Ranks.ADMIN) }
+  isBuilder() { return hasRank(Math.max(this.data.rank, this.world.settings.effectiveRank), Ranks.BUILDER) }
+  isMuted() { return this.world.livekit.isMuted(this.data.id) }
 
-  isAdmin() {
-    const rank = Math.max(this.data.rank, this.world.settings.effectiveRank)
-    return hasRank(rank, Ranks.ADMIN)
-  }
-
-  isBuilder() {
-    const rank = Math.max(this.data.rank, this.world.settings.effectiveRank)
-    return hasRank(rank, Ranks.BUILDER)
-  }
-
-  isMuted() {
-    return this.world.livekit.isMuted(this.data.id)
-  }
-
-  fixedUpdate(delta) {
-    this.physics.update(delta)
-  }
+  fixedUpdate(delta) { this.physics.update(delta) }
 
   update(delta) {
     const freeze = this.data.effect?.freeze
