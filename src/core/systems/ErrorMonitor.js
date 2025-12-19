@@ -2,11 +2,11 @@ import { System } from './System.js'
 import { StateManager } from '../state/StateManager.js'
 import { ErrorEventBus } from '../utils/ErrorEventBus.js'
 import { ErrorLevels, ErrorSources } from '../schemas/ErrorEvent.schema.js'
-import { errorObserver } from '../../server/services/ErrorObserver.js'
-import { errorFormatter } from '../../server/utils/ErrorFormatter.js'
 import { ErrorCapture } from './monitors/ErrorCapture.js'
 import { ErrorForwarder } from './monitors/ErrorForwarder.js'
 import { ErrorAnalytics } from './monitors/ErrorAnalytics.js'
+import { GlobalErrorInterceptor } from './monitors/GlobalErrorInterceptor.js'
+import { ServerErrorReporter } from './monitors/ServerErrorReporter.js'
 
 export class ErrorMonitor extends System {
   static DEPS = {
@@ -28,9 +28,11 @@ export class ErrorMonitor extends System {
     this.capture = new ErrorCapture(this)
     this.forwarder = new ErrorForwarder(this)
     this.analytics = new ErrorAnalytics(this)
+    this.interceptor = new GlobalErrorInterceptor(this)
+    this.reporter = new ServerErrorReporter(this)
 
     this.setupErrorBusForwarding()
-    this.interceptGlobalErrors()
+    this.interceptor.setup()
     setInterval(() => this.cleanup(), 60000)
   }
 
@@ -46,42 +48,6 @@ export class ErrorMonitor extends System {
     })
   }
 
-  interceptGlobalErrors() {
-    if (this.isClient && typeof window !== 'undefined') {
-      window.addEventListener('error', (event) => {
-        this.captureError('window.error', {
-          message: event.message,
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
-          error: event.error
-        }, event.error?.stack)
-      })
-
-      window.addEventListener('unhandledrejection', (event) => {
-        this.captureError('unhandled.promise.rejection', {
-          reason: event.reason,
-          promise: event.promise
-        }, event.reason?.stack)
-      })
-    }
-
-    if (this.isServer && typeof process !== 'undefined') {
-      process.on('uncaughtException', (error) => {
-        this.captureError('uncaught.exception', {
-          message: error.message,
-          name: error.name
-        }, error.stack)
-      })
-
-      process.on('unhandledRejection', (reason, promise) => {
-        this.captureError('unhandled.promise.rejection', {
-          reason: reason,
-          promise: promise
-        }, reason?.stack)
-      })
-    }
-  }
 
   captureError(type, args, stack) {
     return this.capture.captureError(type, args, stack)
@@ -167,67 +133,20 @@ export class ErrorMonitor extends System {
   }
 
   reportServerError = (errorEvent, errorData) => {
-    const metadata = {
-      clientId: errorData.clientId,
-      userId: errorData.userId,
-      userName: errorData.userName,
-      clientIP: errorData.clientIP
-    }
-
-    const formatted = errorFormatter.formatForStderr(errorEvent, metadata)
-    process.stderr.write(formatted)
+    this.reporter?.reportError(errorEvent, errorData)
   }
 
   getServerErrorReport = () => {
     if (!this.isServer) return null
-
-    const localStats = this.getStats()
-    const observerStats = errorObserver.getErrorStats()
-
-    return {
-      local: localStats,
-      client: observerStats,
-      combined: {
-        total: localStats.total + observerStats.total,
-        lastMinute: localStats.recent + observerStats.lastMinute,
-        critical: localStats.critical + observerStats.critical,
-        byType: {
-          ...localStats.byType,
-          ...observerStats.byCategory
-        }
-      }
-    }
+    return this.reporter?.getReport()
   }
 
   captureClientError = (clientId, error) => {
-    if (!this.isServer) return
-
-    errorObserver.recordClientError(clientId, error, {
-      timestamp: Date.now(),
-      source: 'server-detected'
-    })
+    this.reporter?.captureClientError(clientId, error)
   }
 
   checkAlertThresholds = () => {
-    if (!this.isServer) return
-
-    const stats = errorObserver.getErrorStats()
-
-    if (stats.lastMinute >= 25) {
-      const alert = errorFormatter.formatAlert(
-        'High error rate detected across all clients',
-        'CRITICAL'
-      )
-      process.stderr.write(alert)
-    }
-
-    if (stats.critical > 0) {
-      const alert = errorFormatter.formatAlert(
-        `${stats.critical} critical errors detected`,
-        'CRITICAL'
-      )
-      process.stderr.write(alert)
-    }
+    this.reporter?.checkAlertThresholds()
   }
 
   getErrors(options = {}) {
