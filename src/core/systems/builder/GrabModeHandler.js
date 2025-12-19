@@ -1,0 +1,72 @@
+import * as THREE from '../../extras/three.js'
+import { DEG2RAD } from '../../extras/general.js'
+
+const FORWARD = new THREE.Vector3(0, 0, -1)
+const SNAP_DISTANCE = 1
+const SNAP_DEGREES = 5
+const PROJECT_SPEED = 10
+const PROJECT_MIN = 3
+
+const v1 = new THREE.Vector3()
+
+export class GrabModeHandler {
+  constructor(parent) {
+    this.parent = parent
+  }
+
+  handle(delta) {
+    const app = this.parent.clientBuilder.selected
+    const target = this.parent.clientBuilder.target
+    const hit = this.parent.clientBuilder.getHitAtReticle(app, true)
+
+    const camPos = this.parent.clientBuilder.rig.position
+    const camDir = v1.copy(FORWARD).applyQuaternion(this.parent.clientBuilder.rig.quaternion)
+    const hitDistance = hit ? hit.point.distanceTo(camPos) : 0
+
+    if (hit && hitDistance < target.limit) {
+      target.position.copy(hit.point)
+    } else {
+      target.position.copy(camPos).add(camDir.multiplyScalar(target.limit))
+    }
+
+    let project = this.parent.clientBuilder.control.keyF.down ? 1 : this.parent.clientBuilder.control.keyC.down ? -1 : null
+    if (project) {
+      const multiplier = this.parent.clientBuilder.control.shiftLeft.down ? 4 : 1
+      target.limit += project * PROJECT_SPEED * delta * multiplier
+      if (target.limit < PROJECT_MIN) target.limit = PROJECT_MIN
+      if (hitDistance && target.limit > hitDistance) target.limit = hitDistance
+    }
+
+    if (this.parent.clientBuilder.control.shiftLeft.down) {
+      const scaleFactor = 1 + this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
+      target.scale.multiplyScalar(scaleFactor)
+    }
+    else {
+      target.rotation.y += this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
+    }
+
+    app.root.position.copy(target.position)
+    app.root.quaternion.copy(target.quaternion)
+    app.root.scale.copy(target.scale)
+
+    if (!this.parent.clientBuilder.control.controlLeft.down) {
+      const newY = target.rotation.y
+      const degrees = newY / DEG2RAD
+      const snappedDegrees = Math.round(degrees / SNAP_DEGREES) * SNAP_DEGREES
+      app.root.rotation.y = snappedDegrees * DEG2RAD
+    }
+
+    app.root.clean()
+
+    if (!this.parent.clientBuilder.control.controlLeft.down) {
+      for (const pos of app.snaps) {
+        const result = this.parent.clientBuilder.snaps.octree.query(pos, SNAP_DISTANCE)[0]
+        if (result) {
+          const offset = v1.copy(result.position).sub(pos)
+          app.root.position.add(offset)
+          break
+        }
+      }
+    }
+  }
+}
