@@ -1,0 +1,156 @@
+import { writePacket } from '../../packets.js'
+import { Socket } from '../../Socket.js'
+import { uuid } from '../../utils.js'
+import { createJWT, readJWT } from '../../utils-server.js'
+import moment from 'moment'
+import { EVENT } from '../../constants/EventNames.js'
+
+const HEALTH_MAX = 100
+
+export class PlayerConnectionManager {
+  constructor(serverNetwork) {
+    this.serverNetwork = serverNetwork
+  }
+
+  async onConnection(ws, params) {
+    try {
+      const playerLimit = this.serverNetwork.settings.playerLimit
+      const { isNumber } = await import('lodash-es')
+      if (isNumber(playerLimit) && playerLimit > 0 && this.serverNetwork.sockets.size >= playerLimit) {
+        const packet = writePacket('kick', 'player_limit')
+        ws.send(packet)
+        ws.disconnect()
+        return
+      }
+
+      let authToken = params.authToken
+      let name = params.name
+      let avatar = params.avatar
+
+      let user
+      if (authToken) {
+        try {
+          const { userId } = await readJWT(authToken)
+          user = await this.serverNetwork.persistence.loadUser(userId)
+        } catch (err) {
+          console.error('failed to read authToken:', authToken)
+        }
+      }
+      if (!user) {
+        user = {
+          id: uuid(),
+          name: 'Anonymous',
+          avatar: null,
+          rank: 0,
+          createdAt: moment().toISOString(),
+        }
+        await this.serverNetwork.persistence.saveUser(user.id, user)
+        authToken = await createJWT({ userId: user.id })
+      }
+
+      if (this.serverNetwork.sockets.has(user.id)) {
+        const packet = writePacket('kick', 'duplicate_user')
+        ws.send(packet)
+        ws.disconnect()
+        return
+      }
+
+      const livekit = await this.serverNetwork.livekit.serialize(user.id)
+
+      const socket = new Socket({ id: user.id, ws, network: this.serverNetwork })
+
+      socket.player = this.serverNetwork.entities.add(
+        {
+          id: user.id,
+          type: 'player',
+          position: this.serverNetwork.spawn.position.slice(),
+          quaternion: this.serverNetwork.spawn.quaternion.slice(),
+          userId: socket.id,
+          name: name || user.name,
+          health: HEALTH_MAX,
+          avatar: user.avatar || this.serverNetwork.settings.avatar?.url || 'asset://avatar.vrm',
+          sessionAvatar: avatar || null,
+          rank: user.rank,
+          enteredAt: Date.now(),
+        },
+        true
+      )
+
+      socket.send('snapshot', {
+        id: socket.id,
+        serverTime: performance.now(),
+        assetsUrl: process.env.PUBLIC_ASSETS_URL,
+        apiUrl: process.env.PUBLIC_API_URL,
+        maxUploadSize: process.env.PUBLIC_MAX_UPLOAD_SIZE,
+        collections: this.serverNetwork.collections.serialize(),
+        settings: this.serverNetwork.settings.serialize(),
+        chat: this.serverNetwork.chat.serialize(),
+        blueprints: this.serverNetwork.blueprints.serialize(),
+        entities: this.serverNetwork.entities.serialize(),
+        livekit,
+        authToken,
+        hasAdminCode: !!process.env.ADMIN_CODE,
+      })
+
+      this.serverNetwork.sockets.set(socket.id, socket)
+
+      this.serverNetwork.events.emit(EVENT.game.enter, { playerId: socket.player.data.id })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  onModifyRank(socket, data) {
+    if (!socket.player.isAdmin()) return
+    const { playerId, rank } = data
+    if (!playerId) return
+    if (typeof rank !== 'number') return
+    const player = this.serverNetwork.entities.get(playerId)
+    if (!player || !player.isPlayer) return
+    player.modify({ rank })
+    this.serverNetwork.send('entityModified', { id: playerId, rank })
+    this.serverNetwork.persistence.updateUserRank(playerId, rank)
+  }
+
+  onKick(socket, playerId) {
+    const player = this.serverNetwork.entities.get(playerId)
+    if (!player) return
+    if (socket.player.data.rank <= player.data.rank) return
+    const tSocket = this.serverNetwork.sockets.get(playerId)
+    tSocket.send('kick', 'moderation')
+    tSocket.disconnect()
+  }
+
+  onMute(socket, data) {
+    const player = this.serverNetwork.entities.get(data.playerId)
+    if (!player) return
+    if (socket.player.data.rank <= player.data.rank) return
+    this.serverNetwork.livekit.setMuted(data.playerId, data.muted)
+  }
+
+  onDisconnect(socket, code) {
+    if (socket.mcpErrorListener && this.serverNetwork.errorMonitor) {
+      this.serverNetwork.errorMonitor.listeners.delete(socket.mcpErrorListener)
+    }
+    if (socket.mcpErrorSubscription) {
+      socket.mcpErrorSubscription.active = false
+    }
+
+    this.serverNetwork.livekit.clearModifiers(socket.id)
+    socket.player.destroy(true)
+    this.serverNetwork.sockets.delete(socket.id)
+    this.serverNetwork.events.emit('exit', { playerId: socket.player.data.id })
+  }
+
+  onPlayerTeleport(socket, data) {
+    this.serverNetwork.sendTo(data.networkId, 'playerTeleport', data)
+  }
+
+  onPlayerPush(socket, data) {
+    this.serverNetwork.sendTo(data.networkId, 'playerPush', data)
+  }
+
+  onPlayerSessionAvatar(socket, data) {
+    this.serverNetwork.sendTo(data.networkId, 'playerSessionAvatar', data.avatar)
+  }
+}
