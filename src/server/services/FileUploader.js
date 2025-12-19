@@ -1,21 +1,17 @@
 
 import crypto from 'crypto'
 import { FileStorage } from './FileStorage.js'
+import { UploadStats } from './uploader/UploadStats.js'
+import { BatchUploader } from './uploader/BatchUploader.js'
+import { formatBytes, formatDuration, exportStats } from './uploader/FormatUtils.js'
 
 export class FileUploader {
   constructor(storage, maxUploadSize = 50 * 1024 * 1024) {
     this.storage = storage
     this.maxUploadSize = maxUploadSize
     this.uploads = new Map()
-    this.stats = {
-      total: 0,
-      successful: 0,
-      failed: 0,
-      skipped: 0,
-      totalBytes: 0,
-      deduplicatedBytes: 0,
-      startTime: Date.now()
-    }
+    this.stats = new UploadStats()
+    this.batchUploader = new BatchUploader(this)
     this.onProgress = null
     this.onComplete = null
     this.onError = null
@@ -71,9 +67,9 @@ export class FileUploader {
         }
 
         this.uploads.set(uploadId, result)
-        this.stats.total++
-        this.stats.skipped++
-        this.stats.deduplicatedBytes += size
+        this.stats.incrementTotal()
+        this.stats.incrementSkipped()
+        this.stats.addDeduplicatedBytes(size)
 
         if (onProgress) onProgress(100)
         if (this.onProgress) this.onProgress(uploadId, 100)
@@ -112,9 +108,9 @@ export class FileUploader {
       uploadRecord.record = record
       uploadRecord.progress = 100
 
-      this.stats.total++
-      this.stats.successful++
-      this.stats.totalBytes += size
+      this.stats.incrementTotal()
+      this.stats.incrementSuccessful()
+      this.stats.addTotalBytes(size)
 
       if (onProgress) onProgress(100)
       if (this.onProgress) this.onProgress(uploadId, 100)
@@ -123,8 +119,8 @@ export class FileUploader {
       return uploadRecord
 
     } catch (error) {
-      this.stats.total++
-      this.stats.failed++
+      this.stats.incrementTotal()
+      this.stats.incrementFailed()
 
       const errorRecord = {
         uploadId,
@@ -139,61 +135,7 @@ export class FileUploader {
   }
 
   async uploadBatch(files, options = {}) {
-    const {
-      concurrent = 3,
-      onProgress = null,
-      onFileComplete = null,
-      onFileError = null,
-      uploader = null
-    } = options
-
-    const results = []
-    const errors = []
-    let completed = 0
-
-    for (let i = 0; i < files.length; i += concurrent) {
-      const batch = files.slice(i, i + concurrent)
-      const batchPromises = batch.map(async (file, batchIndex) => {
-        try {
-          const result = await this.uploadFile(file.buffer, file.filename, {
-            mimeType: file.mimeType,
-            uploader,
-            metadata: file.metadata || {}
-          })
-
-          completed++
-          if (onProgress) onProgress(completed / files.length * 100)
-          if (onFileComplete) onFileComplete(result, i + batchIndex)
-
-          return result
-        } catch (error) {
-          completed++
-          errors.push({ filename: file.filename, error: error.message })
-          if (onProgress) onProgress(completed / files.length * 100)
-          if (onFileError) onFileError(error, file.filename, i + batchIndex)
-          throw error
-        }
-      })
-
-      try {
-        const batchResults = await Promise.allSettled(batchPromises)
-        batchResults.forEach(result => {
-          if (result.status === 'fulfilled') {
-            results.push(result.value)
-          }
-        })
-      } catch (error) {
-        console.error('Batch upload error:', error)
-      }
-    }
-
-    return {
-      results,
-      errors,
-      total: files.length,
-      successful: results.length,
-      failed: errors.length
-    }
+    return this.batchUploader.uploadBatch(files, options)
   }
 
   getUpload(uploadId) {
@@ -213,43 +155,12 @@ export class FileUploader {
   }
 
   getStats() {
-    const elapsed = Date.now() - this.stats.startTime
-    const elapsedSec = elapsed / 1000
-
-    return {
-      total: this.stats.total,
-      successful: this.stats.successful,
-      failed: this.stats.failed,
-      skipped: this.stats.skipped,
-      totalBytes: this.stats.totalBytes,
-      deduplicatedBytes: this.stats.deduplicatedBytes,
-      uploadRate: elapsedSec > 0 ? Math.round(this.stats.totalBytes / elapsedSec) : 0,
-      deduplicationRatio: this.stats.total > 0 ? (this.stats.skipped / this.stats.total * 100).toFixed(2) : 0,
-      elapsed,
-      averageTime: this.stats.successful > 0 ? Math.round(elapsed / this.stats.successful) : 0
-    }
+    return this.stats.getStats()
   }
 
   exportStats(format = 'json') {
     const stats = this.getStats()
-
-    if (format === 'json') {
-      return JSON.stringify(stats, null, 2)
-    }
-
-    if (format === 'csv') {
-      const headers = Object.keys(stats).join(',')
-      const values = Object.values(stats).join(',')
-      return `${headers}\n${values}`
-    }
-
-    if (format === 'text') {
-      return Object.entries(stats)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('\n')
-    }
-
-    throw new Error(`Unknown export format: ${format}`)
+    return exportStats(stats, format)
   }
 
   getProgress() {
@@ -284,15 +195,7 @@ export class FileUploader {
   }
 
   resetStats() {
-    this.stats = {
-      total: 0,
-      successful: 0,
-      failed: 0,
-      skipped: 0,
-      totalBytes: 0,
-      deduplicatedBytes: 0,
-      startTime: Date.now()
-    }
+    this.stats.reset()
   }
 
   on(event, callback) {
@@ -328,29 +231,15 @@ export class FileUploader {
   }
 
   formatBytes(bytes) {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    return formatBytes(bytes)
   }
 
   formatDuration(ms) {
-    const seconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m ${seconds % 60}s`
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds % 60}s`
-    } else {
-      return `${seconds}s`
-    }
+    return formatDuration(ms)
   }
 
   toString() {
     const stats = this.getStats()
-    return `FileUploader(${stats.total} uploads, ${stats.successful} successful, ${this.formatBytes(stats.totalBytes)} total)`
+    return `FileUploader(${stats.total} uploads, ${stats.successful} successful, ${formatBytes(stats.totalBytes)} total)`
   }
 }

@@ -13,10 +13,12 @@ import statics from '@fastify/static'
 import multipart from '@fastify/multipart'
 
 import { createServerWorld } from '../core/createServerWorld.js'
-import { hashFile } from '../core/utils.js'
 import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
+import { registerErrorRoutes } from './routes/ErrorRoutes.js'
+import { registerUploadRoutes } from './routes/UploadRoutes.js'
+import { registerStatusRoutes } from './routes/StatusRoutes.js'
 
 const rootDir = path.join(__dirname, '../')
 const worldDir = path.join(rootDir, process.env.WORLD)
@@ -48,11 +50,16 @@ fastify.register(cors)
 fastify.register(compress)
 fastify.register(multipart, {
   limits: {
-    fileSize: 200 * 1024 * 1024, // 200MB
+    fileSize: 200 * 1024 * 1024,
   },
 })
 fastify.register(ws)
 fastify.register(worldNetwork)
+
+registerErrorRoutes(fastify, world)
+registerUploadRoutes(fastify, assetsDir)
+registerStatusRoutes(fastify, world)
+
 fastify.get('/', async (req, reply) => {
   const title = world.settings.title || 'World'
   const desc = world.settings.desc || ''
@@ -99,156 +106,6 @@ const envsCode = `
 `
 fastify.get('/env.js', async (req, reply) => {
   reply.type('application/javascript').send(envsCode)
-})
-
-fastify.post('/api/upload', async (req, reply) => {
-  const file = await req.file()
-  const ext = file.filename.split('.').pop().toLowerCase()
-  const chunks = []
-  for await (const chunk of file.file) {
-    chunks.push(chunk)
-  }
-  const buffer = Buffer.concat(chunks)
-  const hash = await hashFile(buffer)
-  const filename = `${hash}.${ext}`
-  const filePath = path.join(assetsDir, filename)
-  const exists = await fs.exists(filePath)
-  if (!exists) {
-    await fs.writeFile(filePath, buffer)
-  }
-})
-
-fastify.get('/api/upload-check', async (req, reply) => {
-  const filename = req.query.filename
-  const filePath = path.join(assetsDir, filename)
-  const exists = await fs.exists(filePath)
-  return { exists }
-})
-
-fastify.get('/health', async (request, reply) => {
-  try {
-    const health = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    }
-
-    return reply.code(200).send(health)
-  } catch (error) {
-    console.error('Health check failed:', error)
-    return reply.code(503).send({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-    })
-  }
-})
-
-fastify.get('/status', async (request, reply) => {
-  try {
-    const status = {
-      uptime: Math.round(world.time),
-      protected: process.env.ADMIN_CODE !== undefined ? true : false,
-      connectedUsers: [],
-      commitHash: process.env.COMMIT_HASH,
-    }
-    for (const socket of world.network.sockets.values()) {
-      status.connectedUsers.push({
-        id: socket.player.data.userId,
-        position: socket.player.position.value.toArray(),
-        name: socket.player.data.name,
-      })
-    }
-
-    return reply.code(200).send(status)
-  } catch (error) {
-    console.error('Status failed:', error)
-    return reply.code(503).send({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-    })
-  }
-})
-
-fastify.get('/api/errors', async (request, reply) => {
-  try {
-    const { limit, type, since, side, critical } = request.query
-    const options = {}
-    if (limit) options.limit = parseInt(limit)
-    if (type) options.type = type
-    if (since) options.since = since
-    if (side) options.side = side
-    if (critical !== undefined) options.critical = critical === 'true'
-
-    if (!world.errorMonitor) {
-      return reply.code(503).send({ error: 'Error monitoring not available' })
-    }
-
-    const errors = world.errorMonitor.getErrors(options)
-    const stats = world.errorMonitor.getStats()
-
-    return reply.code(200).send({
-      errors,
-      stats,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('Error endpoint failed:', error)
-    return reply.code(500).send({
-      error: 'Internal server error',
-      timestamp: new Date().toISOString(),
-    })
-  }
-})
-
-fastify.post('/api/errors/clear', async (request, reply) => {
-  try {
-    if (!world.errorMonitor) {
-      return reply.code(503).send({ error: 'Error monitoring not available' })
-    }
-
-    const count = world.errorMonitor.clearErrors()
-    
-    return reply.code(200).send({
-      cleared: count,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('Error clear endpoint failed:', error)
-    return reply.code(500).send({
-      error: 'Internal server error',
-      timestamp: new Date().toISOString(),
-    })
-  }
-})
-
-fastify.get('/api/errors/stream', { websocket: true }, (ws, req) => {
-  if (!world.errorMonitor) {
-    ws.close(1011, 'Error monitoring not available')
-    return
-  }
-
-  const cleanup = world.errorMonitor.addListener((event, data) => {
-    try {
-      ws.send(JSON.stringify({ event, data, timestamp: new Date().toISOString() }))
-    } catch (err) {
-    }
-  })
-
-  ws.on('close', cleanup)
-  ws.on('error', cleanup)
-
-  try {
-    ws.send(JSON.stringify({
-      event: 'connected',
-      data: {
-        stats: world.errorMonitor.getStats(),
-        recentErrors: world.errorMonitor.getErrors({ limit: 10 })
-      },
-      timestamp: new Date().toISOString()
-    }))
-  } catch (err) {
-    cleanup()
-  }
 })
 
 fastify.setErrorHandler((err, req, reply) => {
