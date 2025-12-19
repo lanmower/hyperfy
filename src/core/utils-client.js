@@ -1,9 +1,15 @@
+import { uuid as generateUuid } from './utils/index.js'
+
 export function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
 }
 
 export function lerp(from, to, t) {
   return from + (to - from) * t
+}
+
+export function uuid() {
+  return generateUuid()
 }
 
 export async function hashFile(file) {
