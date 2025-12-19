@@ -1,30 +1,9 @@
 
 import * as THREE from '../../extras/three.js'
-import { Layers } from '../../extras/Layers.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
-
-const UP = new THREE.Vector3(0, 1, 0)
-const DOWN = new THREE.Vector3(0, -1, 0)
-const SCALE_IDENTITY = new THREE.Vector3(1, 1, 1)
-const RAD2DEG = 180 / Math.PI
-
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
-const v4 = new THREE.Vector3()
-const v5 = new THREE.Vector3()
-const v6 = new THREE.Vector3()
-
-const q1 = new THREE.Quaternion()
-const q2 = new THREE.Quaternion()
-const q3 = new THREE.Quaternion()
-const q4 = new THREE.Quaternion()
-
-const m1 = new THREE.Matrix4()
-const m2 = new THREE.Matrix4()
-const m3 = new THREE.Matrix4()
-
-const e1 = new THREE.Euler()
+import { PlayerPlatformTracker } from './PlayerPlatformTracker.js'
+import { PlayerGroundDetector } from './PlayerGroundDetector.js'
+import { PlayerPhysicsState } from './PlayerPhysicsState.js'
 
 export class PlayerPhysics {
   constructor(world, player) {
@@ -72,6 +51,10 @@ export class PlayerPhysics {
     this.materialMax = null
 
     this.lastJumpAt = 0
+
+    this.platformTracker = new PlayerPlatformTracker(world, player, this.platform)
+    this.groundDetector = new PlayerGroundDetector(world, player, this)
+    this.physicsState = new PlayerPhysicsState(world, player, this)
   }
 
   update(delta) {
@@ -109,358 +92,26 @@ export class PlayerPhysics {
   }
 
   updateStandardPhysics(delta, snare) {
-    this.updatePlatformTracking()
-
-    this.detectGround()
-
-    this.handleSteepSlopes()
-
-    this.updateMaterialFriction()
-
-    this.updateJumpFallState(delta)
-
-    this.updateGravityAndVelocity(delta, snare)
-
-    this.applyMovementForce(snare)
-
-    this.handleJump()
-  }
-
-  updatePlatformTracking() {
-    if (!this.grounded) {
-      this.platform.actor = null
-      return
-    }
-
-    const pose = this.player.capsule.getGlobalPose()
-    const origin = v1.copy(pose.p)
-    origin.y += 0.2
-    const hitMask = Layers.environment.group | Layers.prop.group
-    const hit = this.world.physics.raycast(origin, DOWN, 2, hitMask)
-    const actor = hit?.handle?.actor || null
-
-    if (this.platform.actor !== actor) {
-      this.platform.actor = actor
-      if (actor) {
-        const platformPose = actor.getGlobalPose()
-        v1.copy(platformPose.p)
-        q1.copy(platformPose.q)
-        this.platform.prevTransform.compose(v1, q1, SCALE_IDENTITY)
-      }
-    }
-
-    if (this.platform.actor) {
-      this.applyPlatformDeltaTransform()
-    }
-  }
-
-  applyPlatformDeltaTransform() {
-    const currTransform = m1
-    const platformPose = this.platform.actor.getGlobalPose()
-    v1.copy(platformPose.p)
-    q1.copy(platformPose.q)
-    currTransform.compose(v1, q1, SCALE_IDENTITY)
-
-    const deltaTransform = m2.multiplyMatrices(
-      currTransform,
-      this.platform.prevTransform.clone().invert()
-    )
-
-    const deltaPosition = v2
-    const deltaQuaternion = q2
-    const deltaScale = v3
-    deltaTransform.decompose(deltaPosition, deltaQuaternion, deltaScale)
-
-    const playerPose = this.player.capsule.getGlobalPose()
-    v4.copy(playerPose.p)
-    q3.copy(playerPose.q)
-    const playerTransform = m3
-    playerTransform.compose(v4, q3, SCALE_IDENTITY)
-    playerTransform.premultiply(deltaTransform)
-
-    const newPosition = v5
-    const newQuaternion = q4
-    playerTransform.decompose(newPosition, newQuaternion, v6)
-
-    const newPose = this.player.capsule.getGlobalPose()
-    newPosition.toPxTransform(newPose)
-    this.player.capsule.setGlobalPose(newPose)
-
-    e1.setFromQuaternion(deltaQuaternion).reorder('YXZ')
-    e1.x = 0
-    e1.z = 0
-    q1.setFromEuler(e1)
-    this.player.base.quaternion.multiply(q1)
-    this.player.base.updateTransform()
-
-    this.platform.prevTransform.copy(currTransform)
-  }
-
-  detectGround() {
-    const geometry = this.player.groundSweepGeometry
-    const pose = this.player.capsule.getGlobalPose()
-    const origin = v1.copy(pose.p)
-    origin.y += this.groundSweepRadius + 0.12
-    const direction = DOWN
-    const maxDistance = 0.12 + 0.1
-    const hitMask = Layers.environment.group | Layers.prop.group
-
-    const sweepHit = this.world.physics.sweep(
-      geometry,
-      origin,
-      direction,
-      maxDistance,
-      hitMask
-    )
-
-    if (sweepHit) {
-      this.justLeftGround = false
-      this.grounded = true
-      this.groundNormal.copy(sweepHit.normal)
-      this.groundAngle = UP.angleTo(this.groundNormal) * RAD2DEG
-    } else {
-      this.justLeftGround = !!this.grounded
-      this.grounded = false
-      this.groundNormal.copy(UP)
-      this.groundAngle = 0
-    }
-  }
-
-  handleSteepSlopes() {
-    if (this.grounded && this.groundAngle > 60) {
-      this.justLeftGround = false
-      this.grounded = false
-      this.groundNormal.copy(UP)
-      this.groundAngle = 0
-      this.slipping = true
-    } else {
-      this.slipping = false
-    }
-  }
-
-  updateMaterialFriction() {
-    const PHYSX = this.world.PHYSX
-    const eMAX = PHYSX.PxCombineModeEnum.eMAX
-    const eMIN = PHYSX.PxCombineModeEnum.eMIN
-
-    if (this.grounded) {
-      if (this.materialMax !== true) {
-        this.player.material.setFrictionCombineMode(eMAX)
-        this.player.material.setRestitutionCombineMode(eMAX)
-        this.materialMax = true
-      }
-    } else {
-      if (this.materialMax !== false) {
-        this.player.material.setFrictionCombineMode(eMIN)
-        this.player.material.setRestitutionCombineMode(eMIN)
-        this.materialMax = false
-      }
-    }
-  }
-
-  updateJumpFallState(delta) {
-    if (this.jumped && !this.grounded) {
-      this.jumped = false
-      this.jumping = true
-    }
-
-    if (!this.grounded && this.player.capsule.getLinearVelocity().y < 0) {
-      this.fallTimer += delta
-    } else {
-      this.fallTimer = 0
-    }
-
-    if (this.fallTimer > 0.1 && !this.falling) {
-      this.jumping = false
-      this.airJumping = false
-      this.falling = true
-      this.fallStartY = this.player.base.position.y
-    }
-
-    if (this.falling) {
-      this.fallDistance = this.fallStartY - this.player.base.position.y
-    }
-
-    if (this.falling && this.grounded) {
-      this.falling = false
-    }
-
-    if (this.jumping && this.grounded) {
-      this.jumping = false
-    }
-
-    if (this.airJumped && this.grounded) {
-      this.airJumped = false
-      this.airJumping = false
-    }
-  }
-
-  updateGravityAndVelocity(delta, snare) {
-    const PHYSX = this.world.PHYSX
-
-    if (this.grounded) {
-      if (this.platform.actor) {
-        const isStatic = this.platform.actor instanceof PHYSX.PxRigidStatic
-        const isKinematic = this.platform.actor
-          .getRigidBodyFlags?.()
-          .isSet(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC)
-
-        if (!isKinematic && !isStatic) {
-          const amount = -9.81 * 0.2
-          const force = v1.set(0, amount, 0)
-          PHYSX.PxRigidBodyExt.prototype.addForceAtPos(
-            this.platform.actor,
-            force.toPxVec3(),
-            this.player.capsule.getGlobalPose().p,
-            PHYSX.PxForceModeEnum.eFORCE,
-            true
-          )
-        }
-      }
-    } else {
-      const force = v1.set(0, -this.effectiveGravity, 0)
-      this.player.capsule.addForce(force.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
-    }
-
-    const velocity = v1.copy(this.player.capsule.getLinearVelocity())
-
-    const dragCoeff = 10 * delta
-    const perpComponent = v2.copy(this.groundNormal).multiplyScalar(velocity.dot(this.groundNormal))
-    const parallelComponent = v3.copy(velocity).sub(perpComponent)
-    parallelComponent.multiplyScalar(1 - dragCoeff)
-    velocity.copy(parallelComponent.add(perpComponent))
-
-    if (this.grounded && !this.jumping) {
-      const projectedLength = velocity.dot(this.groundNormal)
-      const projectedVector = v2.copy(this.groundNormal).multiplyScalar(projectedLength)
-      velocity.sub(projectedVector)
-    }
-
-    if (this.justLeftGround && !this.jumping) {
-      velocity.y = -5
-    }
-
-    if (this.slipping) {
-      velocity.y -= 0.5
-    }
-
-    if (this.pushForce) {
-      if (!this.pushForceInit) {
-        this.pushForceInit = true
-        if (this.pushForce.y) {
-          this.jumped = true
-          this.jumping = false
-          this.falling = false
-          this.airJumped = false
-          this.airJumping = false
-        }
-      }
-      velocity.add(this.pushForce)
-
-      const drag = 20
-      const decayFactor = 1 - drag * delta
-      if (decayFactor < 0) {
-        this.pushForce.set(0, 0, 0)
-      } else {
-        this.pushForce.multiplyScalar(Math.max(decayFactor, 0))
-      }
-
-      if (this.pushForce.length() < 0.01) {
-        this.pushForce = null
-      }
-    }
-
-    this.player.capsule.setLinearVelocity(velocity.toPxVec3())
-  }
-
-  applyMovementForce(snare) {
-    if (!this.moving) return
-
-    const moveSpeed = (this.player.running ? 6 : 3) * this.mass
-    const adjustedSpeed = moveSpeed * (1 - snare)
-
-    const slopeRotation = q1.setFromUnitVectors(UP, this.groundNormal)
-    const moveForce = v1
-      .copy(this.moveDir)
-      .multiplyScalar(adjustedSpeed * 10)
-      .applyQuaternion(slopeRotation)
-
-    this.player.capsule.addForce(moveForce.toPxVec3(), this.world.PHYSX.PxForceModeEnum.eFORCE, true)
-  }
-
-  handleJump() {
-    const PHYSX = this.world.PHYSX
-
-    const shouldJump =
-      this.grounded &&
-      !this.jumping &&
-      this.player.jumpDown &&
-      !this.player.data.effect?.snare &&
-      !this.player.data.effect?.freeze
-
-    const shouldAirJump =
-      false && !this.grounded && !this.airJumped && this.player.jumpPressed && !this.world.builder?.enabled // temp: disabled
-
-    if (shouldJump || shouldAirJump) {
-      let jumpVelocity = Math.sqrt(2 * this.effectiveGravity * this.jumpHeight)
-      jumpVelocity = jumpVelocity * (1 / Math.sqrt(this.mass))
-
-      const velocity = this.player.capsule.getLinearVelocity()
-      velocity.y = jumpVelocity
-      this.player.capsule.setLinearVelocity(velocity)
-
-      if (shouldJump) {
-        this.jumped = true
-      }
-
-      if (shouldAirJump) {
-        this.falling = false
-        this.fallTimer = 0
-        this.jumping = true
-        this.airJumped = true
-        this.airJumping = true
-      }
-    }
+    this.platformTracker.update(this.grounded)
+    this.groundDetector.detect()
+    this.groundDetector.handleSteepSlopes()
+    this.physicsState.updateMaterialFriction()
+    this.physicsState.updateJumpFallState(delta)
+    this.physicsState.updateGravityAndVelocity(delta, snare)
+    this.physicsState.applyMovementForce(snare)
+    this.physicsState.handleJump()
   }
 
   updateFlyingPhysics(delta) {
-    const PHYSX = this.world.PHYSX
-
-    if (this.moving || this.player.jumpDown || this.player.control?.keyC?.down) {
-      const flySpeed = this.flyForce * (this.player.running ? 2 : 1)
-      const force = v1.copy(this.flyDir).multiplyScalar(flySpeed)
-
-      if (this.player.jumpDown) {
-        force.y = flySpeed
-      } else if (this.player.control?.keyC?.down) {
-        force.y = -flySpeed
-      }
-
-      this.player.capsule.addForce(force.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
-    }
-
-    const velocity = v2.copy(this.player.capsule.getLinearVelocity())
-    const dragForce = v3.copy(velocity).multiplyScalar(-this.flyDrag * delta)
-    this.player.capsule.addForce(dragForce.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
-
-    const zeroAngular = v4.set(0, 0, 0)
-    this.player.capsule.setAngularVelocity(zeroAngular.toPxVec3())
-
-    if (!this.world.builder?.enabled) {
-      this.flying = false
-    }
+    this.physicsState.updateFlyingPhysics(delta)
   }
 
   updateBuildModeFlying() {
-    if (this.player.jumpPressed && this.world.builder?.enabled) {
-      if (this.world.time - this.lastJumpAt < 0.4) {
-        this.flying = !this.flying
-      }
-      this.lastJumpAt = this.world.time
-    }
+    this.physicsState.updateBuildModeFlying()
   }
 
   push(force) {
+    const v1 = new THREE.Vector3()
     this.pushForce = v1.copy(force)
     this.pushForceInit = false
   }
