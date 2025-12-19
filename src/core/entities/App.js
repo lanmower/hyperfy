@@ -4,8 +4,6 @@ import moment from 'moment'
 
 import { BaseEntity } from './BaseEntity.js'
 import { createNode } from '../extras/createNode.js'
-import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
-import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
@@ -14,7 +12,9 @@ import { BlueprintLoader } from './app/BlueprintLoader.js'
 import { ScriptExecutor } from './app/ScriptExecutor.js'
 import { EventManager } from './app/EventManager.js'
 import { ProxyFactory } from './app/ProxyFactory.js'
-import { PropertyHandlerMixin } from '../mixins/PropertyHandlerMixin.js'
+import { AppNodeManager } from './app/AppNodeManager.js'
+import { AppNetworkSync } from './app/AppNetworkSync.js'
+import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
 
 const Modes = {
   ACTIVE: 'active',
@@ -28,8 +28,6 @@ export class App extends BaseEntity {
     super(world, data, local)
     this.isApp = true
     this.n = 0
-    this.worldNodes = new Set()
-    this.snaps = []
     this.root = createNode('group')
     this.fields = []
     this.target = null
@@ -43,6 +41,11 @@ export class App extends BaseEntity {
     this.scriptExecutor = new ScriptExecutor(this)
     this.eventManager = new EventManager(this)
     this.proxyFactory = new ProxyFactory(this)
+    this.nodeManager = new AppNodeManager(this)
+    this.networkSync = new AppNetworkSync(this)
+    this.propertyHandlers = new AppPropertyHandlers(this)
+    this.worldNodes = this.nodeManager.worldNodes
+    this.snaps = this.nodeManager.snaps
     this.build()
   }
 
@@ -63,20 +66,9 @@ export class App extends BaseEntity {
     }
     if (this.mode === Modes.MOVING) {
       this.world.setHot(this, true)
-      this.snaps = []
-      if (this.root) {
-        this.root.traverse(node => {
-          if (node.name === 'snap') {
-            this.snaps.push(node.worldPosition)
-          }
-        })
-      }
+      this.nodeManager.collectSnapPoints()
     }
-    if (root) {
-      this.networkPos = new BufferedLerpVector3(root.position, this.world.networkRate)
-      this.networkQuat = new BufferedLerpQuaternion(root.quaternion, this.world.networkRate)
-      this.networkSca = new BufferedLerpVector3(root.scale, this.world.networkRate)
-    }
+    this.networkSync.initialize(root, this.world.networkRate)
     this.eventManager.flushEventQueue()
     this.building = false
   }
@@ -85,11 +77,7 @@ export class App extends BaseEntity {
     this.emit('destroy')
     this.control?.release()
     this.control = null
-    this.root?.deactivate()
-    for (const node of this.worldNodes) {
-      node.deactivate()
-    }
-    this.worldNodes.clear()
+    this.nodeManager.deactivateAllNodes()
     this.eventManager.clearEventListeners()
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()
@@ -104,11 +92,7 @@ export class App extends BaseEntity {
   }
 
   update(delta) {
-    if (this.data.mover && this.data.mover !== this.world.network.id) {
-      this.networkPos.update(delta)
-      this.networkQuat.update(delta)
-      this.networkSca.update(delta)
-    }
+    this.networkSync.update(delta, this.data.mover, this.world.network.id)
     return this.scriptExecutor.update(delta)
   }
 
@@ -122,58 +106,7 @@ export class App extends BaseEntity {
   }
 
   modify(data) {
-    const handlers = {
-      blueprint: (value) => {
-        this.data.blueprint = value
-        return true
-      },
-      uploader: (value) => {
-        this.data.uploader = value
-        return true
-      },
-      mover: (value) => {
-        this.data.mover = value
-        return true
-      },
-      position: (value) => {
-        this.data.position = value
-        if (this.data.mover) {
-          this.networkPos.pushArray(value)
-          return false
-        }
-        return true
-      },
-      quaternion: (value) => {
-        this.data.quaternion = value
-        if (this.data.mover) {
-          this.networkQuat.pushArray(value)
-          return false
-        }
-        return true
-      },
-      scale: (value) => {
-        this.data.scale = value
-        if (this.data.mover) {
-          this.networkSca.pushArray(value)
-          return false
-        }
-        return true
-      },
-      pinned: (value) => {
-        this.data.pinned = value
-        return false
-      },
-      state: (value) => {
-        this.data.state = value
-        return true
-      },
-    }
-
-    const results = PropertyHandlerMixin.applyPropertyHandlers(this, data, handlers)
-    const rebuild = Object.values(results).some(v => v === true)
-    if (rebuild) {
-      this.build()
-    }
+    this.propertyHandlers.modify(data, this.networkSync)
   }
 
   crash() {
@@ -252,11 +185,7 @@ export class App extends BaseEntity {
   }
 
   getNodes() {
-    if (!this.blueprint || !this.blueprint.model) return
-    const type = this.blueprint.model.endsWith('vrm') ? 'avatar' : 'model'
-    let glb = this.world.loader.get(type, this.blueprint.model)
-    if (!glb) return
-    return glb.toNodes()
+    return this.nodeManager.getNodes()
   }
 
   getPlayerProxy(playerId) {
