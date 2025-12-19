@@ -117,31 +117,19 @@ export class Nametags extends System {
     if (idx >= MAX_INSTANCES) return console.error('nametags: reached max')
     this.mesh.count++
     this.mesh.instanceMatrix.needsUpdate = true
-    const row = Math.floor(idx / PER_ROW), col = idx % PER_ROW
     const coords = this.mesh.geometry.attributes.coords
-    coords.setXY(idx, col / PER_ROW, row / PER_COLUMN)
+    coords.setXY(idx, (idx % PER_ROW) / PER_ROW, Math.floor(idx / PER_ROW) / PER_COLUMN)
     coords.needsUpdate = true
-    const matrix = new THREE.Matrix4()
-    matrix.compose(new THREE.Vector3(), new THREE.Quaternion(0, 0, 0, 1), new THREE.Vector3(1, 1, 1))
+    const matrix = new THREE.Matrix4().compose(new THREE.Vector3(), new THREE.Quaternion(0, 0, 0, 1), new THREE.Vector3(1, 1, 1))
     const nametag = {
       idx, name, health, matrix,
       move: newMatrix => {
-        matrix.elements[12] = newMatrix.elements[12]
-        matrix.elements[13] = newMatrix.elements[13]
-        matrix.elements[14] = newMatrix.elements[14]
-        this.mesh.setMatrixAt(nametag.idx, matrix)
+        matrix.elements[12] = newMatrix.elements[12]; matrix.elements[13] = newMatrix.elements[13]; matrix.elements[14] = newMatrix.elements[14]
+        this.mesh.setMatrixAt(idx, matrix)
         this.mesh.instanceMatrix.needsUpdate = true
       },
-      setName: name => {
-        if (nametag.name === name) return
-        nametag.name = name
-        this.draw(nametag)
-      },
-      setHealth: health => {
-        if (nametag.health === health) return
-        nametag.health = health
-        this.draw(nametag)
-      },
+      setName: newName => { if (name !== newName) { name = newName; this.draw(nametag) } },
+      setHealth: newHealth => { if (health !== newHealth) { health = newHealth; this.draw(nametag) } },
       destroy: () => this.remove(nametag),
     }
     this.nametags[idx] = nametag
@@ -183,24 +171,18 @@ export class Nametags extends System {
     this.ctx.lineWidth = NAME_OUTLINE_SIZE
     this.ctx.strokeStyle = 'rgba(0,0,0,0.5)'
     const text = this.fitText(nametag.name, NAMETAG_WIDTH)
+    const textX = x + NAMETAG_WIDTH / 2, textY = y + 4
     this.ctx.save()
     this.ctx.globalCompositeOperation = 'xor'
     this.ctx.globalAlpha = 1
-    this.ctx.strokeText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2)
+    this.ctx.strokeText(text, textX, textY)
     this.ctx.restore()
-    this.ctx.fillText(text, x + NAMETAG_WIDTH / 2, y + 2 + 2)
+    this.ctx.fillText(text, textX, textY)
     if (nametag.health < HEALTH_MAX) {
-      {
-        const fillStyle = 'rgba(0, 0, 0, 0.6)', width = HEALTH_WIDTH, height = HEALTH_HEIGHT
-        const left = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2, top = y + NAME_FONT_SIZE + 5, borderRadius = HEALTH_BORDER_RADIUS
-        fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
-      }
-      {
-        const fillStyle = '#229710', maxWidth = HEALTH_WIDTH - HEALTH_BORDER * 2, perc = nametag.health / HEALTH_MAX
-        const width = maxWidth * perc, height = HEALTH_HEIGHT - HEALTH_BORDER * 2
-        const left = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2 + HEALTH_BORDER, top = y + NAME_FONT_SIZE + 5 + HEALTH_BORDER, borderRadius = HEALTH_BORDER_RADIUS
-        fillRoundRect(this.ctx, left, top, width, height, borderRadius, fillStyle)
-      }
+      const healthLeft = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2, healthTop = y + NAME_FONT_SIZE + 5
+      fillRoundRect(this.ctx, healthLeft, healthTop, HEALTH_WIDTH, HEALTH_HEIGHT, HEALTH_BORDER_RADIUS, 'rgba(0, 0, 0, 0.6)')
+      const perc = nametag.health / HEALTH_MAX, barWidth = (HEALTH_WIDTH - HEALTH_BORDER * 2) * perc
+      fillRoundRect(this.ctx, healthLeft + HEALTH_BORDER, healthTop + HEALTH_BORDER, barWidth, HEALTH_HEIGHT - HEALTH_BORDER * 2, HEALTH_BORDER_RADIUS, '#229710')
     }
     this.texture.needsUpdate = true
   }

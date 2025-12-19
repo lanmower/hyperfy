@@ -1,6 +1,5 @@
 import * as THREE from '../../extras/three.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
-import { VelocityCalculator } from './VelocityCalculator.js'
 
 const v1 = new THREE.Vector3()
 const UP = new THREE.Vector3(0, 1, 0)
@@ -70,10 +69,6 @@ export class PlayerPhysicsState {
     }
   }
 
-  updateGravityAndVelocity(delta, snare) {
-    VelocityCalculator.updateGravityAndVelocity(this.world, this.player, this.physics, delta, snare)
-  }
-
   applyMovementForce(snare) {
     if (!this.physics.moving) return
 
@@ -123,10 +118,6 @@ export class PlayerPhysicsState {
         this.physics.airJumping = true
       }
     }
-  }
-
-  updateFlyingPhysics(delta) {
-    VelocityCalculator.updateFlyingPhysics(this.world, this.player, this.physics, delta)
   }
 
   updateBuildModeFlying() {
