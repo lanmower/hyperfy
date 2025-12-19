@@ -1,9 +1,6 @@
 import * as THREE from '../../extras/three.js'
 import { DEG2RAD, RAD2DEG } from '../../extras/general.js'
-
-const SNAP_DISTANCE = 1
-const SNAP_DEGREES = 5
-const PROJECT_MAX = 50
+import { BuilderConfig } from '../../config/SystemConfig.js'
 
 const e1 = new THREE.Euler()
 const q1 = new THREE.Quaternion()
@@ -26,7 +23,7 @@ export class SpawnTransformCalculator {
       e1.x = 0
       e1.z = 0
       const degrees = e1.y * RAD2DEG
-      const snappedDegrees = Math.round(degrees / SNAP_DEGREES) * SNAP_DEGREES
+      const snappedDegrees = Math.round(degrees / BuilderConfig.SNAP_DEGREES) * BuilderConfig.SNAP_DEGREES
       e1.y = snappedDegrees * DEG2RAD
       q1.setFromEuler(e1)
       quaternion = q1.toArray()

@@ -1,8 +1,7 @@
 import * as THREE from '../../extras/three.js'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 import { DEG2RAD } from '../../extras/general.js'
-
-const SNAP_DEGREES = 5
+import { BuilderConfig } from '../../config/SystemConfig.js'
 
 export class GizmoManager {
   constructor(world, viewport) {
@@ -42,7 +41,7 @@ export class GizmoManager {
     this.world.stage.scene.add(this.gizmoTarget)
     this.world.stage.scene.add(this.gizmoHelper)
 
-    this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
+    this.gizmo.rotationSnap = BuilderConfig.SNAP_DEGREES * DEG2RAD
     this.gizmo.attach(this.gizmoTarget)
     this.gizmo.mode = mode
   }
@@ -70,7 +69,7 @@ export class GizmoManager {
 
   enableRotationSnap() {
     if (this.gizmo) {
-      this.gizmo.rotationSnap = SNAP_DEGREES * DEG2RAD
+      this.gizmo.rotationSnap = BuilderConfig.SNAP_DEGREES * DEG2RAD
     }
   }
 

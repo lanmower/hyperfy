@@ -7,6 +7,7 @@ import { v } from '../utils/TempVectors.js'
 import { defineProps, onSetRebuildIf } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
+import { geometryCache } from '../utils/GeometryCache.js'
 
 const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')
   .override('type', { onSet() { this.needsRebuild = true } })
@@ -20,23 +21,6 @@ const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'lin
   .override('visible', { onSet() { if (this.mesh) this.mesh.visible = this._visible } })
   .build()
 
-let boxes = {}
-const getBox = (width, height, depth) => {
-  const key = `${width},${height},${depth}`
-  if (!boxes[key]) {
-    boxes[key] = new THREE.BoxGeometry(width, height, depth)
-  }
-  return boxes[key]
-}
-
-let spheres = {}
-const getSphere = radius => {
-  const key = radius
-  if (!spheres[key]) {
-    spheres[key] = new THREE.SphereGeometry(radius, 16, 12)
-  }
-  return spheres[key]
-}
 
 export class Mesh extends Node {
   constructor(data = {}) {
@@ -50,9 +34,9 @@ export class Mesh extends Node {
     if (!this._geometry) return
     let geometry
     if (this._type === 'box') {
-      geometry = getBox(this._width, this._height, this._depth)
+      geometry = geometryCache.getBox(this._width, this._height, this._depth)
     } else if (this._type === 'sphere') {
-      geometry = getSphere(this._radius)
+      geometry = geometryCache.getSphere(this._radius)
     } else if (this._type === 'geometry') {
       geometry = this._geometry
     }

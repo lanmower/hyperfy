@@ -1,4 +1,5 @@
-import { writePacket } from '../../packets.js'
+import { PacketCodec } from '../network/PacketCodec.js'
+import { SnapshotCodec } from '../network/SnapshotCodec.js'
 import { Socket } from '../../Socket.js'
 import { uuid } from '../../utils.js'
 import { createJWT, readJWT } from '../../utils-server.js'
@@ -17,7 +18,7 @@ export class PlayerConnectionManager {
       const playerLimit = this.serverNetwork.settings.playerLimit
       const { isNumber } = await import('lodash-es')
       if (isNumber(playerLimit) && playerLimit > 0 && this.serverNetwork.sockets.size >= playerLimit) {
-        const packet = writePacket('kick', 'player_limit')
+        const packet = PacketCodec.encode('kick', 'player_limit')
         ws.send(packet)
         ws.disconnect()
         return
@@ -49,7 +50,7 @@ export class PlayerConnectionManager {
       }
 
       if (this.serverNetwork.sockets.has(user.id)) {
-        const packet = writePacket('kick', 'duplicate_user')
+        const packet = PacketCodec.encode('kick', 'duplicate_user')
         ws.send(packet)
         ws.disconnect()
         return
@@ -76,7 +77,7 @@ export class PlayerConnectionManager {
         true
       )
 
-      socket.send('snapshot', {
+      const snapshot = {
         id: socket.id,
         serverTime: performance.now(),
         assetsUrl: process.env.PUBLIC_ASSETS_URL,
@@ -90,7 +91,9 @@ export class PlayerConnectionManager {
         livekit,
         authToken,
         hasAdminCode: !!process.env.ADMIN_CODE,
-      })
+      }
+
+      socket.send('snapshot', snapshot)
 
       this.serverNetwork.sockets.set(socket.id, socket)
 

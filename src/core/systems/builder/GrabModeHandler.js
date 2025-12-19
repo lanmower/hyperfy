@@ -1,9 +1,8 @@
 import * as THREE from '../../extras/three.js'
 import { DEG2RAD } from '../../extras/general.js'
+import { BuilderConfig } from '../../config/SystemConfig.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
-const SNAP_DISTANCE = 1
-const SNAP_DEGREES = 5
 const PROJECT_SPEED = 10
 const PROJECT_MIN = 3
 
@@ -52,7 +51,7 @@ export class GrabModeHandler {
     if (!this.parent.clientBuilder.control.controlLeft.down) {
       const newY = target.rotation.y
       const degrees = newY / DEG2RAD
-      const snappedDegrees = Math.round(degrees / SNAP_DEGREES) * SNAP_DEGREES
+      const snappedDegrees = Math.round(degrees / BuilderConfig.SNAP_DEGREES) * BuilderConfig.SNAP_DEGREES
       app.root.rotation.y = snappedDegrees * DEG2RAD
     }
 
@@ -60,7 +59,7 @@ export class GrabModeHandler {
 
     if (!this.parent.clientBuilder.control.controlLeft.down) {
       for (const pos of app.snaps) {
-        const result = this.parent.clientBuilder.snaps.octree.query(pos, SNAP_DISTANCE)[0]
+        const result = this.parent.clientBuilder.snaps.octree.query(pos, BuilderConfig.SNAP_DISTANCE)[0]
         if (result) {
           const offset = v1.copy(result.position).sub(pos)
           app.root.position.add(offset)

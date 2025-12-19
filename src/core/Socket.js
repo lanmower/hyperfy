@@ -1,4 +1,4 @@
-import { readPacket, writePacket } from './packets.js'
+import { PacketCodec } from './systems/network/PacketCodec.js'
 
 export class Socket {
   constructor({ id, ws, network, player }) {
@@ -18,7 +18,7 @@ export class Socket {
   }
 
   send(name, data) {
-    const packet = writePacket(name, data)
+    const packet = PacketCodec.encode(name, data)
     this.ws.send(packet)
   }
 
@@ -37,7 +37,7 @@ export class Socket {
   }
 
   onMessage = packet => {
-    const [method, data] = readPacket(packet)
+    const [method, data] = PacketCodec.decode(packet)
     this.network.enqueue(this, method, data)
   }
 

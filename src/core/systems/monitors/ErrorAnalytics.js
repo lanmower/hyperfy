@@ -3,6 +3,13 @@ export class ErrorAnalytics {
     this.errorMonitor = errorMonitor
   }
 
+  canHandle(event, isDuplicate) {
+    return false
+  }
+
+  handle(event, isDuplicate) {
+  }
+
   getErrors(options = {}) {
     const {
       limit = 50,

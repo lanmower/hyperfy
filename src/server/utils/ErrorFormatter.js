@@ -29,7 +29,7 @@ const SEVERITY_SYMBOLS = {
 
 export class ErrorFormatter {
   constructor(options = {}) {
-    this.isTTY = process.stderr.isTTY
+    this.isTTY = process.stderr?.isTTY ?? false
     this.includeStackTraces = options.includeStackTraces !== false
     this.maxStackLines = options.maxStackLines || 10
     this.timezone = options.timezone || 'UTC'

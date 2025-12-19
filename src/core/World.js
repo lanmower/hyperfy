@@ -2,13 +2,14 @@ import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
 import { ServiceContainer } from './di/ServiceContainer.js'
 import { systemRegistry } from './systems/SystemRegistry.js'
+import { WorldConfig } from './config/SystemConfig.js'
 
 export class World extends EventEmitter {
   constructor() {
     super()
 
-    this.maxDeltaTime = 1 / 30 // 0.33333
-    this.fixedDeltaTime = 1 / 50 // 0.01666
+    this.maxDeltaTime = WorldConfig.MAX_DELTA_TIME
+    this.fixedDeltaTime = WorldConfig.FIXED_DELTA_TIME
     this.frame = 0
     this.time = 0
     this.accumulator = 0

@@ -1,22 +1,8 @@
 import * as THREE from '../extras/three.js'
 import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { System } from './System.js'
-import { fillRoundRect } from '../extras/roundRect.js'
-
-const RES = 2
-const NAMETAG_WIDTH = 200 * RES
-const NAMETAG_HEIGHT = 35 * RES
-const PER_ROW = 5
-const PER_COLUMN = 20
-const MAX_INSTANCES = PER_ROW * PER_COLUMN
-const NAMETAG_BORDER_RADIUS = 10 * RES
-const NAME_FONT_SIZE = 16 * RES
-const NAME_OUTLINE_SIZE = 4 * RES
-const HEALTH_MAX = 100
-const HEALTH_HEIGHT = 12 * RES
-const HEALTH_WIDTH = 100 * RES
-const HEALTH_BORDER = 1.5 * RES
-const HEALTH_BORDER_RADIUS = 20 * RES
+import { NametagRenderer } from '../../client/canvas/NametagRenderer.js'
+import * as Config from '../config/NametagConfig.js'
 
 export class Nametags extends System {
   static DEPS = { rig: 'rig', stage: 'stage', events: 'events' }
@@ -24,16 +10,8 @@ export class Nametags extends System {
 
   constructor(world) {
     super(world)
-    const domCanvas = document.createElement('canvas')
-    domCanvas.width = NAMETAG_WIDTH * PER_ROW
-    domCanvas.height = NAMETAG_HEIGHT * PER_COLUMN
-    this.texture = new THREE.CanvasTexture(domCanvas)
-    this.texture.colorSpace = THREE.SRGBColorSpace
-    this.texture.flipY = false
-    this.texture.needsUpdate = true
-    this.uniforms = { uAtlas: { value: this.texture }, uXR: { value: 0 }, uOrientation: { value: this.rig.quaternion } }
-    this.canvas = domCanvas
-    this.ctx = domCanvas.getContext('2d')
+    this.renderer = new NametagRenderer()
+    this.uniforms = { uAtlas: { value: this.renderer.texture }, uXR: { value: 0 }, uOrientation: { value: this.rig.quaternion } }
     this.nametags = []
     this.material = new CustomShaderMaterial({
       baseMaterial: THREE.MeshBasicMaterial, transparent: true, depthWrite: false, depthTest: false, uniforms: this.uniforms,
@@ -86,7 +64,7 @@ export class Nametags extends System {
           csm_Position = newPosition;
           vec2 atlasUV = uv;
           atlasUV.y = 1.0 - atlasUV.y;
-          atlasUV /= vec2(${PER_ROW}, ${PER_COLUMN});
+          atlasUV /= vec2(${Config.GRID_COLS}, ${Config.GRID_ROWS});
           atlasUV += coords;
           vUv = atlasUV;
         }
@@ -100,9 +78,9 @@ export class Nametags extends System {
         }
       `,
     })
-    this.geometry = new THREE.PlaneGeometry(1, NAMETAG_HEIGHT / NAMETAG_WIDTH)
-    this.geometry.setAttribute('coords', new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2))
-    this.mesh = new THREE.InstancedMesh(this.geometry, this.material, MAX_INSTANCES)
+    this.geometry = new THREE.PlaneGeometry(1, Config.HEIGHT / Config.WIDTH)
+    this.geometry.setAttribute('coords', new THREE.InstancedBufferAttribute(new Float32Array(Config.MAX_INSTANCES * 2), 2))
+    this.mesh = new THREE.InstancedMesh(this.geometry, this.material, Config.MAX_INSTANCES)
     this.mesh.renderOrder = 9999
     this.mesh.matrixAutoUpdate = false
     this.mesh.matrixWorldAutoUpdate = false
@@ -114,11 +92,11 @@ export class Nametags extends System {
 
   add({ name, health }) {
     const idx = this.nametags.length
-    if (idx >= MAX_INSTANCES) return console.error('nametags: reached max')
+    if (idx >= Config.MAX_INSTANCES) return console.error('nametags: reached max')
     this.mesh.count++
     this.mesh.instanceMatrix.needsUpdate = true
     const coords = this.mesh.geometry.attributes.coords
-    coords.setXY(idx, (idx % PER_ROW) / PER_ROW, Math.floor(idx / PER_ROW) / PER_COLUMN)
+    coords.setXY(idx, (idx % Config.GRID_COLS) / Config.GRID_COLS, Math.floor(idx / Config.GRID_COLS) / Config.GRID_ROWS)
     coords.needsUpdate = true
     const matrix = new THREE.Matrix4().compose(new THREE.Vector3(), new THREE.Quaternion(0, 0, 0, 1), new THREE.Vector3(1, 1, 1))
     const nametag = {
@@ -128,12 +106,12 @@ export class Nametags extends System {
         this.mesh.setMatrixAt(idx, matrix)
         this.mesh.instanceMatrix.needsUpdate = true
       },
-      setName: newName => { if (name !== newName) { name = newName; this.draw(nametag) } },
-      setHealth: newHealth => { if (health !== newHealth) { health = newHealth; this.draw(nametag) } },
+      setName: newName => { if (name !== newName) { name = newName; this.renderer.draw(nametag) } },
+      setHealth: newHealth => { if (health !== newHealth) { health = newHealth; this.renderer.draw(nametag) } },
       destroy: () => this.remove(nametag),
     }
     this.nametags[idx] = nametag
-    this.draw(nametag)
+    this.renderer.draw(nametag)
     return nametag
   }
 
@@ -143,14 +121,14 @@ export class Nametags extends System {
     const isLast = nametag === last
     if (isLast) {
       this.nametags.pop()
-      this.clear(nametag)
+      this.renderer.clear(nametag)
     } else {
-      this.clear(last)
+      this.renderer.clear(last)
       last.idx = nametag.idx
-      this.draw(last)
+      this.renderer.draw(last)
       const coords = this.mesh.geometry.attributes.coords
-      const row = Math.floor(nametag.idx / PER_ROW), col = nametag.idx % PER_ROW
-      coords.setXY(nametag.idx, col / PER_ROW, row / PER_COLUMN)
+      const row = Math.floor(nametag.idx / Config.GRID_COLS), col = nametag.idx % Config.GRID_COLS
+      coords.setXY(nametag.idx, col / Config.GRID_COLS, row / Config.GRID_ROWS)
       coords.needsUpdate = true
       this.mesh.setMatrixAt(last.idx, last.matrix)
       this.nametags[last.idx] = last
@@ -158,54 +136,6 @@ export class Nametags extends System {
     }
     this.mesh.count--
     this.mesh.instanceMatrix.needsUpdate = true
-  }
-
-  draw(nametag) {
-    const idx = nametag.idx, row = Math.floor(idx / PER_ROW), col = idx % PER_ROW
-    const x = col * NAMETAG_WIDTH, y = row * NAMETAG_HEIGHT
-    this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
-    this.ctx.font = `800 ${NAME_FONT_SIZE}px Rubik`
-    this.ctx.fillStyle = 'white'
-    this.ctx.textAlign = 'center'
-    this.ctx.textBaseline = 'top'
-    this.ctx.lineWidth = NAME_OUTLINE_SIZE
-    this.ctx.strokeStyle = 'rgba(0,0,0,0.5)'
-    const text = this.fitText(nametag.name, NAMETAG_WIDTH)
-    const textX = x + NAMETAG_WIDTH / 2, textY = y + 4
-    this.ctx.save()
-    this.ctx.globalCompositeOperation = 'xor'
-    this.ctx.globalAlpha = 1
-    this.ctx.strokeText(text, textX, textY)
-    this.ctx.restore()
-    this.ctx.fillText(text, textX, textY)
-    if (nametag.health < HEALTH_MAX) {
-      const healthLeft = x + (NAMETAG_WIDTH - HEALTH_WIDTH) / 2, healthTop = y + NAME_FONT_SIZE + 5
-      fillRoundRect(this.ctx, healthLeft, healthTop, HEALTH_WIDTH, HEALTH_HEIGHT, HEALTH_BORDER_RADIUS, 'rgba(0, 0, 0, 0.6)')
-      const perc = nametag.health / HEALTH_MAX, barWidth = (HEALTH_WIDTH - HEALTH_BORDER * 2) * perc
-      fillRoundRect(this.ctx, healthLeft + HEALTH_BORDER, healthTop + HEALTH_BORDER, barWidth, HEALTH_HEIGHT - HEALTH_BORDER * 2, HEALTH_BORDER_RADIUS, '#229710')
-    }
-    this.texture.needsUpdate = true
-  }
-
-  fitText(text, maxWidth) {
-    const width = this.ctx.measureText(text).width
-    if (width <= maxWidth) return text
-    const ellipsis = '...'
-    let truncated = text
-    const ellipsisWidth = this.ctx.measureText(ellipsis).width
-    while (truncated.length > 0) {
-      truncated = truncated.slice(0, -1)
-      const truncatedWidth = this.ctx.measureText(truncated).width
-      if (truncatedWidth + ellipsisWidth <= maxWidth) return truncated + ellipsis
-    }
-    return ellipsis
-  }
-
-  clear(nametag) {
-    const idx = nametag.idx, row = Math.floor(idx / PER_ROW), col = idx % PER_ROW
-    const x = col * NAMETAG_WIDTH, y = row * NAMETAG_HEIGHT
-    this.ctx.clearRect(x, y, NAMETAG_WIDTH, NAMETAG_HEIGHT)
-    this.texture.needsUpdate = true
   }
 
   onXRSession = session => { this.uniforms.uXR.value = session ? 1 : 0 }

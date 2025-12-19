@@ -3,7 +3,10 @@ import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
+let __filename = fileURLToPath(import.meta.url)
+if (__filename.startsWith('/') && __filename[2] === ':') {
+  __filename = __filename.slice(1)
+}
 const __dirname = path.dirname(__filename)
 
 async function discover(dirPath) {
@@ -17,7 +20,6 @@ async function discover(dirPath) {
       const module = await import(`file://${fullPath}`)
       modules[name] = module.default || module
     } catch (err) {
-      console.warn(`Failed to load system ${name}: ${err.message}`)
     }
   }
   return modules
@@ -32,6 +34,8 @@ export async function discoverSystems() {
   const shared = new Set(['LODs', 'Nametags', 'Particles', 'Snaps', 'Wind', 'XR', 'ErrorMonitor'])
 
   for (const [name, System] of Object.entries(all)) {
+    if (!System || typeof System !== 'function') continue
+
     const key = name.replace(/^Server/, '').replace(/^Client/, '')
       .replace(/^(.)/, c => c.toLowerCase())
 
@@ -49,10 +53,41 @@ export async function discoverSystems() {
 }
 
 let _cached = null
+let _systemsDir = null
+
+export function setSystemsDir(dir) {
+  _systemsDir = dir
+  _cached = null
+}
 
 export async function getSystemsAsync() {
   if (!_cached) {
-    _cached = await discoverSystems()
+    if (_systemsDir) {
+      const all = await discover(_systemsDir)
+      const serverSystems = {}
+      const clientSystems = {}
+      const shared = new Set(['LODs', 'Nametags', 'Particles', 'Snaps', 'Wind', 'XR', 'ErrorMonitor'])
+
+      for (const [name, System] of Object.entries(all)) {
+        if (!System || typeof System !== 'function') continue
+
+        const key = name.replace(/^Server/, '').replace(/^Client/, '')
+          .replace(/^(.)/, c => c.toLowerCase())
+
+        if (name.startsWith('Server')) {
+          serverSystems[key] = System
+        } else if (name.startsWith('Client')) {
+          clientSystems[key] = System
+        } else if (shared.has(name)) {
+          serverSystems[key] = System
+          clientSystems[key] = System
+        }
+      }
+
+      _cached = { serverSystems, clientSystems }
+    } else {
+      _cached = await discoverSystems()
+    }
   }
   return _cached
 }

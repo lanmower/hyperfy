@@ -1,6 +1,7 @@
-import * as THREE from 'three'
-
+import * as THREE from '../extras/three.js'
 import { System } from './System.js'
+
+const targetSVG = '<svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="15" r="6" stroke="currentColor" stroke-width="1"/><line x1="15" y1="3" x2="15" y2="8" stroke="currentColor" stroke-width="1"/><line x1="15" y1="22" x2="15" y2="27" stroke="currentColor" stroke-width="1"/><line x1="3" y1="15" x2="8" y2="15" stroke="currentColor" stroke-width="1"/><line x1="22" y1="15" x2="27" y2="15" stroke="currentColor" stroke-width="1"/></svg>'
 
 export class ClientTarget extends System {
   static DEPS = {
@@ -69,7 +70,18 @@ export class ClientTarget extends System {
         x,
         y,
         this.bounds.width,
-        this.bounds.height,
+        this.bounds.height
+      )
+
+      if (pt) {
+        this.guide.style.left = `${pt.x}px`
+        this.guide.style.top = `${pt.y}px`
+        this.guide.style.display = 'block'
+      }
+    }
+  }
+}
+
 function intersectLineWithRect(cx, cy, x, y, width, height, padding = 0) {
   const dx = x - cx
   const dy = y - cy

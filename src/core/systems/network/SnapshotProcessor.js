@@ -1,5 +1,6 @@
 import { emoteUrls } from '../../extras/playerEmotes.js'
 import { storage } from '../../storage.js'
+import { SnapshotCodec } from './SnapshotCodec.js'
 
 export class SnapshotProcessor {
   constructor(network) {
@@ -14,7 +15,7 @@ export class SnapshotProcessor {
     this.network.assetsUrl = data.assetsUrl
 
     this.preloadAssets(data)
-    this.deserializeState(data)
+    SnapshotCodec.deserializeState(data, this.network)
     storage.set('authToken', data.authToken)
   }
 
@@ -51,15 +52,5 @@ export class SnapshotProcessor {
     }
 
     this.network.loader.execPreload()
-  }
-
-  deserializeState(data) {
-    this.network.collections.deserialize(data.collections)
-    this.network.settings.deserialize(data.settings)
-    this.network.settings.setHasAdminCode(data.hasAdminCode)
-    this.network.chat.deserialize(data.chat)
-    this.network.blueprints.deserialize(data.blueprints)
-    this.network.entities.deserialize(data.entities)
-    this.network.livekit?.deserialize(data.livekit)
   }
 }

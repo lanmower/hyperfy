@@ -5,6 +5,7 @@ import { createEmoteFactory } from '../../extras/createEmoteFactory.js'
 import { createVRMFactory } from '../../extras/createVRMFactory.js'
 import { createNode } from '../../extras/createNode.js'
 import { createVideoFactory } from './VideoFactory.js'
+import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 
 export class AssetHandlers {
   constructor(clientLoader, world) {
@@ -19,6 +20,21 @@ export class AssetHandlers {
     this.setupMaterial = world.setupMaterial
     this.results = clientLoader.results
     this.vrmHooks = null
+    this.registry = new AssetHandlerRegistry()
+    this.insertRegistry = new AssetHandlerRegistry()
+    this.setupHandlers()
+  }
+
+  setupHandlers() {
+    this.registry.register('video', (url, file, key) => this.handleVideo(url, file, key))
+    this.registry.register('hdr', (url, file, key) => this.handleHDR(url, file, key))
+    this.registry.register('image', (url, file, key) => this.handleImage(url, file, key))
+    this.registry.register('texture', (url, file, key) => this.handleTexture(url, file, key))
+    this.registry.register('model', (url, file, key) => this.handleModel(url, file, key))
+    this.registry.register('emote', (url, file, key) => this.handleEmote(url, file, key))
+    this.registry.register('avatar', (url, file, key) => this.handleAvatar(url, file, key))
+    this.registry.register('script', (url, file, key) => this.handleScript(url, file, key))
+    this.registry.register('audio', (url, file, key) => this.handleAudio(url, file, key))
   }
 
   setVRMHooks(hooks) {
@@ -26,23 +42,78 @@ export class AssetHandlers {
   }
 
   handle(type, url, file, key) {
-    const handlers = {
-      video: () => this.handleVideo(url, file, key),
-      hdr: () => this.handleHDR(url, file, key),
-      image: () => this.handleImage(url, file, key),
-      texture: () => this.handleTexture(url, file, key),
-      model: () => this.handleModel(url, file, key),
-      emote: () => this.handleEmote(url, file, key),
-      avatar: () => this.handleAvatar(url, file, key),
-      script: () => this.handleScript(url, file, key),
-      audio: () => this.handleAudio(url, file, key),
-    }
-    return handlers[type]?.()
+    return this.registry.handle(type, url, file, key)
   }
 
   handleInsert(type, localUrl, url, file, key) {
-    const handlers = this.getInsertHandlers(localUrl, url, file, key)
-    return handlers[type]?.()
+    if (!this.insertRegistry.has(type)) {
+      this.setupInsertHandlers(localUrl, url, file, key)
+    }
+    return this.insertRegistry.handle(type, localUrl, url, file, key)
+  }
+
+  setupInsertHandlers(localUrl, url, file, key) {
+    this.insertRegistry.register('hdr', (localUrl, url, file, key) =>
+      this.rgbeLoader.loadAsync(localUrl).then(texture => {
+        this.results.set(key, texture)
+        return texture
+      })
+    )
+    this.insertRegistry.register('image', (localUrl, url, file, key) =>
+      new Promise(resolve => {
+        const img = new Image()
+        img.onload = () => {
+          this.results.set(key, img)
+          resolve(img)
+        }
+        img.src = localUrl
+      })
+    )
+    this.insertRegistry.register('video', (localUrl, url, file, key) =>
+      Promise.resolve(createVideoFactory(localUrl, this.world))
+    )
+    this.insertRegistry.register('texture', (localUrl, url, file, key) =>
+      this.texLoader.loadAsync(localUrl).then(texture => {
+        this.results.set(key, texture)
+        return texture
+      })
+    )
+    this.insertRegistry.register('model', (localUrl, url, file, key) =>
+      this.gltfLoader.loadAsync(localUrl).then(glb => {
+        const model = this.createModelResult(glbToNodes(glb, this.world), file)
+        this.results.set(key, model)
+        return model
+      })
+    )
+    this.insertRegistry.register('emote', (localUrl, url, file, key) =>
+      this.gltfLoader.loadAsync(localUrl).then(glb => {
+        const emote = { toClip: options => createEmoteFactory(glb, url).toClip(options) }
+        this.results.set(key, emote)
+        return emote
+      })
+    )
+    this.insertRegistry.register('avatar', (localUrl, url, file, key) =>
+      this.gltfLoader.loadAsync(localUrl).then(glb => {
+        const avatar = this.createAvatarResult(createVRMFactory(glb, this.setupMaterial), file)
+        this.results.set(key, avatar)
+        return avatar
+      })
+    )
+    this.insertRegistry.register('script', (localUrl, url, file, key) =>
+      file.text().then(code => {
+        const script = this.scripts.evaluate(code)
+        this.results.set(key, script)
+        return script
+      })
+    )
+    this.insertRegistry.register('audio', (localUrl, url, file, key) =>
+      file.arrayBuffer().then(buffer =>
+        this.audio.ctx.decodeAudioData(buffer)
+      ).then(audioBuffer => {
+        this.results.set(key, audioBuffer)
+        return audioBuffer
+      })
+    )
   }
 
   handleVideo(url, file, key) {
@@ -166,51 +237,4 @@ export class AssetHandlers {
     }
   }
 
-  getInsertHandlers(localUrl, url, file, key) {
-    return {
-      hdr: () => this.rgbeLoader.loadAsync(localUrl).then(texture => {
-        this.results.set(key, texture)
-        return texture
-      }),
-      image: () => new Promise(resolve => {
-        const img = new Image()
-        img.onload = () => {
-          this.results.set(key, img)
-          resolve(img)
-        }
-        img.src = localUrl
-      }),
-      video: () => Promise.resolve(createVideoFactory(localUrl, this.world)),
-      texture: () => this.texLoader.loadAsync(localUrl).then(texture => {
-        this.results.set(key, texture)
-        return texture
-      }),
-      model: () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const model = this.createModelResult(glbToNodes(glb, this.world), file)
-        this.results.set(key, model)
-        return model
-      }),
-      emote: () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const emote = { toClip: options => createEmoteFactory(glb, url).toClip(options) }
-        this.results.set(key, emote)
-        return emote
-      }),
-      avatar: () => this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const avatar = this.createAvatarResult(createVRMFactory(glb, this.setupMaterial), file)
-        this.results.set(key, avatar)
-        return avatar
-      }),
-      script: () => file.text().then(code => {
-        const script = this.scripts.evaluate(code)
-        this.results.set(key, script)
-        return script
-      }),
-      audio: () => file.arrayBuffer().then(buffer =>
-        this.audio.ctx.decodeAudioData(buffer)
-      ).then(audioBuffer => {
-        this.results.set(key, audioBuffer)
-        return audioBuffer
-      }),
-    }
-  }
 }

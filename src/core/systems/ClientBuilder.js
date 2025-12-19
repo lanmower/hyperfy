@@ -1,17 +1,9 @@
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
-import { UndoManager } from './builder/UndoManager.js'
-import { ModeManager } from './builder/ModeManager.js'
-import { GizmoManager } from './builder/GizmoManager.js'
-import { FileDropHandler } from './builder/FileDropHandler.js'
-import { SelectionManager } from './builder/SelectionManager.js'
-import { TransformHandler } from './builder/TransformHandler.js'
-import { RaycastUtilities } from './builder/RaycastUtilities.js'
-import { SpawnTransformCalculator } from './builder/SpawnTransformCalculator.js'
-import { BuilderActions } from './builder/BuilderActions.js'
-import { StateTransitionHandler } from './builder/StateTransitionHandler.js'
+import { BuilderComposer } from './builder/BuilderComposer.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { EVENT } from '../constants/EventNames.js'
+import { BuilderConfig } from '../config/SystemConfig.js'
 
 export class ClientBuilder extends System {
   static DEPS = {
@@ -39,28 +31,14 @@ export class ClientBuilder extends System {
 
     this.target = new THREE.Object3D()
     this.target.rotation.reorder('YXZ')
-    this.target.limit = 50
+    this.target.limit = BuilderConfig.TRANSFORM_LIMIT
 
-    this.undoManager = new UndoManager(this)
-    this.modeManager = new ModeManager()
-    this.gizmoManager = null
-    this.fileDropHandler = null
-    this.selectionManager = new SelectionManager(this)
-    this.transformHandler = new TransformHandler(this)
-    this.raycastUtilities = new RaycastUtilities(this)
-    this.spawnTransformCalculator = new SpawnTransformCalculator(this)
-    this.builderActions = new BuilderActions(this)
-    this.stateTransitionHandler = new StateTransitionHandler(this)
+    this.composer = new BuilderComposer(this)
   }
 
   async init({ viewport }) {
     this.viewport = viewport
-    this.gizmoManager = new GizmoManager(this.world, viewport)
-    this.fileDropHandler = new FileDropHandler(this)
-    viewport.addEventListener('dragover', this.fileDropHandler.onDragOver)
-    viewport.addEventListener('dragenter', this.fileDropHandler.onDragEnter)
-    viewport.addEventListener('dragleave', this.fileDropHandler.onDragLeave)
-    viewport.addEventListener('drop', this.fileDropHandler.onDrop)
+    this.composer.init({ world: this.world, viewport })
   }
 
   start() {
@@ -89,11 +67,11 @@ export class ClientBuilder extends System {
   }
 
   updateActions() {
-    this.builderActions.updateActions()
+    this.composer.updateActions()
   }
 
   update(delta) {
-    const mode = this.modeManager.getMode()
+    const mode = this.composer.getMode()
 
     if (this.control.tab.pressed) {
       this.toggle()
@@ -114,12 +92,7 @@ export class ClientBuilder extends System {
       return
     }
 
-    this.selectionManager.handleInspect()
-    this.selectionManager.handleUnlink()
-    this.selectionManager.handlePin()
-    this.builderActions.handleSpaceToggle(mode)
-    this.builderActions.handleModeKeyPress()
-    this.selectionManager.handleSelection(delta, mode)
+    this.composer.update(delta, mode)
 
     if (
       this.control.keyZ.pressed &&
@@ -129,91 +102,85 @@ export class ClientBuilder extends System {
       this.undo()
     }
 
-    this.transformHandler.handleModeUpdates(delta, mode)
-    this.transformHandler.sendSelectedUpdates(delta)
-
     if (this.justPointerLocked) {
       this.justPointerLocked = false
     }
   }
 
   addUndo(action) {
-    this.undoManager.addUndo(action)
+    this.composer.addUndo(action)
   }
 
   undo() {
-    this.undoManager.execute()
+    this.composer.executeUndo()
   }
 
   toggle(enabled) {
-    this.stateTransitionHandler.toggle(enabled)
+    this.composer.toggle(enabled)
   }
 
   select(app) {
-    this.stateTransitionHandler.select(app)
+    this.composer.select(app)
   }
 
   getMode() {
-    return this.modeManager.getMode()
+    return this.composer.getMode()
   }
 
   setMode(mode) {
-    this.stateTransitionHandler.setMode(mode)
+    this.composer.setMode(mode)
   }
 
   toggleSpace() {
-    this.transformHandler.toggleSpace()
+    this.composer.toggleSpace()
   }
 
   getSpaceLabel() {
-    return this.transformHandler.getSpaceLabel()
+    return this.composer.getSpaceLabel()
   }
 
   attachGizmo(app, mode) {
-    this.transformHandler.attachGizmo(app, mode)
+    this.composer.attachGizmo(app, mode)
   }
 
   detachGizmo() {
-    this.transformHandler.detachGizmo()
+    this.composer.detachGizmo()
   }
 
   disableRotationSnap() {
-    this.transformHandler.disableRotationSnap()
+    this.composer.disableRotationSnap()
   }
 
   enableRotationSnap() {
-    this.transformHandler.enableRotationSnap()
+    this.composer.enableRotationSnap()
   }
 
   isGizmoActive() {
-    return this.transformHandler.isActive()
+    return this.composer.isGizmoActive()
   }
 
   getModeLabel() {
-    return this.modeManager.getModeLabel()
+    return this.composer.getModeLabel()
   }
 
   getEntityAtReticle() {
-    return this.raycastUtilities.getEntityAtReticle()
+    return this.composer.getEntityAtReticle()
   }
 
   getEntityAtPointer() {
-    return this.raycastUtilities.getEntityAtPointer()
+    return this.composer.getEntityAtPointer()
   }
 
   getHitAtReticle(ignoreEntity, ignorePlayers) {
-    return this.raycastUtilities.getHitAtReticle(ignoreEntity, ignorePlayers)
+    return this.composer.getHitAtReticle(ignoreEntity, ignorePlayers)
   }
 
   getSpawnTransform(atReticle) {
-    return this.spawnTransformCalculator.calculate(atReticle)
+    return this.composer.getSpawnTransform(atReticle)
   }
 
   destroy() {
-    this.viewport.removeEventListener('dragover', this.fileDropHandler.onDragOver)
-    this.viewport.removeEventListener('dragenter', this.fileDropHandler.onDragEnter)
-    this.viewport.removeEventListener('dragleave', this.fileDropHandler.onDragLeave)
-    this.viewport.removeEventListener('drop', this.fileDropHandler.onDrop)
-    this.detachGizmo()
+    this.composer.destroy()
+    this.composer.detachGizmo()
   }
 }

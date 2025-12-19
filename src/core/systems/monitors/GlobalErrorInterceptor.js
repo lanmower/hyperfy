@@ -3,6 +3,13 @@ export class GlobalErrorInterceptor {
     this.monitor = monitor
   }
 
+  canHandle(event, isDuplicate) {
+    return false
+  }
+
+  handle(event, isDuplicate) {
+  }
+
   setup() {
     if (this.monitor.isClient && typeof window !== 'undefined') {
       window.addEventListener('error', (event) => {

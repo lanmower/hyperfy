@@ -119,11 +119,13 @@ async function buildServer() {
     minify: false,
     sourcemap: true,
     packages: 'external',
+    external: ['dotenv-flow'],
     define: {
       'process.env.CLIENT': 'false',
       'process.env.SERVER': 'true',
     },
     plugins: [
+      polyfillNode({}),
       {
         name: 'server-hot-reload',
         setup(build) {
@@ -144,7 +146,7 @@ async function buildServer() {
                 log('info', 'Server restarting...')
                 serverSpawn.kill('SIGTERM')
               }
-              serverSpawn = fork(path.join(rootDir, 'build/index.js'))
+              serverSpawn = fork(path.join(rootDir, 'build/index.js'), [], { env: process.env })
               serverSpawn.on('error', err => log('error', 'Server process error', { error: err.message }))
               serverSpawn.on('exit', code => {
                 if (code && code !== 0) log('warn', 'Server exited', { code })

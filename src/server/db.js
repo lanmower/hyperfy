@@ -48,12 +48,14 @@ class Database {
   }
 }
 
+let dbInstance
+
 export async function getDB(worldDir) {
   if (!db) {
     if (!SQL) {
       SQL = await initSqlJs()
     }
-    const dbInstance = new SQL.Database()
+    dbInstance = new SQL.Database()
     const database = new Database(dbInstance, SQL)
 
     const dbFunc = (tableName) => new QueryBuilder(dbInstance, SQL, tableName, {})
@@ -74,7 +76,7 @@ export async function getDB(worldDir) {
       await db.insert('config', { key: 'version', value: '0' })
     }
 
-    const schemaManager = new DatabaseSchema(database.dbInstance)
+    const schemaManager = new DatabaseSchema(dbInstance)
     await schemaManager.initializeTables()
 
     const result = await db.query(`SELECT * FROM config WHERE key = 'settings'`)

@@ -6,6 +6,13 @@ export class ServerErrorReporter {
     this.monitor = monitor
   }
 
+  canHandle(event, isDuplicate) {
+    return false
+  }
+
+  handle(event, isDuplicate) {
+  }
+
   reportError(errorEvent, errorData) {
     const metadata = {
       clientId: errorData.clientId,

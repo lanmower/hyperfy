@@ -21,7 +21,7 @@ const SEVERITY_SYMBOLS = {
 
 export class StderrLogger {
   constructor() {
-    this.isTTY = process.stderr.isTTY
+    this.isTTY = process.stderr?.isTTY ?? false
     this.rateLimits = new Map()
     this.groupStack = []
     this.buffer = []

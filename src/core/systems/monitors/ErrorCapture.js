@@ -8,6 +8,15 @@ export class ErrorCapture {
     this.errorBus = errorMonitor.errorBus
   }
 
+  canHandle(event, isDuplicate) {
+    return true
+  }
+
+  handle(event, isDuplicate) {
+    const errorId = this.errorMonitor.state.get('errorId') + 1
+    this.errorMonitor.state.set('errorId', errorId)
+  }
+
   captureError(type, args, stack) {
     const error = {
       message: this.extractMessage(args),
@@ -23,9 +32,6 @@ export class ErrorCapture {
     const level = this.isCriticalError(type, args) ? ErrorLevels.ERROR : ErrorLevels.WARN
 
     this.errorBus.emit(error, context, level)
-
-    const errorId = this.errorMonitor.state.get('errorId') + 1
-    this.errorMonitor.state.set('errorId', errorId)
   }
 
   extractMessage(args) {

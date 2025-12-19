@@ -1,4 +1,4 @@
-import * as THREE from './three.js'
+import * as THREE from '../three.js'
 
 export const DIST_MIN_RATE = 1 / 5
 export const DIST_MAX_RATE = 1 / 60

@@ -3,6 +3,7 @@ import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'
 import { createEmoteFactory } from '../../extras/createEmoteFactory.js'
+import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 
 export class ServerAssetHandlers {
   constructor(world, errorMonitor, scripts) {
@@ -10,6 +11,16 @@ export class ServerAssetHandlers {
     this.errorMonitor = errorMonitor
     this.scripts = scripts
     this.gltfLoader = new GLTFLoader()
+    this.registry = new AssetHandlerRegistry()
+    this.setupHandlers()
+  }
+
+  setupHandlers() {
+    this.registry.register('model', url => this.handleModel(url))
+    this.registry.register('emote', url => this.handleEmote(url))
+    this.registry.register('avatar', url => this.handleAvatar(url))
+    this.registry.register('script', url => this.handleScript(url))
+    this.registry.register('audio', url => this.handleAudio(url))
   }
 
   async fetchArrayBuffer(url) {
@@ -99,12 +110,6 @@ export class ServerAssetHandlers {
   handleAudio = (url) => Promise.reject(null)
 
   getHandlers() {
-    return {
-      'model': this.handleModel,
-      'emote': this.handleEmote,
-      'avatar': this.handleAvatar,
-      'script': this.handleScript,
-      'audio': this.handleAudio,
-    }
+    return this.registry.getAll()
   }
 }

@@ -2,6 +2,7 @@ import { System } from './System.js'
 import { StateManager } from '../state/StateManager.js'
 import { ErrorEventBus } from '../utils/ErrorEventBus.js'
 import { ErrorLevels, ErrorSources } from '../schemas/ErrorEvent.schema.js'
+import { ErrorHandlerRegistry } from './monitors/ErrorHandlerRegistry.js'
 import { ErrorCapture } from './monitors/ErrorCapture.js'
 import { ErrorForwarder } from './monitors/ErrorForwarder.js'
 import { ErrorAnalytics } from './monitors/ErrorAnalytics.js'
@@ -22,8 +23,10 @@ export class ErrorMonitor extends System {
     this.isServer = world.isServer
     this.state = new StateManager({ errors: [], errorId: 0 })
     this.maxErrors = 500
-    this.errorBus = new ErrorEventBus()
     this.listeners = new Set()
+
+    this.errorBus = new ErrorEventBus()
+    this.registry = new ErrorHandlerRegistry()
 
     this.capture = new ErrorCapture(this)
     this.forwarder = new ErrorForwarder(this)
@@ -31,9 +34,15 @@ export class ErrorMonitor extends System {
     this.interceptor = new GlobalErrorInterceptor(this)
     this.reporter = new ServerErrorReporter(this)
 
-    this.setupErrorBusForwarding()
+    this.registry.register('capture', this.capture)
+    this.registry.register('forwarder', this.forwarder)
+
+    this.errorBus.register((event, isDuplicate) => {
+      this.registry.route(event, isDuplicate)
+    })
+
     this.interceptor.setup()
-    setInterval(() => this.cleanup(), 60000)
+    setInterval(() => this.analytics.cleanup(), 60000)
   }
 
   init(options = {}) {
@@ -42,72 +51,33 @@ export class ErrorMonitor extends System {
     this.debugMode = options.debugMode === true
   }
 
-  setupErrorBusForwarding() {
-    this.errorBus.register((event, isDuplicate) => {
-      this.forwardErrorEvent(event, isDuplicate)
-    })
-  }
-
-
   captureError(type, args, stack) {
-    return this.capture.captureError(type, args, stack)
+    this.capture.captureError(type, args, stack)
   }
 
   isCriticalError(type, args) {
     return this.capture.isCriticalError(type, args)
   }
 
-  forwardErrorEvent(event, isDuplicate) {
-    return this.forwarder.forwardErrorEvent(event, isDuplicate)
-  }
-
-  handleCriticalError(errorEntry) {
-    return this.forwarder.handleCriticalError(errorEntry)
-  }
-
   onErrorReport = (socket, errorData) => {
     if (!this.isServer) return
-
-    try {
-      const { deserializeErrorEvent } = require('../schemas/ErrorEvent.schema.js')
-      const errorEvent = deserializeErrorEvent(errorData.error || errorData)
-      errorEvent.source = ErrorSources.CLIENT
-      errorEvent.metadata = {
-        ...errorEvent.metadata,
-        socketId: socket.id,
-        realTime: errorData.realTime || false
-      }
-
-      this.errorBus.emit(
-        { message: errorEvent.message, stack: errorEvent.stack },
-        {
-          ...errorEvent.context,
-          category: errorEvent.category,
-          source: errorEvent.source,
-          metadata: errorEvent.metadata
-        },
-        errorEvent.level
-      )
-
-      if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
-        this.events.emit('criticalError', errorEvent)
-      }
-    } catch (err) {
-      console.error('Failed to process client error report:', err)
-    }
+    this.processErrorData(errorData, { socketId: socket.id })
   }
 
   receiveClientError = (errorData) => {
     if (!this.isServer) return
+    this.processErrorData(errorData)
+    if (errorData.error?.level === ErrorLevels.ERROR) {
+      this.reporter.reportError(errorData.error, errorData)
+    }
+  }
 
+  processErrorData(errorData, metadata = {}) {
     try {
       const { deserializeErrorEvent } = require('../schemas/ErrorEvent.schema.js')
       const errorEvent = deserializeErrorEvent(errorData.error || errorData)
       errorEvent.source = ErrorSources.CLIENT
-      errorEvent.metadata = {
-        ...errorEvent.metadata,
-        realTime: errorData.realTime || false
-      }
+      errorEvent.metadata = { ...errorEvent.metadata, ...metadata }
 
       this.errorBus.emit(
         { message: errorEvent.message, stack: errorEvent.stack },
@@ -120,36 +90,15 @@ export class ErrorMonitor extends System {
         errorEvent.level
       )
 
-      if (this.isServer && errorEvent.level === ErrorLevels.ERROR) {
-        this.reportServerError(errorEvent, errorData)
-      }
-
       if (errorEvent.level === ErrorLevels.ERROR || errorData.critical) {
         this.events.emit('criticalError', errorEvent)
       }
     } catch (err) {
-      console.error('Failed to process client error:', err)
+      console.error('Failed to process error data:', err)
     }
   }
 
-  reportServerError = (errorEvent, errorData) => {
-    this.reporter?.reportError(errorEvent, errorData)
-  }
-
-  getServerErrorReport = () => {
-    if (!this.isServer) return null
-    return this.reporter?.getReport()
-  }
-
-  captureClientError = (clientId, error) => {
-    this.reporter?.captureClientError(clientId, error)
-  }
-
-  checkAlertThresholds = () => {
-    this.reporter?.checkAlertThresholds()
-  }
-
-  getErrors(options = {}) {
+  getErrors(options) {
     return this.analytics.getErrors(options)
   }
 
@@ -161,8 +110,16 @@ export class ErrorMonitor extends System {
     return this.analytics.getStats()
   }
 
-  cleanup() {
-    return this.analytics.cleanup()
+  getServerErrorReport() {
+    return this.isServer ? this.reporter.getReport() : null
+  }
+
+  captureClientError(clientId, error) {
+    this.reporter?.captureClientError(clientId, error)
+  }
+
+  checkAlertThresholds() {
+    this.reporter?.checkAlertThresholds()
   }
 
   addListener(listener) {
@@ -170,7 +127,7 @@ export class ErrorMonitor extends System {
       throw new Error('Listener must be a function')
     }
     this.listeners.add(listener)
-    return () => this.removeListener(listener)
+    return () => this.listeners.delete(listener)
   }
 
   removeListener(listener) {
@@ -180,6 +137,7 @@ export class ErrorMonitor extends System {
   destroy() {
     this.state.set('errors', [])
     this.listeners.clear()
+    this.registry.clear()
     super.destroy()
   }
 }

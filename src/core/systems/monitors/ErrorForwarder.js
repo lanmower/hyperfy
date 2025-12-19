@@ -6,6 +6,14 @@ export class ErrorForwarder {
     this.maxErrors = errorMonitor.maxErrors
   }
 
+  canHandle(event, isDuplicate) {
+    return true
+  }
+
+  handle(event, isDuplicate) {
+    this.forwardErrorEvent(event, isDuplicate)
+  }
+
   forwardErrorEvent(event, isDuplicate) {
     const errorEntry = {
       id: event.id,

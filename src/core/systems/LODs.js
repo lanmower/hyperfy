@@ -1,6 +1,8 @@
 import { System } from './System.js'
+import { BatchProcessor } from '../utils.js'
+import { RenderConfig } from '../config/SystemConfig.js'
 
-const BATCH_SIZE = 1000
+const BATCH_SIZE = RenderConfig.LOD_BATCH_SIZE
 
 export class LODs extends System {
   constructor(world) {
@@ -20,16 +22,9 @@ export class LODs extends System {
   }
 
   update(delta) {
-    const size = Math.min(this.nodes.length, BATCH_SIZE)
-    for (let i = 0; i < size; i++) {
-      const idx = (this.cursor + i) % this.nodes.length
-      const node = this.nodes[idx]
-      if (!node) continue
+    this.cursor = BatchProcessor.processBatchWithCursor(this.nodes, this.cursor, BATCH_SIZE, (node) => {
       node.check()
-    }
-    if (size) {
-      this.cursor = (this.cursor + size) % this.nodes.length
-    }
+    })
   }
 
   destroy() {

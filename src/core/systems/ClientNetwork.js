@@ -1,5 +1,4 @@
 import moment from 'moment'
-import { writePacket } from '../packets.js'
 import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
@@ -7,6 +6,7 @@ import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
 import { WebSocketManager } from './network/WebSocketManager.js'
 import { SnapshotProcessor } from './network/SnapshotProcessor.js'
 import { ClientPacketHandlers } from './network/ClientPacketHandlers.js'
+import { PacketCodec } from './network/PacketCodec.js'
 import { storage } from '../storage.js'
 
 export class ClientNetwork extends BaseNetwork {
@@ -46,7 +46,7 @@ export class ClientNetwork extends BaseNetwork {
     if (!ignore.includes(name) && data.id != this.id) {
       console.log('->', name, data)
     }
-    const packet = writePacket(name, data)
+    const packet = PacketCodec.encode(name, data)
     this.wsManager.send(packet)
   }
 

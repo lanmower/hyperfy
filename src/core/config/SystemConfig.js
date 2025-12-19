@@ -147,6 +147,35 @@ export const ErrorConfig = {
 }
 
 
+export const BuilderConfig = {
+  SNAP_DEGREES: 5,
+  SNAP_DISTANCE: 1,
+  PROJECT_MAX: 500,
+  TRANSFORM_LIMIT: parseInt(process.env.BUILDER_TRANSFORM_LIMIT ?? 50),
+}
+
+
+export const NametagConfig = {
+  RESOLUTION: parseInt(process.env.NAMETAG_RESOLUTION ?? 2),
+  GRID_COLS: parseInt(process.env.NAMETAG_GRID_COLS ?? 5),
+  GRID_ROWS: parseInt(process.env.NAMETAG_GRID_ROWS ?? 20),
+  WIDTH: parseInt(process.env.NAMETAG_WIDTH ?? 200),
+  HEIGHT: parseInt(process.env.NAMETAG_HEIGHT ?? 35),
+}
+
+
+export const RenderConfig = {
+  ACTION_BATCH_SIZE: parseInt(process.env.RENDER_ACTION_BATCH ?? 500),
+  LOD_BATCH_SIZE: parseInt(process.env.RENDER_LOD_BATCH ?? 1000),
+}
+
+
+export const WorldConfig = {
+  MAX_DELTA_TIME: parseFloat(process.env.WORLD_MAX_DELTA ?? 1 / 30),
+  FIXED_DELTA_TIME: parseFloat(process.env.WORLD_FIXED_DELTA ?? 1 / 50),
+}
+
+
 export function getAllConfig() {
   return {
     physics: PhysicsConfig,
@@ -158,6 +187,10 @@ export function getAllConfig() {
     audio: AudioConfig,
     performance: PerformanceConfig,
     error: ErrorConfig,
+    builder: BuilderConfig,
+    nametag: NametagConfig,
+    render: RenderConfig,
+    world: WorldConfig,
   }
 }
 

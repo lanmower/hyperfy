@@ -21,11 +21,17 @@ export class Physics extends System {
   }
 
   async init() {
-    const info = await loadPhysX()
-    this.version = info.version
-    this.allocator = info.allocator
-    this.errorCb = info.errorCb
-    this.foundation = info.foundation
+    try {
+      const info = await loadPhysX()
+      this.version = info.version
+      this.allocator = info.allocator
+      this.errorCb = info.errorCb
+      this.foundation = info.foundation
+    } catch (err) {
+      return
+    }
+
+    if (!this.foundation) return
 
     extendThreePhysX()
 

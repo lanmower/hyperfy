@@ -1,10 +1,18 @@
+import 'dotenv-flow/config'
 import 'ses'
 import '../core/lockdown'
 import './bootstrap'
 
 import fs from 'fs-extra'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { pipeline } from 'stream/promises'
+
+let __filename = fileURLToPath(import.meta.url)
+if (__filename.startsWith('/') && __filename[2] === ':') {
+  __filename = __filename.slice(1)
+}
+const __dirname = path.dirname(__filename)
 import Fastify from 'fastify'
 import ws from '@fastify/websocket'
 import cors from '@fastify/cors'
@@ -13,6 +21,7 @@ import statics from '@fastify/static'
 import multipart from '@fastify/multipart'
 
 import { createServerWorld } from '../core/createServerWorld.js'
+import { setSystemsDir } from '../core/SystemFactory.js'
 import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
@@ -21,10 +30,10 @@ import { registerUploadRoutes } from './routes/UploadRoutes.js'
 import { registerStatusRoutes } from './routes/StatusRoutes.js'
 
 const rootDir = path.join(__dirname, '../')
-const worldDir = path.join(rootDir, process.env.WORLD)
+const worldDir = path.join(rootDir, process.env.WORLD || 'world')
 const assetsDir = path.join(worldDir, '/assets')
 const collectionsDir = path.join(worldDir, '/collections')
-const port = process.env.PORT
+const port = process.env.PORT || 3000
 
 await fs.ensureDir(worldDir)
 await fs.ensureDir(assetsDir)
@@ -33,16 +42,23 @@ await fs.ensureDir(collectionsDir)
 await fs.copy(path.join(rootDir, 'src/world/assets'), path.join(assetsDir))
 await fs.copy(path.join(rootDir, 'src/world/collections'), path.join(collectionsDir))
 
-const collections = await initCollections({ collectionsDir, assetsDir })
+let world
+try {
+  const collections = await initCollections({ collectionsDir, assetsDir })
 
-const db = await getDB(worldDir)
+  const db = await getDB(worldDir)
 
-const storage = new Storage(path.join(worldDir, '/storage.json'))
+  const storage = new Storage(path.join(worldDir, '/storage.json'))
 
-const world = await createServerWorld()
-world.assetsUrl = process.env.PUBLIC_ASSETS_URL
-world.collections.deserialize(collections)
-world.init({ db, storage, assetsDir })
+  setSystemsDir(path.join(rootDir, 'src/core/systems'))
+  world = await createServerWorld()
+  world.assetsUrl = process.env.PUBLIC_ASSETS_URL
+  world.collections.deserialize(collections)
+  world.init({ db, storage, assetsDir })
+} catch (err) {
+  console.error('Server initialization failed:', err.message)
+  process.exit(1)
+}
 
 const fastify = Fastify({ logger: { level: 'error' } })
 
@@ -113,13 +129,21 @@ fastify.setErrorHandler((err, req, reply) => {
   reply.status(500).send()
 })
 
-try {
-  await fastify.listen({ port, host: '0.0.0.0' })
-} catch (err) {
-  console.error(err)
-  console.error(`failed to launch on port ${port}`)
-  process.exit(1)
+async function startServer(retries = 5) {
+  try {
+    await fastify.listen({ port, host: '0.0.0.0', exclusive: false })
+    console.log(`running on port ${port}`)
+  } catch (err) {
+    if (err.code === 'EADDRINUSE' && retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return startServer(retries - 1)
+    }
+    console.error(`failed to launch on port ${port}:`, err.message)
+    process.exit(1)
+  }
 }
+
+await startServer()
 
 async function worldNetwork(fastify) {
   fastify.get('/ws', { websocket: true }, (ws, req) => {
@@ -127,8 +151,6 @@ async function worldNetwork(fastify) {
     world.network.onConnection(ws, req.query)
   })
 }
-
-console.log(`running on port ${port}`)
 
 process.on('SIGINT', async () => {
   await fastify.close()
@@ -138,4 +160,13 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   await fastify.close()
   process.exit(0)
+})
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err)
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
 })

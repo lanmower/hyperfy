@@ -1,4 +1,4 @@
-import { writePacket } from '../../packets.js'
+import { PacketCodec } from '../network/PacketCodec.js'
 
 export class SocketManager {
   constructor(network) {
@@ -6,7 +6,7 @@ export class SocketManager {
   }
 
   send(name, data, ignoreSocketId) {
-    const packet = writePacket(name, data)
+    const packet = PacketCodec.encode(name, data)
     this.network.sockets.forEach(socket => {
       if (socket.id === ignoreSocketId) return
       socket.sendPacket(packet)

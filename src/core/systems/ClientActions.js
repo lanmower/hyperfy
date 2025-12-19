@@ -3,10 +3,11 @@ import { System } from './System.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { EVENT } from '../constants/EventNames.js'
 import { isTouch } from '../../client/utils.js'
-import { clamp } from '../utils.js'
+import { clamp, BatchProcessor } from '../utils.js'
 import { CanvasDrawUtils } from './actions/CanvasDrawUtils.js'
+import { RenderConfig } from '../config/SystemConfig.js'
 
-const BATCH_SIZE = 500
+const BATCH_SIZE = RenderConfig.ACTION_BATCH_SIZE
 const sizes = [128, 256, 512, 2048, 4096]
 const FORWARD = new THREE.Vector3(0, 0, 1)
 const v1 = new THREE.Vector3()
@@ -78,20 +79,16 @@ export class ClientActions extends System {
     }
 
     let didChange
-    const size = Math.min(this.nodes.length, BATCH_SIZE)
-    for (let i = 0; i < size; i++) {
-      const idx = (this.cursor + i) % this.nodes.length
-      const node = this.nodes[idx]
-      if (node.finished) continue
-      if (this.current.node === node) continue
+    this.cursor = BatchProcessor.processBatchWithCursor(this.nodes, this.cursor, BATCH_SIZE, (node) => {
+      if (node.finished) return
+      if (this.current.node === node) return
       const distance = node.worldPos.distanceTo(cameraPos)
       if (distance <= node._distance && distance < this.current.distance) {
         this.current.node = node
         this.current.distance = distance
         didChange = true
       }
-    }
-    if (size) this.cursor = (this.cursor + size) % this.nodes.length
+    })
     if (didChange) {
       this.startAction(this.current.node)
       this.events.emit(EVENT.action.changed, true)

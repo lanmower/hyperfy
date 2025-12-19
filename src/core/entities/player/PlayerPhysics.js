@@ -3,15 +3,13 @@ import { PhysicsConfig } from '../../config/SystemConfig.js'
 import { Layers } from '../../extras/Layers.js'
 import { PlayerPlatformTracker } from './PlayerPlatformTracker.js'
 import { PlayerPhysicsState } from './PlayerPhysicsState.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const RAD2DEG = 180 / Math.PI
 const UP = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
 
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
-const v4 = new THREE.Vector3()
+const { v1, v2, v3, v4 } = SharedVectorPool('PlayerPhysics', 4, 0)
 
 export class PlayerPhysics {
   constructor(world, player) {
