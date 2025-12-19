@@ -22,6 +22,7 @@ import { PlayerTeleportHandler } from './player/PlayerTeleportHandler.js'
 import { PlayerEffectManager } from './player/PlayerEffectManager.js'
 import { PlayerModifyHandler } from './player/PlayerModifyHandler.js'
 import { PlayerControlBinder } from './player/PlayerControlBinder.js'
+import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 
@@ -124,6 +125,7 @@ export class PlayerLocal extends BaseEntity {
     this.effectManager = new PlayerEffectManager(this)
     this.modifyHandler = new PlayerModifyHandler(this)
     this.controlBinder = new PlayerControlBinder(this)
+    this.capsuleFactory = new PlayerCapsuleFactory(this.world)
 
     if (this.world.loader?.preloader) {
       await this.world.loader.preloader
@@ -146,54 +148,10 @@ export class PlayerLocal extends BaseEntity {
   }
 
   initCapsule() {
-    const radius = this.capsuleRadius
-    const height = this.capsuleHeight
-    const halfHeight = (height - radius - radius) / 2
-    const geometry = new PHYSX.PxCapsuleGeometry(radius, halfHeight)
-    this.material = this.world.physics.physics.createMaterial(0, 0, 0)
-    const flags = new PHYSX.PxShapeFlags(PHYSX.PxShapeFlagEnum.eSCENE_QUERY_SHAPE | PHYSX.PxShapeFlagEnum.eSIMULATION_SHAPE) // prettier-ignore
-    const shape = this.world.physics.physics.createShape(geometry, this.material, true, flags)
-    const localPose = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-    q1.set(0, 0, 0).setFromAxisAngle(BACKWARD, Math.PI / 2)
-    q1.toPxTransform(localPose)
-    v1.set(0, halfHeight + radius, 0)
-    v1.toPxTransform(localPose)
-    shape.setLocalPose(localPose)
-    const filterData = new PHYSX.PxFilterData(
-      Layers.player.group,
-      Layers.player.mask,
-      PHYSX.PxPairFlagEnum.eNOTIFY_TOUCH_FOUND |
-        PHYSX.PxPairFlagEnum.eNOTIFY_TOUCH_LOST |
-        PHYSX.PxPairFlagEnum.eNOTIFY_CONTACT_POINTS |
-        PHYSX.PxPairFlagEnum.eDETECT_CCD_CONTACT |
-        PHYSX.PxPairFlagEnum.eSOLVE_CONTACT |
-        PHYSX.PxPairFlagEnum.eDETECT_DISCRETE_CONTACT,
-      0
-    )
-    shape.setContactOffset(0.08) // just enough to fire contacts (because we muck with velocity sometimes standing on a thing doesn't contact)
-    shape.setQueryFilterData(filterData)
-    shape.setSimulationFilterData(filterData)
-    const transform = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-    v1.copy(this.base.position).toPxTransform(transform)
-    q1.set(0, 0, 0, 1).toPxTransform(transform)
-    this.capsule = this.world.physics.physics.createRigidDynamic(transform)
-    this.capsule.setMass(this.mass)
-    this.capsule.setRigidBodyFlag(PHYSX.PxRigidBodyFlagEnum.eENABLE_CCD, true)
-    this.capsule.setRigidDynamicLockFlag(PHYSX.PxRigidDynamicLockFlagEnum.eLOCK_ANGULAR_X, true)
-    this.capsule.setRigidDynamicLockFlag(PHYSX.PxRigidDynamicLockFlagEnum.eLOCK_ANGULAR_Z, true)
-    this.capsule.setActorFlag(PHYSX.PxActorFlagEnum.eDISABLE_GRAVITY, true)
-    this.capsule.attachShape(shape)
-    let shape2
-    {
-    }
-    this.capsuleHandle = this.world.physics.addActor(this.capsule, {
-      tag: null,
-      playerId: this.data.id,
-      onInterpolate: position => {
-        this.base.position.copy(position)
-      },
-    })
-
+    const { capsule, capsuleHandle, material } = this.capsuleFactory.createCapsule(this)
+    this.capsule = capsule
+    this.capsuleHandle = capsuleHandle
+    this.material = material
     this.physics = new PlayerPhysics(this.world, this)
   }
 
