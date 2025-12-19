@@ -2,12 +2,13 @@ import { isBoolean, isNumber, isString } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { uuid } from '../utils.js'
-import { v, q } from '../utils/TempVectors.js'
 import { defineProps, createPropertyProxy } from '../utils/helpers/defineProperty.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { VideoRenderer } from './video/VideoRenderer.js'
 import { VideoAudioController } from './video/VideoAudioController.js'
+import { VideoInstanceManager } from './video/VideoInstanceManager.js'
+import { VideoGeometryHandler } from './video/VideoGeometryHandler.js'
+import { createVideoMaterialProxy } from './video/VideoMaterialProxy.js'
 import { isDistanceModel, isGroup, isFit, isPivot, applyPivot } from './video/VideoHelpers.js'
 
 const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'color', 'lit', 'doubleside', 'castShadow', 'receiveShadow', 'aspect', 'fit', 'width', 'height', 'pivot', 'volume', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
@@ -51,6 +52,8 @@ export class Video extends Node {
     this._loading = true
     this.renderer = new VideoRenderer(this)
     this.audioController = new VideoAudioController(this)
+    this.instanceManager = new VideoInstanceManager(this)
+    this.geometryHandler = new VideoGeometryHandler(this)
   }
 
   async mount() {
@@ -60,46 +63,15 @@ export class Video extends Node {
 
     const n = ++this.n
 
-    let key = ''
-    if (this._linked === true) {
-      key += 'default'
-    } else if (this._linked === false) {
-      key += uuid()
-    } else {
-      key += this._linked
-    }
-
-    let screen
-    if (this._screenId) {
-      screen = this.ctx.world.livekit.registerScreenNode(this)
-    }
-
-    if (screen) {
-      this.instance = screen
-    } else if (this._src) {
-      let factory = this.ctx.world.loader.get('video', this._src)
-      if (!factory) factory = await this.ctx.world.loader.load('video', this._src)
-      if (this.n !== n) return
-      this.instance = factory.get(key)
-    }
+    this.instance = await this.instanceManager.loadInstance(n)
 
     if (this._visible) {
       const material = this.renderer.createMaterial(this._lit, this._doubleside, this._color)
 
       let geometry = this._geometry
       if (!geometry) {
-        let width = this._width
-        let height = this._height
-        let vidAspect = this.instance?.width / this.instance?.height || this._aspect
-        if (width === null && height === null) {
-          height = 0
-          width = 0
-        } else if (width !== null && height === null) {
-          height = width / vidAspect
-        } else if (height !== null && width === null) {
-          width = height * vidAspect
-        }
-        geometry = this.renderer.createGeometry(width, height, this._pivot)
+        const dims = this.geometryHandler.calculateDimensions(this.instance)
+        geometry = this.geometryHandler.createGeometry(dims.width, dims.height, this._pivot)
       }
 
       this.mesh = this.renderer.createMesh(geometry, material, this._castShadow, this._receiveShadow)
@@ -124,7 +96,7 @@ export class Video extends Node {
 
     if (this._visible) {
       const material = this.mesh.material
-      const result = this.renderer.updateGeometry(this.mesh.geometry, this.instance, this._width, this._height, this._pivot)
+      const result = this.geometryHandler.updateGeometry(this.mesh.geometry, this.instance, this._width, this._height, this._pivot)
 
       material.color.set('white')
       material.uniforms.uVidAspect.value = result.vidAspect
@@ -174,14 +146,12 @@ export class Video extends Node {
     }
     if (this.instance) {
       this.audioController.cleanup()
-      this.instance.release()
-      this.instance = null
     }
+    this.instanceManager.cleanup()
     if (this.sItem) {
       this.ctx.world.stage.octree.remove(this.sItem)
       this.sItem = null
     }
-    this.ctx.world.livekit.unregisterScreenNode(this)
   }
 
   updatePannerPosition() {
@@ -229,21 +199,7 @@ export class Video extends Node {
 
   get material() {
     if (!this._materialProxy) {
-      const self = this
-      this._materialProxy = {
-        get textureX() {
-          return self.mesh.material.uniforms.uOffset.value.x
-        },
-        set textureX(value) {
-          self.mesh.material.uniforms.uOffset.value.x = value
-        },
-        get textureY() {
-          return self.mesh.material.uniforms.uOffset.value.y
-        },
-        set textureY(value) {
-          self.mesh.material.uniforms.uOffset.value.y = value
-        },
-      }
+      this._materialProxy = createVideoMaterialProxy(this)
     }
     return this._materialProxy
   }
