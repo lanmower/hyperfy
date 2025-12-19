@@ -2,14 +2,12 @@ import { ErrorLevels } from '../../core/schemas/ErrorEvent.schema.js'
 import { errorFormatter } from '../utils/ErrorFormatter.js'
 import { ErrorPatternTracker } from './ErrorPatternTracker.js'
 import { ErrorAlertManager } from './ErrorAlertManager.js'
+import { ErrorStorage } from './ErrorStorage.js'
+import { ErrorStats } from './ErrorStats.js'
 
 export class ErrorObserver {
   constructor() {
-    this.errors = []
-    this.errorsByClient = new Map()
-    this.errorsByCategory = new Map()
-    this.maxErrors = 1000
-
+    this.storage = new ErrorStorage(1000)
     this.patternTracker = new ErrorPatternTracker()
     this.alertManager = new ErrorAlertManager(this)
   }
@@ -31,26 +29,9 @@ export class ErrorObserver {
       count: error.count || 1
     }
 
-    this.errors.push(errorEntry)
-
-    if (!this.errorsByClient.has(clientId)) {
-      this.errorsByClient.set(clientId, [])
-    }
-    this.errorsByClient.get(clientId).push(errorEntry)
-
-    if (!this.errorsByCategory.has(errorEntry.category)) {
-      this.errorsByCategory.set(errorEntry.category, [])
-    }
-    this.errorsByCategory.get(errorEntry.category).push(errorEntry)
-
+    this.storage.add(errorEntry)
     this.patternTracker.track(errorEntry)
-
-    if (this.errors.length > this.maxErrors) {
-      this.errors.shift()
-    }
-
     this.reportToStderr(errorEntry, metadata)
-
     this.alertManager.check(errorEntry)
 
     return errorEntry
@@ -71,8 +52,7 @@ export class ErrorObserver {
   }
 
   getRecentErrors(timeWindow = 60000) {
-    const cutoff = Date.now() - timeWindow
-    return this.errors.filter(e => e.timestamp >= cutoff)
+    return this.storage.getRecent(timeWindow)
   }
 
   getActiveErrors() {
@@ -80,56 +60,15 @@ export class ErrorObserver {
   }
 
   getErrorStats() {
-    const now = Date.now()
-    const oneMinuteAgo = now - 60000
-    const oneHourAgo = now - (60 * 60 * 1000)
-
-    const recent = this.errors.filter(e => e.timestamp >= oneMinuteAgo)
-    const hourly = this.errors.filter(e => e.timestamp >= oneHourAgo)
-
-    const byLevel = {}
-    const byCategory = {}
-    const byClient = {}
-
-    recent.forEach(error => {
-      byLevel[error.level] = (byLevel[error.level] || 0) + 1
-      byCategory[error.category] = (byCategory[error.category] || 0) + 1
-      byClient[error.clientId] = (byClient[error.clientId] || 0) + 1
-    })
-
-    const topPatterns = this.patternTracker.getTopPatterns(10, 60 * 60 * 1000)
-
-    return {
-      total: this.errors.length,
-      lastMinute: recent.length,
-      lastHour: hourly.length,
-      byLevel,
-      byCategory,
-      byClient: Object.keys(byClient).length,
-      errors: byLevel[ErrorLevels.ERROR] || 0,
-      warnings: byLevel[ErrorLevels.WARN] || 0,
-      critical: this.getCriticalCount(recent),
-      topPatterns,
-      activeClients: this.errorsByClient.size
-    }
-  }
-
-  getCriticalCount(errors) {
-    return errors.filter(e => {
-      return e.level === ErrorLevels.ERROR && (
-        e.category.includes('fatal') ||
-        e.category.includes('critical') ||
-        e.category.includes('crash')
-      )
-    }).length
+    return ErrorStats.compute(this.storage, this.patternTracker)
   }
 
   getErrorsByClient(clientId) {
-    return this.errorsByClient.get(clientId) || []
+    return this.storage.getByClient(clientId)
   }
 
   getErrorsByCategory(category) {
-    return this.errorsByCategory.get(category) || []
+    return this.storage.getByCategory(category)
   }
 
   getErrorPatterns() {
@@ -137,35 +76,19 @@ export class ErrorObserver {
   }
 
   clearErrors() {
-    const count = this.errors.length
-    this.errors = []
-    this.errorsByClient.clear()
-    this.errorsByCategory.clear()
+    const count = this.storage.clear()
     this.patternTracker.clear()
     this.alertManager.clear()
     return count
   }
 
   clearClientErrors(clientId) {
-    const clientErrors = this.errorsByClient.get(clientId) || []
-    const count = clientErrors.length
-
-    this.errors = this.errors.filter(e => e.clientId !== clientId)
-    this.errorsByClient.delete(clientId)
-
-    for (const [category, errors] of this.errorsByCategory.entries()) {
-      this.errorsByCategory.set(
-        category,
-        errors.filter(e => e.clientId !== clientId)
-      )
-    }
-
-    return count
+    return this.storage.clearClient(clientId)
   }
 
   exportErrors(format = 'json') {
     const data = {
-      errors: this.errors,
+      errors: this.storage.getAll(),
       stats: this.getErrorStats(),
       patterns: this.getErrorPatterns(),
       timestamp: Date.now()
@@ -176,46 +99,11 @@ export class ErrorObserver {
         return JSON.stringify(data, null, 2)
 
       case 'summary':
-        return this.formatSummary(data)
+        return ErrorStats.formatSummary(data)
 
       default:
         throw new Error(`Unsupported export format: ${format}`)
     }
-  }
-
-  formatSummary(data) {
-    let output = 'ERROR OBSERVATION SUMMARY\n'
-    output += '═'.repeat(80) + '\n\n'
-
-    output += `Total Errors: ${data.stats.total}\n`
-    output += `Last Minute: ${data.stats.lastMinute}\n`
-    output += `Last Hour: ${data.stats.lastHour}\n`
-    output += `Active Clients: ${data.stats.activeClients}\n\n`
-
-    output += 'By Level:\n'
-    Object.entries(data.stats.byLevel).forEach(([level, count]) => {
-      output += `  ${level}: ${count}\n`
-    })
-    output += '\n'
-
-    output += 'By Category:\n'
-    Object.entries(data.stats.byCategory)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .forEach(([cat, count]) => {
-        output += `  ${cat}: ${count}\n`
-      })
-    output += '\n'
-
-    if (data.patterns.length > 0) {
-      output += 'Top Error Patterns:\n'
-      data.patterns.slice(0, 5).forEach((pattern, i) => {
-        output += `  ${i + 1}. ${pattern.message.substring(0, 60)}\n`
-        output += `     Count: ${pattern.count}, Clients: ${pattern.affectedClients}\n`
-      })
-    }
-
-    return output
   }
 
   generateId() {
