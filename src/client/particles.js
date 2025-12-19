@@ -5,20 +5,14 @@ import { createShape } from './particles/shapes/index.js'
 import { createNumberCurve, createColorCurve } from './particles/CurveInterpolators.js'
 import { createNumericStarter, createColorStarter } from './particles/ValueStarters.js'
 import { createSpritesheet } from './particles/SpritesheetManager.js'
+import { createParticlePool } from './particles/ParticlePool.js'
+import { VelocityApplier } from './particles/VelocityApplier.js'
+import { ParticleDataAssembler } from './particles/ParticleDataAssembler.js'
 
 const v1 = new Vector3()
 const v2 = new Vector3()
-const v3 = new Vector3()
-const v4 = new Vector3()
-const v5 = new Vector3()
 const q1 = new Quaternion()
-const q2 = new Quaternion()
-const q3 = new Quaternion()
 const m1 = new Matrix4()
-
-const xAxis = new Vector3(1, 0, 0)
-const yAxis = new Vector3(0, 1, 0)
-const zAxis = new Vector3(0, 0, 1)
 
 self.onmessage = msg => {
   msg = msg.data
@@ -55,36 +49,7 @@ function createEmitter(config) {
   let lastWorldPos = null
   let moveDir = new Vector3()
 
-  const particles = []
-
-  for (let i = 0; i < config.max; i++) {
-    particles.push({
-      age: 0,
-      life: 0,
-      direction: new Vector3(),
-      velocity: new Vector3(),
-      distance: 0,
-      speed: 10,
-      finalPosition: new Vector3(),
-      frameTime: 0,
-      uv: [0, 0, 1, 1],
-
-      position: new Vector3(),
-      rotation: 0,
-      startRotation: 0,
-      size: 1,
-      startSize: 1,
-      color: [1, 1, 1],
-      startColor: [1, 1, 1],
-      alpha: 1,
-      startAlpha: 1,
-      emissive: 1,
-      startEmissive: 1,
-
-      emissionPosition: new Vector3(),
-      emissionRotation: new Quaternion(),
-    })
-  }
+  const particles = createParticlePool(config.max)
 
   const life = createNumericStarter(config.life)
   const speed = createNumericStarter(config.speed)
@@ -96,10 +61,8 @@ function createEmitter(config) {
 
   const shape = createShape(config.shape)
   const spritesheet = createSpritesheet(config.spritesheet)
-  const force = config.force ? new Vector3().fromArray(config.force) : null
-  const velocityLinear = config.velocityLinear ? new Vector3().fromArray(config.velocityLinear) : null
-  const velocityOrbital = config.velocityOrbital ? new Vector3().fromArray(config.velocityOrbital) : null
-  const velocityRadial = config.velocityRadial || null
+  const velocityApplier = new VelocityApplier(config)
+  const dataAssembler = new ParticleDataAssembler()
 
   const sizeOverLife = config.sizeOverLife ? createNumberCurve(config.sizeOverLife) : null
   const rotateOverLife = config.rotateOverLife ? createNumberCurve(config.rotateOverLife) : null
@@ -227,71 +190,7 @@ function createEmitter(config) {
       particle.age += delta
       if (particle.age >= particle.life) continue
       const progress = particle.age / particle.life
-      if (force) {
-        v3.copy(force).multiplyScalar(delta)
-        particle.velocity.add(v3)
-      }
-      if (velocityLinear) {
-        v3.copy(velocityLinear).multiplyScalar(delta)
-        if (config.space === 'world') {
-          particle.position.add(v3)
-        } else {
-          v3.applyQuaternion(q1.setFromRotationMatrix(matrixWorld))
-          particle.position.add(v3)
-        }
-      }
-      if (velocityOrbital) {
-        v3.copy(particle.position)
-        if (config.space === 'world') {
-          v3.sub(particle.emissionPosition)
-        }
-        if (velocityOrbital.x !== 0) {
-          q2.setFromAxisAngle(xAxis, velocityOrbital.x * delta)
-          v3.applyQuaternion(q2)
-        }
-        if (velocityOrbital.y !== 0) {
-          q2.setFromAxisAngle(yAxis, velocityOrbital.y * delta)
-          v3.applyQuaternion(q2)
-        }
-        if (velocityOrbital.z !== 0) {
-          q2.setFromAxisAngle(zAxis, velocityOrbital.z * delta)
-          v3.applyQuaternion(q2)
-        }
-
-        if (config.space === 'world') {
-          particle.position.copy(particle.emissionPosition).add(v3)
-        } else {
-          particle.position.copy(v3) // Just use the rotated vector directly
-        }
-
-        if (v3.length() > 0.001) {
-          const orbitSpeed =
-            v3.length() *
-            Math.max(Math.abs(velocityOrbital.x), Math.abs(velocityOrbital.y), Math.abs(velocityOrbital.z))
-          v4.crossVectors(
-            velocityOrbital.x > 0
-              ? new Vector3(1, 0, 0)
-              : velocityOrbital.y > 0
-                ? new Vector3(0, 1, 0)
-                : new Vector3(0, 0, 1),
-            v3
-          ).normalize()
-          v4.multiplyScalar(orbitSpeed)
-          particle.velocity.copy(v4)
-        }
-      }
-      if (velocityRadial) {
-        const radialCenter = config.space === 'world' ? particle.emissionPosition : currWorldPos
-        v3.copy(particle.position).sub(radialCenter)
-        if (v3.length() > 0.001) {
-          v3.normalize()
-          v3.multiplyScalar(velocityRadial * delta)
-          particle.position.add(v3)
-          particle.velocity.add(v3.divideScalar(delta))
-        }
-      }
-      v3.copy(particle.velocity).multiplyScalar(delta)
-      particle.position.add(v3)
+      velocityApplier.apply(particle, delta, matrixWorld, currWorldPos)
       if (sizeOverLife) {
         const multiplier = sizeOverLife(progress)
         particle.size = particle.startSize * multiplier
@@ -336,34 +235,16 @@ function createEmitter(config) {
         })
       }
     }
-    if (config.blending === 'normal') {
-      particles.sort((a, b) => b.distance - a.distance)
-    }
-    let n = 0
-    for (const particle of particles) {
-      if (particle.age >= particle.life) continue
-      aPosition[n * 3 + 0] = particle.finalPosition.x
-      aPosition[n * 3 + 1] = particle.finalPosition.y
-      aPosition[n * 3 + 2] = particle.finalPosition.z
-      aRotation[n * 1 + 0] = particle.rotation
-
-      aDirection[n * 3 + 0] = particle.direction.x
-      aDirection[n * 3 + 1] = particle.direction.y
-      aDirection[n * 3 + 2] = particle.direction.z
-
-
-      aSize[n * 1 + 0] = particle.size
-      aColor[n * 3 + 0] = particle.color[0]
-      aColor[n * 3 + 1] = particle.color[1]
-      aColor[n * 3 + 2] = particle.color[2]
-      aAlpha[n * 1 + 0] = particle.alpha
-      aEmissive[n * 1 + 0] = particle.emissive
-      aUV[n * 4 + 0] = particle.uv[0] // u0
-      aUV[n * 4 + 1] = particle.uv[1] // v0
-      aUV[n * 4 + 2] = particle.uv[2] // u1
-      aUV[n * 4 + 3] = particle.uv[3] // v1
-      n++
-    }
+    const n = dataAssembler.assemble(particles, config, {
+      aPosition,
+      aRotation,
+      aDirection,
+      aSize,
+      aColor,
+      aAlpha,
+      aEmissive,
+      aUV,
+    })
     self.postMessage(
       {
         emitterId: config.id,
