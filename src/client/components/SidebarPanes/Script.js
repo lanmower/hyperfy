@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ScriptEditor } from '../ScriptEditor.js'
 import { storage } from '../../../core/storage.js'
 import { Pane } from './Pane.js'
-import { scriptStyles } from './ScriptStyles.js'
+import { scriptStyles } from './SidebarStyles.js'
 
 export function Script({ world, hidden }) {
   const app = world.ui.state.app

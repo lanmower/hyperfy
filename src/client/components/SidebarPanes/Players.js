@@ -12,42 +12,17 @@ import { cls } from '../cls.js'
 import { useContext } from 'react'
 import { HintContext } from '../Hint.js'
 import { Ranks } from '../../../core/extras/ranks.js'
-import * as THREE from '../../../core/extras/three.js'
 import { Pane } from './Pane.js'
 import { usePlayerList } from '../hooks/usePlayerList.js'
-import { playersStyles } from './PlayersStyles.js'
+import { usePlayerActions } from '../hooks/usePlayerActions.js'
+import { playersStyles } from './SidebarStyles.js'
 
 export function Players({ world, hidden }) {
   const { setHint } = useContext(HintContext)
   const localPlayer = world.entities.player
   const isAdmin = localPlayer.isAdmin()
   const players = usePlayerList(world)
-
-  const toggleBuilder = player => {
-    if (player.data.rank === Ranks.BUILDER) {
-      world.network.send('modifyRank', { playerId: player.data.id, rank: Ranks.VISITOR })
-    } else {
-      world.network.send('modifyRank', { playerId: player.data.id, rank: Ranks.BUILDER })
-    }
-  }
-
-  const toggleMute = player => {
-    world.network.send('mute', { playerId: player.data.id, muted: !player.isMuted() })
-  }
-
-  const kick = player => {
-    world.network.send('kick', player.data.id)
-  }
-
-  const teleportTo = player => {
-    const position = new THREE.Vector3(0, 0, 1)
-    position.applyQuaternion(player.base.quaternion)
-    position.multiplyScalar(0.6).add(player.base.position)
-    localPlayer.teleport({
-      position,
-      rotationY: player.base.rotation.y,
-    })
-  }
+  const { toggleBuilder, toggleMute, kick, teleportTo } = usePlayerActions(world)
 
   return (
     <Pane hidden={hidden}>

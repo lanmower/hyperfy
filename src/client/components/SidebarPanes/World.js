@@ -4,7 +4,7 @@ import { Ranks } from '../../../core/extras/ranks.js'
 import { Pane } from './Pane.js'
 import { Group } from './Group.js'
 import { useSyncedState } from '../hooks/index.js'
-import { worldStyles } from './WorldStyles.js'
+import { worldStyles } from './SidebarStyles.js'
 
 const voiceChatOptions = [
   { label: 'Disabled', value: 'disabled' },

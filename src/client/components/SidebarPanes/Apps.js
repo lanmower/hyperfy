@@ -3,7 +3,7 @@ import { cls } from '../cls.js'
 import { useEffect, useRef, useState } from 'react'
 import { AppsList } from '../AppsList.js'
 import { Pane } from './Pane.js'
-import { appsStyles } from './AppsStyles.js'
+import { appsStyles } from './SidebarStyles.js'
 
 const appsState = {
   query: '',

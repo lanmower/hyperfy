@@ -9,14 +9,14 @@ import {
   Trash2Icon,
 } from 'lucide-react'
 import { cls } from '../cls.js'
-import { useContext, useEffect, useState, useMemo } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { HintContext } from '../Hint.js'
 import { Pane } from './Pane.js'
 import { AppFields } from '../../AppFields.js'
 import { AppTransformFields } from './AppTransformFields.js'
 import { AppModelBtn } from './AppModelBtn.js'
-import { AppLogic } from './AppLogic.js'
-import { appStyles } from './AppStyles.js'
+import { useAppLogic } from '../hooks/useAppLogic.js'
+import { appStyles } from './SidebarStyles.js'
 
 let showTransforms = false
 
@@ -26,7 +26,7 @@ export function App({ world, hidden }) {
   const [pinned, setPinned] = useState(app.data.pinned)
   const [transforms, setTransforms] = useState(showTransforms)
   const [blueprint, setBlueprint] = useState(app.blueprint)
-  const appLogic = useMemo(() => new AppLogic(world), [world])
+  const { download, changeModel, toggleBlueprintKey, toggleEntityPinned } = useAppLogic(world)
 
   useEffect(() => {
     showTransforms = transforms
@@ -45,11 +45,11 @@ export function App({ world, hidden }) {
 
   const frozen = blueprint.frozen
 
-  const download = () => appLogic.download(blueprint)
-  const changeModel = file => appLogic.changeModel(blueprint, file)
-  const toggleKey = (key, value) => appLogic.toggleBlueprintKey(blueprint, key, value)
+  const handleDownload = () => download(blueprint)
+  const handleChangeModel = file => changeModel(blueprint, file)
+  const toggleKey = (key, value) => toggleBlueprintKey(blueprint, key, value)
   const togglePinned = () => {
-    const newPinned = appLogic.toggleEntityPinned(app)
+    const newPinned = toggleEntityPinned(app)
     setPinned(newPinned)
   }
 
@@ -60,14 +60,14 @@ export function App({ world, hidden }) {
           <div className='app-title'>{app.blueprint.name}</div>
           <div
             className='app-btn'
-            onClick={download}
+            onClick={handleDownload}
             onPointerEnter={() => setHint('Download this app')}
             onPointerLeave={() => setHint(null)}
           >
             <DownloadIcon size='1.125rem' />
           </div>
           {!frozen && (
-            <AppModelBtn value={blueprint.model} onChange={changeModel} world={world}>
+            <AppModelBtn value={blueprint.model} onChange={handleChangeModel} world={world}>
               <div
                 className='app-btn'
                 onPointerEnter={() => setHint('Change this apps base model')}

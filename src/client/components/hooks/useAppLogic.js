@@ -8,21 +8,17 @@ const extToType = {
   vrm: 'avatar',
 }
 
-export class AppLogic {
-  constructor(world) {
-    this.world = world
-  }
-
-  async download(blueprint) {
+export function useAppLogic(world) {
+  const download = async blueprint => {
     try {
-      const file = await exportApp(blueprint, this.world.loader.loadFile)
+      const file = await exportApp(blueprint, world.loader.loadFile)
       downloadFile(file)
     } catch (err) {
       console.error(err)
     }
   }
 
-  async changeModel(blueprint, file) {
+  const changeModel = async (blueprint, file) => {
     if (!file) return
     const ext = file.name.split('.').pop().toLowerCase()
     const allowedModels = ['glb', 'vrm']
@@ -31,25 +27,32 @@ export class AppLogic {
     const filename = `${hash}.${ext}`
     const url = `asset://${filename}`
     const type = extToType[ext]
-    this.world.loader.insert(type, url, file)
+    world.loader.insert(type, url, file)
     const version = blueprint.version + 1
-    this.world.blueprints.modify({ id: blueprint.id, version, model: url })
-    await this.world.network.upload(file)
-    this.world.network.send('blueprintModified', { id: blueprint.id, version, model: url })
+    world.blueprints.modify({ id: blueprint.id, version, model: url })
+    await world.network.upload(file)
+    world.network.send('blueprintModified', { id: blueprint.id, version, model: url })
   }
 
-  toggleBlueprintKey(blueprint, key, value) {
+  const toggleBlueprintKey = (blueprint, key, value) => {
     value = isBoolean(value) ? value : !blueprint[key]
     if (blueprint[key] === value) return
     const version = blueprint.version + 1
-    this.world.blueprints.modify({ id: blueprint.id, version, [key]: value })
-    this.world.network.send('blueprintModified', { id: blueprint.id, version, [key]: value })
+    world.blueprints.modify({ id: blueprint.id, version, [key]: value })
+    world.network.send('blueprintModified', { id: blueprint.id, version, [key]: value })
   }
 
-  toggleEntityPinned(entity) {
+  const toggleEntityPinned = entity => {
     const pinned = !entity.data.pinned
     entity.data.pinned = pinned
-    this.world.network.send('entityModified', { id: entity.data.id, pinned })
+    world.network.send('entityModified', { id: entity.data.id, pinned })
     return pinned
+  }
+
+  return {
+    download,
+    changeModel,
+    toggleBlueprintKey,
+    toggleEntityPinned,
   }
 }

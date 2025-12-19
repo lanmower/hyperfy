@@ -1,7 +1,7 @@
 import { cloneDeep } from 'lodash-es'
 import { uuid } from '../../../core/utils.js'
 import { Pane } from './Pane.js'
-import { addStyles, addItemImageStyles } from './AddStyles.js'
+import { addStyles, addItemImageStyles } from './SidebarStyles.js'
 
 export function Add({ world, hidden }) {
   const collection = world.collections.get('default')
