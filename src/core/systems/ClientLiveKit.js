@@ -37,8 +37,6 @@ export class ClientLiveKit extends System {
     this.trackManager = new TrackManager(this)
     this.screenManager = new ScreenManager(this)
     this.voiceController = new VoiceController(this)
-    this.roomManager = new LiveKitRoomManager(this)
-    this.statusManager = new LiveKitStatusManager(this)
   }
 
   start() {
