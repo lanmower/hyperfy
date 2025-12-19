@@ -6,6 +6,7 @@ import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
 import { WebSocketManager } from './network/WebSocketManager.js'
 import { SnapshotProcessor } from './network/SnapshotProcessor.js'
+import { ClientPacketHandlers } from './network/ClientPacketHandlers.js'
 import { storage } from '../storage.js'
 
 export class ClientNetwork extends BaseNetwork {
@@ -33,6 +34,7 @@ export class ClientNetwork extends BaseNetwork {
     this.assetsUrl = world.assetsUrl
     this.wsManager = new WebSocketManager(this)
     this.snapshotProcessor = new SnapshotProcessor(this)
+    this.packetHandlers = new ClientPacketHandlers(this)
   }
 
   init({ wsUrl, name, avatar }) {
@@ -99,82 +101,24 @@ export class ClientNetwork extends BaseNetwork {
     this.snapshotProcessor.process(data)
   }
 
-  onSettingsModified = data => {
-    this.settings.set(data.key, data.value)
-  }
-
-  onChatAdded = msg => {
-    this.chat.add(msg, false)
-  }
-
-  onChatCleared = () => {
-    this.chat.clear()
-  }
-
-  onBlueprintAdded = blueprint => {
-    this.blueprints.add(blueprint)
-  }
-
-  onBlueprintModified = change => {
-    this.blueprints.modify(change)
-  }
-
-  onEntityAdded = data => {
-    this.entities.add(data)
-  }
-
-  onEntityModified = data => {
-    const entity = this.entities.get(data.id)
-    if (!entity) return console.error('onEntityModified: no entity found', data)
-    entity.modify(data)
-  }
-
-  onEntityEvent = event => {
-    const [id, version, name, data] = event
-    const entity = this.entities.get(id)
-    entity?.onEvent(version, name, data)
-  }
-
-  onEntityRemoved = id => {
-    this.entities.remove(id)
-  }
-
-  onPlayerTeleport = data => {
-    this.entities.player?.teleport(data)
-  }
-
-  onPlayerPush = data => {
-    this.entities.player?.push(data.force)
-  }
-
-  onPlayerSessionAvatar = data => {
-    this.entities.player?.setSessionAvatar(data.avatar)
-  }
-
-  onLiveKitLevel = data => {
-    this.livekit.setLevel(data.playerId, data.level)
-  }
-
-  onMute = data => {
-    this.livekit.setMuted(data.playerId, data.muted)
-  }
-
-  onPong = time => {
-    this.stats?.onPong(time)
-  }
-
-  onKick = code => {
-    this.events.emit('kick', code)
-  }
-
-  onHotReload = data => {
-    console.log('[HMR] Reloading...')
-    location.reload()
-  }
-
-  onErrors = (data) => {
-    this.events.emit('errors', data)
-  }
+  onSettingsModified = data => this.packetHandlers.handleSettingsModified(data)
+  onChatAdded = msg => this.packetHandlers.handleChatAdded(msg)
+  onChatCleared = () => this.packetHandlers.handleChatCleared()
+  onBlueprintAdded = blueprint => this.packetHandlers.handleBlueprintAdded(blueprint)
+  onBlueprintModified = change => this.packetHandlers.handleBlueprintModified(change)
+  onEntityAdded = data => this.packetHandlers.handleEntityAdded(data)
+  onEntityModified = data => this.packetHandlers.handleEntityModified(data)
+  onEntityEvent = event => this.packetHandlers.handleEntityEvent(event)
+  onEntityRemoved = id => this.packetHandlers.handleEntityRemoved(id)
+  onPlayerTeleport = data => this.packetHandlers.handlePlayerTeleport(data)
+  onPlayerPush = data => this.packetHandlers.handlePlayerPush(data)
+  onPlayerSessionAvatar = data => this.packetHandlers.handlePlayerSessionAvatar(data)
+  onLiveKitLevel = data => this.packetHandlers.handleLiveKitLevel(data)
+  onMute = data => this.packetHandlers.handleMute(data)
+  onPong = time => this.packetHandlers.handlePong(time)
+  onKick = code => this.packetHandlers.handleKick(code)
+  onHotReload = data => this.packetHandlers.handleHotReload(data)
+  onErrors = data => this.packetHandlers.handleErrors(data)
 
   requestErrors(options = {}) {
     this.send('getErrors', options)
