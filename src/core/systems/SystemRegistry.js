@@ -1,20 +1,5 @@
-
-import { ErrorMonitor } from './ErrorMonitor.js'
-import { Settings } from './Settings.js'
-import { Collections } from './Collections.js'
-import { Apps } from './Apps.js'
-import { Anchors } from './Anchors.js'
-import { Avatars } from './Avatars.js'
-import { Events } from './Events.js'
-import { Chat } from './Chat.js'
-import { Scripts } from './Scripts.js'
-import { Blueprints } from './Blueprints.js'
-import { Entities } from './Entities.js'
-import { Physics } from './Physics.js'
-import { Stage } from './Stage.js'
-
-const isServer = typeof process !== 'undefined' && typeof window === 'undefined'
-const isClient = typeof window !== 'undefined'
+import { coreSystemsConfig } from './registry/CoreSystemsConfig.js'
+import { PlatformDetection } from './registry/PlatformDetection.js'
 
 export class SystemRegistry {
   constructor() {
@@ -23,100 +8,9 @@ export class SystemRegistry {
   }
 
   registerDefaultSystems() {
-    this.register({
-      name: 'errorMonitor',
-      class: ErrorMonitor,
-      platforms: ['server', 'client'],
-      priority: 1000, // First to initialize
-      required: true,
-    })
-
-    this.register({
-      name: 'settings',
-      class: Settings,
-      platforms: ['server', 'client'],
-      priority: 90,
-      required: true,
-    })
-
-    this.register({
-      name: 'collections',
-      class: Collections,
-      platforms: ['server', 'client'],
-      priority: 80,
-    })
-
-    this.register({
-      name: 'scripts',
-      class: Scripts,
-      platforms: ['server', 'client'],
-      priority: 75,
-    })
-
-    this.register({
-      name: 'events',
-      class: Events,
-      platforms: ['server', 'client'],
-      priority: 70,
-      required: true,
-    })
-
-    this.register({
-      name: 'chat',
-      class: Chat,
-      platforms: ['server', 'client'],
-      priority: 65,
-    })
-
-    this.register({
-      name: 'blueprints',
-      class: Blueprints,
-      platforms: ['server', 'client'],
-      priority: 60,
-    })
-
-    this.register({
-      name: 'entities',
-      class: Entities,
-      platforms: ['server', 'client'],
-      priority: 50,
-      required: true,
-    })
-
-    this.register({
-      name: 'apps',
-      class: Apps,
-      platforms: ['server', 'client'],
-      priority: 45,
-    })
-
-    this.register({
-      name: 'anchors',
-      class: Anchors,
-      platforms: ['server', 'client'],
-      priority: 40,
-    })
-
-    this.register({
-      name: 'avatars',
-      class: Avatars,
-      platforms: ['server', 'client'],
-      priority: 35,
-    })
-
-    this.register({
-      name: 'physics',
-      class: Physics,
-      platforms: ['server', 'client'],
-      priority: 30,
-    })
-
-    this.register({
-      name: 'stage',
-      class: Stage,
-      platforms: ['client'],
-      priority: 25,
-    })
+    for (const config of coreSystemsConfig) {
+      this.register(config)
+    }
   }
 
   register(config) {
@@ -179,13 +73,11 @@ export class SystemRegistry {
   }
 
   static getCurrentPlatform() {
-    if (isServer) return 'server'
-    if (isClient) return 'client'
-    return 'unknown'
+    return PlatformDetection.getCurrentPlatform()
   }
 
   getCurrentPlatformSystems() {
-    const platform = SystemRegistry.getCurrentPlatform()
+    const platform = PlatformDetection.getCurrentPlatform()
     return this.getSystemsForPlatform(platform)
   }
 }
