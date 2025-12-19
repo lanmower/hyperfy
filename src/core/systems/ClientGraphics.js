@@ -1,18 +1,7 @@
 import * as THREE from '../extras/three.js'
-import { N8AOPostPass } from 'n8ao'
-import {
-  EffectComposer,
-  EffectPass,
-  RenderPass,
-  SMAAPreset,
-  SMAAEffect,
-  ToneMappingEffect,
-  ToneMappingMode,
-  BloomEffect,
-  BlendFunction,
-} from 'postprocessing'
-
 import { System } from './System.js'
+import { PostProcessingSetup } from './graphics/PostProcessingSetup.js'
+import { GraphicsConfiguration } from './graphics/GraphicsConfiguration.js'
 
 let gRenderer
 
@@ -51,6 +40,8 @@ export class ClientGraphics extends System {
     this.xrDimensionsNeeded = false
     this.usePostprocessing = false
     this.bloomEnabled = false
+    this.postProcessing = new PostProcessingSetup(this)
+    this.configuration = null
   }
 
   async init({ viewport }) {
@@ -76,61 +67,17 @@ export class ClientGraphics extends System {
     this.renderer.xr.setReferenceSpaceType('local-floor')
     this.renderer.xr.setFoveation(1)
 
-    const context = this.renderer.getContext()
-    const maxMultisampling = context.getParameter(context.MAX_SAMPLES)
-
-    this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: THREE.HalfFloatType,
-    })
-
-    this.renderPass = new RenderPass(this.stage.scene, this.camera)
-    this.composer.addPass(this.renderPass)
-
-    this.aoPass = new N8AOPostPass(this.stage.scene, this.camera, this.width, this.height)
-    this.aoPass.enabled = this.settings.get('ao') && this.prefs.state.get('ao')
-    this.aoPass.autoDetectTransparency = false
-    this.aoPass.configuration.halfRes = true
-    this.aoPass.configuration.screenSpaceRadius = true
-    this.aoPass.configuration.aoRadius = 32
-    this.aoPass.configuration.distanceFalloff = 1
-    this.aoPass.configuration.intensity = 2
-    this.composer.addPass(this.aoPass)
-
-    this.bloom = new BloomEffect({
-      blendFunction: BlendFunction.ADD,
-      mipmapBlur: true,
-      luminanceThreshold: 1,
-      luminanceSmoothing: 0.3,
-      intensity: 0.5,
-      radius: 0.8,
-    })
-
-    this.smaa = new SMAAEffect({ preset: SMAAPreset.ULTRA })
-    this.tonemapping = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
-
-    this.effectPass = new EffectPass(this.camera)
     this.usePostprocessing = this.prefs.state.get('postprocessing')
     this.bloomEnabled = this.prefs.state.get('bloom')
-    this.updateEffects()
-    this.composer.addPass(this.effectPass)
+    this.postProcessing.initialize(this.renderer, this.stage, this.camera, this.width, this.height, this.settings, this.prefs)
+
+    this.configuration = new GraphicsConfiguration(this, this.postProcessing)
+    this.configuration.setupPrefHandlers(this.renderer, this.settings, this.prefs)
+    this.configuration.setupSettingHandlers(this.settings, this.prefs)
 
     this.setupResizeObserver((width, height) => {
       this.resize(width, height)
     })
-
-    this.setupPrefRegistry()
-    this.setupSettingRegistry()
-  }
-
-  updateEffects() {
-    const effects = []
-    if (this.bloomEnabled) {
-      effects.push(this.bloom)
-    }
-    effects.push(this.smaa)
-    effects.push(this.tonemapping)
-    this.effectPass.setEffects(effects)
-    this.effectPass.recompile()
   }
 
   setupResizeObserver(callback) {
@@ -138,33 +85,6 @@ export class ClientGraphics extends System {
       callback(this.viewport.offsetWidth, this.viewport.offsetHeight)
     })
     this.resizer.observe(this.viewport)
-  }
-
-  setupPrefRegistry() {
-    this.prefHandlers = {
-      'dpr': (value) => {
-        this.renderer.setPixelRatio(value)
-        this.resize(this.width, this.height)
-      },
-      'postprocessing': (value) => {
-        this.usePostprocessing = value
-      },
-      'bloom': (value) => {
-        this.bloomEnabled = value
-        this.updateEffects()
-      },
-      'ao': (value) => {
-        this.aoPass.enabled = value && this.settings.get('ao')
-      },
-    }
-  }
-
-  setupSettingRegistry() {
-    this.settingHandlers = {
-      'ao': (value) => {
-        this.aoPass.enabled = value && this.prefs.state.get('ao')
-      },
-    }
   }
 
   start() {
@@ -177,17 +97,15 @@ export class ClientGraphics extends System {
     this.camera.aspect = this.aspect
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height)
-    this.composer.setSize(width, height)
+    this.postProcessing.setSize(width, height)
     this.events.emit('graphicsResize', { width, height })
     this.render()
   }
 
   render() {
     const isPresenting = this.renderer.xr.isPresenting
-    if (isPresenting || !this.usePostprocessing) {
+    if (!this.postProcessing.render(this.renderer, this.usePostprocessing)) {
       this.renderer.render(this.stage.scene, this.camera)
-    } else {
-      this.composer.render()
     }
     if (this.xrDimensionsNeeded) {
       this.checkXRDimensions()
@@ -226,8 +144,7 @@ export class ClientGraphics extends System {
   }
 
   onPrefChanged = ({ key, value }) => {
-    const handler = this.prefHandlers[key]
-    if (handler) handler(value)
+    this.configuration?.handlePrefChanged(key, value)
   }
 
   onXRSession = session => {
@@ -245,8 +162,7 @@ export class ClientGraphics extends System {
   }
 
   onSettingChanged = ({ key, value }) => {
-    const handler = this.settingHandlers[key]
-    if (handler) handler(value)
+    this.configuration?.handleSettingChanged(key, value)
   }
 
   destroy() {
