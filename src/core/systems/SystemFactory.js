@@ -1,180 +1,52 @@
+import { MiddlewareRegistry } from './factory/MiddlewareRegistry.js'
+import { MonitorWrapper } from './factory/MonitorWrapper.js'
+import { StandardMiddlewares } from './factory/StandardMiddlewares.js'
 
 export class SystemFactory {
   constructor() {
-    this.middleware = []
-    this.proxies = []
-    this.monitors = []
+    this.registry = new MiddlewareRegistry()
   }
 
   use(middleware) {
-    this.middleware.push(middleware)
+    this.registry.use(middleware)
     return this
   }
 
   monitor(monitorFn) {
-    this.monitors.push(monitorFn)
+    this.registry.monitor(monitorFn)
     return this
   }
 
   addProxy(proxy) {
-    this.proxies.push(proxy)
+    this.registry.addProxy(proxy)
     return this
   }
 
   create(SystemClass, world, options = {}) {
     let instance = new SystemClass(world)
 
-    for (const middlewareFn of this.middleware) {
-      const wrapped = middlewareFn(instance, world, options)
-      if (wrapped) {
-        instance = wrapped
-      }
+    instance = this.registry.applyMiddleware(instance, world, options)
+
+    if (this.registry.hasMonitors()) {
+      instance = MonitorWrapper.wrap(instance, this.registry.getMonitors())
     }
 
-    if (this.monitors.length > 0) {
-      instance = this.wrapWithMonitoring(instance, this.monitors)
-    }
-
-    for (const proxy of this.proxies) {
-      instance = proxy(instance)
-    }
+    instance = this.registry.applyProxies(instance)
 
     return instance
   }
 
-  wrapWithMonitoring(system, monitors) {
-    const wrappedSystem = Object.create(Object.getPrototypeOf(system))
-
-    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(system))) {
-      const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(system), key)
-
-      if (descriptor && typeof descriptor.value === 'function' && key !== 'constructor') {
-        wrappedSystem[key] = function (...args) {
-          const start = performance.now()
-
-          for (const monitor of monitors) {
-            monitor({ system, method: key, start })
-          }
-
-          try {
-            const result = system[key].apply(system, args)
-            return result
-          } finally {
-            const duration = performance.now() - start
-
-            for (const monitor of monitors) {
-              monitor({
-                system,
-                method: key,
-                duration,
-                end: performance.now(),
-              })
-            }
-          }
-        }
-      }
-    }
-
-    for (const key of Object.keys(system)) {
-      wrappedSystem[key] = system[key]
-    }
-
-    return wrappedSystem
-  }
-
   static createLoggerMiddleware(verbose = false) {
-    return (system, world, options) => {
-      if (verbose) {
-        console.log(`[System] Creating ${system.constructor.name}`)
-      }
-
-      const originalInit = system.init?.bind(system)
-      const originalStart = system.start?.bind(system)
-
-      if (originalInit) {
-        system.init = async function (...args) {
-          if (verbose) {
-            console.log(`[System] Initializing ${system.constructor.name}`)
-          }
-          const result = await originalInit(...args)
-          if (verbose) {
-            console.log(`[System] Initialized ${system.constructor.name}`)
-          }
-          return result
-        }
-      }
-
-      if (originalStart) {
-        system.start = async function (...args) {
-          if (verbose) {
-            console.log(`[System] Starting ${system.constructor.name}`)
-          }
-          const result = await originalStart(...args)
-          if (verbose) {
-            console.log(`[System] Started ${system.constructor.name}`)
-          }
-          return result
-        }
-      }
-
-      return system
-    }
+    return StandardMiddlewares.createLoggerMiddleware(verbose)
   }
 
   static createErrorBoundaryMiddleware() {
-    return (system, world, options) => {
-      const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(system))
-
-      for (const method of methods) {
-        if (method === 'constructor') continue
-
-        const original = system[method]
-        if (typeof original !== 'function') continue
-
-        system[method] = function (...args) {
-          try {
-            const result = original.apply(system, args)
-
-            if (result instanceof Promise) {
-              return result.catch(err => {
-                console.error(`Error in ${system.constructor.name}.${method}:`, err)
-                throw err
-              })
-            }
-
-            return result
-          } catch (err) {
-            console.error(`Error in ${system.constructor.name}.${method}:`, err)
-            throw err
-          }
-        }
-      }
-
-      return system
-    }
+    return StandardMiddlewares.createErrorBoundaryMiddleware()
   }
 
   static createConditionalMiddleware(condition) {
-    return (system, world, options) => {
-      if (!condition(world, options)) {
-        return createNoOpProxy(system)
-      }
-      return system
-    }
+    return StandardMiddlewares.createConditionalMiddleware(condition)
   }
-}
-
-function createNoOpProxy(system) {
-  return new Proxy(system, {
-    get(target, prop) {
-      if (typeof target[prop] === 'function') {
-        return function (...args) {
-          return undefined
-        }
-      }
-      return target[prop]
-    },
-  })
 }
 
 export function createDefaultSystemFactory(options = {}) {
