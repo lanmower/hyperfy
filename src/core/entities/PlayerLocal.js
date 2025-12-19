@@ -18,6 +18,10 @@ import { PlayerChatBubble } from './player/PlayerChatBubble.js'
 import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
 import { AnimationController } from './player/AnimationController.js'
 import { NetworkSynchronizer } from './player/NetworkSynchronizer.js'
+import { PlayerTeleportHandler } from './player/PlayerTeleportHandler.js'
+import { PlayerEffectManager } from './player/PlayerEffectManager.js'
+import { PlayerModifyHandler } from './player/PlayerModifyHandler.js'
+import { PlayerControlBinder } from './player/PlayerControlBinder.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 
@@ -26,8 +30,6 @@ const DOWN = new THREE.Vector3(0, -1, 0)
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 const SCALE_IDENTITY = new THREE.Vector3(1, 1, 1)
-const STICK_OUTER_RADIUS = 50
-const STICK_INNER_RADIUS = 25
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -118,6 +120,10 @@ export class PlayerLocal extends BaseEntity {
     this.inputProcessor = new PlayerInputProcessor(this)
     this.animationController = new AnimationController(this)
     this.networkSynchronizer = new NetworkSynchronizer(this)
+    this.teleportHandler = new PlayerTeleportHandler(this)
+    this.effectManager = new PlayerEffectManager(this)
+    this.modifyHandler = new PlayerModifyHandler(this)
+    this.controlBinder = new PlayerControlBinder(this)
 
     if (this.world.loader?.preloader) {
       await this.world.loader.preloader
@@ -125,7 +131,7 @@ export class PlayerLocal extends BaseEntity {
 
     await this.avatarManager.applyAvatar()
     this.initCapsule()
-    this.initControl()
+    this.controlBinder.initControl()
 
     this.world.setHot(this, true)
     this.world.events.emit('ready', true)
@@ -191,34 +197,20 @@ export class PlayerLocal extends BaseEntity {
     this.physics = new PlayerPhysics(this.world, this)
   }
 
-  initControl() {
-    this.control = this.world.controls.bind({
-      priority: ControlPriorities.PLAYER,
-      onTouch: touch => {
-        if (!this.stick && touch.position.x < this.control.screen.width / 2) {
-          this.stick = {
-            center: touch.position.clone(),
-            active: false,
-            touch,
-          }
-        } else if (!this.pan) {
-          this.pan = touch
-        }
-      },
-      onTouchEnd: touch => {
-        if (this.stick?.touch === touch) {
-          this.stick = null
-          this.world.events.emit('stick', null)
-        }
-        if (this.pan === touch) {
-          this.pan = null
-        }
-      },
-    })
-    this.control.camera.write = true
-    this.control.camera.position.copy(this.cam.position)
-    this.control.camera.quaternion.copy(this.cam.quaternion)
-    this.control.camera.zoom = this.cam.zoom
+  get stick() {
+    return this.controlBinder.stick
+  }
+
+  set stick(value) {
+    this.controlBinder.stick = value
+  }
+
+  get pan() {
+    return this.controlBinder.pan
+  }
+
+  set pan(value) {
+    this.controlBinder.pan = value
   }
 
   toggleFlying(value) {
@@ -294,7 +286,7 @@ export class PlayerLocal extends BaseEntity {
     this.animationController.applyAvatarLocomotion()
 
     this.networkSynchronizer.sync(delta)
-    this.networkSynchronizer.updateEffectDuration(delta)
+    this.effectManager.updateDuration(delta)
   }
 
   lateUpdate(delta) {
@@ -330,39 +322,11 @@ export class PlayerLocal extends BaseEntity {
   }
 
   teleport({ position, rotationY }) {
-    position = position.isVector3 ? position : new THREE.Vector3().fromArray(position)
-    const hasRotation = isNumber(rotationY)
-    const pose = this.capsule.getGlobalPose()
-    position.toPxTransform(pose)
-    this.capsuleHandle.snap(pose)
-    this.base.position.copy(position)
-    if (hasRotation) this.base.rotation.y = rotationY
-    this.world.network.send('entityModified', {
-      id: this.data.id,
-      p: this.base.position.toArray(),
-      q: this.base.quaternion.toArray(),
-      t: true,
-    })
-    this.cam.position.copy(this.base.position)
-    this.cam.position.y += this.camHeight
-    if (hasRotation) this.cam.rotation.y = rotationY
-    this.control.camera.position.copy(this.cam.position)
-    this.control.camera.quaternion.copy(this.cam.quaternion)
+    this.teleportHandler.teleport({ position, rotationY })
   }
 
   setEffect(effect, onEnd) {
-    if (this.data.effect === effect) return
-    if (this.data.effect) {
-      this.data.effect = null
-      this.onEffectEnd?.()
-      this.onEffectEnd = null
-    }
-    this.data.effect = effect
-    this.onEffectEnd = onEnd
-    this.world.network.send('entityModified', {
-      id: this.data.id,
-      ef: effect,
-    })
+    this.effectManager.setEffect(effect, onEnd)
   }
 
   setSpeaking(speaking) {
@@ -381,7 +345,7 @@ export class PlayerLocal extends BaseEntity {
   }
 
   setName(name) {
-    this.modify({ name })
+    this.modifyHandler.modify({ name })
     this.world.network.send('entityModified', { id: this.data.id, name })
   }
 
@@ -394,45 +358,6 @@ export class PlayerLocal extends BaseEntity {
   }
 
   modify(data) {
-    let avatarChanged
-    let changed
-    if (data.hasOwnProperty('name')) {
-      this.data.name = data.name
-      this.world.events.emit(EVENT.name, { playerId: this.data.id, name: this.data.name })
-      changed = true
-    }
-    if (data.hasOwnProperty('health')) {
-      this.data.health = data.health
-      this.nametag.health = data.health
-      this.world.events.emit(EVENT.health, { playerId: this.data.id, health: data.health })
-    }
-    if (data.hasOwnProperty('avatar')) {
-      this.data.avatar = data.avatar
-      avatarChanged = true
-      changed = true
-    }
-    if (data.hasOwnProperty('sessionAvatar')) {
-      this.data.sessionAvatar = data.sessionAvatar
-      avatarChanged = true
-    }
-    if (data.hasOwnProperty('ef')) {
-      if (this.data.effect) {
-        this.data.effect = null
-        this.onEffectEnd?.()
-        this.onEffectEnd = null
-      }
-      this.data.effect = data.ef
-    }
-    if (data.hasOwnProperty('rank')) {
-      this.data.rank = data.rank
-      this.world.events.emit(EVENT.rank, { playerId: this.data.id, rank: this.data.rank })
-      changed = true
-    }
-    if (avatarChanged) {
-      this.applyAvatar()
-    }
-    if (changed) {
-      this.world.events.emit('player', this)
-    }
+    this.modifyHandler.modify(data)
   }
 }

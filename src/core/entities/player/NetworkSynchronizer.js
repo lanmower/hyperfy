@@ -62,13 +62,4 @@ export class NetworkSynchronizer {
       this.lastSendAt = 0
     }
   }
-
-  updateEffectDuration(delta) {
-    if (this.player.data.effect?.duration) {
-      this.player.data.effect.duration -= delta
-      if (this.player.data.effect.duration <= 0) {
-        this.player.setEffect(null)
-      }
-    }
-  }
 }
