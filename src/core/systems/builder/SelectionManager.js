@@ -1,9 +1,10 @@
-import { uuid } from '../../utils-client.js'
+import { EntityCommandHandler } from './EntityCommandHandler.js'
 
 export class SelectionManager {
   constructor(clientBuilder) {
     this.clientBuilder = clientBuilder
     this.selected = null
+    this.entityCommandHandler = new EntityCommandHandler(this)
   }
 
   select(entity) {
@@ -54,50 +55,11 @@ export class SelectionManager {
   }
 
   handleUnlink() {
-    if (this.clientBuilder.control.keyU.pressed && this.clientBuilder.control.pointer.locked) {
-      const entity = this.selected || this.clientBuilder.getEntityAtReticle()
-      if (entity?.isApp && entity.blueprint) {
-        this.select(null)
-        const blueprint = {
-          id: uuid(),
-          version: 0,
-          name: entity.blueprint.name,
-          image: entity.blueprint.image,
-          author: entity.blueprint.author,
-          url: entity.blueprint.url,
-          desc: entity.blueprint.desc,
-          model: entity.blueprint.model,
-          script: entity.blueprint.script,
-          props: JSON.parse(JSON.stringify(entity.blueprint.props)),
-          preload: entity.blueprint.preload,
-          public: entity.blueprint.public,
-          locked: entity.blueprint.locked,
-          frozen: entity.blueprint.frozen,
-          unique: entity.blueprint.unique,
-          scene: entity.blueprint.scene,
-          disabled: entity.blueprint.disabled,
-        }
-        this.clientBuilder.blueprints.add(blueprint, true)
-        entity.modify({ blueprint: blueprint.id })
-        this.clientBuilder.network.send('entityModified', { id: entity.data.id, blueprint: blueprint.id })
-        this.clientBuilder.events.emit('toast', 'Unlinked')
-      }
-    }
+    this.entityCommandHandler.handleUnlink()
   }
 
   handlePin() {
-    if (this.clientBuilder.control.keyP.pressed && this.clientBuilder.control.pointer.locked) {
-      const entity = this.selected || this.clientBuilder.getEntityAtReticle()
-      if (entity?.isApp) {
-        entity.data.pinned = !entity.data.pinned
-        this.clientBuilder.network.send('entityModified', {
-          id: entity.data.id,
-          pinned: entity.data.pinned,
-        })
-        this.clientBuilder.events.emit('toast', entity.data.pinned ? 'Pinned' : 'Un-pinned')
-        this.select(null)
-      }
-    }
+    this.entityCommandHandler.handlePin()
   }
 
   handleSelection(delta, mode) {
@@ -124,73 +86,10 @@ export class SelectionManager {
       this.select(null)
     }
 
-    if (
-      !this.clientBuilder.justPointerLocked &&
-      this.clientBuilder.control.pointer.locked &&
-      this.clientBuilder.control.keyR.pressed &&
-      !this.clientBuilder.control.metaLeft.down &&
-      !this.clientBuilder.control.controlLeft.down
-    ) {
-      const entity = this.selected || this.clientBuilder.getEntityAtReticle()
-      if (entity?.isApp && !entity.blueprint?.scene) {
-        let blueprintId = entity.data.blueprint
-        if (entity.blueprint?.unique) {
-          const blueprint = {
-            id: uuid(),
-            version: 0,
-            name: entity.blueprint.name,
-            image: entity.blueprint.image,
-            author: entity.blueprint.author,
-            url: entity.blueprint.url,
-            desc: entity.blueprint.desc,
-            model: entity.blueprint.model,
-            script: entity.blueprint.script,
-            props: JSON.parse(JSON.stringify(entity.blueprint.props)),
-            preload: entity.blueprint.preload,
-            public: entity.blueprint.public,
-            locked: entity.blueprint.locked,
-            frozen: entity.blueprint.frozen,
-            unique: entity.blueprint.unique,
-            scene: entity.blueprint.scene,
-            disabled: entity.blueprint.disabled,
-          }
-          this.clientBuilder.blueprints.add(blueprint, true)
-          blueprintId = blueprint.id
-        }
-        const data = {
-          id: uuid(),
-          type: 'app',
-          blueprint: blueprintId,
-          position: entity.root.position.toArray(),
-          quaternion: entity.root.quaternion.toArray(),
-          scale: entity.root.scale.toArray(),
-          mover: this.clientBuilder.network.id,
-          uploader: null,
-          pinned: false,
-          state: {},
-        }
-        const dup = this.clientBuilder.entities.add(data, true)
-        this.select(dup)
-        this.clientBuilder.addUndo({
-          name: 'remove-entity',
-          entityId: data.id,
-        })
-      }
-    }
+    this.entityCommandHandler.handleDuplicate()
   }
 
   handleDelete() {
-    if (this.clientBuilder.control.keyX.pressed) {
-      if (this.selected) {
-        if (this.selected?.isApp && !this.selected.data.pinned && !this.selected.blueprint?.scene) {
-          this.clientBuilder.network.send('entityRemoved', this.selected.data.id)
-          this.clientBuilder.addUndo({
-            name: 'add-entity',
-            data: this.selected.data,
-          })
-          this.select(null)
-        }
-      }
-    }
+    this.entityCommandHandler.handleDelete()
   }
 }
