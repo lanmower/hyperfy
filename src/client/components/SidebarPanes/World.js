@@ -1,10 +1,10 @@
-import { css } from '@firebolt-dev/css'
 import { FieldFile, FieldNumber, FieldSwitch, FieldText, FieldToggle } from '../Fields.js'
 import { useRank } from '../useRank.js'
 import { Ranks } from '../../../core/extras/ranks.js'
 import { Pane } from './Pane.js'
 import { Group } from './Group.js'
 import { useSyncedState } from '../hooks/index.js'
+import { worldStyles } from './WorldStyles.js'
 
 const voiceChatOptions = [
   { label: 'Disabled', value: 'disabled' },
@@ -22,34 +22,7 @@ export function World({ world, hidden }) {
 
   return (
     <Pane hidden={hidden}>
-      <div
-        className='world'
-        css={css`
-          background: rgba(11, 10, 21, 0.9);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 1.375rem;
-          display: flex;
-          flex-direction: column;
-          min-height: 12rem;
-          .world-head {
-            height: 3.125rem;
-            padding: 0 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-          }
-          .world-title {
-            font-weight: 500;
-            font-size: 1rem;
-            line-height: 1;
-          }
-          .world-content {
-            flex: 1;
-            padding: 0.5rem 0;
-            overflow-y: auto;
-          }
-        `}
-      >
+      <div className='world' css={worldStyles}>
         <div className='world-head'>
           <div className='world-title'>World</div>
         </div>
