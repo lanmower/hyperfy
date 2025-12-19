@@ -23,6 +23,20 @@ const buildDir = path.join(rootDir, 'build')
 
 let spawn
 
+async function gracefulShutdown() {
+  if (spawn) {
+    await new Promise(resolve => {
+      spawn.once('exit', resolve)
+      spawn.kill('SIGTERM')
+      setTimeout(resolve, 5000)
+    })
+  }
+  process.exit(0)
+}
+
+process.on('SIGINT', gracefulShutdown)
+process.on('SIGTERM', gracefulShutdown)
+
 {
   const nodeClientCtx = await esbuild.context({
     entryPoints: ['src/node-client/index.js'],
@@ -52,6 +66,7 @@ let spawn
             if (dev) {
               // (re)start server
               spawn?.kill('SIGTERM')
+              await new Promise(resolve => setTimeout(resolve, 100))
               spawn = fork(path.join(rootDir, 'build/world-node-client.js'), [], { env: process.env })
             } else {
               process.exit(0)

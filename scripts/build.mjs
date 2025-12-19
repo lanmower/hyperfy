@@ -93,6 +93,20 @@ const clientHtmlDest = path.join(rootDir, 'build/public/index.html')
 
 let spawn
 
+async function gracefulShutdown() {
+  if (spawn) {
+    await new Promise(resolve => {
+      spawn.once('exit', resolve)
+      spawn.kill('SIGTERM')
+      setTimeout(resolve, 5000)
+    })
+  }
+  process.exit(0)
+}
+
+process.on('SIGINT', gracefulShutdown)
+process.on('SIGTERM', gracefulShutdown)
+
 {
   const serverCtx = await esbuild.context({
     entryPoints: ['src/server/index.js'],
@@ -127,6 +141,7 @@ let spawn
             if (dev) {
               // (re)start server
               spawn?.kill('SIGTERM')
+              await new Promise(resolve => setTimeout(resolve, 100))
               spawn = fork(path.join(rootDir, 'build/index.js'), [], { env: process.env })
             } else {
               process.exit(0)

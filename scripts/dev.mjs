@@ -145,6 +145,7 @@ async function buildServer() {
               if (serverSpawn) {
                 log('info', 'Server restarting...')
                 serverSpawn.kill('SIGTERM')
+                await new Promise(resolve => setTimeout(resolve, 100))
               }
               serverSpawn = fork(path.join(rootDir, 'build/index.js'), [], { env: process.env })
               serverSpawn.on('error', err => log('error', 'Server process error', { error: err.message }))
@@ -178,16 +179,20 @@ async function main() {
   }
 }
 
-process.on('SIGINT', () => {
+async function gracefulShutdown() {
   log('info', 'Shutting down dev server...')
-  serverSpawn?.kill('SIGTERM')
+  if (serverSpawn) {
+    await new Promise(resolve => {
+      serverSpawn.once('exit', resolve)
+      serverSpawn.kill('SIGTERM')
+      setTimeout(resolve, 5000)
+    })
+  }
   process.exit(0)
-})
+}
 
-process.on('SIGTERM', () => {
-  serverSpawn?.kill('SIGTERM')
-  process.exit(0)
-})
+process.on('SIGINT', gracefulShutdown)
+process.on('SIGTERM', gracefulShutdown)
 
 main().catch(err => {
   log('error', 'Fatal error', { error: err.message })
