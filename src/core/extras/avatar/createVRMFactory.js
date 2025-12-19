@@ -2,18 +2,13 @@ import * as THREE from '../three.js'
 import { DEG2RAD } from '../general.js'
 import { getTrianglesFromGeometry } from '../getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../getTextureBytesFromMaterial.js'
-import { Modes } from '../constants/AnimationModes.js'
-import { DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_GAZE_DISTANCE, AimAxis, UpAxis } from './VRMFactoryConfig.js'
-import { cloneGLB, getSkinnedMeshes, createCapsule, getQueryParams } from './VRMUtilities.js'
-import { VRMAnimationController } from './VRMAnimationController.js'
+import { MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
+import { cloneGLB, getSkinnedMeshes, createCapsule } from './VRMUtilities.js'
+import { VRMAnimationMixer } from './VRMAnimationMixer.js'
+import { VRMLocomotionController } from './VRMLocomotionController.js'
+import { VRMGazeController } from './VRMGazeController.js'
 
 const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
-const m1 = new THREE.Matrix4()
-
-const FORWARD = new THREE.Vector3(0, 0, -1)
-
 const material = new THREE.MeshBasicMaterial()
 
 export function createVRMFactory(glb, setupMaterial) {
@@ -124,7 +119,16 @@ export function createVRMFactory(glb, setupMaterial) {
       o.getEntity = getEntity
     })
 
-    const mixer = new THREE.AnimationMixer(skinnedMeshes[0])
+    const getBoneName = vrmBoneName => {
+      return glb.userData.vrm.humanoid.getRawBoneNode(vrmBoneName)?.name
+    }
+
+    const locomotionController = new VRMLocomotionController(null, hooks, rootToHips, version, getBoneName)
+    const animationMixer = new VRMAnimationMixer(skinnedMeshes, hooks, rootToHips, version, getBoneName, () =>
+      locomotionController.clearLocomotion()
+    )
+    locomotionController.mixer = animationMixer.mixer
+    const gazeController = new VRMGazeController(skeleton, glb.userData.vrm, vrm.scene.matrixWorld)
 
     const bonesByName = {}
     const findBone = name => {
@@ -142,336 +146,54 @@ export function createVRMFactory(glb, setupMaterial) {
       return mt.multiplyMatrices(vrm.scene.matrixWorld, bone.matrixWorld)
     }
 
-    const loco = {
-      mode: Modes.IDLE,
-      axis: new THREE.Vector3(),
-      gazeDir: null,
-    }
-    const setLocomotion = (mode, axis, gazeDir) => {
-      loco.mode = mode
-      loco.axis = axis
-      loco.gazeDir = gazeDir
-    }
-
-    const emotes = {
-    }
-    let currentEmote
-    const setEmote = url => {
-      if (currentEmote?.url === url) return
-      if (currentEmote) {
-        currentEmote.action?.fadeOut(0.15)
-        currentEmote = null
-      }
-      if (!url) return
-      const opts = getQueryParams(url)
-      const loop = opts.l !== '0'
-      const speed = parseFloat(opts.s || 1)
-      const gaze = opts.g == '1'
-
-      if (emotes[url]) {
-        currentEmote = emotes[url]
-        if (currentEmote.action) {
-          currentEmote.action.clampWhenFinished = !loop
-          currentEmote.action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-          currentEmote.action.reset().fadeIn(0.15).play()
-          clearLocomotion()
-        }
-      } else {
-        const emote = {
-          url,
-          loading: true,
-          action: null,
-          gaze,
-        }
-        emotes[url] = emote
-        currentEmote = emote
-        hooks.loader.load('emote', url).then(emo => {
-          const clip = emo.toClip({
-            rootToHips,
-            version,
-            getBoneName,
-          })
-          const action = mixer.clipAction(clip)
-          action.timeScale = speed
-          emote.action = action
-          if (currentEmote === emote) {
-            action.clampWhenFinished = !loop
-            action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-            action.play()
-            clearLocomotion()
-          }
-        })
-      }
-    }
-
-
-    let elapsed = 0
-    let rate = 0
-    let rateCheck = true
-    let distance
+    locomotionController.addPose('idle', Emotes.IDLE)
+    locomotionController.addPose('walk', Emotes.WALK)
+    locomotionController.addPose('walkLeft', Emotes.WALK_LEFT)
+    locomotionController.addPose('walkBack', Emotes.WALK_BACK)
+    locomotionController.addPose('walkRight', Emotes.WALK_RIGHT)
+    locomotionController.addPose('run', Emotes.RUN)
+    locomotionController.addPose('runLeft', Emotes.RUN_LEFT)
+    locomotionController.addPose('runBack', Emotes.RUN_BACK)
+    locomotionController.addPose('runRight', Emotes.RUN_RIGHT)
+    locomotionController.addPose('jump', Emotes.JUMP)
+    locomotionController.addPose('fall', Emotes.FALL)
+    locomotionController.addPose('fly', Emotes.FLY)
+    locomotionController.addPose('talk', Emotes.TALK)
 
     const updateRate = () => {
-      const vrmPos = v1.setFromMatrixPosition(vrm.scene.matrix)
-      const camPos = v2.setFromMatrixPosition(hooks.camera.matrixWorld) // prettier-ignore
-      distance = vrmPos.distanceTo(camPos)
-      const clampedDistance = Math.max(distance - DIST_MIN, 0)
-      const normalizedDistance = Math.min(clampedDistance / (DIST_MAX - DIST_MIN), 1) // prettier-ignore
-      rate = DIST_MAX_RATE + normalizedDistance * (DIST_MIN_RATE - DIST_MAX_RATE) // prettier-ignore
+      animationMixer.updateRate(vrm.scene.matrix, hooks.camera.matrixWorld)
     }
 
     const update = delta => {
-      elapsed += delta
-      const should = rateCheck ? elapsed >= rate : true
-      if (should) {
-        mixer.update(elapsed)
+      const shouldUpdate = animationMixer.update(delta)
+      if (shouldUpdate) {
         skeleton.bones.forEach(bone => bone.updateMatrixWorld())
         skeleton.update = THREE.Skeleton.prototype.update
-        if (!currentEmote) {
-          updateLocomotion(delta)
+        if (!animationMixer.getCurrentEmote()) {
+          locomotionController.updateLocomotion(delta)
         }
-        if (loco.gazeDir && distance < MAX_GAZE_DISTANCE && (currentEmote ? currentEmote.gaze : true)) {
-          aimBone('neck', loco.gazeDir, delta, {
+        const loco = locomotionController.getLocomotionState()
+        const distance = animationMixer.getDistance()
+        if (
+          loco.gazeDir &&
+          distance < MAX_GAZE_DISTANCE &&
+          (animationMixer.getCurrentEmote() ? animationMixer.getCurrentEmote().gaze : true)
+        ) {
+          gazeController.aimBone('neck', loco.gazeDir, delta, {
             minAngle: -30,
             maxAngle: 30,
             smoothing: 0.4,
             weight: 0.6,
           })
-          aimBone('head', loco.gazeDir, delta, {
+          gazeController.aimBone('head', loco.gazeDir, delta, {
             minAngle: -30,
             maxAngle: 30,
             smoothing: 0.4,
             weight: 0.6,
           })
         }
-        elapsed = 0
       } else {
         skeleton.update = noop
-      }
-    }
-
-    const aimBone = (() => {
-      const smoothedRotations = new Map()
-      const normalizedDir = new THREE.Vector3()
-      const parentWorldMatrix = new THREE.Matrix4()
-      const parentWorldRotationInverse = new THREE.Quaternion()
-      const localDir = new THREE.Vector3()
-      const currentAimDir = new THREE.Vector3()
-      const rot = new THREE.Quaternion()
-      const worldUp = new THREE.Vector3()
-      const localUp = new THREE.Vector3()
-      const rotatedUp = new THREE.Vector3()
-      const projectedUp = new THREE.Vector3()
-      const upCorrection = new THREE.Quaternion()
-      const cross = new THREE.Vector3()
-      const targetRotation = new THREE.Quaternion()
-      const restToTarget = new THREE.Quaternion()
-
-      return function aimBone(boneName, targetDir, delta, options = {}) {
-        const {
-          aimAxis = AimAxis.NEG_Z,
-          upAxis = UpAxis.Y,
-          smoothing = 0.7, // smoothing factor (0-1)
-          weight = 1.0,
-          maintainOffset = false,
-          minAngle = -180,
-          maxAngle = 180,
-        } = options
-        const bone = findBone(boneName)
-        const parentBone = glb.userData.vrm.humanoid.humanBones[boneName].node.parent
-        if (!bone) return console.warn(`aimBone: missing bone (${boneName})`)
-        if (!parentBone) return console.warn(`aimBone: no parent bone`)
-        const boneId = bone.uuid
-        if (!smoothedRotations.has(boneId)) {
-          smoothedRotations.set(boneId, {
-            current: bone.quaternion.clone(),
-            target: new THREE.Quaternion(),
-          })
-        }
-        const smoothState = smoothedRotations.get(boneId)
-        normalizedDir.copy(targetDir).normalize()
-        parentWorldMatrix.multiplyMatrices(vrm.scene.matrixWorld, parentBone.matrixWorld)
-        parentWorldMatrix.decompose(v1, parentWorldRotationInverse, v2)
-        parentWorldRotationInverse.invert()
-        localDir.copy(normalizedDir).applyQuaternion(parentWorldRotationInverse)
-        if (maintainOffset && !bone.userData.initialRotationOffset) {
-          bone.userData.initialRotationOffset = bone.quaternion.clone()
-        }
-        currentAimDir.copy(aimAxis)
-        if (maintainOffset && bone.userData.initialRotationOffset) {
-          currentAimDir.applyQuaternion(bone.userData.initialRotationOffset)
-        }
-        rot.setFromUnitVectors(aimAxis, localDir)
-        worldUp.copy(upAxis)
-        localUp.copy(worldUp).applyQuaternion(parentWorldRotationInverse)
-        rotatedUp.copy(upAxis).applyQuaternion(rot)
-        projectedUp.copy(localUp)
-        projectedUp.sub(v1.copy(localDir).multiplyScalar(localDir.dot(localUp)))
-        projectedUp.normalize()
-        if (projectedUp.lengthSq() > 0.001) {
-          upCorrection.setFromUnitVectors(rotatedUp, projectedUp)
-          const angle = rotatedUp.angleTo(projectedUp)
-          cross.crossVectors(rotatedUp, projectedUp)
-          if (cross.dot(localDir) < 0) {
-            upCorrection.setFromAxisAngle(localDir, -angle)
-          } else {
-            upCorrection.setFromAxisAngle(localDir, angle)
-          }
-          rot.premultiply(upCorrection)
-        }
-        targetRotation.copy(rot)
-        if (maintainOffset && bone.userData.initialRotationOffset) {
-          targetRotation.multiply(bone.userData.initialRotationOffset)
-        }
-        if (minAngle > -180 || maxAngle < 180) {
-          if (!bone.userData.restRotation) {
-            bone.userData.restRotation = bone.quaternion.clone()
-          }
-          restToTarget.copy(bone.userData.restRotation).invert().multiply(targetRotation)
-          const w = restToTarget.w
-          const angle = 2 * Math.acos(Math.min(Math.max(w, -1), 1))
-          const angleDeg = THREE.MathUtils.radToDeg(angle)
-          if (angleDeg > maxAngle || angleDeg < minAngle) {
-            const clampedAngleDeg = THREE.MathUtils.clamp(angleDeg, minAngle, maxAngle)
-            const clampedAngleRad = THREE.MathUtils.degToRad(clampedAngleDeg)
-            const scale = clampedAngleRad / angle
-            q1.copy(targetRotation)
-            targetRotation.slerpQuaternions(bone.userData.restRotation, q1, scale)
-          }
-        }
-        if (weight < 1.0) {
-          targetRotation.slerp(bone.quaternion, 1.0 - weight)
-        }
-        smoothState.target.copy(targetRotation)
-        smoothState.current.slerp(smoothState.target, smoothing)
-        bone.quaternion.copy(smoothState.current)
-        bone.updateMatrixWorld(true)
-      }
-    })()
-
-    const aimBoneDir = new THREE.Vector3()
-    function aimBoneAt(boneName, targetPos, delta, options = {}) {
-      const bone = findBone(boneName)
-      if (!bone) return console.warn(`aimBone: missing bone (${boneName})`)
-      const boneWorldMatrix = getBoneTransform(boneName)
-      const boneWorldPos = v1.setFromMatrixPosition(boneWorldMatrix)
-      aimBoneDir.subVectors(targetPos, boneWorldPos).normalize()
-      aimBone(boneName, aimBoneDir, delta, options)
-    }
-
-
-    const poses = {}
-    function addPose(key, url) {
-      const opts = getQueryParams(url)
-      const speed = parseFloat(opts.s || 1)
-      const pose = {
-        loading: true,
-        active: false,
-        action: null,
-        weight: 0,
-        target: 0,
-        setWeight: value => {
-          pose.weight = value
-          if (pose.action) {
-            pose.action.weight = value
-            if (!pose.active) {
-              pose.action.reset().fadeIn(0.15).play()
-              pose.active = true
-            }
-          }
-        },
-        fadeOut: () => {
-          pose.weight = 0
-          pose.action?.fadeOut(0.15)
-          pose.active = false
-        },
-      }
-      hooks.loader.load('emote', url).then(emo => {
-        const clip = emo.toClip({
-          rootToHips,
-          version,
-          getBoneName,
-        })
-        pose.action = mixer.clipAction(clip)
-        pose.action.timeScale = speed
-        pose.action.weight = pose.weight
-        pose.action.play()
-      })
-      poses[key] = pose
-    }
-    addPose('idle', Emotes.IDLE)
-    addPose('walk', Emotes.WALK)
-    addPose('walkLeft', Emotes.WALK_LEFT)
-    addPose('walkBack', Emotes.WALK_BACK)
-    addPose('walkRight', Emotes.WALK_RIGHT)
-    addPose('run', Emotes.RUN)
-    addPose('runLeft', Emotes.RUN_LEFT)
-    addPose('runBack', Emotes.RUN_BACK)
-    addPose('runRight', Emotes.RUN_RIGHT)
-    addPose('jump', Emotes.JUMP)
-    addPose('fall', Emotes.FALL)
-    addPose('fly', Emotes.FLY)
-    addPose('talk', Emotes.TALK)
-    function clearLocomotion() {
-      for (const key in poses) {
-        poses[key].fadeOut()
-      }
-    }
-    function updateLocomotion(delta) {
-      const { mode, axis } = loco
-      for (const key in poses) {
-        poses[key].target = 0
-      }
-      if (mode === Modes.IDLE) {
-        poses.idle.target = 1
-      } else if (mode === Modes.WALK || mode === Modes.RUN) {
-        const angle = Math.atan2(axis.x, -axis.z)
-        const angleDeg = ((angle * 180) / Math.PI + 360) % 360
-        const prefix = mode === Modes.RUN ? 'run' : 'walk'
-        const forwardKey = prefix // This should be "walk" or "run"
-        const leftKey = `${prefix}Left`
-        const backKey = `${prefix}Back`
-        const rightKey = `${prefix}Right`
-        if (axis.length() > 0.01) {
-          if (angleDeg >= 337.5 || angleDeg < 22.5) {
-            poses[forwardKey].target = 1
-          } else if (angleDeg >= 22.5 && angleDeg < 67.5) {
-            const blend = (angleDeg - 22.5) / 45
-            poses[forwardKey].target = 1 - blend
-            poses[rightKey].target = blend
-          } else if (angleDeg >= 67.5 && angleDeg < 112.5) {
-            poses[rightKey].target = 1
-          } else if (angleDeg >= 112.5 && angleDeg < 157.5) {
-            const blend = (angleDeg - 112.5) / 45
-            poses[rightKey].target = 1 - blend
-            poses[backKey].target = blend
-          } else if (angleDeg >= 157.5 && angleDeg < 202.5) {
-            poses[backKey].target = 1
-          } else if (angleDeg >= 202.5 && angleDeg < 247.5) {
-            const blend = (angleDeg - 202.5) / 45
-            poses[backKey].target = 1 - blend
-            poses[leftKey].target = blend
-          } else if (angleDeg >= 247.5 && angleDeg < 292.5) {
-            poses[leftKey].target = 1
-          } else if (angleDeg >= 292.5 && angleDeg < 337.5) {
-            const blend = (angleDeg - 292.5) / 45
-            poses[leftKey].target = 1 - blend
-            poses[forwardKey].target = blend
-          }
-        }
-      } else if (mode === Modes.JUMP) {
-        poses.jump.target = 1
-      } else if (mode === Modes.FALL) {
-        poses.fall.target = 1
-      } else if (mode === Modes.FLY) {
-        poses.fly.target = 1
-      } else if (mode === Modes.TALK) {
-        poses.talk.target = 1
-      }
-      const lerpSpeed = 16
-      for (const key in poses) {
-        const pose = poses[key]
-        const weight = THREE.MathUtils.lerp(pose.weight, pose.target, 1 - Math.exp(-lerpSpeed * delta))
-        pose.setWeight(weight)
       }
     }
 
@@ -482,6 +204,14 @@ export function createVRMFactory(glb, setupMaterial) {
       const head = findBone('neck')
       head.scale.setScalar(active ? 0 : 1)
       firstPersonActive = active
+    }
+
+    const setLocomotion = (mode, axis, gazeDir) => {
+      locomotionController.setLocomotion(mode, axis, gazeDir)
+    }
+
+    const setEmote = url => {
+      animationMixer.setEmote(url)
     }
 
     return {
@@ -504,7 +234,7 @@ export function createVRMFactory(glb, setupMaterial) {
         hooks.octree?.move(sItem)
       },
       disableRateCheck() {
-        rateCheck = false
+        animationMixer.disableRateCheck()
       },
       destroy() {
         hooks.scene.remove(vrm.scene)
