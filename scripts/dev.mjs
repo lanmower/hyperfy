@@ -51,8 +51,11 @@ async function buildClient() {
     metafile: true,
     jsx: 'automatic',
     jsxImportSource: '@firebolt-dev/jsx',
+    external: ['fs', 'fs-extra', 'path', 'url', 'crypto', 'util', 'stream', 'assert', 'constants', 'module', 'jsonwebtoken', 'jws', 'jwa'],
+    inject: [path.join(dirname, 'inject-process-shim.js')],
     define: {
       'process.env.NODE_ENV': '"development"',
+      'process.env.CLIENT': 'true',
     },
     loader: {
       '.js': 'jsx',
@@ -61,7 +64,6 @@ async function buildClient() {
       react: 'react',
     },
     plugins: [
-      polyfillNode({}),
       {
         name: 'client-hot-reload',
         setup(build) {
@@ -72,24 +74,32 @@ async function buildClient() {
             }
             const buildTime = Date.now() - buildStartTime
             try {
-              await fs.copy(clientPublicDir, clientBuildDir)
+              await fs.copy(clientPublicDir, clientBuildDir, { overwrite: true, errorOnExist: false })
               const physxWasmSrc = path.join(rootDir, 'src/core/physx-js-webidl.wasm')
               const physxWasmDest = path.join(rootDir, 'build/public/physx-js-webidl.wasm')
-              await fs.copy(physxWasmSrc, physxWasmDest)
+              await fs.copy(physxWasmSrc, physxWasmDest, { overwrite: true, errorOnExist: false })
               const metafile = result.metafile
               const outputFiles = Object.keys(metafile.outputs)
-              const jsPath = outputFiles
-                .find(file => file.includes('/index-') && file.endsWith('.js'))
-                .split('build/public')[1]
-              const particlesPath = outputFiles
-                .find(file => file.includes('/particles-') && file.endsWith('.js'))
-                .split('build/public')[1]
+              const jsFile = outputFiles.find(file => file.includes('/index-') && file.endsWith('.js'))
+              const particlesFile = outputFiles.find(file => file.includes('/particles-') && file.endsWith('.js'))
+
+              if (!jsFile || !particlesFile) {
+                throw new Error(`Missing build output: jsFile=${jsFile}, particlesFile=${particlesFile}`)
+              }
+
+              const jsPath = jsFile.split('build/public')[1]
+              const particlesPath = particlesFile.split('build/public')[1]
               clientBuildId = Date.now()
               let htmlContent = await fs.readFile(clientHtmlSrc, 'utf-8')
               htmlContent = htmlContent.replace('{jsPath}', jsPath)
               htmlContent = htmlContent.replace('{particlesPath}', particlesPath)
               htmlContent = htmlContent.replaceAll('{buildId}', clientBuildId)
               await fs.writeFile(clientHtmlDest, htmlContent)
+
+              const wsUrl = process.env.PUBLIC_WS_URL || 'ws://localhost:3000/ws'
+              const envContent = `window.env = { PUBLIC_WS_URL: '${wsUrl}' }`
+              await fs.writeFile(path.join(clientBuildDir, 'env.js'), envContent)
+
               log('success', 'Client built', { ms: buildTime })
               if (!isFirstBuild) {
                 notifyHotReload()
@@ -125,7 +135,6 @@ async function buildServer() {
       'process.env.SERVER': 'true',
     },
     plugins: [
-      polyfillNode({}),
       {
         name: 'server-hot-reload',
         setup(build) {
@@ -144,8 +153,13 @@ async function buildServer() {
               await fs.copy(physxWasmSrc, physxWasmDest)
               if (serverSpawn) {
                 log('info', 'Server restarting...')
-                serverSpawn.kill('SIGTERM')
-                await new Promise(resolve => setTimeout(resolve, 100))
+                await new Promise(resolve => {
+                  serverSpawn.once('exit', () => {
+                    setTimeout(resolve, 3000)
+                  })
+                  serverSpawn.kill('SIGKILL')
+                  setTimeout(resolve, 5000)
+                })
               }
               serverSpawn = fork(path.join(rootDir, 'build/index.js'), [], { env: process.env })
               serverSpawn.on('error', err => log('error', 'Server process error', { error: err.message }))

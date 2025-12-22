@@ -1,5 +1,6 @@
 import { isArray } from 'lodash-es'
 import { ControlPriorities } from '../../extras/ControlPriorities.js'
+import * as NodeClasses from '../../nodes/index.js'
 
 const fileRemaps = {
   avatar: field => {
@@ -43,6 +44,7 @@ export const AppAPIConfig = {
     modelUrl: (apps, entity) => entity.blueprint?.model,
     state: (apps, entity) => entity.data.state,
     props: (apps, entity) => entity.blueprint?.props || {},
+    config: (apps, entity) => entity.blueprint?.props || {},
     keepActive: (apps, entity) => entity.keepActive,
   },
 
@@ -142,6 +144,40 @@ export const AppAPIConfig = {
         }
       }
       entity.onFields?.(entity.fields)
+    },
+
+    add: (apps, entity, node) => {
+      if (!node || !entity.root) return
+      const ref = node.ref || node
+
+      if (ref.type === 'sky' && !ref.mount && ref.children !== undefined) {
+        const skyNode = new NodeClasses.sky({})
+        skyNode.ctx = { world: apps.world, entity }
+        if (ref.bg) skyNode.bg = ref.bg
+        if (ref.hdr) skyNode.hdr = ref.hdr
+        if (ref.rotationY !== undefined) skyNode.rotationY = ref.rotationY
+        if (ref.sunDirection) skyNode.sunDirection = ref.sunDirection
+        if (ref.sunIntensity !== undefined) skyNode.sunIntensity = ref.sunIntensity
+        if (ref.sunColor) skyNode.sunColor = ref.sunColor
+        if (ref.fogNear !== undefined) skyNode.fogNear = ref.fogNear
+        if (ref.fogFar !== undefined) skyNode.fogFar = ref.fogFar
+        if (ref.fogColor) skyNode.fogColor = ref.fogColor
+        entity.root.add(skyNode)
+        skyNode.mount?.()
+        return
+      }
+
+      if (ref.parent) ref.parent.remove(ref)
+      entity.root.add(ref)
+      ref.mount?.()
+      ref.activate?.({ world: apps.world, entity })
+    },
+
+    remove: (apps, entity, node) => {
+      if (!node || !entity.root) return
+      const ref = node.ref || node
+      if (ref.parent === entity.root) entity.root.remove(ref)
+      ref.deactivate?.()
     },
   },
 }
