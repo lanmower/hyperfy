@@ -20,7 +20,7 @@ export class ClientLoader extends BaseLoader {
     this.isServer = false
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
-    this.fileManager = new FileManager(world.resolveURL)
+    this.fileManager = new FileManager(world.resolveURL.bind(world))
     this.assetHandlers = new AssetHandlers(this, world)
   }
 

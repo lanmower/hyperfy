@@ -30,7 +30,9 @@ export class SkyManager {
       const geometry = new THREE.SphereGeometry(1000, 60, 40)
       const material = new THREE.MeshBasicMaterial({ side: THREE.BackSide })
       this.sky = new THREE.Mesh(geometry, material)
-      this.sky.geometry.computeBoundsTree()
+      if (this.sky.geometry.computeBoundsTree) {
+        this.sky.geometry.computeBoundsTree()
+      }
       this.sky.material.fog = false
       this.sky.material.toneMapped = false
       this.sky.material.needsUpdate = true

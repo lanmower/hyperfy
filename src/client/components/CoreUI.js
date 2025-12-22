@@ -18,8 +18,8 @@ import { useWorldEvents, usePrefsChange } from './hooks/index.js'
 export function CoreUI({ world }) {
   const ref = useRef()
   const [ready, setReady] = useState(false)
-  const [player, setPlayer] = useState(() => world.entities.player)
-  const [ui, setUI] = useState(world.ui.state)
+  const [player, setPlayer] = useState(() => world.entities?.player)
+  const [ui, setUI] = useState(world.ui?.state || { visible: true, active: false, app: null, pane: null, reticleSuppressors: 0 })
   const [menu, setMenu] = useState(null)
   const [confirm, setConfirm] = useState(null)
   const [code, setCode] = useState(false)
@@ -27,7 +27,7 @@ export function CoreUI({ world }) {
   const [disconnected, setDisconnected] = useState(false)
   const [apps, setApps] = useState(false)
   const [kicked, setKicked] = useState(null)
-  useWorldEvents(world, {
+  useWorldEvents(world.events, {
     ready: setReady, player: setPlayer, ui: setUI, menu: setMenu,
     confirm: setConfirm, code: setCode, apps: setApps, avatar: setAvatar,
     kick: setKicked, disconnect: setDisconnected
@@ -46,10 +46,10 @@ export function CoreUI({ world }) {
     elem.addEventListener('touchstart', onEvent)
   }, [])
   usePrefsChange(world, changes => {
-    if (changes.ui) document.documentElement.style.fontSize = `${16 * world.prefs.ui}px`
+    if (changes.ui) document.documentElement.style.fontSize = `${16 * (world.prefs?.ui || 1)}px`
   })
   useEffect(() => {
-    document.documentElement.style.fontSize = `${16 * world.prefs.ui}px`
+    document.documentElement.style.fontSize = `${16 * (world.prefs?.ui || 1)}px`
   }, [])
   return (
     <div

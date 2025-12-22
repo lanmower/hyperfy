@@ -7,7 +7,20 @@ import { ErrorCapture } from './monitors/ErrorCapture.js'
 import { ErrorForwarder } from './monitors/ErrorForwarder.js'
 import { ErrorAnalytics } from './monitors/ErrorAnalytics.js'
 import { GlobalErrorInterceptor } from './monitors/GlobalErrorInterceptor.js'
-import { ServerErrorReporter } from './monitors/ServerErrorReporter.js'
+
+let ServerErrorReporter = null
+let isServerEnv = typeof process !== 'undefined' && process.versions?.node
+
+async function loadServerReporter() {
+  if (isServerEnv && !ServerErrorReporter) {
+    try {
+      const mod = await import('./monitors/ServerErrorReporter.js')
+      ServerErrorReporter = mod.ServerErrorReporter
+    } catch (e) {
+      // Silently ignore if not available
+    }
+  }
+}
 
 export class ErrorMonitor extends System {
   static DEPS = {
@@ -32,7 +45,12 @@ export class ErrorMonitor extends System {
     this.forwarder = new ErrorForwarder(this)
     this.analytics = new ErrorAnalytics(this)
     this.interceptor = new GlobalErrorInterceptor(this)
-    this.reporter = new ServerErrorReporter(this)
+    this.reporter = null
+
+    loadServerReporter()
+    if (this.isServer && ServerErrorReporter) {
+      this.reporter = new ServerErrorReporter(this)
+    }
 
     this.registry.register('capture', this.capture)
     this.registry.register('forwarder', this.forwarder)
@@ -41,7 +59,8 @@ export class ErrorMonitor extends System {
       this.registry.route(event, isDuplicate)
     })
 
-    this.interceptor.setup()
+    // Defer interceptor setup to allow World to fully initialize
+    setTimeout(() => this.interceptor.setup(), 100)
     setInterval(() => this.analytics.cleanup(), 60000)
   }
 
@@ -67,7 +86,7 @@ export class ErrorMonitor extends System {
   receiveClientError = (errorData) => {
     if (!this.isServer) return
     this.processErrorData(errorData)
-    if (errorData.error?.level === ErrorLevels.ERROR) {
+    if (errorData.error?.level === ErrorLevels.ERROR && this.reporter) {
       this.reporter.reportError(errorData.error, errorData)
     }
   }
@@ -111,7 +130,7 @@ export class ErrorMonitor extends System {
   }
 
   getServerErrorReport() {
-    return this.isServer ? this.reporter.getReport() : null
+    return this.isServer && this.reporter ? this.reporter.getReport() : null
   }
 
   captureClientError(clientId, error) {

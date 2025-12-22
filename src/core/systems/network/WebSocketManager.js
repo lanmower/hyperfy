@@ -13,13 +13,23 @@ export class WebSocketManager {
     let url = `${wsUrl}?authToken=${authToken}`
     if (name) url += `&name=${encodeURIComponent(name)}`
     if (avatar) url += `&avatar=${encodeURIComponent(avatar)}`
+    console.log('WebSocketManager.init() creating WebSocket:', { url })
     this.ws = new WebSocket(url)
     this.ws.binaryType = 'arraybuffer'
-    this.messageHandler = e => this.network.onPacket(e)
+    this.messageHandler = e => {
+      console.log('WebSocket message received, packet size:', e.data.byteLength)
+      this.network.onPacket(e)
+    }
     this.closeHandler = e => this.network.onClose(e.code)
     this.ws.addEventListener('message', this.messageHandler)
     this.ws.addEventListener('close', this.closeHandler)
-    this.network.protocol.isConnected = true
+    this.ws.addEventListener('open', () => {
+      console.log('WebSocket opened, marking as connected')
+      this.network.protocol.isConnected = true
+    })
+    this.ws.addEventListener('error', e => {
+      console.error('WebSocket error:', e)
+    })
   }
 
   send(packet) {

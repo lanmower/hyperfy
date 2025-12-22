@@ -1,4 +1,5 @@
 import fs from 'fs-extra'
+
 import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'

@@ -53,10 +53,13 @@ export class ClientGraphics extends System {
     this.renderState.initializeXR(this.renderer)
     this.viewport.appendChild(this.renderer.domElement)
 
+    this.camera.aspect = this.renderState.aspect
+    this.camera.updateProjectionMatrix()
+
     this.xrAdapter = new XRGraphicsAdapter(this.renderer, this.renderState)
 
-    this.usePostprocessing = this.prefs.state.get('postprocessing')
-    this.bloomEnabled = this.prefs.state.get('bloom')
+    this.usePostprocessing = false
+    this.bloomEnabled = false
     this.postProcessing.initialize(
       this.renderer, this.stage, this.camera,
       this.renderState.width, this.renderState.height,
@@ -91,6 +94,7 @@ export class ClientGraphics extends System {
   }
 
   render() {
+    this.frameCount = (this.frameCount || 0) + 1
     if (!this.postProcessing.render(this.renderer, this.usePostprocessing)) {
       this.renderer.render(this.stage.scene, this.camera)
     }

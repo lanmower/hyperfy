@@ -91,7 +91,10 @@ export class AlterTableBuilder {
           defaultTo: () => {
             try {
               this.db.run(`ALTER TABLE ${this.name} ADD COLUMN ${name} INTEGER DEFAULT 0`)
-            } catch (e) {}
+            } catch (e) {
+              console.error(`Failed to add column ${name} to table ${this.name}:`, e)
+              throw e
+            }
             return this
           },
         }

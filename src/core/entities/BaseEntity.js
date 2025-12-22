@@ -44,7 +44,7 @@ export class BaseEntity {
   }
 
   markDirty() {
-    if (this.world?.network) {
+    if (this.world?.network?.markDirty) {
       this.world.network.markDirty(this.id)
     }
   }

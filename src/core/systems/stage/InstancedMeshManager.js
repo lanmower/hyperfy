@@ -8,7 +8,7 @@ export class InstancedMeshManager {
     this.castShadow = castShadow
     this.receiveShadow = receiveShadow
 
-    if (!geometry.boundsTree) geometry.computeBoundsTree()
+    if (!geometry.boundsTree && geometry.computeBoundsTree) geometry.computeBoundsTree()
 
     this.iMesh = new THREE.InstancedMesh(geometry, material.raw, 10)
     this.iMesh.castShadow = castShadow

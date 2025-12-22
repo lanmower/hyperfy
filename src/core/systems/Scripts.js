@@ -26,6 +26,16 @@ export class Scripts extends System {
       URL: {
         createObjectURL: blob => URL.createObjectURL(blob),
       },
+      Object: {
+        keys: Object.keys,
+        values: Object.values,
+        entries: Object.entries,
+        assign: Object.assign,
+        create: Object.create,
+        defineProperty: Object.defineProperty,
+        getOwnPropertyNames: Object.getOwnPropertyNames,
+        getOwnPropertyDescriptor: Object.getOwnPropertyDescriptor,
+      },
       Math,
       eval: undefined,
       harden: undefined,

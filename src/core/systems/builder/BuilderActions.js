@@ -6,20 +6,20 @@ export class BuilderActions {
   }
 
   updateActions() {
-    const mode = this.builder.modeManager.getMode()
+    const mode = this.builder.composer.modeManager.getMode()
     let actions = []
 
     if (!this.builder.enabled) {
       actions = ACTION_CONFIGS.disabled
     } else if (!this.builder.selected) {
       actions = [...ACTION_CONFIGS.noSelection]
-      actions[0].label = this.builder.modeManager.getModeLabel()
+      actions[0].label = this.builder.composer.modeManager.getModeLabel()
     } else if (mode === 'grab') {
       actions = ACTION_CONFIGS.grab
     } else if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
       actions = ACTION_CONFIGS.transform
       const spaceAction = actions.find(a => a.type === 'keyT')
-      if (spaceAction) spaceAction.label = this.builder.modeManager.getSpaceLabel()
+      if (spaceAction) spaceAction.label = this.builder.transformHandler.getSpaceLabel()
     }
 
     this.builder.control.setActions(actions)

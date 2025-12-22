@@ -9,8 +9,9 @@ export async function hashFileClient(file) {
 }
 
 export async function hashFileServer(file) {
-  const nodeCrypto = await import('crypto')
-  const hash = nodeCrypto.createHash('sha256')
+  const cryptoName = 'crypto'
+  const cryptoMod = await import(cryptoName)
+  const hash = cryptoMod.createHash('sha256')
   hash.update(file)
   return hash.digest('hex')
 }
@@ -21,12 +22,13 @@ let jwt = null
 
 async function getJWT() {
   if (!jwt) {
-    jwt = await import('jsonwebtoken')
+    const jwtName = 'jsonwebtoken'
+    jwt = await import(jwtName)
   }
   return jwt.default
 }
 
-const jwtSecret = process.env.JWT_SECRET
+const jwtSecret = typeof process !== 'undefined' ? process.env.JWT_SECRET : null
 
 export async function createJWT(data) {
   const jwtLib = await getJWT()

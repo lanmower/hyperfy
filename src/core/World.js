@@ -49,15 +49,16 @@ export class World extends EventEmitter {
   async init(options) {
     this.storage = options.storage
     this.assetsDir = options.assetsDir
+    this.assetsUrl = options.assetsUrl
     for (const system of this.systems) {
       await system.init(options)
     }
-    this.start()
+    await this.start()
   }
 
-  start() {
+  async start() {
     for (const system of this.systems) {
-      system.start()
+      await system.start?.()
     }
   }
 

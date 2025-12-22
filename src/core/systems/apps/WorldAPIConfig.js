@@ -1,3 +1,8 @@
+import * as THREE from '../../extras/three.js'
+import { getRef } from '../../nodes/Node.js'
+import moment from 'moment'
+import { Layers } from '../../extras/Layers.js'
+
 export const WorldAPIConfig = {
   getters: {
     networkId: (apps, entity) => apps.world.network.id,
@@ -9,7 +14,6 @@ export const WorldAPIConfig = {
 
   methods: {
     add: (apps, entity, pNode) => {
-      const { getRef } = require('../../nodes/Node.js')
       const node = getRef(pNode)
       if (!node) return
       if (node.parent) {
@@ -20,7 +24,6 @@ export const WorldAPIConfig = {
     },
 
     remove: (apps, entity, pNode) => {
-      const { getRef } = require('../../nodes/Node.js')
       const node = getRef(pNode)
       if (!node) return
       if (node.parent) return
@@ -30,8 +33,6 @@ export const WorldAPIConfig = {
     },
 
     attach: (apps, entity, pNode) => {
-      const THREE = require('../../extras/three.js')
-      const { getRef } = require('../../nodes/Node.js')
       const node = getRef(pNode)
       if (!node) return
       const parent = node.parent
@@ -71,7 +72,6 @@ export const WorldAPIConfig = {
     getTime: (apps, entity) => apps.world.network.getTime(),
 
     getTimestamp: (apps, entity, format) => {
-      const moment = require('moment')
       if (!format) return moment().toISOString()
       return moment().format(format)
     },
@@ -92,7 +92,6 @@ export const WorldAPIConfig = {
     },
 
     createLayerMask: (apps, entity, ...groups) => {
-      const { Layers } = require('../../extras/Layers.js')
       let mask = 0
       for (const group of groups) {
         if (!Layers[group]) throw new Error(`[createLayerMask] invalid group: ${group}`)
@@ -113,7 +112,6 @@ export const WorldAPIConfig = {
       const hit = apps.world.physics.raycast(origin, direction, maxDistance, layerMask)
       if (!hit) return null
       if (!apps.raycastHit) {
-        const THREE = require('../../extras/three.js')
         apps.raycastHit = {
           point: new THREE.Vector3(),
           normal: new THREE.Vector3(),

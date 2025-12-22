@@ -13,11 +13,14 @@ export class ErrorCapture {
   }
 
   handle(event, isDuplicate) {
+    if (!this.errorMonitor || !this.errorMonitor.state) return
     const errorId = this.errorMonitor.state.get('errorId') + 1
     this.errorMonitor.state.set('errorId', errorId)
   }
 
   captureError(type, args, stack) {
+    if (!this.errorMonitor || !this.errorMonitor.state) return
+
     const error = {
       message: this.extractMessage(args),
       stack: this.cleanStack(stack)
@@ -46,6 +49,8 @@ export class ErrorCapture {
   }
 
   getContext() {
+    if (!this.errorMonitor) return { timestamp: Date.now() }
+
     const context = {
       timestamp: Date.now(),
       url: this.errorMonitor.isClient ? window.location?.href : null,
@@ -70,6 +75,8 @@ export class ErrorCapture {
   }
 
   getMemoryUsage() {
+    if (!this.errorMonitor) return null
+
     if (this.errorMonitor.isServer && typeof process !== 'undefined') {
       const usage = process.memoryUsage()
       return {

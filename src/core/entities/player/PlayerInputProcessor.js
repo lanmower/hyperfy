@@ -157,7 +157,7 @@ export class PlayerInputProcessor {
 
     physics.moveDir.normalize()
 
-    if (isXR) {
+    if (isXR && world.xr?.camera) {
       physics.flyDir.copy(physics.moveDir)
       physics.flyDir.applyQuaternion(world.xr.camera.quaternion)
     } else {
@@ -173,6 +173,7 @@ export class PlayerInputProcessor {
 
   getXRRotation() {
     const { world, cam } = this.playerLocal
+    if (!world.xr?.camera) return cam.rotation.y
     e1.copy(world.xr.camera.rotation).reorder('YXZ')
     return e1.y + cam.rotation.y
   }

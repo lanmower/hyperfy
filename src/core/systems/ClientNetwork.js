@@ -38,6 +38,11 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   init({ wsUrl, name, avatar }) {
+    console.log('ClientNetwork.init() called', { wsUrl, name, avatar })
+    if (!wsUrl) {
+      console.error('ClientNetwork.init() ERROR: wsUrl is missing!')
+      return
+    }
     this.wsManager.init(wsUrl, name, avatar)
   }
 
@@ -69,7 +74,12 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onPacket = e => {
-    this.protocol.processPacket(e.data)
+    const [method, data] = PacketCodec.decode(e.data)
+    console.log('Packet decoded:', { method, dataSize: data ? JSON.stringify(data).length : 0 })
+    if (method && typeof this[method] === 'function') {
+      console.log('Executing:', method)
+      this[method](data)
+    }
   }
 
   onClose = code => {
@@ -93,12 +103,15 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onSnapshot(data) {
+    console.log('onSnapshot called', { id: data.id, entityCount: data.entities?.length })
     this.id = data.id
     this.serverTimeOffset = data.serverTime - performance.now()
     this.apiUrl = data.apiUrl
     this.maxUploadSize = data.maxUploadSize
     this.assetsUrl = data.assetsUrl
+    console.log('Calling snapshotProcessor.process()')
     this.snapshotProcessor.process(data)
+    console.log('snapshotProcessor.process() completed')
   }
 
   onSettingsModified = data => this.packetHandlers.handleSettingsModified(data)

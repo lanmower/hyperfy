@@ -20,8 +20,7 @@ import compress from '@fastify/compress'
 import statics from '@fastify/static'
 import multipart from '@fastify/multipart'
 
-import { createServerWorld } from '../core/createServerWorld.js'
-import { setSystemsDir } from '../core/SystemFactory.js'
+import { World } from '../core/World.js'
 import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
@@ -46,14 +45,37 @@ let world
 try {
   const collections = await initCollections({ collectionsDir, assetsDir })
 
+  const { importApp } = await import('../core/extras/appTools.js')
+  const sceneHypPath = path.join(rootDir, 'src/world/scene.hyp')
+  if (fs.existsSync(sceneHypPath)) {
+    const sceneHypBuffer = fs.readFileSync(sceneHypPath)
+    const sceneHypFile = new File([sceneHypBuffer], 'scene.hyp', { type: 'application/octet-stream' })
+    const sceneApp = await importApp(sceneHypFile)
+    if (sceneApp.blueprint) {
+      const sceneBlueprint = { ...sceneApp.blueprint, id: '$scene' }
+      collections.push({
+        id: 'scene',
+        name: 'Scene',
+        blueprints: [sceneBlueprint],
+      })
+      console.log('Scene blueprint loaded from scene.hyp')
+    }
+  }
+
   const db = await getDB(worldDir)
 
   const storage = new Storage(path.join(worldDir, '/storage.json'))
 
-  setSystemsDir(path.join(rootDir, 'src/core/systems'))
-  world = await createServerWorld()
+  world = new World()
+  world.isServer = true
   world.assetsUrl = process.env.PUBLIC_ASSETS_URL
   world.collections.deserialize(collections)
+
+  const { ServerNetwork } = await import('../core/systems/ServerNetwork.js')
+  const { ServerLiveKit } = await import('../core/systems/ServerLiveKit.js')
+  world.register('network', ServerNetwork)
+  world.register('livekit', ServerLiveKit)
+
   world.init({ db, storage, assetsDir })
 } catch (err) {
   console.error('Server initialization failed:', err.message)
@@ -61,6 +83,13 @@ try {
 }
 
 const fastify = Fastify({ logger: { level: 'error' } })
+
+async function worldNetwork(fastify) {
+  fastify.get('/ws', { websocket: true }, (ws, req) => {
+    console.log('[WS] Connection received')
+    world.network.onConnection(ws, req.query)
+  })
+}
 
 fastify.register(cors)
 fastify.register(compress)
@@ -129,13 +158,13 @@ fastify.setErrorHandler((err, req, reply) => {
   reply.status(500).send()
 })
 
-async function startServer(retries = 5) {
+async function startServer(retries = 10) {
   try {
     await fastify.listen({ port, host: '0.0.0.0', exclusive: false })
     console.log(`running on port ${port}`)
   } catch (err) {
     if (err.code === 'EADDRINUSE' && retries > 0) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       return startServer(retries - 1)
     }
     console.error(`failed to launch on port ${port}:`, err.message)
@@ -145,22 +174,21 @@ async function startServer(retries = 5) {
 
 await startServer()
 
-async function worldNetwork(fastify) {
-  fastify.get('/ws', { websocket: true }, (ws, req) => {
-    console.log('[WS] Connection received')
-    world.network.onConnection(ws, req.query)
-  })
+async function shutdown(signal) {
+  console.log(`Received ${signal}, shutting down gracefully...`)
+  try {
+    if (fastify.server) {
+      fastify.server.close()
+    }
+    await fastify.close()
+  } catch (err) {
+    console.error('Error during shutdown:', err.message)
+  }
+  process.exit(0)
 }
 
-process.on('SIGINT', async () => {
-  await fastify.close()
-  process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-  await fastify.close()
-  process.exit(0)
-})
+process.on('SIGINT', () => shutdown('SIGINT'))
+process.on('SIGTERM', () => shutdown('SIGTERM'))
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err)

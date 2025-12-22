@@ -19,15 +19,15 @@ export class AnimationController {
     let mode
     if (effect?.emote) {
       // Emote takes priority
-    } else if (physics.flying) {
+    } else if (physics?.flying) {
       mode = Modes.FLY
-    } else if (physics.airJumping) {
+    } else if (physics?.airJumping) {
       mode = Modes.FLIP
-    } else if (physics.jumping) {
+    } else if (physics?.jumping) {
       mode = Modes.JUMP
-    } else if (physics.falling) {
+    } else if (physics?.falling) {
       mode = physics.fallDistance > 1.6 ? Modes.FALL : Modes.JUMP
-    } else if (physics.moving) {
+    } else if (physics?.moving) {
       mode = this.player.running ? Modes.RUN : Modes.WALK
     } else if (this.player.speaking) {
       mode = Modes.TALK
@@ -42,7 +42,7 @@ export class AnimationController {
     const firstPerson = this.player.firstPerson
     const gaze = this.player.gaze
 
-    if (isXR) {
+    if (isXR && this.player.world.xr?.camera) {
       gaze.copy(FORWARD).applyQuaternion(this.player.world.xr.camera.quaternion)
     } else {
       gaze.copy(FORWARD).applyQuaternion(this.player.cam.quaternion)
@@ -61,7 +61,7 @@ export class AnimationController {
     if (this.player.emote !== emote) {
       this.player.emote = emote
     }
-    this.player.avatar?.setEmote(this.player.emote)
+    this.player.avatar?.setEmote?.(this.player.emote)
   }
 
   applyAvatarLocomotion() {

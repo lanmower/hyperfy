@@ -1,3 +1,5 @@
+import * as THREE from '../../extras/three.js'
+
 export class PlayerAvatarManager {
   constructor(playerLocal) {
     this.playerLocal = playerLocal
@@ -15,14 +17,37 @@ export class PlayerAvatarManager {
       this.playerLocal.world.loader
         .load('avatar', avatarUrl)
         .then(src => {
-          if (this.playerLocal.avatar) this.playerLocal.avatar.deactivate()
-          this.playerLocal.avatar = src.toNodes().get('avatar')
-          this.playerLocal.avatar.disableRateCheck()
-          this.playerLocal.base.add(this.playerLocal.avatar)
+          if (this.playerLocal.avatar?.destroy) this.playerLocal.avatar.destroy()
+          if (src.factory) {
+            try {
+              const hooks = {
+                scene: this.playerLocal.world.stage.scene,
+                camera: this.playerLocal.world.camera,
+                loader: this.playerLocal.world.loader,
+                setupMaterial: this.playerLocal.world.setupMaterial,
+              }
+              console.log('Creating avatar with hooks, scene:', !!hooks.scene)
+              this.playerLocal.avatar = src.factory.create(this.playerLocal.base.matrixWorld, hooks, this.playerLocal)
+              console.log('Avatar created:', !!this.playerLocal.avatar, 'has raw:', !!this.playerLocal.avatar?.raw)
+              if (this.playerLocal.avatar?.raw instanceof THREE.Object3D) {
+                this.playerLocal.base.add(this.playerLocal.avatar.raw)
+                console.log('Avatar raw added to base')
+              }
+            } catch (err) {
+              console.error('Factory error:', err.message, err.stack)
+              throw err
+            }
+          }
           this.playerLocal.avatarUrl = avatarUrl
-          this.playerLocal.camHeight = this.playerLocal.avatar.height * 0.9
-          this.playerLocal.nametag.position.y = this.playerLocal.avatar.getHeadToHeight() + 0.2
-          this.playerLocal.bubble.position.y = this.playerLocal.avatar.getHeadToHeight() + 0.2
+          const avatarHeight = this.playerLocal.avatar?.height || 1.6
+          this.playerLocal.camHeight = avatarHeight * 0.9
+          const headHeight = this.playerLocal.avatar?.getHeadToHeight?.() || 1.6
+          if (this.playerLocal.nametag?.position) {
+            this.playerLocal.nametag.position.y = headHeight + 0.2
+          }
+          if (this.playerLocal.bubble?.position) {
+            this.playerLocal.bubble.position.y = headHeight + 0.2
+          }
           if (!this.playerLocal.bubble.active) {
             this.playerLocal.nametag.active = true
           }

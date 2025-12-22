@@ -8,9 +8,9 @@ import { SidebarPanes } from './SidebarPanes.js'
 
 
 export function Sidebar({ world, ui }) {
-  const player = world.entities.player
+  const player = world.entities?.player
   const { isAdmin, isBuilder } = useRank(world, player)
-  const [livekit, setLiveKit] = useState(() => world.livekit.status)
+  const [livekit, setLiveKit] = useState(() => world.livekit?.status || { connected: false })
 
   useEffect(() => {
     const onLiveKitStatus = status => {

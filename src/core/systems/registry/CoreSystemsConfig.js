@@ -1,16 +1,25 @@
-import { ErrorMonitor } from '../ErrorMonitor.js'
-import { Settings } from '../Settings.js'
-import { Collections } from '../Collections.js'
-import { Apps } from '../Apps.js'
 import { Anchors } from '../Anchors.js'
+import { Apps } from '../Apps.js'
 import { Avatars } from '../Avatars.js'
-import { Events } from '../Events.js'
-import { Chat } from '../Chat.js'
-import { Scripts } from '../Scripts.js'
 import { Blueprints } from '../Blueprints.js'
+import { Chat } from '../Chat.js'
+import { ClientBuilder } from '../ClientBuilder.js'
+import { ClientControls } from '../ClientControls.js'
+import { ClientEnvironment } from '../ClientEnvironment.js'
+import { ClientGraphics } from '../ClientGraphics.js'
+import { ClientLoader } from '../ClientLoader.js'
+import { ClientNetwork } from '../ClientNetwork.js'
+import { ClientPrefs } from '../ClientPrefs.js'
+import { ClientUI } from '../ClientUI.js'
+import { Collections } from '../Collections.js'
 import { Entities } from '../Entities.js'
+import { ErrorMonitor } from '../ErrorMonitor.js'
+import { Events } from '../Events.js'
 import { Physics } from '../Physics.js'
+import { Scripts } from '../Scripts.js'
+import { Settings } from '../Settings.js'
 import { Stage } from '../Stage.js'
+import { ClientLiveKit } from '../ClientLiveKit.js'
 
 export const coreSystemsConfig = [
   {
@@ -26,6 +35,12 @@ export const coreSystemsConfig = [
     platforms: ['server', 'client'],
     priority: 90,
     required: true,
+  },
+  {
+    name: 'prefs',
+    class: ClientPrefs,
+    platforms: ['client'],
+    priority: 85,
   },
   {
     name: 'collections',
@@ -53,39 +68,52 @@ export const coreSystemsConfig = [
     priority: 65,
   },
   {
+    name: 'loader',
+    class: ClientLoader,
+    platforms: ['client'],
+    priority: 62,
+  },
+  {
     name: 'blueprints',
     class: Blueprints,
     platforms: ['server', 'client'],
     priority: 60,
   },
   {
+    name: 'physics',
+    class: Physics,
+    platforms: ['server', 'client'],
+    priority: 50,
+  },
+  {
     name: 'entities',
     class: Entities,
     platforms: ['server', 'client'],
-    priority: 50,
+    priority: 48,
+    required: true,
+  },
+  {
+    name: 'network',
+    class: ClientNetwork,
+    platforms: ['client'],
+    priority: 45,
     required: true,
   },
   {
     name: 'apps',
     class: Apps,
     platforms: ['server', 'client'],
-    priority: 45,
+    priority: 40,
   },
   {
     name: 'anchors',
     class: Anchors,
     platforms: ['server', 'client'],
-    priority: 40,
+    priority: 35,
   },
   {
     name: 'avatars',
     class: Avatars,
-    platforms: ['server', 'client'],
-    priority: 35,
-  },
-  {
-    name: 'physics',
-    class: Physics,
     platforms: ['server', 'client'],
     priority: 30,
   },
@@ -94,5 +122,41 @@ export const coreSystemsConfig = [
     class: Stage,
     platforms: ['client'],
     priority: 25,
+  },
+  {
+    name: 'environment',
+    class: ClientEnvironment,
+    platforms: ['client'],
+    priority: 26,
+  },
+  {
+    name: 'graphics',
+    class: ClientGraphics,
+    platforms: ['client'],
+    priority: 23,
+  },
+  {
+    name: 'livekit',
+    class: ClientLiveKit,
+    platforms: ['client'],
+    priority: 22,
+  },
+  {
+    name: 'controls',
+    class: ClientControls,
+    platforms: ['client'],
+    priority: 21,
+  },
+  {
+    name: 'builder',
+    class: ClientBuilder,
+    platforms: ['client'],
+    priority: 20,
+  },
+  {
+    name: 'ui',
+    class: ClientUI,
+    platforms: ['client'],
+    priority: 19,
   },
 ]

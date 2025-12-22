@@ -1,5 +1,5 @@
-
 import crypto from 'crypto'
+
 import { FileStorage } from './FileStorage.js'
 import { UploadStats } from './uploader/UploadStats.js'
 import { BatchUploader } from './uploader/BatchUploader.js'
@@ -29,7 +29,7 @@ export class FileUploader {
     return true
   }
 
-  calculateHash(buffer) {
+  async calculateHash(buffer) {
     return crypto.createHash('sha256').update(buffer).digest('hex')
   }
 
@@ -49,7 +49,7 @@ export class FileUploader {
     try {
       this.validateFile(buffer, filename)
 
-      const hash = this.calculateHash(buffer)
+      const hash = await this.calculateHash(buffer)
       const size = buffer.length
 
       const exists = await this.checkExists(hash)

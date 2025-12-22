@@ -66,7 +66,9 @@ export class ClientAudio extends System {
           video.play().then(() => {
             video.pause()
             video.remove()
-          }).catch(() => {})
+          }).catch((err) => {
+            console.error('Failed to unlock audio context:', err)
+          })
         } catch (err) {
           console.error(err)
         } finally {

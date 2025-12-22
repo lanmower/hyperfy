@@ -62,7 +62,7 @@ export function UserSection({ world, ui, livekit, activePane }) {
           )}
         </Btn>
       )}
-      {world.xr.supportsVR && (
+      {world.xr?.supportsVR && (
         <Btn
           onClick={() => {
             world.xr.enter()

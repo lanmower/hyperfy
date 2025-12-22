@@ -19,7 +19,16 @@ export class ScriptExecutor {
       const world = this.app.world
       const scripts = world.scripts
 
-      const evaluated = scripts.evaluate(scriptCode)
+      let evaluated
+      if (typeof scriptCode === 'string') {
+        evaluated = scripts.evaluate(scriptCode)
+      } else if (scriptCode.exec && scriptCode.code) {
+        evaluated = scriptCode
+      } else {
+        console.warn('[ScriptExecutor] Invalid script format:', typeof scriptCode)
+        return false
+      }
+
       const appContext = evaluated.exec(
         getWorldProxy(),
         getAppProxy(),

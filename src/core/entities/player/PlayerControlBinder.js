@@ -34,9 +34,11 @@ export class PlayerControlBinder {
         }
       },
     })
-    this.player.control.camera.write = true
-    this.player.control.camera.position.copy(this.player.cam.position)
-    this.player.control.camera.quaternion.copy(this.player.cam.quaternion)
-    this.player.control.camera.zoom = this.player.cam.zoom
+    if (this.player.control?.camera) {
+      this.player.control.camera.write = true
+      this.player.control.camera.position.copy(this.player.cam.position)
+      this.player.control.camera.quaternion.copy(this.player.cam.quaternion)
+      this.player.control.camera.zoom = this.player.cam.zoom
+    }
   }
 }

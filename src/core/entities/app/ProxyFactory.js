@@ -38,18 +38,31 @@ export class ProxyFactory {
     const entity = this.app
     const proxy = {}
 
+    if (!apps) {
+      console.warn('[ProxyFactory] Apps system not available, returning empty world proxy')
+      return proxy
+    }
+
     for (const key in apps.worldGetters) {
-      Object.defineProperty(proxy, key, {
-        get: () => apps.worldGetters[key](entity),
-        enumerable: true,
-      })
+      try {
+        Object.defineProperty(proxy, key, {
+          get: () => apps.worldGetters[key](entity),
+          enumerable: true,
+        })
+      } catch (err) {
+        console.warn(`Failed to define getter for ${key}:`, err.message)
+      }
     }
 
     for (const key in apps.worldSetters) {
-      Object.defineProperty(proxy, key, {
-        set: (value) => apps.worldSetters[key](entity, value),
-        enumerable: true,
-      })
+      try {
+        Object.defineProperty(proxy, key, {
+          set: (value) => apps.worldSetters[key](entity, value),
+          enumerable: true,
+        })
+      } catch (err) {
+        console.warn(`Failed to define setter for ${key}:`, err.message)
+      }
     }
 
     for (const key in apps.worldMethods) {
@@ -64,18 +77,31 @@ export class ProxyFactory {
     const entity = this.app
     const proxy = {}
 
+    if (!apps) {
+      console.warn('[ProxyFactory] Apps system not available, returning empty app proxy')
+      return proxy
+    }
+
     for (const key in apps.appGetters) {
-      Object.defineProperty(proxy, key, {
-        get: () => apps.appGetters[key](entity),
-        enumerable: true,
-      })
+      try {
+        Object.defineProperty(proxy, key, {
+          get: () => apps.appGetters[key](entity),
+          enumerable: true,
+        })
+      } catch (err) {
+        console.warn(`Failed to define getter for ${key}:`, err.message)
+      }
     }
 
     for (const key in apps.appSetters) {
-      Object.defineProperty(proxy, key, {
-        set: (value) => apps.appSetters[key](entity, value),
-        enumerable: true,
-      })
+      try {
+        Object.defineProperty(proxy, key, {
+          set: (value) => apps.appSetters[key](entity, value),
+          enumerable: true,
+        })
+      } catch (err) {
+        console.warn(`Failed to define setter for ${key}:`, err.message)
+      }
     }
 
     for (const key in apps.appMethods) {

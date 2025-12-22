@@ -8,6 +8,7 @@ export class SnapshotProcessor {
   }
 
   process(data) {
+    console.log('SnapshotProcessor.process() called with', { id: data.id, entityCount: data.entities?.length, blueprintCount: data.blueprints?.length })
     this.network.id = data.id
     this.network.serverTimeOffset = data.serverTime - performance.now()
     this.network.apiUrl = data.apiUrl
@@ -15,11 +16,17 @@ export class SnapshotProcessor {
     this.network.assetsUrl = data.assetsUrl
 
     this.preloadAssets(data)
+    console.log('Calling SnapshotCodec.deserializeState')
     SnapshotCodec.deserializeState(data, this.network)
+    console.log('SnapshotCodec.deserializeState completed')
     storage.set('authToken', data.authToken)
   }
 
   preloadAssets(data) {
+    if (!this.network.loader) {
+      console.log('loader not available yet, skipping preload')
+      return
+    }
     if (data.settings.avatar) {
       this.network.loader.preload('avatar', data.settings.avatar.url)
     }

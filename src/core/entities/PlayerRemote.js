@@ -32,6 +32,7 @@ export class PlayerRemote extends BaseEntity {
     this.base = new THREE.Object3D()
     this.base.position.fromArray(this.data.position)
     this.base.quaternion.fromArray(this.data.quaternion)
+    this.world.rig.add(this.base)
 
     this.body = new THREE.Object3D()
     this.base.add(this.body)
@@ -44,9 +45,12 @@ export class PlayerRemote extends BaseEntity {
     this.bubble = bubble
     this.bubbleBox = bubbleBox
     this.bubbleText = bubbleText
+    if (this.aura instanceof THREE.Object3D) {
+      this.world.rig.add(this.aura)
+    }
 
-    this.aura.activate({ world: this.world, entity: this })
-    this.base.activate({ world: this.world, entity: this })
+    this.aura.activate?.({ world: this.world, entity: this })
+    this.base.activate?.({ world: this.world, entity: this })
 
     this.avatarSync.applyAvatar()
 
@@ -172,11 +176,12 @@ export class PlayerRemote extends BaseEntity {
     this.destroyed = true
 
     clearTimeout(this.chatTimer)
-    if (this.base) this.base.deactivate()
+    this.base?.deactivate?.()
+    this.avatar?.deactivate?.()
     this.avatar = null
     this.world.setHot(this, false)
     this.world.events.emit(EVENT.game.leave, { playerId: this.data.id })
-    if (this.aura) this.aura.deactivate()
+    this.aura?.deactivate?.()
     this.aura = null
 
     this.world.entities.remove(this.data.id)

@@ -51,12 +51,14 @@ export class ServerNetwork extends BaseNetwork {
   }
 
   setupHotReload() {
-    process.on('message', msg => {
-      if (msg?.type === 'hotReload') {
-        console.log('[HMR] Broadcasting reload to clients')
-        this.send('hotReload', { timestamp: Date.now() })
-      }
-    })
+    if (typeof process !== 'undefined' && process.on) {
+      process.on('message', msg => {
+        if (msg?.type === 'hotReload') {
+          console.log('[HMR] Broadcasting reload to clients')
+          this.send('hotReload', { timestamp: Date.now() })
+        }
+      })
+    }
   }
 
   init(config) {

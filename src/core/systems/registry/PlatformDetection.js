@@ -5,7 +5,7 @@ export class PlatformDetection {
   static getCurrentPlatform() {
     if (isServer) return 'server'
     if (isClient) return 'client'
-    return 'unknown'
+    throw new Error('Unable to detect platform - not server or client')
   }
 
   static isServer() {

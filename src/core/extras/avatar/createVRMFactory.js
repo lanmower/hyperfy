@@ -40,7 +40,9 @@ export function createVRMFactory(glb, setupMaterial) {
       skinnedMeshes.push(node)
     }
     if (node.isMesh) {
-      node.geometry.computeBoundsTree()
+      if (node.geometry.computeBoundsTree) {
+        node.geometry.computeBoundsTree()
+      }
       node.material.shadowSide = THREE.BackSide
       setupMaterial(node.material)
     }

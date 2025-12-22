@@ -7,7 +7,11 @@ export class QueryBuilder {
   }
 
   where(key, value) {
-    this._where = { [key]: value }
+    if (typeof key === 'object') {
+      this._where = { ...this._where, ...key }
+    } else {
+      this._where = { [key]: value }
+    }
     return this
   }
 

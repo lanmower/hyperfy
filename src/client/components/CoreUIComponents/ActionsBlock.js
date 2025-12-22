@@ -4,14 +4,16 @@ import { isTouch } from '../../utils.js'
 import { Actions } from './Actions.js'
 
 export function ActionsBlock({ world }) {
-  const [showActions, setShowActions] = useState(() => world.prefs.actions)
+  const [showActions, setShowActions] = useState(() => world.prefs?.actions)
   useEffect(() => {
     const onPrefsChange = changes => {
       if (changes.actions) setShowActions(changes.actions.value)
     }
-    world.prefs.on('change', onPrefsChange)
-    return () => {
-      world.prefs.off('change', onPrefsChange)
+    if (world.prefs) {
+      world.prefs.on('change', onPrefsChange)
+      return () => {
+        world.prefs.off('change', onPrefsChange)
+      }
     }
   }, [])
   if (isTouch) return null

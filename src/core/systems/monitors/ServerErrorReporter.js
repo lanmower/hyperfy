@@ -1,9 +1,24 @@
-import { errorFormatter } from '../../../server/utils/ErrorFormatter.js'
-import { errorObserver } from '../../../server/services/ErrorObserver.js'
+let errorFormatter = null
+let errorObserver = null
+let isServerEnv = typeof process !== 'undefined' && process.versions?.node
+
+async function loadServerDeps() {
+  if (isServerEnv && !errorFormatter) {
+    try {
+      const mod1 = await import('../../../server/utils/ErrorFormatter.js')
+      const mod2 = await import('../../../server/services/ErrorObserver.js')
+      errorFormatter = mod1.errorFormatter
+      errorObserver = mod2.errorObserver
+    } catch (e) {
+      // Server modules not available in this context
+    }
+  }
+}
 
 export class ServerErrorReporter {
   constructor(monitor) {
     this.monitor = monitor
+    loadServerDeps()
   }
 
   canHandle(event, isDuplicate) {
@@ -14,6 +29,7 @@ export class ServerErrorReporter {
   }
 
   reportError(errorEvent, errorData) {
+    if (!errorFormatter) return
     const metadata = {
       clientId: errorData.clientId,
       userId: errorData.userId,
@@ -26,6 +42,7 @@ export class ServerErrorReporter {
   }
 
   getReport() {
+    if (!errorObserver) return null
     const localStats = this.monitor.analytics.getStats()
     const observerStats = errorObserver.getErrorStats()
 
@@ -45,6 +62,7 @@ export class ServerErrorReporter {
   }
 
   captureClientError(clientId, error) {
+    if (!errorObserver) return
     errorObserver.recordClientError(clientId, error, {
       timestamp: Date.now(),
       source: 'server-detected'
@@ -52,6 +70,7 @@ export class ServerErrorReporter {
   }
 
   checkAlertThresholds() {
+    if (!errorObserver || !errorFormatter) return
     const stats = errorObserver.getErrorStats()
 
     if (stats.lastMinute >= 25) {

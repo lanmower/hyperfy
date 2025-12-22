@@ -156,7 +156,7 @@ export class ClientActions extends System {
   updateAction(delta) {
     if (!this.actionNode) return
     let distance
-    if (this.world.xr.session) {
+    if (this.world.xr.session && this.world.xr.camera) {
       const pos = v1, qua = q1, sca = v2
       this.actionNode.matrixWorld.decompose(pos, qua, sca)
       const camPosition = v3.setFromMatrixPosition(this.world.xr.camera.matrixWorld)
@@ -215,3 +215,4 @@ export class ClientActions extends System {
     this.nodes = []
   }
 }
+

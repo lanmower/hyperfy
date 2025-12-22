@@ -10,7 +10,7 @@ export class RemoteAnimationController {
   }
 
   updateAnimation(delta) {
-    this.player.avatar?.setEmote(this.player.data.emote)
+    this.player.avatar?.setEmote?.(this.player.data.emote)
     this.player.avatar?.instance?.setLocomotion(this.mode, this.axis, this.gaze)
   }
 

@@ -27,6 +27,7 @@ export class App extends BaseEntity {
   constructor(world, data, local) {
     super(world, data, local)
     this.isApp = true
+    this.mode = Modes.ACTIVE
     this.n = 0
     this.root = createNode('group')
     this.fields = []
@@ -46,7 +47,9 @@ export class App extends BaseEntity {
     this.propertyHandlers = new AppPropertyHandlers(this)
     this.worldNodes = this.nodeManager.worldNodes
     this.snaps = this.nodeManager.snaps
-    this.build()
+    this.build().catch(err => {
+      console.error('App.build() failed:', err.message)
+    })
   }
 
   createNode(name, data) {

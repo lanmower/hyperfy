@@ -1,7 +1,3 @@
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
 class LocalStorage {
   get(key, defaultValue = null) {
     const data = localStorage.getItem(key)
@@ -33,20 +29,36 @@ class LocalStorage {
 
 class NodeStorage {
   constructor() {
-    const dirname = path.dirname(fileURLToPath(import.meta.url))
-    const rootDir = path.join(dirname, '../')
-    this.file = path.join(rootDir, 'localstorage.json')
+    this.fs = null
+    this.path = null
+    this.fileURLToPath = null
+    this.file = null
+    this.data = {}
+    this.ready = false
+  }
+
+  async init() {
+    if (this.ready) return
+    this.fs = await import('fs')
+    this.path = await import('path')
+    const urlMod = await import('url')
+    this.fileURLToPath = urlMod.fileURLToPath
+    const dirname = this.path.dirname(this.fileURLToPath(import.meta.url))
+    const rootDir = this.path.join(dirname, '../')
+    this.file = this.path.join(rootDir, 'localstorage.json')
     try {
-      const data = fs.readFileSync(this.file, 'utf8')
+      const data = this.fs.readFileSync(this.file, 'utf8')
       this.data = JSON.parse(data)
     } catch (err) {
       this.data = {}
     }
+    this.ready = true
   }
 
   save() {
+    if (!this.ready || !this.fs) return
     try {
-      fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8')
+      this.fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8')
     } catch (err) {
       console.error('error writing to storage file:', err)
     }
@@ -79,11 +91,17 @@ const isNode = typeof process !== 'undefined' && process.versions && process.ver
 let storage
 
 if (isBrowser) {
-  storage = new LocalStorage() // todo: some browser environments (eg safari incognito) have no local storage so we need a MemoryStorage fallback
+  storage = new LocalStorage()
 } else if (isNode) {
   storage = new NodeStorage()
 } else {
-  console.warn('no storage')
+  throw new Error('No storage implementation available for current environment')
 }
 
 export { storage }
+
+export async function initStorage() {
+  if (storage instanceof NodeStorage) {
+    await storage.init()
+  }
+}

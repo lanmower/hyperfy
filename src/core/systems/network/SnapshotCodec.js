@@ -1,11 +1,12 @@
 export class SnapshotCodec {
   static encode(network) {
+    const env = typeof process !== 'undefined' && process.env ? process.env : {}
     return {
       id: network.id || network.sockets?.size,
       serverTime: performance.now(),
-      assetsUrl: network.assetsUrl || process.env.PUBLIC_ASSETS_URL,
-      apiUrl: network.apiUrl || process.env.PUBLIC_API_URL,
-      maxUploadSize: network.maxUploadSize || process.env.PUBLIC_MAX_UPLOAD_SIZE,
+      assetsUrl: network.assetsUrl || env.PUBLIC_ASSETS_URL,
+      apiUrl: network.apiUrl || env.PUBLIC_API_URL,
+      maxUploadSize: network.maxUploadSize || env.PUBLIC_MAX_UPLOAD_SIZE,
       collections: network.collections.serialize(),
       settings: network.settings.serialize(),
       chat: network.chat.serialize(),

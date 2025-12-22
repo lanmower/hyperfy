@@ -12,6 +12,9 @@ export class PlayerCapsuleFactory {
   }
 
   createCapsule(player) {
+    if (!globalThis.PHYSX) {
+      return { capsule: null, capsuleHandle: null, material: null }
+    }
     const radius = player.capsuleRadius
     const height = player.capsuleHeight
     const halfHeight = (height - radius - radius) / 2

@@ -48,6 +48,7 @@ function createScreen(controls) {
 
 function createCamera(controls) {
   const world = controls.world
+  if (!world || !world.camera) return { $camera: true, position: new THREE.Vector3(), quaternion: new THREE.Quaternion(), rotation: new THREE.Euler(0, 0, 0, 'YXZ'), zoom: 0, write: false }
   const position = new THREE.Vector3().copy(world.rig.position)
   const quaternion = new THREE.Quaternion().copy(world.rig.quaternion)
   const rotation = new THREE.Euler(0, 0, 0, 'YXZ').copy(world.rig.rotation)
@@ -106,12 +107,12 @@ export class InputSystem extends System {
     let written
     for (const control of this.controls) {
       const camera = control.entries.camera
-      if (camera?.write && !written) {
+      if (camera?.write && !written && this.camera) {
         this.rig.position.copy(camera.position)
         this.rig.quaternion.copy(camera.quaternion)
         this.camera.position.z = camera.zoom
         written = true
-      } else if (camera) {
+      } else if (camera && this.camera) {
         camera.position.copy(this.rig.position)
         camera.quaternion.copy(this.rig.quaternion)
         camera.zoom = this.camera.position.z

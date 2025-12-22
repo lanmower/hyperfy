@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { isTouch } from '../../utils.js'
 
 export function Reticle({ world }) {
-  const [pointerLocked, setPointerLocked] = useState(world.controls.pointer.locked)
-  const [buildMode, setBuildMode] = useState(world.builder.enabled)
+  const [pointerLocked, setPointerLocked] = useState(world.controls?.pointer?.locked || false)
+  const [buildMode, setBuildMode] = useState(world.builder?.enabled || false)
   useEffect(() => {
     world.on('pointer-lock', setPointerLocked)
     world.on('build-mode', setBuildMode)

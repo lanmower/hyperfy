@@ -25,7 +25,9 @@ export class PlayerTeleportHandler {
     this.player.cam.position.copy(this.player.base.position)
     this.player.cam.position.y += this.player.camHeight
     if (hasRotation) this.player.cam.rotation.y = rotationY
-    this.player.control.camera.position.copy(this.player.cam.position)
-    this.player.control.camera.quaternion.copy(this.player.cam.quaternion)
+    if (this.player.control?.camera) {
+      this.player.control.camera.position.copy(this.player.cam.position)
+      this.player.control.camera.quaternion.copy(this.player.cam.quaternion)
+    }
   }
 }

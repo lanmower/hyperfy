@@ -1,8 +1,17 @@
-import { errorObserver } from '../../../server/services/ErrorObserver.js'
+let errorObserver = null
+let isServerEnv = typeof process !== 'undefined' && process.versions?.node
+
+async function loadErrorObserver() {
+  if (isServerEnv && !errorObserver) {
+    const mod = await import('../../../server/services/ErrorObserver.js')
+    errorObserver = mod.errorObserver
+  }
+}
 
 export class ErrorHandlingService {
   constructor(serverNetwork) {
     this.serverNetwork = serverNetwork
+    loadErrorObserver()
   }
 
   onErrorEvent = (socket, errorEvent) => {
@@ -20,7 +29,9 @@ export class ErrorHandlingService {
       timestamp: Date.now()
     }
 
-    errorObserver.recordClientError(socket.id, data.error || data, metadata)
+    if (errorObserver) {
+      errorObserver.recordClientError(socket.id, data.error || data, metadata)
+    }
 
     if (this.serverNetwork.errorMonitor) {
       this.serverNetwork.errorMonitor.receiveClientError({

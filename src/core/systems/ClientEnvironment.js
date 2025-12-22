@@ -36,7 +36,11 @@ export class ClientEnvironment extends System {
   async start() {
     this.shadowManager = new ShadowManager(this)
     this.skyManager = new SkyManager(this)
-    await this.shadowManager.build(this.prefs.shadows)
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
+    this.stage.scene.add(ambientLight)
+
+    await this.shadowManager.build(this.prefs.state.get('shadows'))
     this.skyManager.update(this.base.sunDirection, this.base.sunIntensity, this.base.sunColor)
   }
 

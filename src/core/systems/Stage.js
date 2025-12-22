@@ -34,7 +34,9 @@ export class Stage extends System {
 
   init({ viewport }) {
     this.viewport = viewport
+    console.log('Stage.init() adding rig to scene')
     this.scene.add(this.rig)
+    console.log('Stage scene children:', this.scene.children.length, this.scene.children)
   }
 
   update(delta) {

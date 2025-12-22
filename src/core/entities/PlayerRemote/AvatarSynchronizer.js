@@ -1,3 +1,4 @@
+import * as THREE from '../../extras/three.js'
 import { createNode } from '../../extras/createNode.js'
 
 export class AvatarSynchronizer {
@@ -10,11 +11,18 @@ export class AvatarSynchronizer {
     const avatarUrl = this.player.data.sessionAvatar || this.player.data.avatar || 'asset://avatar.vrm'
     if (this.avatarUrl === avatarUrl) return
     this.player.world.loader.load('avatar', avatarUrl).then(src => {
-      if (this.player.avatar) this.player.avatar.deactivate()
+      if (this.player.avatar?.deactivate) this.player.avatar.deactivate()
       this.player.avatar = src.toNodes().get('avatar')
-      this.player.base.add(this.player.avatar)
-      this.player.nametag.position.y = this.player.avatar.getHeadToHeight() + 0.2
-      this.player.bubble.position.y = this.player.avatar.getHeadToHeight() + 0.2
+      if (this.player.avatar && this.player.base && this.player.base.add && this.player.avatar instanceof THREE.Object3D) {
+        this.player.base.add(this.player.avatar)
+      }
+      const headHeight = this.player.avatar?.getHeadToHeight?.() || 1.6
+      if (this.player.nametag?.position) {
+        this.player.nametag.position.y = headHeight + 0.2
+      }
+      if (this.player.bubble?.position) {
+        this.player.bubble.position.y = headHeight + 0.2
+      }
       if (!this.player.bubble.active) {
         this.player.nametag.active = true
       }
@@ -71,9 +79,9 @@ export class AvatarSynchronizer {
   }
 
   updateHeadPosition() {
-    if (this.player.avatar) {
+    if (this.player.avatar?.getBoneTransform) {
       const matrix = this.player.avatar.getBoneTransform('head')
-      if (matrix) {
+      if (matrix && this.player.aura?.position) {
         this.player.aura.position.setFromMatrixPosition(matrix)
       }
     }

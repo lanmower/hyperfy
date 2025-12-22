@@ -52,91 +52,110 @@ const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
 
 export class PlayerLocal extends BaseEntity {
   constructor(world, data, local) {
+    console.log('PlayerLocal constructor called', { userId: data.userId, id: data.id })
     super(world, data, local)
     this.isPlayer = true
     this.isLocal = true
+    console.log('Calling PlayerLocal.init()')
     this.init()
+    console.log('PlayerLocal.init() called (returns promise)')
   }
 
   async init() {
-    this.mass = 1
-    this.capsuleRadius = 0.3
-    this.capsuleHeight = 1.6
+    try {
+      console.log('PlayerLocal.init() started')
+      this.mass = 1
+      this.capsuleRadius = 0.3
+      this.capsuleHeight = 1.6
 
-    this.firstPerson = false
+      this.firstPerson = false
 
-    this.mode = Modes.IDLE
-    this.axis = new THREE.Vector3()
-    this.gaze = new THREE.Vector3()
+      this.mode = Modes.IDLE
+      this.axis = new THREE.Vector3()
+      this.gaze = new THREE.Vector3()
 
-    this.speaking = false
+      this.speaking = false
 
-    this.lastSendAt = 0
+      this.lastSendAt = 0
 
-    this.base = createNode('group')
-    this.base.position.fromArray(this.data.position)
-    this.base.quaternion.fromArray(this.data.quaternion)
+      this.base = new THREE.Object3D()
+      this.base.position.fromArray(this.data.position)
+      this.base.quaternion.fromArray(this.data.quaternion)
+      this.world.rig.add(this.base)
 
-    this.aura = createNode('group')
+      this.aura = new THREE.Object3D()
+      this.world.rig.add(this.aura)
 
-    this.nametag = createNode('nametag', { label: '', health: this.data.health, active: false })
-    this.bubble = createNode('ui', {
-      id: 'bubble',
-      width: 300,
-      height: 512,
-      pivot: 'bottom-center',
-      billboard: 'full',
-      scaler: [3, 30],
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      active: false,
-    })
-    this.bubbleBox = createNode('uiview', {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      borderRadius: 10,
-      padding: 10,
-    })
-    this.bubbleText = createNode('uitext', {
-      color: 'white',
-      fontWeight: 100,
-      lineHeight: 1.4,
-      fontSize: 16,
-    })
-    this.bubble.add(this.bubbleBox)
-    this.bubbleBox.add(this.bubbleText)
+      this.nametag = createNode('nametag', { label: '', health: this.data.health, active: false })
+      this.bubble = createNode('ui', {
+        id: 'bubble',
+        width: 300,
+        height: 512,
+        pivot: 'bottom-center',
+        billboard: 'full',
+        scaler: [3, 30],
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        active: false,
+      })
+      this.bubbleBox = createNode('uiview', {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        borderRadius: 10,
+        padding: 10,
+      })
+      this.bubbleText = createNode('uitext', {
+        color: 'white',
+        fontWeight: 100,
+        lineHeight: 1.4,
+        fontSize: 16,
+      })
 
-    this.aura.add(this.nametag)
-    this.aura.add(this.bubble)
+      this.avatar = null
+      this.avatarUrl = null
 
-    this.avatar = null
-    this.avatarUrl = null
-    Object.defineProperty(this, 'camHeight', { get: () => this.cam.camHeight, set: (v) => { this.cam.camHeight = v } })
+      this.cam = new PlayerCameraManager(this, this.base)
+      this.avatarManager = new PlayerAvatarManager(this)
+      this.chatBubble = new PlayerChatBubble(this)
+      this.inputProcessor = new PlayerInputProcessor(this)
+      this.animationController = new AnimationController(this)
+      this.networkSynchronizer = new NetworkSynchronizer(this)
+      this.teleportHandler = new PlayerTeleportHandler(this)
+      this.effectManager = new PlayerEffectManager(this)
+      this.modifyHandler = new PlayerModifyHandler(this)
+      this.controlBinder = new PlayerControlBinder(this)
+      this.capsuleFactory = new PlayerCapsuleFactory(this.world)
 
-    this.aura.activate({ world: this.world, entity: this })
-    this.base.activate({ world: this.world, entity: this })
+      if (this.world.loader?.preloader) {
+        console.log('Waiting for preloader')
+        await this.world.loader.preloader
+        console.log('Preloader ready')
+      }
 
-    this.cam = new PlayerCameraManager(this, this.base)
-    this.avatarManager = new PlayerAvatarManager(this)
-    this.chatBubble = new PlayerChatBubble(this)
-    this.inputProcessor = new PlayerInputProcessor(this)
-    this.animationController = new AnimationController(this)
-    this.networkSynchronizer = new NetworkSynchronizer(this)
-    this.teleportHandler = new PlayerTeleportHandler(this)
-    this.effectManager = new PlayerEffectManager(this)
-    this.modifyHandler = new PlayerModifyHandler(this)
-    this.controlBinder = new PlayerControlBinder(this)
-    this.capsuleFactory = new PlayerCapsuleFactory(this.world)
+      if (this.world.loader) {
+        console.log('Applying avatar')
+        await this.avatarManager.applyAvatar()
+        console.log('Avatar applied')
+      } else {
+        console.log('Loader not available, skipping avatar')
+      }
 
-    if (this.world.loader?.preloader) {
-      await this.world.loader.preloader
+      this.initCapsule()
+      console.log('Capsule initialized')
+
+      this.controlBinder.initControl()
+      console.log('Control binding initialized')
+
+      this.world.setHot(this, true)
+      console.log('Player marked as hot, emitting ready event')
+      this.world.events.emit('ready', true)
+      console.log('PlayerLocal.init() completed')
+    } catch (err) {
+      console.error('PlayerLocal.init() error:', err)
+      console.log('Setting hot and emitting ready from catch block')
+      this.world.setHot(this, true)
+      this.world.events.emit('ready', true)
+      console.log('Ready event emitted from catch block')
     }
-
-    await this.avatarManager.applyAvatar()
-    this.initCapsule()
-    this.controlBinder.initControl()
-
-    this.world.setHot(this, true)
-    this.world.events.emit('ready', true)
   }
 
   getAvatarUrl() { return this.avatarManager.getAvatarUrl() }
@@ -147,7 +166,9 @@ export class PlayerLocal extends BaseEntity {
     this.capsule = capsule
     this.capsuleHandle = capsuleHandle
     this.material = material
-    this.physics = new PlayerPhysics(this.world, this)
+    if (this.capsule) {
+      this.physics = new PlayerPhysics(this.world, this)
+    }
   }
 
   get stick() { return this.controlBinder.stick }
@@ -156,6 +177,7 @@ export class PlayerLocal extends BaseEntity {
   set pan(value) { this.controlBinder.pan = value }
 
   toggleFlying(value) {
+    if (!this.physics) return
     value = isBoolean(value) ? value : !this.physics.flying
     if (this.physics.flying === value) return
     this.physics.flying = value
@@ -176,7 +198,7 @@ export class PlayerLocal extends BaseEntity {
   isBuilder() { return hasRank(Math.max(this.data.rank, this.world.settings.effectiveRank), Ranks.BUILDER) }
   isMuted() { return this.world.livekit.isMuted(this.data.id) }
 
-  fixedUpdate(delta) { this.physics.update(delta) }
+  fixedUpdate(delta) { this.physics?.update(delta) }
 
   update(delta) {
     const freeze = this.data.effect?.freeze
@@ -188,15 +210,17 @@ export class PlayerLocal extends BaseEntity {
     this.inputProcessor.processJump()
     this.inputProcessor.processMovement(delta)
 
-    this.physics.moving = this.physics.moveDir.length() > 0
+    if (this.physics) {
+      this.physics.moving = this.physics.moveDir.length() > 0
 
-    if (this.data.effect?.cancellable && (this.physics.moving || this.jumpDown)) {
-      this.setEffect(null)
-    }
+      if (this.data.effect?.cancellable && (this.physics.moving || this.jumpDown)) {
+        this.setEffect(null)
+      }
 
-    if (freeze || anchor) {
-      this.physics.moveDir.set(0, 0, 0)
-      this.physics.moving = false
+      if (freeze || anchor) {
+        this.physics.moveDir.set(0, 0, 0)
+        this.physics.moving = false
+      }
     }
 
     this.inputProcessor.processRunning()
@@ -231,12 +255,18 @@ export class PlayerLocal extends BaseEntity {
       }
     }
     if (this.world.xr?.session) {
-      this.control.camera.position.copy(this.cam.position)
-      this.control.camera.quaternion.copy(this.cam.quaternion)
-    } else {
+      if (this.control?.camera) {
+        this.control.camera.position.copy(this.cam.position)
+        this.control.camera.quaternion.copy(this.cam.quaternion)
+      }
+    } else if (this.control?.camera) {
       simpleCamLerp(this.world, this.control.camera, this.cam, delta)
     }
-    if (this.avatar) {
+
+    this.world.camera.position.copy(this.cam.position)
+    this.world.camera.quaternion.copy(this.cam.quaternion)
+
+    if (this.avatar && this.avatar.getBoneTransform) {
       const matrix = this.avatar.getBoneTransform('head')
       if (matrix) this.aura.position.setFromMatrixPosition(matrix)
     }

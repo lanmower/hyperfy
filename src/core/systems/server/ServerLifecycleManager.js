@@ -3,7 +3,8 @@ import { FileUploader } from '../../../server/services/FileUploader.js'
 import { CommandHandler } from '../../../server/services/CommandHandler.js'
 import { WorldPersistence } from '../../../server/services/WorldPersistence.js'
 
-const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60')
+const env = typeof process !== 'undefined' && process.env ? process.env : {}
+const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
 
 export class ServerLifecycleManager {
   constructor(network) {
@@ -15,7 +16,7 @@ export class ServerLifecycleManager {
     this.network.fileStorage = new FileStorage(assetsDir, db)
     this.network.fileUploader = new FileUploader(
       this.network.fileStorage,
-      parseInt(process.env.PUBLIC_MAX_UPLOAD_SIZE || 50 * 1024 * 1024)
+      parseInt(env.PUBLIC_MAX_UPLOAD_SIZE || 50 * 1024 * 1024)
     )
     this.network.commandHandler = new CommandHandler(this.network.world, db)
     this.network.persistence = new WorldPersistence(db, this.network.fileUploader)
@@ -24,23 +25,63 @@ export class ServerLifecycleManager {
   async start() {
     this.network.spawn = JSON.parse(await this.network.persistence.loadSpawn())
 
-    const blueprints = await this.network.persistence.loadBlueprints()
-    for (const blueprint of blueprints) {
+    const dbBlueprints = await this.network.persistence.loadBlueprints()
+    for (const blueprint of dbBlueprints) {
       const data = JSON.parse(blueprint.data)
       this.network.blueprints.add(data, true)
     }
 
+    for (const collection of this.network.world.collections.collections) {
+      for (const blueprint of collection.blueprints) {
+        const existingBlueprint = this.network.blueprints.get(blueprint.id)
+        if (!existingBlueprint) {
+          console.log('Adding blueprint from collection:', blueprint.id)
+          this.network.blueprints.add(blueprint, true)
+        }
+      }
+    }
+
+    const sceneBlueprint = this.network.blueprints.getScene()
+    const sceneEntityId = sceneBlueprint ? `scene-${Date.now()}` : null
+    const sceneEntity = sceneBlueprint ? {
+      id: sceneEntityId,
+      type: 'app',
+      blueprint: '$scene',
+      position: [0, 0, 0],
+      quaternion: [0, 0, 0, 1],
+      scale: [1, 1, 1],
+      userId: null,
+    } : null
+
     const entities = await this.network.persistence.loadEntities()
+    const entityIds = new Set(entities.map(e => {
+      const data = JSON.parse(e.data)
+      return data.id
+    }))
+
     for (const entity of entities) {
       const data = JSON.parse(entity.data)
       data.state = {}
-      this.network.entities.add(data, true)
+      try {
+        this.network.entities.add(data, true)
+      } catch (err) {
+        console.error('Failed to add entity:', data.id, err.message)
+      }
+    }
+
+    if (sceneEntity && !entityIds.has(sceneEntityId)) {
+      console.log('Creating and adding scene entity:', sceneEntityId)
+      try {
+        this.network.entities.add(sceneEntity, true)
+      } catch (err) {
+        console.error('Failed to add scene entity:', err.message)
+      }
     }
 
     try {
       const settings = await this.network.persistence.loadSettings()
       this.network.settings.deserialize(settings)
-      this.network.settings.setHasAdminCode(!!process.env.ADMIN_CODE)
+      this.network.settings.setHasAdminCode(!!env.ADMIN_CODE)
     } catch (err) {
       console.error(err)
     }

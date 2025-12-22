@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { css } from '@firebolt-dev/css'
 
-import { createClientWorld } from '../core/createClientWorld.js'
+import { World } from '../core/World.js'
 import { CoreUI } from './components/CoreUI.js'
 
 export { System } from '../core/systems/System.js'
@@ -10,8 +10,8 @@ export { System } from '../core/systems/System.js'
 export function Client({ wsUrl, onSetup }) {
   const viewportRef = useRef()
   const uiRef = useRef()
-  const world = useMemo(() => createClientWorld(), [])
-  const [ui, setUI] = useState(world.ui.state)
+  const world = useMemo(() => { const w = new World(); w.isClient = true; return w }, [])
+  const [ui, setUI] = useState(world.ui?.state || { visible: true, active: false, app: null, pane: null, reticleSuppressors: 0 })
   useEffect(() => {
     world.on('ui', setUI)
     return () => {
@@ -20,27 +20,48 @@ export function Client({ wsUrl, onSetup }) {
   }, [])
   useEffect(() => {
     const init = async () => {
-      const viewport = viewportRef.current
-      const ui = uiRef.current
-      const baseEnvironment = {
-        model: '/base-environment.glb',
-        bg: null, // '/day2-2k.jpg',
-        hdr: '/Clear_08_4pm_LDR.hdr',
-        rotationY: 0,
-        sunDirection: new THREE.Vector3(-1, -2, -2).normalize(),
-        sunIntensity: 1,
-        sunColor: 0xffffff,
-        fogNear: null,
-        fogFar: null,
-        fogColor: null,
+      try {
+        console.log('World init started')
+        const viewport = viewportRef.current
+        const ui = uiRef.current
+        const baseEnvironment = {
+          model: '/base-environment.glb',
+          bg: null, // '/day2-2k.jpg',
+          hdr: '/Clear_08_4pm_LDR.hdr',
+          rotationY: 0,
+          sunDirection: new THREE.Vector3(-1, -2, -2).normalize(),
+          sunIntensity: 1,
+          sunColor: 0xffffff,
+          fogNear: null,
+          fogFar: null,
+          fogColor: null,
+        }
+        if (typeof wsUrl === 'function') {
+          wsUrl = wsUrl()
+          if (wsUrl instanceof Promise) wsUrl = await wsUrl
+        }
+        const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: '/assets' }
+        console.log('Calling onSetup and world.init')
+        onSetup?.(world, config)
+        await Promise.race([
+          (async () => {
+            console.log('Starting world.init')
+            await world.init(config)
+            console.log('world.init completed')
+          })(),
+          new Promise((_, reject) => setTimeout(() => {
+            console.error('World initialization timeout after 120s')
+            reject(new Error('World initialization timeout'))
+          }, 120000))
+        ])
+        const tick = time => {
+          world.tick(time)
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      } catch (err) {
+        console.error('World initialization error:', err)
       }
-      if (typeof wsUrl === 'function') {
-        wsUrl = wsUrl()
-        if (wsUrl instanceof Promise) wsUrl = await wsUrl
-      }
-      const config = { viewport, ui, wsUrl, baseEnvironment }
-      onSetup?.(world, config)
-      world.init(config)
     }
     init()
   }, [])

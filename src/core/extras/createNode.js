@@ -24,5 +24,8 @@ export function createNode(type, props) {
   node.getStats = function(deep) {
     return { triangles: 0, materials: new Set(), geometries: new Set(), textureBytes: 0 }
   }
+  node.activate = function(options) {
+    return this
+  }
   return node
 }

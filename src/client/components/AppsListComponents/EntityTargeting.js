@@ -22,18 +22,18 @@ export class EntityTargeting {
 
   toggle(item) {
     if (this.currentTarget === item) {
-      this.world.target.hide()
+      this.world.target?.hide()
       this.currentTarget = null
       return
     }
     const entity = this.getClosest(item)
     if (!entity) return
-    this.world.target.show(entity.root.position)
+    this.world.target?.show(entity.root.position)
     this.currentTarget = item
   }
 
   hide() {
-    this.world.target.hide()
+    this.world.target?.hide()
     this.currentTarget = null
   }
 

@@ -1,6 +1,7 @@
 import moment from 'moment'
 
-const SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || '60')
+const env = typeof process !== 'undefined' && process.env ? process.env : {}
+const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
 
 export class WorldSaveManager {
   constructor(serverNetwork) {

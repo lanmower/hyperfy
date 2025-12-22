@@ -2,10 +2,11 @@ import { PacketCodec } from '../network/PacketCodec.js'
 import { SnapshotCodec } from '../network/SnapshotCodec.js'
 import { Socket } from '../../Socket.js'
 import { uuid } from '../../utils.js'
-import { createJWT, readJWT } from '../../utils-server.js'
+import { createJWT, readJWT } from '../../utils/helpers/crypto.js'
 import moment from 'moment'
 import { EVENT } from '../../constants/EventNames.js'
 
+const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const HEALTH_MAX = 100
 
 export class PlayerConnectionManager {
@@ -43,7 +44,6 @@ export class PlayerConnectionManager {
           name: 'Anonymous',
           avatar: null,
           rank: 0,
-          createdAt: moment().toISOString(),
         }
         await this.serverNetwork.persistence.saveUser(user.id, user)
         authToken = await createJWT({ userId: user.id })
@@ -80,9 +80,9 @@ export class PlayerConnectionManager {
       const snapshot = {
         id: socket.id,
         serverTime: performance.now(),
-        assetsUrl: process.env.PUBLIC_ASSETS_URL,
-        apiUrl: process.env.PUBLIC_API_URL,
-        maxUploadSize: process.env.PUBLIC_MAX_UPLOAD_SIZE,
+        assetsUrl: env.PUBLIC_ASSETS_URL,
+        apiUrl: env.PUBLIC_API_URL,
+        maxUploadSize: env.PUBLIC_MAX_UPLOAD_SIZE,
         collections: this.serverNetwork.collections.serialize(),
         settings: this.serverNetwork.settings.serialize(),
         chat: this.serverNetwork.chat.serialize(),
@@ -90,7 +90,7 @@ export class PlayerConnectionManager {
         entities: this.serverNetwork.entities.serialize(),
         livekit,
         authToken,
-        hasAdminCode: !!process.env.ADMIN_CODE,
+        hasAdminCode: !!env.ADMIN_CODE,
       }
 
       socket.send('snapshot', snapshot)

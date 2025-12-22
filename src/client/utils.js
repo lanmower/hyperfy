@@ -13,8 +13,8 @@ export function cls(...args) {
   return str
 }
 
-
-const coarse = window.matchMedia('(pointer: coarse)').matches
-const noHover = window.matchMedia('(hover: none)').matches
-const hasTouch = navigator.maxTouchPoints > 0
+const isClient = typeof window !== 'undefined'
+const coarse = isClient ? window.matchMedia('(pointer: coarse)').matches : false
+const noHover = isClient ? window.matchMedia('(hover: none)').matches : false
+const hasTouch = isClient ? navigator.maxTouchPoints > 0 : false
 export const isTouch = (coarse && hasTouch) || (noHover && hasTouch)
