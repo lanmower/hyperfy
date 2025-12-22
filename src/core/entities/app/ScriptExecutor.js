@@ -29,7 +29,11 @@ export class ScriptExecutor {
         return false
       }
 
-      console.log('[ScriptExecutor] Executing script with props:', Object.keys(props || {}).slice(0, 10))
+      console.log('[ScriptExecutor] Executing script')
+      console.log('[ScriptExecutor] Props type:', typeof props, 'Props:', props)
+      if (props && typeof props === 'object') {
+        console.log('[ScriptExecutor] Props keys:', Object.keys(props))
+      }
 
       const appContext = evaluated.exec(
         getWorldProxy(),
