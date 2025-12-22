@@ -75,7 +75,11 @@ function wrapRawCode(code) {
   (function() {
     const shared = {}
     return (world, app, fetch, props, setTimeout) => {
-      ${code}
+      try {
+        ${code}
+      } catch (err) {
+        console.error('[Script] Error executing app script:', err.message)
+      }
     }
   })()
   `
