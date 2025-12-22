@@ -1,3 +1,6 @@
+import { isArray } from 'lodash-es'
+import { ControlPriorities } from '../../extras/ControlPriorities.js'
+
 const fileRemaps = {
   avatar: field => {
     field.type = 'file'
@@ -107,7 +110,6 @@ export const AppAPIConfig = {
     },
 
     control: (apps, entity, options) => {
-      const { ControlPriorities } = require('../../extras/ControlPriorities.js')
       entity.control?.release()
       entity.control = apps.world.controls.bind({
         ...options,
@@ -118,8 +120,6 @@ export const AppAPIConfig = {
     },
 
     configure: (apps, entity, fields) => {
-      const { isArray } = require('lodash-es')
-
       if (!isArray(fields)) {
         entity.fields = []
       } else {
