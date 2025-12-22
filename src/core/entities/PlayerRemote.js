@@ -28,19 +28,14 @@ export class PlayerRemote extends BaseEntity {
   }
 
   async init() {
-    this.base = createNode('group')
+    if (!this.world.isClient) return
+    this.base = new THREE.Object3D()
     this.base.position.fromArray(this.data.position)
     this.base.quaternion.fromArray(this.data.quaternion)
 
-    this.body = createNode('rigidbody', { type: 'kinematic' })
-    this.body.active = this.data.effect?.anchorId ? false : true
+    this.body = new THREE.Object3D()
     this.base.add(this.body)
-    this.collider = createNode('collider', {
-      type: 'geometry',
-      convex: true,
-      geometry: capsuleGeometry,
-      layer: 'player',
-    })
+    this.collider = new THREE.Object3D()
     this.body.add(this.collider)
 
     const { aura, nametag, bubble, bubbleBox, bubbleText } = this.avatarSync.createAura()
@@ -177,11 +172,11 @@ export class PlayerRemote extends BaseEntity {
     this.destroyed = true
 
     clearTimeout(this.chatTimer)
-    this.base.deactivate()
+    if (this.base) this.base.deactivate()
     this.avatar = null
     this.world.setHot(this, false)
     this.world.events.emit(EVENT.game.leave, { playerId: this.data.id })
-    this.aura.deactivate()
+    if (this.aura) this.aura.deactivate()
     this.aura = null
 
     this.world.entities.remove(this.data.id)

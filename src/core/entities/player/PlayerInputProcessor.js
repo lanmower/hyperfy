@@ -21,6 +21,8 @@ export class PlayerInputProcessor {
     const isXR = this.playerLocal.world.xr?.session
     const { cam, control, pan } = this.playerLocal
 
+    if (!control) return
+
     if (isXR) {
       cam.rotation.x = 0
       cam.rotation.z = 0
@@ -33,7 +35,7 @@ export class PlayerInputProcessor {
         cam.rotation.y += 45 * DEG2RAD
         this.playerLocal.didSnapTurn = true
       }
-    } else if (control.pointer.locked) {
+    } else if (control.pointer?.locked) {
       cam.rotation.x += -control.pointer.delta.y * POINTER_LOOK_SPEED * delta
       cam.rotation.y += -control.pointer.delta.x * POINTER_LOOK_SPEED * delta
       cam.rotation.z = 0
@@ -52,7 +54,7 @@ export class PlayerInputProcessor {
     const isXR = this.playerLocal.world.xr?.session
     const { cam, control } = this.playerLocal
 
-    if (!isXR) {
+    if (!isXR && control?.scrollDelta) {
       cam.zoom += -control.scrollDelta.value * ZOOM_SPEED * delta
       cam.zoom = clamp(cam.zoom, MIN_ZOOM, MAX_ZOOM)
     }
@@ -80,6 +82,8 @@ export class PlayerInputProcessor {
     const isXR = this.playerLocal.world.xr?.session
     const { control } = this.playerLocal
 
+    if (!control) return
+
     this.playerLocal.jumpDown = isXR ? control.xrRightBtn1.down : control.space.down || control.touchA.down
     if (isXR ? control.xrRightBtn1.pressed : control.space.pressed || control.touchA.pressed) {
       this.playerLocal.jumpPressed = true
@@ -90,8 +94,11 @@ export class PlayerInputProcessor {
     const isXR = this.playerLocal.world.xr?.session
     const { control, physics, stick, world } = this.playerLocal
 
+    if (!physics) return
+    if (!control && !isXR && !stick?.active) return
+
     physics.moveDir.set(0, 0, 0)
-    if (isXR) {
+    if (isXR && control) {
       physics.moveDir.x = control.xrLeftStick.value.x
       physics.moveDir.z = control.xrLeftStick.value.z
     } else if (stick?.active) {
@@ -112,7 +119,7 @@ export class PlayerInputProcessor {
       physics.moveDir.x = stickX
       physics.moveDir.z = stickY
       world.events.emit('stick', stick)
-    } else {
+    } else if (control) {
       if (control.keyW.down || control.arrowUp.down) physics.moveDir.z -= 1
       if (control.keyS.down || control.arrowDown.down) physics.moveDir.z += 1
       if (control.keyA.down || control.arrowLeft.down) physics.moveDir.x -= 1
@@ -133,9 +140,11 @@ export class PlayerInputProcessor {
     const isXR = this.playerLocal.world.xr?.session
     const { stick, physics, control } = this.playerLocal
 
+    if (!physics) return
+
     if (stick?.active || isXR) {
       this.playerLocal.running = physics.moving && physics.moveDir.length() > 0.9
-    } else {
+    } else if (control) {
       this.playerLocal.running = physics.moving && (control.shiftLeft.down || control.shiftRight.down)
     }
   }
@@ -143,6 +152,8 @@ export class PlayerInputProcessor {
   applyMovementRotation() {
     const isXR = this.playerLocal.world.xr?.session
     const { physics, cam, base, world } = this.playerLocal
+
+    if (!physics) return
 
     physics.moveDir.normalize()
 
@@ -175,7 +186,7 @@ export class PlayerInputProcessor {
 
     if (data.effect?.turn) {
       applyRotY = true
-    } else if (physics.moving || firstPerson) {
+    } else if (physics?.moving || firstPerson) {
       applyRotY = true
     }
 

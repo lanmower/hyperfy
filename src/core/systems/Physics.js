@@ -18,6 +18,7 @@ export class Physics extends System {
     this.scene = null
     this.callbackManager = new PhysicsCallbackManager()
     this.interpolationManager = new PhysicsInterpolationManager(this)
+    this.active = new Set()
   }
 
   async init() {
@@ -41,7 +42,6 @@ export class Physics extends System {
     this.defaultMaterial = this.physics.createMaterial(0.2, 0.2, 0.2)
 
     this.handles = new Map()
-    this.active = new Set()
     this.materials = {}
 
     this.callbackManager.initializeCallbacks()
@@ -98,6 +98,7 @@ export class Physics extends System {
   }
 
   postFixedUpdate(delta) {
+    if (!this.scene) return
     this.scene.simulate(delta)
     this.scene.fetchResults(true)
     this.callbackManager.processContactCallbacks()
