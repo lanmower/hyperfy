@@ -39,10 +39,10 @@ const fileRemaps = {
 export const AppAPIConfig = {
   getters: {
     instanceId: (apps, entity) => entity.data.id,
-    version: (apps, entity) => entity.blueprint.version,
-    modelUrl: (apps, entity) => entity.blueprint.model,
+    version: (apps, entity) => entity.blueprint?.version,
+    modelUrl: (apps, entity) => entity.blueprint?.model,
     state: (apps, entity) => entity.data.state,
-    props: (apps, entity) => entity.blueprint.props,
+    props: (apps, entity) => entity.blueprint?.props || {},
     keepActive: (apps, entity) => entity.keepActive,
   },
 
