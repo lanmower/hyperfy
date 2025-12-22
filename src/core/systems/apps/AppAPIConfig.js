@@ -126,6 +126,11 @@ export const AppAPIConfig = {
         entity.fields = fields
       }
 
+      if (!entity.blueprint) {
+        console.warn('[AppAPIConfig.configure] Blueprint not loaded yet')
+        return
+      }
+
       const props = entity.blueprint.props
       for (const field of entity.fields) {
         fileRemaps[field.type]?.(field)
