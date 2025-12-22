@@ -8,6 +8,7 @@ export const WorldAPIConfig = {
     networkId: (apps, entity) => apps.world.network.id,
     isServer: (apps, entity) => apps.world.network.isServer,
     isClient: (apps, entity) => apps.world.network.isClient,
+    props: (apps, entity) => entity.blueprint?.props || {},
   },
 
   setters: {},
