@@ -29,6 +29,8 @@ export class ScriptExecutor {
         return false
       }
 
+      console.log('[ScriptExecutor] Executing script with props:', Object.keys(props || {}).slice(0, 10))
+
       const appContext = evaluated.exec(
         getWorldProxy(),
         getAppProxy(),
