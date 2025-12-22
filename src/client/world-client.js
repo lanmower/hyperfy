@@ -4,6 +4,7 @@ import { css } from '@firebolt-dev/css'
 
 import { World } from '../core/World.js'
 import { CoreUI } from './components/CoreUI.js'
+import { setupDebugGlobals } from './debugUtils.js'
 
 export { System } from '../core/systems/System.js'
 
@@ -48,6 +49,7 @@ export function Client({ wsUrl, onSetup }) {
             console.log('Starting world.init')
             await world.init(config)
             console.log('world.init completed')
+            setupDebugGlobals(world)
           })(),
           new Promise((_, reject) => setTimeout(() => {
             console.error('World initialization timeout after 120s')
