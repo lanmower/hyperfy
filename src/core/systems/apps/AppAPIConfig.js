@@ -105,16 +105,11 @@ export const AppAPIConfig = {
     },
 
     create: (apps, entity, name, data) => {
-      if (!entity) {
-        console.warn('[AppAPIConfig.create] Entity is null/undefined')
-        return null
-      }
-      if (typeof entity.createNode !== 'function') {
-        console.warn('[AppAPIConfig.create] createNode not found. Entity type:', typeof entity, 'Entity keys:', Object.keys(entity).slice(0, 10), 'Has createNode:', 'createNode' in entity)
+      if (!entity || typeof entity.createNode !== 'function') {
         return null
       }
       const node = entity.createNode(name, data)
-      return node.getProxy()
+      return node.getProxy?.() || node
     },
 
     control: (apps, entity, options) => {
