@@ -226,3 +226,44 @@ const app = await page.evaluate(() => {
 - Last 100 errors, warnings, and info logs stored with timestamps
 - Use for post-mortem debugging without browser console
 - Can be exported and analyzed programmatically
+
+### Meadow Script Execution Status
+
+**Current State (Dec 22, 2025)**
+- ✅ Script loads and executes
+- ✅ app.config exposes blueprint properties
+- ✅ app.add() and app.remove() methods available
+- ✅ Avatar renders correctly (Three.js rendering works)
+- ❌ Meadow environment not rendering (script fails during node property assignment)
+
+**Blocking Issue: Node Property Assignment**
+- Error: `node2.position._onChange is not a function`
+- Occurs when script sets properties on nodes created by `app.create('sky')`
+- Script calls: `sky.bg = app.config.sky?.url`, `sky.hdr = ...`, etc.
+- Conflict between plain object property assignment and Node class property setters
+- **Root Cause**: Plain objects from createNode() don't have proper Node initialization when script sets properties before app.add() mounts them
+
+**Meadow Script Flow:**
+1. `app.create('sky')` returns plain object with { type: 'sky', props: {}, children: [] }
+2. Script sets properties: sky.bg, sky.hdr, sky.rotationY, sky.sunDirection, etc.
+3. Script calls `app.add(sky)` to mount the node
+4. **Issue**: During step 2, property assignment conflicts with position property handler
+
+**Files Involved in Issue:**
+- `src/core/extras/createNode.js` - creates plain objects
+- `src/core/systems/apps/AppAPIConfig.js` - implements create() and add() methods
+- `src/core/nodes/Sky.js` - actual Sky class with property handlers
+- `src/core/entities/app/ScriptExecutor.js` - executes script code
+
+**Next Steps to Resolve:**
+1. Option A: Delay Node instantiation until script completes (would require script context changes)
+2. Option B: Create a proxy object that defers property setting until mount
+3. Option C: Modify plain object creation to pre-initialize Node properties
+4. Option D: Make Node setters more defensive against partial initialization
+
+**For Production:**
+Once resolved, the meadow environment should render with:
+- Sky texture from props.sky
+- HDR lighting from props.hdr
+- Sun direction and intensity from props
+- Fog configuration from props
