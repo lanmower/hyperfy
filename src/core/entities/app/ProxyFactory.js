@@ -46,7 +46,7 @@ export class ProxyFactory {
     for (const key in apps.worldGetters) {
       try {
         Object.defineProperty(proxy, key, {
-          get: () => apps.worldGetters[key](entity),
+          get: () => apps.worldGetters[key](apps, entity),
           enumerable: true,
         })
       } catch (err) {
@@ -57,7 +57,7 @@ export class ProxyFactory {
     for (const key in apps.worldSetters) {
       try {
         Object.defineProperty(proxy, key, {
-          set: (value) => apps.worldSetters[key](entity, value),
+          set: (value) => apps.worldSetters[key](apps, entity, value),
           enumerable: true,
         })
       } catch (err) {
@@ -66,7 +66,7 @@ export class ProxyFactory {
     }
 
     for (const key in apps.worldMethods) {
-      proxy[key] = (...args) => apps.worldMethods[key](entity, ...args)
+      proxy[key] = (...args) => apps.worldMethods[key](apps, entity, ...args)
     }
 
     return proxy
@@ -85,7 +85,7 @@ export class ProxyFactory {
     for (const key in apps.appGetters) {
       try {
         Object.defineProperty(proxy, key, {
-          get: () => apps.appGetters[key](entity),
+          get: () => apps.appGetters[key](apps, entity),
           enumerable: true,
         })
       } catch (err) {
@@ -96,7 +96,7 @@ export class ProxyFactory {
     for (const key in apps.appSetters) {
       try {
         Object.defineProperty(proxy, key, {
-          set: (value) => apps.appSetters[key](entity, value),
+          set: (value) => apps.appSetters[key](apps, entity, value),
           enumerable: true,
         })
       } catch (err) {
@@ -105,7 +105,7 @@ export class ProxyFactory {
     }
 
     for (const key in apps.appMethods) {
-      proxy[key] = (...args) => apps.appMethods[key](entity, ...args)
+      proxy[key] = (...args) => apps.appMethods[key](apps, entity, ...args)
     }
 
     return proxy
