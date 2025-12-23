@@ -11,6 +11,9 @@ export class PointerLockInputStrategy extends InputStrategy {
     rotation.z = 0
     rotation.x = clamp(rotation.x, MIN_PITCH_ANGLE * DEG2RAD, MAX_PITCH_ANGLE * DEG2RAD)
     quaternion.setFromEuler(rotation)
+    if (control.pointer.delta.x !== 0 || control.pointer.delta.y !== 0) {
+      console.log('[PointerLock] Updated camera:', { rotY: rotation.y.toFixed(3), quatY: quaternion.y.toFixed(4) })
+    }
   }
 
   updateZoom(delta, control) {

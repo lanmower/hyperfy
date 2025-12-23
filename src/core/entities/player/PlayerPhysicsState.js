@@ -50,7 +50,9 @@ export class PlayerPhysicsState {
   }
 
   updateMaterialFriction() {
-    const PHYSX = this.world.PHYSX
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) return
+
     const eMAX = PHYSX.PxCombineModeEnum.eMAX
     const eMIN = PHYSX.PxCombineModeEnum.eMIN
 
@@ -72,6 +74,9 @@ export class PlayerPhysicsState {
   applyMovementForce(snare) {
     if (!this.physics.moving) return
 
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) return
+
     const moveSpeed = (this.player.running ? 6 : 3) * this.physics.mass
     const adjustedSpeed = moveSpeed * (1 - snare)
 
@@ -82,11 +87,12 @@ export class PlayerPhysicsState {
       .multiplyScalar(adjustedSpeed * 10)
       .applyQuaternion(slopeRotation)
 
-    this.player.capsule.addForce(moveForce.toPxVec3(), this.world.PHYSX.PxForceModeEnum.eFORCE, true)
+    this.player.capsule.addForce(moveForce.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
   }
 
   handleJump() {
-    const PHYSX = this.world.PHYSX
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) return
 
     const shouldJump =
       this.physics.grounded &&

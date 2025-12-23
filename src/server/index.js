@@ -110,8 +110,17 @@ fastify.get('/', async (req, reply) => {
   const desc = world.settings.desc || ''
   const image = world.resolveURL(world.settings.image?.url) || ''
   const url = process.env.PUBLIC_ASSETS_URL
-  const filePath = path.join(__dirname, 'public', 'index.html')
+  const filePath = path.join(__dirname, '../build/public', 'index.html')
   let html = fs.readFileSync(filePath, 'utf-8')
+
+  const buildDir = path.join(__dirname, '../build/public')
+  const files = fs.readdirSync(buildDir)
+  const jsFile = files.find(f => f.startsWith('index-') && f.endsWith('.js'))
+  const particlesFile = files.find(f => f.startsWith('particles-') && f.endsWith('.js'))
+
+  html = html.replace('{jsPath}', jsFile ? '/' + jsFile : '/index.js')
+  html = html.replace('{particlesPath}', particlesFile ? '/' + particlesFile : '/particles.js')
+  html = html.replaceAll('{buildId}', Date.now())
   html = html.replaceAll('{url}', url)
   html = html.replaceAll('{title}', title)
   html = html.replaceAll('{desc}', desc)
@@ -119,7 +128,7 @@ fastify.get('/', async (req, reply) => {
   reply.type('text/html').send(html)
 })
 fastify.register(statics, {
-  root: path.join(__dirname, 'public'),
+  root: path.join(__dirname, '../build/public'),
   prefix: '/',
   decorateReply: false,
   setHeaders: res => {

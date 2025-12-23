@@ -80,7 +80,7 @@ export class AssetHandlers {
     )
     this.insertRegistry.register('model', (localUrl, url, file, key) =>
       this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const model = this.createModelResult(glbToNodes(glb, this.world), file)
+        const model = this.createModelResult(glbToNodes(glb, this.world), file, glb.scene)
         this.results.set(key, model)
         return model
       })
@@ -166,7 +166,7 @@ export class AssetHandlers {
   handleModel(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const model = this.createModelResult(glbToNodes(glb, this.world), file)
+      const model = this.createModelResult(glbToNodes(glb, this.world), file, glb.scene)
       this.results.set(key, model)
       return model
     })
@@ -207,9 +207,10 @@ export class AssetHandlers {
     })
   }
 
-  createModelResult(node, file) {
+  createModelResult(node, file, glbScene = null) {
     return {
       toNodes() { return node.clone(true) },
+      getScene() { return glbScene?.clone() },
       getStats() {
         const stats = node.getStats(true)
         stats.fileBytes = file.size

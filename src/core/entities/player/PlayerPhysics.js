@@ -85,7 +85,10 @@ export class PlayerPhysics {
   }
 
   updateAnchorState(anchor) {
-    const DISABLE_SIMULATION = this.world.PHYSX.PxActorFlagEnum.eDISABLE_SIMULATION
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) return
+
+    const DISABLE_SIMULATION = PHYSX.PxActorFlagEnum.eDISABLE_SIMULATION
 
     if (anchor && !this.player.capsuleDisabled) {
       this.player.capsule.setActorFlag(DISABLE_SIMULATION, true)
@@ -150,7 +153,8 @@ export class PlayerPhysics {
   }
 
   updateGravityAndVelocity(delta, snare) {
-    const PHYSX = this.world.PHYSX
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) return
 
     if (this.grounded) {
       if (this.platform.actor) {
@@ -228,7 +232,8 @@ export class PlayerPhysics {
   }
 
   updateFlyingPhysics(delta) {
-    const PHYSX = this.world.PHYSX
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) return
 
     if (this.moving || this.player.jumpDown || this.player.control?.keyC?.down) {
       const flySpeed = this.flyForce * (this.player.running ? 2 : 1)

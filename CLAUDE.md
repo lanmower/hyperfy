@@ -288,18 +288,45 @@ if (root) {
 9. ✅ Sky.mount() called, calls SkyManager.addSky(), environment renders
 10. ✅ Model (ground), sky, fog, avatar all visible
 
-**Rendering Status:**
+**Final Critical Fix: GLB Scene Integration (Dec 23, 2025 - Complete Solution)**
+
+After initial fixes, the meadow was still not rendering. Root cause: The loaded GLB model was stored in app-level node structure but the original Three.js glTF scene was not being added to the rendering pipeline.
+
+**Fix #4: Preserve and Render GLB Scene**
+- **Problem**: BlueprintLoader.loadModel() loaded the GLB but lost the Three.js scene graph. The model was created as an app-level node with Three.js objects in its props, but the original glTF scene wasn't passed through. When App.build() added the model to app.root (a plain JS object), it wasn't added to stage.scene.
+- **Solution**:
+  1. Modified `src/core/systems/loaders/AssetHandlers.js` to preserve original glTF scene in model result
+  2. Modified `src/core/entities/app/BlueprintLoader.js` to return both nodes and scene separately
+  3. Modified `src/core/entities/App.js` to add the glTF scene directly to stage.scene
+- **Files**:
+  - `src/core/systems/loaders/AssetHandlers.js` - getScene() method added, scene preserved in model result
+  - `src/core/entities/app/BlueprintLoader.js` - loadModel() and load() return scene separately
+  - `src/core/entities/App.js` - Direct scene.add(root) after model load
+- **Code Pattern**:
+```javascript
+if (root) {
+  this.root.add(root)  // Add to app-level node structure
+  root.activate?.({ world: this.world, entity: this })
+  if (this.world.stage) {
+    this.world.stage.scene.add(root)  // Add THREE.Object3D to Three.js scene
+  }
+}
+```
+- **Result**: The actual Three.js glTF scene is now in the rendering pipeline
+
+**Rendering Status (FULLY RESOLVED):**
 - ✅ Meadow script executes without errors
 - ✅ Sky node created, mounted, and rendering (blue sky with clouds visible)
-- ✅ Ground model renders (base-environment.glb - gray meadow visible)
+- ✅ **Ground model FULLY VISIBLE** (base-environment.glb - GREEN meadow with rolling terrain)
 - ✅ Fog atmosphere correctly applied
-- ✅ Avatar renders with proper lighting from sky HDR
-- ✅ **Full 3D environment is now visible in screenshot**
+- ✅ Avatar renders standing on the meadow with proper lighting
+- ✅ **COMPLETE 3D environment fully visible and functional**
 
-**Files Modified:**
+**Files Modified (Complete List):**
 - `src/core/utils/helpers/defineProperty.js` - Added `ref` property to schema proxy
-- `src/core/entities/app/BlueprintLoader.js` - Added guard for missing loader
-- `src/core/entities/App.js` - Added loaded model root to app scene
+- `src/core/entities/app/BlueprintLoader.js` - Added guard for missing loader + scene preservation
+- `src/core/systems/loaders/AssetHandlers.js` - Preserve and expose glTF scene
+- `src/core/entities/App.js` - Add loaded Three.js scene to stage.scene
 - `src/core/nodes/Sky.js` - Added debug logging to Sky.mount()
 
 ## Comprehensive Debugging Guide

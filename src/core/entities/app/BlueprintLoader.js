@@ -22,10 +22,13 @@ export class BlueprintLoader {
 
     try {
       let root = null
+      let scene = null
       let script = null
 
       if (blueprintData.model && !crashed) {
-        root = await this.loadModel(blueprintData.model)
+        const modelResult = await this.loadModel(blueprintData.model)
+        root = modelResult?.nodes
+        scene = modelResult?.scene
       }
 
       if (blueprintData.script && !crashed) {
@@ -34,6 +37,7 @@ export class BlueprintLoader {
 
       return {
         root,
+        scene,
         script,
         blueprint: blueprintData,
       }
@@ -61,11 +65,19 @@ export class BlueprintLoader {
       return null
     }
 
-    return glb.toNodes()
+    return {
+      nodes: glb.toNodes(),
+      scene: glb.getScene?.(),
+    }
   }
 
   async loadScript(scriptUrl) {
     const world = this.app.world
+
+    if (!world.loader) {
+      console.warn(`[BlueprintLoader] Loader not available (server-side script loading not supported)`)
+      return null
+    }
 
     let scriptCode = world.loader.get('script', scriptUrl)
     if (!scriptCode) {

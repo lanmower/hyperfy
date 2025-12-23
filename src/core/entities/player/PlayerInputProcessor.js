@@ -48,6 +48,8 @@ export class PlayerInputProcessor {
     if (!isXR) {
       cam.rotation.x = clamp(cam.rotation.x, -89 * DEG2RAD, 89 * DEG2RAD)
     }
+
+    cam.quaternion.setFromEuler(cam.rotation)
   }
 
   processZoom(delta) {
