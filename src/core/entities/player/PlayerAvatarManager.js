@@ -29,6 +29,7 @@ export class PlayerAvatarManager {
               console.log('Creating avatar with hooks, scene:', !!hooks.scene)
               this.playerLocal.avatar = src.factory.create(this.playerLocal.base.matrixWorld, hooks, this.playerLocal)
               console.log('Avatar created:', !!this.playerLocal.avatar, 'has raw:', !!this.playerLocal.avatar?.raw)
+              this.playerLocal.avatar?.disableRateCheck()
               if (this.playerLocal.avatar?.raw instanceof THREE.Object3D) {
                 this.playerLocal.base.add(this.playerLocal.avatar.raw)
                 console.log('Avatar raw added to base')
