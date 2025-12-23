@@ -25,7 +25,8 @@ export class PlayerAvatarManager {
               loader: this.playerLocal.world.loader,
               setupMaterial: this.playerLocal.world.setupMaterial,
             }
-            this.playerLocal.avatar = src.factory.create(this.playerLocal.base.matrixWorld, hooks, this.playerLocal)
+            const identityMatrix = new THREE.Matrix4()
+            this.playerLocal.avatar = src.factory.create(identityMatrix, hooks, this.playerLocal)
             if (this.playerLocal.avatar?.disableRateCheck) {
               this.playerLocal.avatar.disableRateCheck()
             }

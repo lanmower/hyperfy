@@ -81,10 +81,10 @@ export class PlayerLocal extends BaseEntity {
       this.base = new THREE.Object3D()
       this.base.position.fromArray(this.data.position)
       this.base.quaternion.fromArray(this.data.quaternion)
-      this.world.rig.add(this.base)
+      this.world.stage.scene.add(this.base)
 
       this.aura = new THREE.Object3D()
-      this.world.rig.add(this.aura)
+      this.world.stage.scene.add(this.aura)
 
       this.nametag = createNode('nametag', { label: '', health: this.data.health, active: false })
       this.bubble = createNode('ui', {
