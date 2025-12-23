@@ -23,7 +23,7 @@ export class PlayerCameraManager {
     this.rotation = new THREE.Euler(0, 0, 0, 'YXZ')
     bindRotations(this.quaternion, this.rotation)
     this.quaternion.copy(this.base.quaternion)
-    this.rotation.x += -15 * DEG2RAD
+    this.rotation.x = -15 * DEG2RAD
     this.quaternion.setFromEuler(this.rotation)
     this.zoom = 1.5
   }
