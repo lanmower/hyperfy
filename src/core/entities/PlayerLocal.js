@@ -139,8 +139,9 @@ export class PlayerLocal extends BaseEntity {
         console.log('Loader not available, skipping avatar')
       }
 
+      console.log('About to call initCapsule')
       this.initCapsule()
-      console.log('Capsule initialized')
+      console.log('Capsule initialized, capsule:', !!this.capsule, 'physics:', !!this.physics)
 
       this.controlBinder.initControl()
       console.log('Control binding initialized')
@@ -150,7 +151,9 @@ export class PlayerLocal extends BaseEntity {
       this.world.events.emit('ready', true)
       console.log('PlayerLocal.init() completed')
     } catch (err) {
-      console.error('PlayerLocal.init() error:', err)
+      console.error('PlayerLocal.init() error:', err.message || err.toString())
+      console.error('PlayerLocal.init() error stack:', err.stack)
+      console.error('PlayerLocal.init() full error:', err)
       console.log('Setting hot and emitting ready from catch block')
       this.world.setHot(this, true)
       this.world.events.emit('ready', true)
@@ -225,7 +228,7 @@ export class PlayerLocal extends BaseEntity {
 
     this.inputProcessor.processRunning()
     this.inputProcessor.applyMovementRotation()
-    this.inputProcessor.applyBodyRotation()
+    this.inputProcessor.applyBodyRotation(delta)
 
     this.animationController.updateEmote()
     this.mode = this.animationController.updateAnimationMode()

@@ -178,23 +178,30 @@ export class PlayerInputProcessor {
     return e1.y + cam.rotation.y
   }
 
-  applyBodyRotation() {
+  applyBodyRotation(delta = 0.016) {
     const isXR = this.playerLocal.world.xr?.session
     const { physics, cam, base, world, firstPerson, data } = this.playerLocal
 
-    let rotY = isXR ? this.getXRRotation() : cam.rotation.y
+    let rotY
     let applyRotY
 
     if (data.effect?.turn) {
+      rotY = isXR ? this.getXRRotation() : cam.rotation.y
       applyRotY = true
-    } else if (physics?.moving || firstPerson) {
+    } else if (physics?.moving) {
+      const moveDir = v1.copy(physics.moveDir)
+      moveDir.normalize()
+      rotY = Math.atan2(moveDir.x, -moveDir.z)
+      applyRotY = true
+    } else if (firstPerson) {
+      rotY = isXR ? this.getXRRotation() : cam.rotation.y
       applyRotY = true
     }
 
     if (applyRotY) {
       e1.set(0, rotY, 0)
       q1.setFromEuler(e1)
-      const alpha = 1 - Math.pow(0.00000001, 0.016)
+      const alpha = Math.min(1, 8 * delta)
       base.quaternion.slerp(q1, alpha)
     }
   }
