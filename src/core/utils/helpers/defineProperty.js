@@ -89,6 +89,14 @@ export function createPropertyProxy(instance, propertySchema, superProxy, custom
     proxy[name] = method.bind(self)
   }
 
+  Object.defineProperty(proxy, 'ref', {
+    get() {
+      return self
+    },
+    enumerable: false,
+    configurable: true,
+  })
+
   return Object.defineProperties(proxy, Object.getOwnPropertyDescriptors(superProxy))
 }
 

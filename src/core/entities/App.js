@@ -61,6 +61,9 @@ export class App extends BaseEntity {
     const result = await this.blueprintLoader.load(crashed)
     if (!result) return
     const { root, script, blueprint } = result
+    if (root) {
+      this.root.add(root)
+    }
     const runScript =
       (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
     if (runScript) {
@@ -71,7 +74,7 @@ export class App extends BaseEntity {
       this.world.setHot(this, true)
       this.nodeManager.collectSnapPoints()
     }
-    this.networkSync.initialize(root, this.world.networkRate)
+    this.networkSync.initialize(root || this.root, this.world.networkRate)
     this.eventManager.flushEventQueue()
     this.building = false
   }

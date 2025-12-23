@@ -1,5 +1,5 @@
 export function createNode(type, props) {
-  const node = { type, props, children: [] }
+  const node = { type, props, children: [], parent: null, mounted: false, _active: true }
   node.add = function(child) {
     this.children.push(child)
     return child
@@ -25,7 +25,31 @@ export function createNode(type, props) {
     return { triangles: 0, materials: new Set(), geometries: new Set(), textureBytes: 0 }
   }
   node.activate = function(options) {
+    this.ctx = options
     return this
+  }
+  node.deactivate = function() {
+    return this
+  }
+  node.updateTransform = function() {
+    return this
+  }
+  node.mount = function() {
+    this.mounted = true
+    return this
+  }
+  node.unmount = function() {
+    this.mounted = false
+    return this
+  }
+  node.setDirty = function() {
+    return this
+  }
+  node.traverse = function(callback) {
+    callback(this)
+    for (const child of this.children) {
+      child.traverse?.(callback)
+    }
   }
   return node
 }

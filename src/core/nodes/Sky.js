@@ -27,7 +27,9 @@ export class Sky extends Node {
   }
 
   mount() {
+    console.log('[Sky.mount] called', { hasCtx: !!this.ctx, hasWorld: !!this.ctx?.world })
     this.handle = this.ctx.world.environment.addSky?.(this)
+    console.log('[Sky.mount] completed', { handleSet: !!this.handle })
   }
 
   commit(didMove) {

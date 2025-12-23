@@ -24,27 +24,51 @@ export class TransformSystem {
 
   setupChangeListeners() {
     const node = this.node
-    node.position._onChange(() => {
-      node.setTransformed()
-    })
-    node.rotation._onChange(() => {
-      node.quaternion.setFromEuler(node.rotation, false)
-      node.setTransformed()
-    })
-    node.quaternion._onChange(() => {
-      node.rotation.setFromQuaternion(node.quaternion, undefined, false)
-      node.setTransformed()
-    })
-    node.scale._onChange(() => {
-      if (node.scale.x === 0 || node.scale.y === 0 || node.scale.z === 0) {
-        return node.scale.set(
-          node.scale.x || EPSILON,
-          node.scale.y || EPSILON,
-          node.scale.z || EPSILON
-        )
+    try {
+      if (node.position && typeof node.position._onChange === 'function') {
+        node.position._onChange(() => {
+          node.setTransformed()
+        })
       }
-      node.setTransformed()
-    })
+    } catch (e) {
+      console.warn('[TransformSystem] Failed to setup position onChange:', e.message)
+    }
+    try {
+      if (node.rotation && typeof node.rotation._onChange === 'function') {
+        node.rotation._onChange(() => {
+          node.quaternion.setFromEuler(node.rotation, false)
+          node.setTransformed()
+        })
+      }
+    } catch (e) {
+      console.warn('[TransformSystem] Failed to setup rotation onChange:', e.message)
+    }
+    try {
+      if (node.quaternion && typeof node.quaternion._onChange === 'function') {
+        node.quaternion._onChange(() => {
+          node.rotation.setFromQuaternion(node.quaternion, undefined, false)
+          node.setTransformed()
+        })
+      }
+    } catch (e) {
+      console.warn('[TransformSystem] Failed to setup quaternion onChange:', e.message)
+    }
+    try {
+      if (node.scale && typeof node.scale._onChange === 'function') {
+        node.scale._onChange(() => {
+          if (node.scale.x === 0 || node.scale.y === 0 || node.scale.z === 0) {
+            return node.scale.set(
+              node.scale.x || EPSILON,
+              node.scale.y || EPSILON,
+              node.scale.z || EPSILON
+            )
+          }
+          node.setTransformed()
+        })
+      }
+    } catch (e) {
+      console.warn('[TransformSystem] Failed to setup scale onChange:', e.message)
+    }
   }
 
   setTransformed() {

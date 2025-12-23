@@ -45,6 +45,10 @@ export class BlueprintLoader {
 
   async loadModel(modelUrl) {
     const world = this.app.world
+    if (!world.loader) {
+      console.warn(`[BlueprintLoader] Loader not available (server-side model loading not supported)`)
+      return null
+    }
     const type = modelUrl.endsWith('.vrm') ? 'avatar' : 'model'
 
     let glb = world.loader.get(type, modelUrl)
