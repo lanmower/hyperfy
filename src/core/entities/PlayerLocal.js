@@ -264,6 +264,8 @@ export class PlayerLocal extends BaseEntity {
       }
     } else if (this.control?.camera) {
       simpleCamLerp(this.world, this.control.camera, this.cam, delta)
+      window.__DEBUG__.cameraDist = this.control.camera.position.distanceTo(this.cam.position)
+      window.__DEBUG__.cameraZoom = this.control.camera.zoom
     }
 
     this.world.camera.position.copy(this.cam.position)
