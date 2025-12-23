@@ -94,7 +94,7 @@ export class PlayerPlatformTracker {
     e1.z = 0
     q1.setFromEuler(e1)
     this.player.base.quaternion.multiply(q1)
-    this.player.base.updateTransform()
+    this.player.base.updateWorldMatrix(false, false)
 
     this.platform.prevTransform.copy(currTransform)
   }
