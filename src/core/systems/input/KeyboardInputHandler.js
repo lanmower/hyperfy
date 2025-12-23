@@ -1,3 +1,5 @@
+import { codeToProp } from '../../extras/buttons.js'
+
 export class KeyboardInputHandler {
   constructor(inputSystem) {
     this.inputSystem = inputSystem
@@ -10,7 +12,8 @@ export class KeyboardInputHandler {
 
   onKeyDown = e => {
     if (this.inputSystem.isInputFocused()) return
-    const prop = e.code
+    const prop = codeToProp[e.code]
+    if (!prop) return
     if (this.inputSystem.buttonsDown.has(prop)) return
     this.inputSystem.buttonsDown.add(prop)
     for (const control of this.inputSystem.controls) {
@@ -27,7 +30,8 @@ export class KeyboardInputHandler {
 
   onKeyUp = e => {
     if (this.inputSystem.isInputFocused()) return
-    const prop = e.code
+    const prop = codeToProp[e.code]
+    if (!prop) return
     if (!this.inputSystem.buttonsDown.has(prop)) return
     this.inputSystem.buttonsDown.delete(prop)
     for (const control of this.inputSystem.controls) {
