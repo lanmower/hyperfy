@@ -65,6 +65,8 @@ export class AnimationController {
   }
 
   applyAvatarLocomotion() {
-    this.player.avatar?.instance?.setLocomotion(this.player.mode, this.player.axis, this.player.gaze)
+    const avatar = this.player.avatar
+    const locomotionFn = avatar?.instance?.setLocomotion || avatar?.setLocomotion
+    locomotionFn?.call(avatar?.instance || avatar, this.player.mode, this.player.axis, this.player.gaze)
   }
 }

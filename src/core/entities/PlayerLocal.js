@@ -234,6 +234,7 @@ export class PlayerLocal extends BaseEntity {
     this.mode = this.animationController.updateAnimationMode()
     this.animationController.updateGaze()
     this.animationController.applyAvatarLocomotion()
+    this.avatar?.update?.(delta)
 
     this.networkSynchronizer.sync(delta)
     this.effectManager.updateDuration(delta)
@@ -267,9 +268,6 @@ export class PlayerLocal extends BaseEntity {
       window.__DEBUG__.cameraDist = this.control.camera.position.distanceTo(this.cam.position)
       window.__DEBUG__.cameraZoom = this.control.camera.zoom
     }
-
-    this.world.camera.position.copy(this.cam.position)
-    this.world.camera.quaternion.copy(this.cam.quaternion)
 
     if (this.avatar && this.avatar.getBoneTransform) {
       const matrix = this.avatar.getBoneTransform('head')

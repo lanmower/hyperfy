@@ -13,6 +13,8 @@ const MAX_CAM_DISTANCE = 0.4
 export function simpleCamLerp(world, camera, target, delta) {
   if (!world || !camera || !target) return
 
+  target.quaternion.setFromEuler(target.rotation)
+
   const alpha = 1.0 - Math.exp(-smoothing * delta)
   camera.quaternion.slerp(target.quaternion, alpha)
 

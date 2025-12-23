@@ -71,11 +71,19 @@ export class PlayerInputProcessor {
     if (cam.zoom < 1 && !this.playerLocal.firstPerson) {
       cam.zoom = 0
       this.playerLocal.firstPerson = true
-      this.playerLocal.avatar.visible = false
+      if (this.playerLocal.avatar?.raw?.scene) {
+        this.playerLocal.avatar.raw.scene.visible = false
+      } else if (this.playerLocal.avatar?.visible !== undefined) {
+        this.playerLocal.avatar.visible = false
+      }
     } else if (cam.zoom > 0 && this.playerLocal.firstPerson) {
       cam.zoom = 1.5
       this.playerLocal.firstPerson = false
-      this.playerLocal.avatar.visible = true
+      if (this.playerLocal.avatar?.raw?.scene) {
+        this.playerLocal.avatar.raw.scene.visible = true
+      } else if (this.playerLocal.avatar?.visible !== undefined) {
+        this.playerLocal.avatar.visible = true
+      }
     }
   }
 
@@ -189,12 +197,7 @@ export class PlayerInputProcessor {
     if (data.effect?.turn) {
       rotY = isXR ? this.getXRRotation() : cam.rotation.y
       applyRotY = true
-    } else if (physics?.moving) {
-      const moveDir = v1.copy(physics.moveDir)
-      moveDir.normalize()
-      rotY = Math.atan2(moveDir.x, -moveDir.z)
-      applyRotY = true
-    } else if (firstPerson) {
+    } else if (physics?.moving || firstPerson) {
       rotY = isXR ? this.getXRRotation() : cam.rotation.y
       applyRotY = true
     }
@@ -202,7 +205,7 @@ export class PlayerInputProcessor {
     if (applyRotY) {
       e1.set(0, rotY, 0)
       q1.setFromEuler(e1)
-      const alpha = Math.min(1, 8 * delta)
+      const alpha = 1 - Math.pow(0.00000001, delta)
       base.quaternion.slerp(q1, alpha)
     }
   }
