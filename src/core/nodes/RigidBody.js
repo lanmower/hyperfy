@@ -23,6 +23,8 @@ const propertySchema = schema('mass', 'damping', 'angularDamping', 'friction', '
   .override('angularDamping', { default: 0.05, onSet() { this.needsRebuild = true } })
   .build()
 
+const defaults = {}
+
 export class RigidBody extends Node {
   constructor(data = {}) {
     super(data)

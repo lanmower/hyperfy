@@ -24,6 +24,8 @@ const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'con
   .override('trigger', { onSet: rebuildIfShape })
   .build()
 
+const defaults = {}
+
 export class Collider extends Node {
   constructor(data = {}) {
     super(data)

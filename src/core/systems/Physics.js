@@ -28,11 +28,27 @@ export class Physics extends System {
       this.allocator = info.allocator
       this.errorCb = info.errorCb
       this.foundation = info.foundation
+
+      console.log('[Physics] PhysX module loaded')
+      console.log('[Physics] globalThis.PHYSX available:', !!globalThis.PHYSX)
+      console.log('[Physics] globalThis.PHYSX.PHYSICS_VERSION:', globalThis.PHYSX?.PHYSICS_VERSION)
+
+      if (!globalThis.PHYSX) {
+        throw new Error('PhysX module failed to initialize - globalThis.PHYSX is undefined')
+      }
+
+      this.world.PHYSX = globalThis.PHYSX
+      console.log('[Physics] Set world.PHYSX for access by PlayerPhysics and other systems')
     } catch (err) {
+      console.error('[Physics] Failed to load PhysX:', err.message || err.toString())
+      console.error('[Physics] Error details:', err)
       return
     }
 
-    if (!this.foundation) return
+    if (!this.foundation) {
+      console.error('[Physics] Foundation not initialized')
+      return
+    }
 
     extendThreePhysX()
 
@@ -47,6 +63,8 @@ export class Physics extends System {
     this.callbackManager.initializeCallbacks()
     this.getContactCallback = this.callbackManager.getContactCallback
     this.getTriggerCallback = this.callbackManager.getTriggerCallback
+    this.contactCallbacks = this.callbackManager.contactCallbacks
+    this.triggerCallbacks = this.callbackManager.triggerCallbacks
 
     this.queries = new PhysicsQueries(this)
     this.actorManager = new PhysicsActorManager(this)
