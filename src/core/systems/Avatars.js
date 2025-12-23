@@ -17,11 +17,11 @@ export class Avatars extends System {
     this.avatars.splice(idx, 1)
   }
 
-  update() {
-    if (!this.avatars.length) return
-    const avatar = this.avatars[this.cursor % this.avatars.length]
-    avatar.updateRate()
-    this.cursor++
+  update(delta) {
+    for (const avatar of this.avatars) {
+      avatar.updateRate()
+      avatar.update(delta)
+    }
   }
 
   destroy() {
