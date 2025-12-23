@@ -47,25 +47,24 @@ export class PlayerInputProcessor {
 
     if (!isXR) {
       cam.rotation.x = clamp(cam.rotation.x, -89 * DEG2RAD, 89 * DEG2RAD)
+      cam.quaternion.setFromEuler(cam.rotation)
     }
 
-    cam.quaternion.setFromEuler(cam.rotation)
+    if (!isXR && control?.scrollDelta) {
+      cam.zoom += -control.scrollDelta.value * ZOOM_SPEED * delta
+      cam.zoom = clamp(cam.zoom, MIN_ZOOM, MAX_ZOOM)
+    }
   }
 
   processZoom(delta) {
     const isXR = this.playerLocal.world.xr?.session
     const { cam, control } = this.playerLocal
 
-    if (!isXR && control?.scrollDelta) {
-      cam.zoom += -control.scrollDelta.value * ZOOM_SPEED * delta
-      cam.zoom = clamp(cam.zoom, MIN_ZOOM, MAX_ZOOM)
-    }
-
     if (isXR && !this.playerLocal.xrActive) {
       cam.zoom = 0
       this.playerLocal.xrActive = true
     } else if (!isXR && this.playerLocal.xrActive) {
-      cam.zoom = 1
+      cam.zoom = 1.5
       this.playerLocal.xrActive = false
     }
 
@@ -74,7 +73,7 @@ export class PlayerInputProcessor {
       this.playerLocal.firstPerson = true
       this.playerLocal.avatar.visible = false
     } else if (cam.zoom > 0 && this.playerLocal.firstPerson) {
-      cam.zoom = 1
+      cam.zoom = 1.5
       this.playerLocal.firstPerson = false
       this.playerLocal.avatar.visible = true
     }

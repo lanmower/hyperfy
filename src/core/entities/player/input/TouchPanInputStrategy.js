@@ -5,7 +5,7 @@ import { DEG2RAD } from '../../../extras/general.js'
 
 export class TouchPanInputStrategy extends InputStrategy {
   updateLook(delta, control, context) {
-    const { rotation } = this.camera
+    const { rotation, quaternion } = this.camera
     const pan = context.pan
     if (!pan) return
 
@@ -13,6 +13,7 @@ export class TouchPanInputStrategy extends InputStrategy {
     rotation.y += -pan.delta.x * PAN_LOOK_SPEED * delta
     rotation.z = 0
     rotation.x = clamp(rotation.x, MIN_PITCH_ANGLE * DEG2RAD, MAX_PITCH_ANGLE * DEG2RAD)
+    quaternion.setFromEuler(rotation)
   }
 
   updateZoom(delta, control) {

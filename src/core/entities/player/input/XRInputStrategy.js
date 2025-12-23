@@ -9,7 +9,7 @@ export class XRInputStrategy extends InputStrategy {
   }
 
   updateLook(delta, control, context) {
-    const { rotation } = this.camera
+    const { rotation, quaternion } = this.camera
     rotation.x = 0
     rotation.z = 0
 
@@ -22,6 +22,8 @@ export class XRInputStrategy extends InputStrategy {
       rotation.y += XR_SNAP_TURN_ANGLE * DEG2RAD
       this.didSnapTurn = true
     }
+
+    quaternion.setFromEuler(rotation)
   }
 
   updateZoom(delta, control) {
