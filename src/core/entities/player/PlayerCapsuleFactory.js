@@ -12,7 +12,9 @@ export class PlayerCapsuleFactory {
   }
 
   createCapsule(player) {
-    if (!globalThis.PHYSX) {
+    const PHYSX = this.world.PHYSX || globalThis.PHYSX
+    if (!PHYSX) {
+      console.warn('[PlayerCapsuleFactory] PHYSX not available - world.PHYSX and globalThis.PHYSX both undefined')
       return { capsule: null, capsuleHandle: null, material: null }
     }
     const radius = player.capsuleRadius
@@ -61,6 +63,9 @@ export class PlayerCapsuleFactory {
         player.base.position.copy(position)
       },
     })
+    const groundSweepRadius = 0.3
+    const groundSweepGeometry = new PHYSX.PxSphereGeometry(groundSweepRadius)
+    player.groundSweepGeometry = groundSweepGeometry
     return { capsule, capsuleHandle, material }
   }
 }

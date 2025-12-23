@@ -2,8 +2,8 @@ import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
 
 const spheres = new Map()
-const _raycastHit = { handle: null, point: null, normal: null, distance: null }
-const _sweepHit = { actor: null, point: null, normal: null, distance: null }
+const _raycastHit = { handle: null, point: new THREE.Vector3(), normal: new THREE.Vector3(), distance: null }
+const _sweepHit = { actor: null, point: new THREE.Vector3(), normal: new THREE.Vector3(), distance: null }
 const overlapHitPool = []
 const overlapHits = []
 
