@@ -6,9 +6,9 @@ export function createNode(type, props) {
     parent: null,
     mounted: false,
     _active: true,
-    position: { x: 0, y: 0, z: 0, copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this }, toArray() { return [this.x, this.y, this.z] } },
-    quaternion: { x: 0, y: 0, z: 0, w: 1, copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; this.w = v.w; return this }, toArray() { return [this.x, this.y, this.z, this.w] } },
-    scale: { x: 1, y: 1, z: 1, copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this }, toArray() { return [this.x, this.y, this.z] } }
+    position: { x: 0, y: 0, z: 0, copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this }, fromArray(a) { this.x = a[0]; this.y = a[1]; this.z = a[2]; return this }, toArray() { return [this.x, this.y, this.z] } },
+    quaternion: { x: 0, y: 0, z: 0, w: 1, copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; this.w = v.w; return this }, fromArray(a) { this.x = a[0]; this.y = a[1]; this.z = a[2]; this.w = a[3]; return this }, toArray() { return [this.x, this.y, this.z, this.w] } },
+    scale: { x: 1, y: 1, z: 1, copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this }, fromArray(a) { this.x = a[0]; this.y = a[1]; this.z = a[2]; return this }, toArray() { return [this.x, this.y, this.z] } }
   }
   node.add = function(child) {
     this.children.push(child)
