@@ -22,14 +22,33 @@ export class AppPropertyHandlers {
       },
       position: (value) => {
         p.data.position = value
+        p.root.position.x = value[0]
+        p.root.position.y = value[1]
+        p.root.position.z = value[2]
+        if (p.threeScene) {
+          p.threeScene.position.fromArray(value)
+        }
         return networkSync.updatePosition(value, p.data.mover)
       },
       quaternion: (value) => {
         p.data.quaternion = value
+        p.root.quaternion.x = value[0]
+        p.root.quaternion.y = value[1]
+        p.root.quaternion.z = value[2]
+        p.root.quaternion.w = value[3]
+        if (p.threeScene) {
+          p.threeScene.quaternion.fromArray(value)
+        }
         return networkSync.updateQuaternion(value, p.data.mover)
       },
       scale: (value) => {
         p.data.scale = value
+        p.root.scale.x = value[0]
+        p.root.scale.y = value[1]
+        p.root.scale.z = value[2]
+        if (p.threeScene) {
+          p.threeScene.scale.fromArray(value)
+        }
         return networkSync.updateScale(value, p.data.mover)
       },
       pinned: (value) => {

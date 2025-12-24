@@ -32,6 +32,7 @@ export class App extends BaseEntity {
     this.mode = Modes.ACTIVE
     this.n = 0
     this.root = createNode('group')
+    this.threeScene = null
     this.fields = []
     this.target = null
     this.projectLimit = Infinity
@@ -59,6 +60,13 @@ export class App extends BaseEntity {
     return node
   }
 
+  syncThreeScene() {
+    if (!this.threeScene) return
+    this.threeScene.position.set(this.root.position.x, this.root.position.y, this.root.position.z)
+    this.threeScene.quaternion.set(this.root.quaternion.x, this.root.quaternion.y, this.root.quaternion.z, this.root.quaternion.w)
+    this.threeScene.scale.set(this.root.scale.x, this.root.scale.y, this.root.scale.z)
+  }
+
   async build(crashed) {
     const result = await this.blueprintLoader.load(crashed)
     if (!result) return
@@ -69,6 +77,10 @@ export class App extends BaseEntity {
       this.createFloorColliderIfNeeded(root)
     }
     if (scene && this.world.stage) {
+      this.threeScene = scene
+      scene.position.fromArray(this.data.position || [0, 0, 0])
+      scene.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+      scene.scale.fromArray(this.data.scale || [1, 1, 1])
       this.world.stage.scene.add(scene)
     }
     const runScript =

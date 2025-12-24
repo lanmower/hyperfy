@@ -70,5 +70,7 @@ export class GrabModeHandler {
         }
       }
     }
+
+    app.syncThreeScene()
   }
 }
