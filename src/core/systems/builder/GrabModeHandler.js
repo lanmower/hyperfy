@@ -49,6 +49,12 @@ export class GrabModeHandler {
     if (app.root.quaternion) app.root.quaternion.copy(target.quaternion)
     if (app.root.scale) app.root.scale.copy(target.scale)
 
+    if (app.threeScene && !app.blueprint?.scene) {
+      if (app.root.position) app.threeScene.position.copy(app.root.position)
+      if (app.root.quaternion) app.threeScene.quaternion.copy(app.root.quaternion)
+      if (app.root.scale) app.threeScene.scale.copy(app.root.scale)
+    }
+
     if (!this.parent.clientBuilder.control.controlLeft.down) {
       if (target.rotation) {
         const newY = target.rotation.y
@@ -66,6 +72,9 @@ export class GrabModeHandler {
         if (result) {
           const offset = v1.copy(result.position).sub(pos)
           if (app.root.position) app.root.position.add(offset)
+          if (app.threeScene && !app.blueprint?.scene && app.root.position) {
+            app.threeScene.position.copy(app.root.position)
+          }
           break
         }
       }

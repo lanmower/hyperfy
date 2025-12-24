@@ -76,9 +76,15 @@ export class App extends BaseEntity {
     this.root.activate?.({ world: this.world, entity: this, moving: !!this.data.mover })
     if (scene && this.world.stage) {
       this.threeScene = scene
-      scene.position.set(0, 0, 0)
-      scene.quaternion.set(0, 0, 0, 1)
-      scene.scale.set(1, 1, 1)
+      if (blueprint.scene) {
+        scene.position.set(0, 0, 0)
+        scene.quaternion.set(0, 0, 0, 1)
+        scene.scale.set(1, 1, 1)
+      } else {
+        scene.position.fromArray(this.data.position || [0, 0, 0])
+        scene.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+        scene.scale.fromArray(this.data.scale || [1, 1, 1])
+      }
       this.world.stage.scene.add(scene)
     }
     this.createFloorColliderIfNeeded(this.root)
