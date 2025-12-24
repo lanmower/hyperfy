@@ -78,9 +78,6 @@ export class App extends BaseEntity {
     }
     if (scene && this.world.stage) {
       this.threeScene = scene
-      scene.position.fromArray(this.data.position || [0, 0, 0])
-      scene.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
-      scene.scale.fromArray(this.data.scale || [1, 1, 1])
       this.world.stage.scene.add(scene)
     }
     const runScript =
