@@ -146,6 +146,10 @@ export function normalizeBlueprint(data) {
     }
   }
 
+  if (normalized.version && typeof normalized.version !== 'string') {
+    normalized.version = String(normalized.version)
+  }
+
   return normalized
 }
 
