@@ -1,4 +1,5 @@
 import { isArray } from 'lodash-es'
+import * as THREE from '../../extras/three.js'
 import { ControlPriorities } from '../../extras/ControlPriorities.js'
 import * as NodeClasses from '../../nodes/index.js'
 
@@ -46,6 +47,30 @@ export const AppAPIConfig = {
     props: (apps, entity) => entity.blueprint?.props || {},
     config: (apps, entity) => entity.blueprint?.props || {},
     keepActive: (apps, entity) => entity.keepActive,
+    matrixWorld: (apps, entity) => {
+      const m = new THREE.Matrix4()
+      const pos = entity.data.position
+      const quat = entity.data.quaternion
+      const scale = entity.data.scale || [1, 1, 1]
+      m.compose(
+        new THREE.Vector3(pos[0], pos[1], pos[2]),
+        new THREE.Quaternion(quat[0], quat[1], quat[2], quat[3]),
+        new THREE.Vector3(scale[0], scale[1], scale[2])
+      )
+      return m
+    },
+    position: (apps, entity) => {
+      const pos = entity.data.position
+      return new THREE.Vector3(pos[0], pos[1], pos[2])
+    },
+    quaternion: (apps, entity) => {
+      const quat = entity.data.quaternion
+      return new THREE.Quaternion(quat[0], quat[1], quat[2], quat[3])
+    },
+    scale: (apps, entity) => {
+      const scale = entity.data.scale || [1, 1, 1]
+      return new THREE.Vector3(scale[0], scale[1], scale[2])
+    },
   },
 
   setters: {
