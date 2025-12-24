@@ -43,25 +43,23 @@ export class ProxyFactory {
       return proxy
     }
 
-    for (const key in apps.worldGetters) {
-      try {
-        Object.defineProperty(proxy, key, {
-          get: () => apps.worldGetters[key](apps, entity),
-          enumerable: true,
-        })
-      } catch (err) {
-        console.warn(`Failed to define getter for ${key}:`, err.message)
-      }
-    }
+    const allKeys = new Set([...Object.keys(apps.worldGetters || {}), ...Object.keys(apps.worldSetters || {})])
 
-    for (const key in apps.worldSetters) {
+    for (const key of allKeys) {
       try {
-        Object.defineProperty(proxy, key, {
-          set: (value) => apps.worldSetters[key](apps, entity, value),
+        const descriptor = {
           enumerable: true,
-        })
+          configurable: true,
+        }
+        if (apps.worldGetters?.[key]) {
+          descriptor.get = () => apps.worldGetters[key](apps, entity)
+        }
+        if (apps.worldSetters?.[key]) {
+          descriptor.set = (value) => apps.worldSetters[key](apps, entity, value)
+        }
+        Object.defineProperty(proxy, key, descriptor)
       } catch (err) {
-        console.warn(`Failed to define setter for ${key}:`, err.message)
+        console.warn(`Failed to define property for ${key}:`, err.message)
       }
     }
 
@@ -82,25 +80,23 @@ export class ProxyFactory {
       return proxy
     }
 
-    for (const key in apps.appGetters) {
-      try {
-        Object.defineProperty(proxy, key, {
-          get: () => apps.appGetters[key](apps, entity),
-          enumerable: true,
-        })
-      } catch (err) {
-        console.warn(`Failed to define getter for ${key}:`, err.message)
-      }
-    }
+    const allKeys = new Set([...Object.keys(apps.appGetters || {}), ...Object.keys(apps.appSetters || {})])
 
-    for (const key in apps.appSetters) {
+    for (const key of allKeys) {
       try {
-        Object.defineProperty(proxy, key, {
-          set: (value) => apps.appSetters[key](apps, entity, value),
+        const descriptor = {
           enumerable: true,
-        })
+          configurable: true,
+        }
+        if (apps.appGetters?.[key]) {
+          descriptor.get = () => apps.appGetters[key](apps, entity)
+        }
+        if (apps.appSetters?.[key]) {
+          descriptor.set = (value) => apps.appSetters[key](apps, entity, value)
+        }
+        Object.defineProperty(proxy, key, descriptor)
       } catch (err) {
-        console.warn(`Failed to define setter for ${key}:`, err.message)
+        console.warn(`Failed to define property for ${key}:`, err.message)
       }
     }
 

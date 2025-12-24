@@ -22,7 +22,7 @@ export class AppActions {
 
   toggle(item) {
     const blueprint = this.blueprints.get(item.blueprint.id)
-    const version = blueprint.version + 1
+    const version = (parseInt(blueprint.version || 0) + 1).toString()
     const disabled = !blueprint.disabled
     this.blueprints.modify({ id: blueprint.id, version, disabled })
     this.network.send('blueprintModified', { id: blueprint.id, version, disabled })

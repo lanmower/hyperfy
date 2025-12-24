@@ -246,7 +246,12 @@ export class InputSystem extends System {
     if (this.pointer.locked) return
     this.pointer.shouldLock = true
     try {
-      this.viewport.requestPointerLock()
+      const lockPromise = this.viewport.requestPointerLock?.()
+      if (lockPromise?.catch) {
+        lockPromise.catch(() => {
+          this.pointer.shouldLock = false
+        })
+      }
     } catch (e) {
       console.warn('Failed to request pointer lock:', e.message)
       this.pointer.shouldLock = false
