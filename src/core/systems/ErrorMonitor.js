@@ -7,6 +7,7 @@ import { ErrorCapture } from './monitors/ErrorCapture.js'
 import { ErrorForwarder } from './monitors/ErrorForwarder.js'
 import { ErrorAnalytics } from './monitors/ErrorAnalytics.js'
 import { GlobalErrorInterceptor } from './monitors/GlobalErrorInterceptor.js'
+import { ClientErrorReporter } from './monitors/ClientErrorReporter.js'
 
 let ServerErrorReporter = null
 let isServerEnv = typeof process !== 'undefined' && process.versions?.node
@@ -45,6 +46,7 @@ export class ErrorMonitor extends System {
     this.forwarder = new ErrorForwarder(this)
     this.analytics = new ErrorAnalytics(this)
     this.interceptor = new GlobalErrorInterceptor(this)
+    this.clientReporter = this.isClient ? new ClientErrorReporter(this) : null
     this.reporter = null
 
     loadServerReporter()
@@ -68,10 +70,16 @@ export class ErrorMonitor extends System {
     this.mcpEndpoint = options.mcpEndpoint || null
     this.enableRealTimeStreaming = options.enableRealTimeStreaming !== false
     this.debugMode = options.debugMode === true
+    if (this.clientReporter && this.network) {
+      this.clientReporter.init(this.network)
+    }
   }
 
   captureError(type, args, stack) {
     this.capture.captureError(type, args, stack)
+    if (this.clientReporter && this.isClient) {
+      this.clientReporter.reportError({ type, args, stack })
+    }
   }
 
   isCriticalError(type, args) {

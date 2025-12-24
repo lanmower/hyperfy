@@ -165,6 +165,17 @@ export class ServerNetwork extends BaseNetwork {
 
   onErrorReport = (socket, data) => this.errorHandlingService.onErrorReport(socket, data)
 
+  onClientError = (socket, errorData) => {
+    if (this.errorMonitor) {
+      this.errorMonitor.receiveClientError({
+        error: errorData.error,
+        clientId: errorData.clientId,
+        context: errorData.context,
+        timestamp: errorData.timestamp
+      })
+    }
+  }
+
   onMcpSubscribeErrors = (socket, options = {}) => this.errorHandlingService.onMcpSubscribeErrors(socket, options)
 
   onGetErrors = (socket, options = {}) => this.errorHandlingService.onGetErrors(socket, options)
