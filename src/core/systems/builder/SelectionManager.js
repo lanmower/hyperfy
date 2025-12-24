@@ -10,13 +10,13 @@ export class SelectionManager {
   select(entity) {
     if (this.selected === entity) return
     if (this.selected) {
-      this.clientBuilder.gizmoManager.detachGizmo()
+      this.clientBuilder.composer.gizmoManager?.detachGizmo()
       this.selected.outline = null
     }
     this.selected = entity
     if (entity) {
       entity.outline = 0xff9a00
-      this.clientBuilder.gizmoManager.attachGizmo(entity)
+      this.clientBuilder.composer.gizmoManager?.attachGizmo(entity)
       this.clientBuilder.updateActions()
       this.clientBuilder.composer.stateTransitionHandler.select(entity)
     } else {
