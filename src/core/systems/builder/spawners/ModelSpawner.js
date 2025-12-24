@@ -34,12 +34,23 @@ export class ModelSpawner {
 
     this.clientBuilder.blueprints.add(blueprint, true)
 
+    const camPos = this.clientBuilder.rig.position
+    const FORWARD = { x: 0, y: 0, z: -1 }
+    const quat = this.clientBuilder.rig.quaternion
+    const dir = {
+      x: FORWARD.x * (1 - 2 * (quat.y * quat.y + quat.z * quat.z)) + FORWARD.z * (2 * (quat.x * quat.z - quat.w * quat.y)),
+      y: FORWARD.x * (2 * (quat.x * quat.y + quat.w * quat.z)) + FORWARD.y * (1 - 2 * (quat.x * quat.x + quat.z * quat.z)) + FORWARD.z * (2 * (quat.y * quat.z - quat.w * quat.x)),
+      z: FORWARD.x * (2 * (quat.x * quat.z + quat.w * quat.y)) + FORWARD.y * (2 * (quat.y * quat.z - quat.w * quat.x)) + FORWARD.z * (1 - 2 * (quat.x * quat.x + quat.y * quat.y))
+    }
+    const distance = 5
+    const spawnPos = [camPos.x + dir.x * distance, camPos.y + dir.y * distance, camPos.z + dir.z * distance]
+
     const data = {
       id: uuid(),
       type: 'app',
       blueprint: blueprint.id,
-      position: transform.position,
-      quaternion: transform.quaternion,
+      position: spawnPos,
+      quaternion: [0, 0, 0, 1],
       scale: [1, 1, 1],
       mover: this.clientBuilder.network.id,
       uploader: this.clientBuilder.network.id,
