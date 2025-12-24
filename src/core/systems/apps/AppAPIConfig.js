@@ -200,5 +200,13 @@ export const AppAPIConfig = {
       if (ref.parent === entity.root) entity.root.remove(ref)
       ref.deactivate?.()
     },
+
+    traverse: (apps, entity, callback) => {
+      entity.root.traverse(callback)
+    },
+
+    clean: (apps, entity) => {
+      entity.root.clean?.()
+    },
   },
 }
