@@ -60,14 +60,33 @@ export class App extends BaseEntity {
   }
 
   async build(crashed) {
-    const result = await this.blueprintLoader.load(crashed)
-    if (!result) return
-    const { root, scene, script, blueprint } = result
+    const blueprint = this.world.blueprints.get(this.data.blueprint)
+    if (!blueprint) return
+
     this.blueprint = blueprint
-    this.root = root
     this.mode = Modes.ACTIVE
     if (this.data.mover) this.mode = Modes.MOVING
     if (this.data.uploader && this.data.uploader !== this.world.network.id) this.mode = Modes.LOADING
+
+    let root
+    let scene
+    let script
+
+    if (this.data.uploader && this.data.uploader !== this.world.network.id) {
+      root = createNode('mesh')
+      root.type = 'box'
+      root.width = 1
+      root.height = 1
+      root.depth = 1
+    } else {
+      const result = await this.blueprintLoader.load(crashed)
+      if (!result) return
+      root = result.root
+      scene = result.scene
+      script = result.script
+    }
+
+    this.root = root
     if (!blueprint.scene) {
       this.root.position.fromArray(this.data.position || [0, 0, 0])
       this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
