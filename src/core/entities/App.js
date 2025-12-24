@@ -65,11 +65,9 @@ export class App extends BaseEntity {
     const { root, script, blueprint } = result
     this.blueprint = blueprint
     this.root = root
-    if (!blueprint.scene) {
-      this.root.position.fromArray(this.data.position || [0, 0, 0])
-      this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
-      this.root.scale.fromArray(this.data.scale || [1, 1, 1])
-    }
+    this.root.position.fromArray(this.data.position || [0, 0, 0])
+    this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+    this.root.scale.fromArray(this.data.scale || [1, 1, 1])
     this.root.activate?.({ world: this.world, entity: this, moving: !!this.data.mover })
     this.createFloorColliderIfNeeded(this.root)
     const runScript =
