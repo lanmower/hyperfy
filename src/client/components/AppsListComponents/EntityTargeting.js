@@ -18,27 +18,30 @@ export class EntityTargeting {
     const allEntities = Array.from(this.world.entities.items.values())
     const blueprintId = item.blueprint?.id || item.blueprint
 
-    const matchingEntities = allEntities.filter(e => {
-      if (!e.isApp) return false
+    const appEntities = allEntities.filter(e => e.isApp)
+    const matchingEntities = appEntities.filter(e => {
       const entityBlueprintId = e.data?.blueprint || e.blueprint?.id || e.blueprint
-      const matches = entityBlueprintId === blueprintId
-      if (!matches && e.isApp) {
-        console.debug(`[EntityTargeting] Entity ${e.data?.id} blueprint: "${entityBlueprintId}" vs target: "${blueprintId}"`)
-      }
-      return matches && e.root?.position
+      const hasPosition = !!e.position || !!e.data?.position
+      return entityBlueprintId === blueprintId && hasPosition
     })
 
     for (const entity of matchingEntities) {
-      const distance = playerPosition.distanceTo(entity.root.position)
+      const entityPos = entity.position || entity.data?.position
+      let distance
+      if (Array.isArray(entityPos)) {
+        const dx = playerPosition.x - entityPos[0]
+        const dy = playerPosition.y - entityPos[1]
+        const dz = playerPosition.z - entityPos[2]
+        distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+      } else {
+        distance = playerPosition.distanceTo(entityPos)
+      }
       if (closestDistance === null || closestDistance > distance) {
         closestEntity = entity
         closestDistance = distance
       }
     }
 
-    if (!closestEntity) {
-      console.warn('[EntityTargeting.getClosest] No matching app entity found for blueprint:', blueprintId)
-    }
     return closestEntity
   }
 
@@ -50,7 +53,9 @@ export class EntityTargeting {
     }
     const entity = this.getClosest(item)
     if (!entity) return
-    this.world.target?.show(entity.root.position)
+    const entityPos = entity.position || entity.data?.position
+    const posToShow = Array.isArray(entityPos) ? { x: entityPos[0], y: entityPos[1], z: entityPos[2] } : entityPos
+    this.world.target?.show(posToShow)
     this.currentTarget = item
   }
 
