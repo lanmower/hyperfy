@@ -65,6 +65,9 @@ export class App extends BaseEntity {
     const { root, scene, script, blueprint } = result
     this.blueprint = blueprint
     this.root = root
+    this.mode = Modes.ACTIVE
+    if (this.data.mover) this.mode = Modes.MOVING
+    if (this.data.uploader && this.data.uploader !== this.world.network.id) this.mode = Modes.LOADING
     if (!blueprint.scene) {
       this.root.position.fromArray(this.data.position || [0, 0, 0])
       this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])

@@ -41,13 +41,16 @@ export class ModelSpawner {
       position: transform.position,
       quaternion: transform.quaternion,
       scale: [1, 1, 1],
-      mover: null,
+      mover: this.clientBuilder.network.id,
       uploader: this.clientBuilder.network.id,
       pinned: false,
       state: {},
     }
 
     const app = this.clientBuilder.entities.add(data, true)
+
+    this.clientBuilder.select(app)
+    this.clientBuilder.setMode('grab')
 
     await this.clientBuilder.network.upload(file)
     app.onUploaded()
