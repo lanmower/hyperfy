@@ -18,6 +18,9 @@ export class SelectionManager {
       entity.outline = 0xff9a00
       this.clientBuilder.gizmoManager.attachGizmo(entity)
       this.clientBuilder.updateActions()
+      this.clientBuilder.composer.stateTransitionHandler.select(entity)
+    } else {
+      this.clientBuilder.composer.stateTransitionHandler.select(null)
     }
   }
 
