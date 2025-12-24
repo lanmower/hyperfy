@@ -69,7 +69,7 @@ export class SelectionManager {
         if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) this.select(entity)
       }
       else if (this.selected && mode === 'grab') {
-        this.select(null)
+        this.clientBuilder.select(null)
       }
       else if (
         this.selected &&
@@ -78,12 +78,12 @@ export class SelectionManager {
       ) {
         const entity = this.clientBuilder.getEntityAtReticle()
         if (entity?.isApp && !entity.data.pinned && !entity.blueprint?.scene) this.select(entity)
-        else this.select(null)
+        else this.clientBuilder.select(null)
       }
     }
 
     if (this.selected && !this.clientBuilder.control.pointer.locked) {
-      this.select(null)
+      this.clientBuilder.select(null)
     }
 
     this.entityCommandHandler.handleDuplicate()
