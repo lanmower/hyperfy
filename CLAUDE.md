@@ -643,3 +643,258 @@ window.__DEBUG__.scriptTrace = {
 // await page.evaluate(() => window.__DEBUG__.appBuildState)
 // await page.evaluate(() => window.__DEBUG__.scriptTrace)
 ```
+
+## Player Movement & Avatar System
+
+### Critical Architecture Issues & Solutions
+
+**Issue #1: Avatar Rendering at Wrong Position**
+- **Problem**: Avatar was added as `avatar.raw` (glTF wrapper) instead of `avatar.raw.scene` (Three.js geometry)
+- **Fix**: Use `avatar.raw.scene instanceof THREE.Object3D` check and add that to the scene
+- **File**: `src/core/entities/player/PlayerAvatarManager.js` line 32-33
+- **Impact**: Avatar was invisible until fixed
+
+**Issue #2: Avatar Not Moving with Physics**
+- **Problem**: Avatar animation played but model stayed in place while camera moved
+- **Root Cause**: Three hierarchy problem - base was child of rig, causing transform conflicts
+  - physics onInterpolate updated base.position
+  - InputSystem updated rig.position
+  - Two systems fighting for the same transform
+- **Fix**: Remove base from rig hierarchy, add directly to scene
+- **File**: `src/core/entities/PlayerLocal.js` line 84, 87
+- **Code**:
+```javascript
+// BEFORE (wrong):
+this.world.rig.add(this.base)
+this.world.rig.add(this.aura)
+
+// AFTER (correct):
+this.world.stage.scene.add(this.base)
+this.world.stage.scene.add(this.aura)
+```
+- **Impact**: Avatar now moves with physics while camera follows independently
+
+**Issue #3: Avatar Position Sync Not Updating Visually**
+- **Problem**: `avatar.raw.scene.position` was set but avatar didn't move - matrixWorld not recalculating
+- **Root Cause**: After changing position, Three.js needs explicit updateMatrix() calls
+- **Fix**: Manually sync avatar position and force matrix update in lateUpdate
+- **File**: `src/core/entities/PlayerLocal.js` line 272-277
+- **Code**:
+```javascript
+if (this.avatar?.raw?.scene) {
+  this.avatar.raw.scene.position.copy(this.base.position)
+  this.avatar.raw.scene.quaternion.copy(this.base.quaternion)
+  this.avatar.raw.scene.updateMatrix()
+  this.avatar.raw.scene.updateMatrixWorld(true)
+}
+```
+- **Impact**: Avatar now renders at correct position when moving
+
+### Player System Debug Globals
+
+Add these to window.__DEBUG__ in src/client/world-client.js setupDebugGlobals():
+
+```javascript
+// === PLAYER MOVEMENT DIAGNOSTICS ===
+player: () => window.__DEBUG__.players()?.[0],
+playerState: () => {
+  const player = window.__DEBUG__.players()?.[0]
+  if (!player) return null
+  return {
+    basePos: player.base.position.toArray(),
+    rigPos: player.world.rig.position.toArray(),
+    avatarPos: player.avatar?.raw?.scene?.position?.toArray() || 'N/A',
+    baseMoved: Math.sqrt(Math.pow(player.base.position.x, 2) + Math.pow(player.base.position.z, 2)) > 0.1,
+    avatarMoved: player.avatar?.raw?.scene ?
+      Math.sqrt(Math.pow(player.avatar.raw.scene.position.x, 2) + Math.pow(player.avatar.raw.scene.position.z, 2)) > 0.1 :
+      false,
+    physics: {
+      moving: player.physics?.moving,
+      grounded: player.physics?.grounded,
+      moveDir: player.physics?.moveDir?.toArray()
+    },
+    animation: {
+      mode: player.mode,
+      animating: player.mode === 1 || player.mode === 2
+    }
+  }
+},
+avatarHierarchy: () => {
+  const player = window.__DEBUG__.players()?.[0]
+  if (!player?.avatar?.raw?.scene) return null
+  return {
+    avatarScene: {
+      parent: player.avatar.raw.scene.parent?.type || 'none',
+      position: player.avatar.raw.scene.position.toArray(),
+      quaternion: [player.avatar.raw.scene.quaternion.x, player.avatar.raw.scene.quaternion.y, player.avatar.raw.scene.quaternion.z, player.avatar.raw.scene.quaternion.w],
+      worldPos: [
+        player.avatar.raw.scene.matrixWorld.elements[12],
+        player.avatar.raw.scene.matrixWorld.elements[13],
+        player.avatar.raw.scene.matrixWorld.elements[14]
+      ]
+    },
+    baseNode: {
+      children: player.base.children.length,
+      position: player.base.position.toArray(),
+      quaternion: [player.base.quaternion.x, player.base.quaternion.y, player.base.quaternion.z, player.base.quaternion.w]
+    }
+  }
+},
+testMovement: async (direction = 'w', duration = 500) => {
+  const player = window.__DEBUG__.players()?.[0]
+  if (!player) return { error: 'No player' }
+
+  const initial = player.avatar.raw.scene.matrixWorld.elements[14] // z position
+
+  const keyDown = new KeyboardEvent('keydown', { key: direction, code: 'Key' + direction.toUpperCase(), bubbles: true })
+  window.dispatchEvent(keyDown)
+
+  await new Promise(r => setTimeout(r, duration))
+
+  const final = player.avatar.raw.scene.matrixWorld.elements[14]
+
+  const keyUp = new KeyboardEvent('keyup', { key: direction, code: 'Key' + direction.toUpperCase(), bubbles: true })
+  window.dispatchEvent(keyUp)
+
+  return {
+    direction,
+    initialZ: initial,
+    finalZ: final,
+    distanceMoved: Math.abs(final - initial),
+    success: Math.abs(final - initial) > 0.1
+  }
+}
+```
+
+### Player Movement Debug Playbook
+
+**Quick Movement Check (10 seconds)**
+```javascript
+// Check if player is set up
+const player = await page.evaluate(() => window.__DEBUG__.player())
+console.log('Player exists:', !!player)
+
+// Test basic movement
+const result = await page.evaluate(() => window.__DEBUG__.testMovement('w', 600))
+console.log('Movement test:', result)
+```
+
+**Full Movement Diagnosis (1 minute)**
+```javascript
+// Get complete state
+const state = await page.evaluate(() => window.__DEBUG__.playerState())
+console.log('Player State:', state)
+
+// Check avatar hierarchy
+const hierarchy = await page.evaluate(() => window.__DEBUG__.avatarHierarchy())
+console.log('Avatar Hierarchy:', hierarchy)
+
+// Test all directions
+const directions = ['w', 'a', 'd', 's']
+for (const dir of directions) {
+  const result = await page.evaluate(
+    (d) => window.__DEBUG__.testMovement(d, 400),
+    dir
+  )
+  console.log(`${dir} (${['forward', 'left', 'right', 'back'][directions.indexOf(dir)]})`, result)
+}
+```
+
+### Player Movement Common Issues
+
+**Issue: Avatar Animation Plays But Avatar Doesn't Move**
+```javascript
+// Diagnosis checklist:
+const issues = await page.evaluate(() => {
+  const player = window.__DEBUG__.players()?.[0]
+  const avatar = player?.avatar?.raw?.scene
+
+  return {
+    // Check 1: Is avatar a child of base?
+    avatarParentIsBase: avatar?.parent === player.base,
+
+    // Check 2: Are position/quaternion being synced?
+    avatarPosMatchesBase: avatar?.position.equals(player.base.position),
+    avatarQuatMatchesBase: avatar?.quaternion.equals(player.base.quaternion),
+
+    // Check 3: Is base position being updated by physics?
+    baseHasNonZeroPos: player.base.position.length() > 0.1,
+
+    // Check 4: Are matrix updates happening?
+    avatarMatrixNeedsUpdate: avatar?.matrixWorldNeedsUpdate || false,
+    baseMatrixNeedsUpdate: player.base.matrixWorldNeedsUpdate || false,
+
+    // Check 5: Is animation system working?
+    physicsMoving: player.physics?.moving,
+    animationMode: player.mode
+  }
+})
+
+console.log('Issues:', issues)
+// If any checks fail, look at the corresponding section below
+```
+
+**Issue: Avatar World Position Doesn't Match Position Value**
+- Check: `updateMatrix()` and `updateMatrixWorld(true)` being called after position changes
+- Location: PlayerLocal.lateUpdate() after setting avatar position
+- Solution: Ensure matrixWorld recalculation is forced
+
+**Issue: Physics Moving But Avatar Not Following**
+- Check: onInterpolate callback in PlayerCapsuleFactory.js is updating base.position
+- Check: base is NOT a child of rig (should be direct child of scene)
+- Check: avatar.raw.scene.updateMatrixWorld(true) is being called
+
+**Issue: Camera and Avatar Moving Separately**
+- Check: InputSystem syncing rig.position (for camera)
+- Check: physics onInterpolate syncing base.position (for avatar)
+- Check: These are independent and correct - they should move together via synchronization
+
+### Performance Monitoring for Player System
+
+```javascript
+// Add to window.__DEBUG__
+playerPerformance: () => {
+  const player = window.__DEBUG__.players()?.[0]
+  if (!player) return null
+
+  return {
+    avatarUpdateNeeded: player.avatar?.raw?.scene?.matrixWorldNeedsUpdate,
+    baseUpdateNeeded: player.base.matrixWorldNeedsUpdate,
+    rigUpdateNeeded: player.world.rig.matrixWorldNeedsUpdate,
+    physicsActive: !!player.physics,
+    animationActive: player.mode !== 0,
+    cameraDistance: player.world.camera?.position.distanceTo(player.base.position) || 'N/A'
+  }
+}
+```
+
+### Key Files for Player Movement
+
+- `src/core/entities/PlayerLocal.js` - Main player update loop, avatar sync, camera positioning
+- `src/core/entities/player/PlayerAvatarManager.js` - Avatar loading and initialization
+- `src/core/entities/player/PlayerPhysics.js` - Physics simulation and movement forces
+- `src/core/entities/player/PlayerInputProcessor.js` - Input handling and camera rotation
+- `src/core/entities/player/PlayerCapsuleFactory.js` - Physics capsule creation and onInterpolate callback
+
+### Testing Avatar Movement in Playwright
+
+```javascript
+// Complete movement test
+const testCompleteMovement = async () => {
+  const results = {}
+
+  for (const [key, name] of [['w', 'forward'], ['a', 'left'], ['d', 'right'], ['s', 'back']]) {
+    const result = await page.evaluate(
+      (k) => window.__DEBUG__.testMovement(k, 500),
+      key
+    )
+    results[name] = result
+  }
+
+  const allPassed = Object.values(results).every(r => r.success)
+  return { passed: allPassed, results }
+}
+
+const movementTest = await testCompleteMovement()
+console.log('Movement Test:', movementTest)
+```
