@@ -6,7 +6,7 @@ import { DetailsPanel } from './NodeHierarchyComponents/Details.js'
 
 export function NodeHierarchy({ app }) {
   const [selectedNode, setSelectedNode] = useState(null)
-  const rootNode = useMemo(() => app.getNodes(), [])
+  const rootNode = useMemo(() => app.getNodes(), [app])
 
   useEffect(() => {
     if (rootNode && !selectedNode) {

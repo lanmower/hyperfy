@@ -17,16 +17,17 @@ export function renderHierarchy(nodes, depth = 0, selectedNode, setSelectedNode)
 
   return (
     <>
-      {nodes.map(node => {
+      {nodes.map((node, index) => {
         if (!node) return null
 
         const children = node.children || []
         const hasChildren = Array.isArray(children) && children.length > 0
         const isSelected = selectedNode?.id === node.id
         const Icon = nodeIcons[node.name] || nodeIcons.default
+        const nodeKey = node.id || `node-${depth}-${index}`
 
         return (
-          <div key={node.id}>
+          <div key={nodeKey}>
             <div
               className={cls('nodehierarchy-item', {
                 'nodehierarchy-item-indent': depth > 0,

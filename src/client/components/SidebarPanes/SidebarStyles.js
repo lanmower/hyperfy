@@ -270,6 +270,7 @@ export const scriptStyles = css`
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  flex: 1;
   min-height: 23.7rem;
   position: relative;
   .script-head {
