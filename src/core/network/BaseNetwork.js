@@ -13,7 +13,7 @@ export class BaseNetwork extends System {
         if (this.protocol.handlers[method]) {
           const handlerName = this.protocol.handlers[method]
           if (typeof this.protocol.flushTarget[handlerName] === 'function') {
-            this.protocol.flushTarget[handlerName](data)
+            this.protocol.flushTarget[handlerName](socket, data)
           }
         }
       },
