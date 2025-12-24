@@ -45,9 +45,9 @@ export class GrabModeHandler {
       target.rotation.y += this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
     }
 
-    app.root.position.copy(target.position)
-    app.root.quaternion.copy(target.quaternion)
-    app.root.scale.copy(target.scale)
+    if (app.root.position) app.root.position.copy(target.position)
+    if (app.root.quaternion) app.root.quaternion.copy(target.quaternion)
+    if (app.root.scale) app.root.scale.copy(target.scale)
 
     if (!this.parent.clientBuilder.control.controlLeft.down) {
       const newY = target.rotation.y
