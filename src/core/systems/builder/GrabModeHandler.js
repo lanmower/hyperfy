@@ -16,6 +16,7 @@ export class GrabModeHandler {
   handle(delta) {
     const app = this.parent.clientBuilder.selected
     const target = this.parent.clientBuilder.target
+    if (!app || !app.root || !target) return
     const hit = this.parent.clientBuilder.getHitAtReticle(app, true)
 
     const camPos = this.parent.clientBuilder.rig.position

@@ -99,7 +99,7 @@ export class StateTransitionHandler {
         this.parent.network.send('entityModified', { id: app.data.id, mover: app.data.mover })
       }
       this.parent.selected = app
-      const mode = this.parent.modeManager.getMode()
+      const mode = this.parent.modeManager?.getMode()
       if (mode === 'grab') {
         this.parent.control.keyC.capture = true
         this.parent.control.scrollDelta.capture = true

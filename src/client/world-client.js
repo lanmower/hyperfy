@@ -44,18 +44,13 @@ export function Client({ wsUrl, onSetup }) {
         const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: '/assets' }
         console.log('Calling onSetup and world.init')
         onSetup?.(world, config)
-        await Promise.race([
-          (async () => {
-            console.log('Starting world.init')
-            await world.init(config)
-            console.log('world.init completed')
-            setupDebugGlobals(world)
-          })(),
-          new Promise((_, reject) => setTimeout(() => {
-            console.error('World initialization timeout after 120s')
-            reject(new Error('World initialization timeout'))
-          }, 120000))
-        ])
+        const initPromise = (async () => {
+          console.log('Starting world.init')
+          await world.init(config)
+          console.log('world.init completed')
+          setupDebugGlobals(world)
+        })()
+        await initPromise
         const tick = time => {
           world.tick(time)
           requestAnimationFrame(tick)
