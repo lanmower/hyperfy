@@ -21,8 +21,12 @@ export class ErrorCapture {
   captureError(type, args, stack) {
     if (!this.errorMonitor || !this.errorMonitor.state) return
 
+    const message = this.extractMessage(args)
+
+    if (this.shouldIgnoreError(type, message)) return
+
     const error = {
-      message: this.extractMessage(args),
+      message,
       stack: this.cleanStack(stack)
     }
 
@@ -35,6 +39,13 @@ export class ErrorCapture {
     const level = this.isCriticalError(type, args) ? ErrorLevels.ERROR : ErrorLevels.WARN
 
     this.errorBus.emit(error, context, level)
+  }
+
+  shouldIgnoreError(type, message) {
+    const ignoredPatterns = [
+      'ResizeObserver loop completed with undelivered notifications'
+    ]
+    return ignoredPatterns.some(pattern => message.includes(pattern))
   }
 
   extractMessage(args) {
