@@ -20,7 +20,11 @@ export class WebSocketManager {
       console.log('WebSocket message received, packet size:', e.data.byteLength)
       this.network.onPacket(e)
     }
-    this.closeHandler = e => this.network.onClose(e.code)
+    this.closeHandler = e => {
+      console.log('WebSocket closed, reloading page in 1 second...')
+      this.network.onClose(e.code)
+      setTimeout(() => window.location.reload(), 1000)
+    }
     this.ws.addEventListener('message', this.messageHandler)
     this.ws.addEventListener('close', this.closeHandler)
     this.ws.addEventListener('open', () => {
