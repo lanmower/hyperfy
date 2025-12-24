@@ -45,7 +45,6 @@ export class TransformHandler {
       app.root.position.copy(this.gizmoController.gizmoTarget.position)
       app.root.quaternion.copy(this.gizmoController.gizmoTarget.quaternion)
       app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
-      app.syncThreeScene()
     }
 
     if (mode === 'rotate') {
@@ -59,13 +58,11 @@ export class TransformHandler {
         app.root.position.copy(this.gizmoController.gizmoTarget.position)
         app.root.quaternion.copy(this.gizmoController.gizmoTarget.quaternion)
         app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
-        app.syncThreeScene()
       }
     }
 
     if (mode === 'scale' && this.isActive()) {
       app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
-      app.syncThreeScene()
     }
 
     if (mode === 'grab') {

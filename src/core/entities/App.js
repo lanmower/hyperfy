@@ -32,7 +32,6 @@ export class App extends BaseEntity {
     this.mode = Modes.ACTIVE
     this.n = 0
     this.root = createNode('group')
-    this.threeScene = null
     this.fields = []
     this.target = null
     this.projectLimit = Infinity
@@ -60,28 +59,24 @@ export class App extends BaseEntity {
     return node
   }
 
-  syncThreeScene() {
-    if (!this.threeScene) return
-    this.threeScene.position.set(this.root.position.x, this.root.position.y, this.root.position.z)
-    this.threeScene.quaternion.set(this.root.quaternion.x, this.root.quaternion.y, this.root.quaternion.z, this.root.quaternion.w)
-    this.threeScene.scale.set(this.root.scale.x, this.root.scale.y, this.root.scale.z)
-  }
-
   async build(crashed) {
     const result = await this.blueprintLoader.load(crashed)
     if (!result) return
-    const { root, scene, script, blueprint } = result
+    const { root, script, blueprint } = result
     if (root) {
-      this.root.add(root)
+      this.root = root
       root.activate?.({ world: this.world, entity: this })
+      root.position.x = this.data.position?.[0] ?? 0
+      root.position.y = this.data.position?.[1] ?? 0
+      root.position.z = this.data.position?.[2] ?? 0
+      root.quaternion.x = this.data.quaternion?.[0] ?? 0
+      root.quaternion.y = this.data.quaternion?.[1] ?? 0
+      root.quaternion.z = this.data.quaternion?.[2] ?? 0
+      root.quaternion.w = this.data.quaternion?.[3] ?? 1
+      root.scale.x = this.data.scale?.[0] ?? 1
+      root.scale.y = this.data.scale?.[1] ?? 1
+      root.scale.z = this.data.scale?.[2] ?? 1
       this.createFloorColliderIfNeeded(root)
-    }
-    if (scene && this.world.stage) {
-      this.threeScene = scene
-      scene.position.set(0, 0, 0)
-      scene.quaternion.set(0, 0, 0, 1)
-      scene.scale.set(1, 1, 1)
-      this.world.stage.scene.add(scene)
     }
     const runScript =
       (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
