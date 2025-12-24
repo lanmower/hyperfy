@@ -245,13 +245,22 @@ export class InputSystem extends System {
   lockPointer() {
     if (this.pointer.locked) return
     this.pointer.shouldLock = true
-    this.viewport.requestPointerLock()
+    try {
+      this.viewport.requestPointerLock()
+    } catch (e) {
+      console.warn('Failed to request pointer lock:', e.message)
+      this.pointer.shouldLock = false
+    }
   }
 
   unlockPointer() {
     if (!this.pointer.locked) return
     this.pointer.shouldLock = false
-    document.exitPointerLock()
+    try {
+      document.exitPointerLock()
+    } catch (e) {
+      console.warn('Failed to exit pointer lock:', e.message)
+    }
   }
 
   isInputFocused() {
