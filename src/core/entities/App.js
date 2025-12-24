@@ -60,8 +60,17 @@ export class App extends BaseEntity {
   }
 
   async build(crashed) {
+    this.building = true
+    const n = ++this.n
     const blueprint = this.world.blueprints.get(this.data.blueprint)
     if (!blueprint) return
+
+    if (blueprint.disabled) {
+      this.unbuild()
+      this.blueprint = blueprint
+      this.building = false
+      return
+    }
 
     this.blueprint = blueprint
     this.mode = Modes.ACTIVE
@@ -80,11 +89,24 @@ export class App extends BaseEntity {
       root.depth = 1
     } else {
       const result = await this.blueprintLoader.load(crashed)
-      if (!result) return
-      root = result.root
-      scene = result.scene
-      script = result.script
+      if (result) {
+        root = result.root
+        scene = result.scene
+        script = result.script
+      } else {
+        crashed = true
+      }
     }
+
+    if (crashed) {
+      const glb = await this.world.loader.load('model', 'asset://crash-block.glb')
+      if (glb) root = glb.toNodes()
+    }
+
+    if (!root) return
+
+    if (this.n !== n) return
+    this.unbuild()
 
     this.root = root
     if (!blueprint.scene) {
