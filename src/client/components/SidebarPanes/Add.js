@@ -11,7 +11,7 @@ export function Add({ world, hidden }) {
   const add = blueprint => {
     blueprint = cloneDeep(blueprint)
     blueprint.id = uuid()
-    blueprint.version = 0
+    blueprint.version = '0'
     world.blueprints.add(blueprint, true)
     const transform = world.builder.getSpawnTransform(true)
     world.builder.toggle(true)
