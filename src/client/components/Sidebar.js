@@ -23,6 +23,7 @@ export function Sidebar({ world, ui }) {
   }, [])
 
   const activePane = ui.active ? ui.pane : null
+  const isVisible = ui.visible !== false
 
   return (
     <HintProvider>
@@ -38,6 +39,9 @@ export function Sidebar({ world, ui }) {
           display: flex;
           gap: 0.625rem;
           z-index: 1;
+          transition: opacity 0.2s ease-out;
+          opacity: ${isVisible ? 1 : 0};
+          pointer-events: ${isVisible ? 'auto' : 'none'};
           @media all and (max-width: 1200px) {
             top: calc(1rem + env(safe-area-inset-top));
             right: calc(1rem + env(safe-area-inset-right));

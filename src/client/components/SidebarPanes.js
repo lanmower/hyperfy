@@ -1,5 +1,3 @@
-
-
 import { Prefs } from './SidebarPanes/Prefs.js'
 import { World } from './SidebarPanes/World.js'
 import { Apps } from './SidebarPanes/Apps.js'
@@ -9,11 +7,13 @@ import { Script } from './SidebarPanes/Script.js'
 import { Nodes } from './SidebarPanes/Nodes.js'
 import { Meta } from './SidebarPanes/Meta.js'
 import { Players } from './SidebarPanes/Players.js'
+import { Controls } from './SidebarPanes/Controls.js'
 
 export function SidebarPanes({ world, ui }) {
   return (
     <>
       {ui.pane === 'prefs' && <Prefs world={world} hidden={!ui.active} />}
+      {ui.pane === 'controls' && <Controls hidden={!ui.active} />}
       {ui.pane === 'world' && <World world={world} hidden={!ui.active} />}
       {ui.pane === 'apps' && <Apps world={world} hidden={!ui.active} />}
       {ui.pane === 'add' && <Add world={world} hidden={!ui.active} />}

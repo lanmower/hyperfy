@@ -4,7 +4,7 @@ import {
   MicOffIcon,
   VRIcon,
 } from '../Icons.js'
-import { MessageSquareTextIcon, UsersIcon } from 'lucide-react'
+import { MessageSquareTextIcon, UsersIcon, HelpCircleIcon } from 'lucide-react'
 import { cls } from '../cls.js'
 import { isTouch } from '../../utils.js'
 
@@ -26,6 +26,13 @@ export function UserSection({ world, ui, livekit, activePane }) {
         onClick={() => world.ui.togglePane('prefs')}
       >
         <MenuIcon size='1.25rem' />
+      </Btn>
+      <Btn
+        active={activePane === 'controls'}
+        suspended={ui.pane === 'controls' && !activePane}
+        onClick={() => world.ui.togglePane('controls')}
+      >
+        <HelpCircleIcon size='1.25rem' />
       </Btn>
       <Btn
         active={activePane === 'players'}
