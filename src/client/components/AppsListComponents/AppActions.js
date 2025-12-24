@@ -8,8 +8,16 @@ export class AppActions {
   }
 
   inspect(item) {
-    const entity = this.entityTargeting.getClosest(item)
-    this.world.ui.setApp(entity)
+    try {
+      const entity = this.entityTargeting.getClosest(item)
+      if (!entity) {
+        console.warn('[AppActions.inspect] No entity found for item:', item.name)
+        return
+      }
+      this.world.ui.setApp(entity)
+    } catch (e) {
+      console.error('[AppActions.inspect] Error:', e.message)
+    }
   }
 
   toggle(item) {
