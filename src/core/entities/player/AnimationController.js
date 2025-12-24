@@ -1,7 +1,7 @@
 import * as THREE from '../../extras/three.js'
 import { Modes } from '../../constants/AnimationModes.js'
 
-const FORWARD = new THREE.Vector3(0, 0, 1)
+const FORWARD = new THREE.Vector3(0, 0, -1)
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
 const gazeTiltAngle = Math.PI / 6
 
