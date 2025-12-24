@@ -20,12 +20,19 @@ export class ClientErrorReporter {
     }
 
     try {
-      this.network.send('clientError', {
-        error: errorData,
+      const payload = {
+        error: {
+          type: errorData.type || 'Error',
+          message: Array.isArray(errorData.args) ? errorData.args.join(' ') : String(errorData.args || ''),
+          stack: errorData.stack || '',
+          level: 'error'
+        },
         clientId: this.network.id,
         timestamp: Date.now(),
         context: this.enrichContext()
-      })
+      }
+
+      this.network.send('clientError', payload)
     } catch (err) {
       this.buffer.push(errorData)
       if (this.buffer.length > this.maxBufferSize) {
