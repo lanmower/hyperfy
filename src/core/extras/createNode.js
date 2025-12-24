@@ -45,6 +45,9 @@ export function createNode(type, props) {
   node.setDirty = function() {
     return this
   }
+  node.clean = function() {
+    return this
+  }
   node.traverse = function(callback) {
     callback(this)
     for (const child of this.children) {
