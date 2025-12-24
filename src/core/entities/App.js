@@ -62,13 +62,22 @@ export class App extends BaseEntity {
   async build(crashed) {
     const result = await this.blueprintLoader.load(crashed)
     if (!result) return
-    const { root, script, blueprint } = result
+    const { root, scene, script, blueprint } = result
     this.blueprint = blueprint
     this.root = root
-    this.root.position.fromArray(this.data.position || [0, 0, 0])
-    this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
-    this.root.scale.fromArray(this.data.scale || [1, 1, 1])
+    if (!blueprint.scene) {
+      this.root.position.fromArray(this.data.position || [0, 0, 0])
+      this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+      this.root.scale.fromArray(this.data.scale || [1, 1, 1])
+    }
     this.root.activate?.({ world: this.world, entity: this, moving: !!this.data.mover })
+    if (scene && this.world.stage) {
+      this.threeScene = scene
+      scene.position.set(0, 0, 0)
+      scene.quaternion.set(0, 0, 0, 1)
+      scene.scale.set(1, 1, 1)
+      this.world.stage.scene.add(scene)
+    }
     this.createFloorColliderIfNeeded(this.root)
     const runScript =
       (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
