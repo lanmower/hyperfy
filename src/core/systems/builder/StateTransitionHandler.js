@@ -21,7 +21,7 @@ export class StateTransitionHandler {
 
   setMode(mode) {
     if (this.parent.selected) {
-      const currentMode = this.parent.modeManager.getMode()
+      const currentMode = this.parent.modeManager?.getMode()
       if (currentMode === 'grab') {
         this.parent.control.keyC.capture = false
         this.parent.control.scrollDelta.capture = false
@@ -31,7 +31,7 @@ export class StateTransitionHandler {
       }
     }
 
-    this.parent.modeManager.setMode(mode)
+    this.parent.modeManager?.setMode(mode)
 
     if (mode === 'grab') {
       if (this.parent.selected) {
@@ -75,7 +75,7 @@ export class StateTransitionHandler {
         selected.build()
       }
       this.parent.selected = null
-      const mode = this.parent.modeManager.getMode()
+      const mode = this.parent.modeManager?.getMode()
       if (mode === 'grab') {
         this.parent.control.keyC.capture = false
         this.parent.control.scrollDelta.capture = false
