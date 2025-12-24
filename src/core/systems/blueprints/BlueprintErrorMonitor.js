@@ -10,7 +10,7 @@ export class BlueprintErrorMonitor {
     if (ErrorPatterns.EXPLICIT_ERRORS.includes(error.type)) {
       return true
     }
-    const errorMessage = error.args ? error.args.join(' ') : ''
+    const errorMessage = error.args ? (Array.isArray(error.args) ? error.args.join(' ') : String(error.args)) : ''
     const stack = error.stack || ''
     if (ErrorPatterns.matchesPatterns(errorMessage, blueprintId) || ErrorPatterns.matchesPatterns(stack, blueprintId)) {
       return true
@@ -40,7 +40,7 @@ export class BlueprintErrorMonitor {
           success: false,
           errors: blueprintErrors.map(error => ({
             type: error.type,
-            message: error.args.join(' '),
+            message: Array.isArray(error.args) ? error.args.join(' ') : String(error.args || ''),
             stack: error.stack,
             timestamp: error.timestamp,
             critical: errorMonitor.isCriticalError(error.type, error.args),

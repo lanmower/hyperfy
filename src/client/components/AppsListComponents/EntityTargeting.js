@@ -5,11 +5,15 @@ export class EntityTargeting {
   }
 
   getClosest(item) {
-    const playerPosition = this.world.rig.position
+    const players = Array.from(this.world.entities.items.values()).filter(e => e.isPlayer)
+    const localPlayer = players.find(p => p.isLocal) || players[0]
+    const playerPosition = localPlayer?.base?.position
+    if (!playerPosition) return null
+
     let closestEntity
     let closestDistance = null
     for (const [_, entity] of this.world.entities.items) {
-      if (entity.blueprint === item.blueprint) {
+      if (entity.blueprint === item.blueprint && entity.root?.position) {
         const distance = playerPosition.distanceTo(entity.root.position)
         if (closestDistance === null || closestDistance > distance) {
           closestEntity = entity

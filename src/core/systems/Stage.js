@@ -104,7 +104,9 @@ export class Stage extends System {
     this.raycaster.near = min
     this.raycaster.far = max
     this.raycastHits.length = 0
-    this.octree.raycast(this.raycaster, this.raycastHits)
+    if (this.octree?.raycast) {
+      this.octree.raycast(this.raycaster, this.raycastHits)
+    }
     return this.raycastHits
   }
 
