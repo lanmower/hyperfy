@@ -60,7 +60,7 @@ export class ModelSpawner {
 
     const app = this.clientBuilder.entities.add(data, true)
 
-    this.clientBuilder.select(app)
+    this.clientBuilder.composer.selectionManager.select(app)
     this.clientBuilder.setMode('grab')
 
     await this.clientBuilder.network.upload(file)
