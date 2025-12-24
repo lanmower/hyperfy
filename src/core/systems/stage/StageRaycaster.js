@@ -15,7 +15,7 @@ export class StageRaycaster {
   }
 
   raycastPointer(position, layers = this.maskNone, min = 0, max = Infinity) {
-    if (!this.viewport) throw new Error('no viewport')
+    if (!this.viewport || typeof this.viewport.getBoundingClientRect !== 'function') throw new Error('no viewport')
     const rect = this.viewport.getBoundingClientRect()
     raycasterVec2.x = ((position.x - rect.left) / rect.width) * 2 - 1
     raycasterVec2.y = -((position.y - rect.top) / rect.height) * 2 + 1

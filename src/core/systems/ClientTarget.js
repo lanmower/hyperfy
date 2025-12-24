@@ -30,6 +30,7 @@ export class ClientTarget extends System {
   }
 
   show(vec3) {
+    if (!this.ui || typeof this.ui.getBoundingClientRect !== 'function') return
     this.target = vec3
     this.ui.appendChild(this.guide)
     this.bounds = this.ui.getBoundingClientRect()
