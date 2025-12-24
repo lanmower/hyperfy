@@ -44,6 +44,7 @@ export const serverNetworkHandlers = {
   'ping': 'onPing',
   'errorEvent': 'onErrorEvent',
   'errorReport': 'onErrorReport',
+  'clientError': 'onClientError',
   'mcpSubscribeErrors': 'onMcpSubscribeErrors',
   'getErrors': 'onGetErrors',
   'clearErrors': 'onClearErrors',
