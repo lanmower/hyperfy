@@ -17,9 +17,15 @@ export class EntityTargeting {
     let closestDistance = null
     const allEntities = Array.from(this.world.entities.items.values())
     const blueprintId = item.blueprint?.id || item.blueprint
+
     const matchingEntities = allEntities.filter(e => {
-      const entityBlueprintId = e.blueprint?.id || e.blueprint
-      return entityBlueprintId === blueprintId && e.root?.position && e.isApp
+      if (!e.isApp) return false
+      const entityBlueprintId = e.data?.blueprint || e.blueprint?.id || e.blueprint
+      const matches = entityBlueprintId === blueprintId
+      if (!matches && e.isApp) {
+        console.debug(`[EntityTargeting] Entity ${e.data?.id} blueprint: "${entityBlueprintId}" vs target: "${blueprintId}"`)
+      }
+      return matches && e.root?.position
     })
 
     for (const entity of matchingEntities) {
@@ -31,7 +37,7 @@ export class EntityTargeting {
     }
 
     if (!closestEntity) {
-      console.warn('[EntityTargeting.getClosest] No matching app entity found for blueprint:', blueprintId, 'Found', matchingEntities.length, 'matching entities')
+      console.warn('[EntityTargeting.getClosest] No matching app entity found for blueprint:', blueprintId)
     }
     return closestEntity
   }
