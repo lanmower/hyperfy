@@ -39,10 +39,10 @@ export class GrabModeHandler {
 
     if (this.parent.clientBuilder.control.shiftLeft.down) {
       const scaleFactor = 1 + this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
-      target.scale.multiplyScalar(scaleFactor)
+      if (target.scale) target.scale.multiplyScalar(scaleFactor)
     }
     else {
-      target.rotation.y += this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
+      if (target.rotation) target.rotation.y += this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
     }
 
     if (app.root.position) app.root.position.copy(target.position)
@@ -50,10 +50,12 @@ export class GrabModeHandler {
     if (app.root.scale) app.root.scale.copy(target.scale)
 
     if (!this.parent.clientBuilder.control.controlLeft.down) {
-      const newY = target.rotation.y
-      const degrees = newY / DEG2RAD
-      const snappedDegrees = Math.round(degrees / BuilderConfig.SNAP_DEGREES) * BuilderConfig.SNAP_DEGREES
-      app.root.rotation.y = snappedDegrees * DEG2RAD
+      if (target.rotation) {
+        const newY = target.rotation.y
+        const degrees = newY / DEG2RAD
+        const snappedDegrees = Math.round(degrees / BuilderConfig.SNAP_DEGREES) * BuilderConfig.SNAP_DEGREES
+        if (app.root.rotation) app.root.rotation.y = snappedDegrees * DEG2RAD
+      }
     }
 
     app.root.clean()
@@ -63,7 +65,7 @@ export class GrabModeHandler {
         const result = this.parent.clientBuilder.snaps.octree.query(pos, BuilderConfig.SNAP_DISTANCE)[0]
         if (result) {
           const offset = v1.copy(result.position).sub(pos)
-          app.root.position.add(offset)
+          if (app.root.position) app.root.position.add(offset)
           break
         }
       }
