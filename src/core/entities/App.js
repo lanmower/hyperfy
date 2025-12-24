@@ -63,21 +63,15 @@ export class App extends BaseEntity {
     const result = await this.blueprintLoader.load(crashed)
     if (!result) return
     const { root, script, blueprint } = result
-    if (root) {
-      this.root = root
-      root.activate?.({ world: this.world, entity: this })
-      root.position.x = this.data.position?.[0] ?? 0
-      root.position.y = this.data.position?.[1] ?? 0
-      root.position.z = this.data.position?.[2] ?? 0
-      root.quaternion.x = this.data.quaternion?.[0] ?? 0
-      root.quaternion.y = this.data.quaternion?.[1] ?? 0
-      root.quaternion.z = this.data.quaternion?.[2] ?? 0
-      root.quaternion.w = this.data.quaternion?.[3] ?? 1
-      root.scale.x = this.data.scale?.[0] ?? 1
-      root.scale.y = this.data.scale?.[1] ?? 1
-      root.scale.z = this.data.scale?.[2] ?? 1
-      this.createFloorColliderIfNeeded(root)
+    this.blueprint = blueprint
+    this.root = root
+    if (!blueprint.scene) {
+      this.root.position.fromArray(this.data.position || [0, 0, 0])
+      this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+      this.root.scale.fromArray(this.data.scale || [1, 1, 1])
     }
+    this.root.activate?.({ world: this.world, entity: this, moving: !!this.data.mover })
+    this.createFloorColliderIfNeeded(this.root)
     const runScript =
       (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
     if (runScript) {
@@ -88,7 +82,7 @@ export class App extends BaseEntity {
       this.world.setHot(this, true)
       this.nodeManager.collectSnapPoints()
     }
-    this.networkSync.initialize(root || this.root, this.world.networkRate)
+    this.networkSync.initialize(this.root, this.world.networkRate)
     this.eventManager.flushEventQueue()
     this.building = false
   }
