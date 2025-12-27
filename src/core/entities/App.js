@@ -60,88 +60,91 @@ export class App extends BaseEntity {
   }
 
   async build(crashed) {
+    if (this.building) return
     this.building = true
     const n = ++this.n
-    const blueprint = this.world.blueprints.get(this.data.blueprint)
-    if (!blueprint) return
+    try {
+      const blueprint = this.world.blueprints.get(this.data.blueprint)
+      if (!blueprint) return
 
-    if (blueprint.disabled) {
-      this.unbuild()
+      if (blueprint.disabled) {
+        this.unbuild()
+        this.blueprint = blueprint
+        return
+      }
+
       this.blueprint = blueprint
+      this.mode = Modes.ACTIVE
+      if (this.data.mover) this.mode = Modes.MOVING
+      if (this.data.uploader && this.data.uploader !== this.world.network.id) this.mode = Modes.LOADING
+
+      let root
+      let scene
+      let script
+
+      if (this.data.uploader && this.data.uploader !== this.world.network.id) {
+        root = createNode('mesh')
+        root.type = 'box'
+        root.width = 1
+        root.height = 1
+        root.depth = 1
+      } else {
+        const result = await this.blueprintLoader.load(crashed)
+        if (result) {
+          root = result.root
+          scene = result.scene
+          script = result.script
+        } else {
+          crashed = true
+        }
+      }
+
+      if (crashed) {
+        const glb = await this.world.loader.load('model', 'asset://crash-block.glb')
+        if (glb) root = glb.toNodes()
+      }
+
+      if (!root) return
+
+      if (this.n !== n) return
+      this.unbuild()
+
+      this.root = root
+      if (!blueprint.scene) {
+        this.root.position.fromArray(this.data.position || [0, 0, 0])
+        this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+        this.root.scale.fromArray(this.data.scale || [1, 1, 1])
+      }
+      this.root.activate?.({ world: this.world, entity: this, moving: !!this.data.mover })
+      if (scene && this.world.stage) {
+        this.threeScene = scene
+        if (blueprint.scene) {
+          scene.position.set(0, 0, 0)
+          scene.quaternion.set(0, 0, 0, 1)
+          scene.scale.set(1, 1, 1)
+        } else {
+          scene.position.fromArray(this.data.position || [0, 0, 0])
+          scene.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
+          scene.scale.fromArray(this.data.scale || [1, 1, 1])
+        }
+        this.world.stage.scene.add(scene)
+      }
+      this.createFloorColliderIfNeeded(this.root)
+      const runScript =
+        (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
+      if (runScript) {
+        const success = this.scriptExecutor.executeScript(script, blueprint, blueprint.props, this.setTimeout, this.getWorldProxy.bind(this), this.getAppProxy.bind(this), this.fetch)
+        if (!success) return this.crash()
+      }
+      if (this.mode === Modes.MOVING) {
+        this.world.setHot(this, true)
+        this.nodeManager.collectSnapPoints()
+      }
+      this.networkSync.initialize(this.root, this.world.networkRate)
+      this.eventManager.flushEventQueue()
+    } finally {
       this.building = false
-      return
     }
-
-    this.blueprint = blueprint
-    this.mode = Modes.ACTIVE
-    if (this.data.mover) this.mode = Modes.MOVING
-    if (this.data.uploader && this.data.uploader !== this.world.network.id) this.mode = Modes.LOADING
-
-    let root
-    let scene
-    let script
-
-    if (this.data.uploader && this.data.uploader !== this.world.network.id) {
-      root = createNode('mesh')
-      root.type = 'box'
-      root.width = 1
-      root.height = 1
-      root.depth = 1
-    } else {
-      const result = await this.blueprintLoader.load(crashed)
-      if (result) {
-        root = result.root
-        scene = result.scene
-        script = result.script
-      } else {
-        crashed = true
-      }
-    }
-
-    if (crashed) {
-      const glb = await this.world.loader.load('model', 'asset://crash-block.glb')
-      if (glb) root = glb.toNodes()
-    }
-
-    if (!root) return
-
-    if (this.n !== n) return
-    this.unbuild()
-
-    this.root = root
-    if (!blueprint.scene) {
-      this.root.position.fromArray(this.data.position || [0, 0, 0])
-      this.root.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
-      this.root.scale.fromArray(this.data.scale || [1, 1, 1])
-    }
-    this.root.activate?.({ world: this.world, entity: this, moving: !!this.data.mover })
-    if (scene && this.world.stage) {
-      this.threeScene = scene
-      if (blueprint.scene) {
-        scene.position.set(0, 0, 0)
-        scene.quaternion.set(0, 0, 0, 1)
-        scene.scale.set(1, 1, 1)
-      } else {
-        scene.position.fromArray(this.data.position || [0, 0, 0])
-        scene.quaternion.fromArray(this.data.quaternion || [0, 0, 0, 1])
-        scene.scale.fromArray(this.data.scale || [1, 1, 1])
-      }
-      this.world.stage.scene.add(scene)
-    }
-    this.createFloorColliderIfNeeded(this.root)
-    const runScript =
-      (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
-    if (runScript) {
-      const success = this.scriptExecutor.executeScript(script, blueprint, blueprint.props, this.setTimeout, this.getWorldProxy.bind(this), this.getAppProxy.bind(this), this.fetch)
-      if (!success) return this.crash()
-    }
-    if (this.mode === Modes.MOVING) {
-      this.world.setHot(this, true)
-      this.nodeManager.collectSnapPoints()
-    }
-    this.networkSync.initialize(this.root, this.world.networkRate)
-    this.eventManager.flushEventQueue()
-    this.building = false
   }
 
   createFloorColliderIfNeeded(root) {
