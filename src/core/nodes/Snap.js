@@ -11,7 +11,7 @@ export class Snap extends Node {
 
   mount() {
     this.worldPosition.setFromMatrixPosition(this.matrixWorld)
-    this.handle = this.ctx.world.snaps?.create(this.worldPosition, !this.ctx.moving)
+    this.handle = this.ctx.world.snaps?.create(this.worldPosition, !this.ctx.entity?.moving)
   }
 
   commit(didMove) {

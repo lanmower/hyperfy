@@ -10,6 +10,7 @@ import { Emotes } from '../extras/playerEmotes.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { isBoolean, isNumber } from 'lodash-es'
 import { hasRank, Ranks } from '../extras/ranks.js'
+import { PhysicsConfig } from '../config/SystemConfig.js'
 import { Modes } from '../constants/AnimationModes.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
 import { PlayerCameraManager } from './player/PlayerCameraManager.js'
@@ -64,9 +65,9 @@ export class PlayerLocal extends BaseEntity {
   async init() {
     try {
       console.log('PlayerLocal.init() started')
-      this.mass = 1
-      this.capsuleRadius = 0.3
-      this.capsuleHeight = 1.6
+      this.mass = PhysicsConfig.MASS
+      this.capsuleRadius = PhysicsConfig.CAPSULE_RADIUS
+      this.capsuleHeight = PhysicsConfig.CAPSULE_HEIGHT
 
       this.firstPerson = false
 

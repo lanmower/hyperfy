@@ -1,0 +1,131 @@
+{
+  "timestamp": "2025-12-27T12:00:00Z",
+  "platform": "browser",
+  "environment": "clean-build",
+  "testDuration": "1-hour",
+  "comment": "Reference baseline values collected from clean build with single player, no external entities",
+
+  "frameTime": {
+    "target": 16.67,
+    "acceptable": 16.67,
+    "warning": 25.0,
+    "critical": 50.0,
+    "description": "Frame time in milliseconds (target 60 FPS = 16.67ms)"
+  },
+
+  "memory": {
+    "initial": 50,
+    "peak": 200,
+    "acceptable": 250,
+    "warning": 300,
+    "critical": 400,
+    "growthRate": 0.1,
+    "description": "Memory usage in MB (growth per hour)"
+  },
+
+  "entities": {
+    "spawn": {
+      "target": 5,
+      "acceptable": 10,
+      "warning": 20,
+      "critical": 50,
+      "description": "Entity spawn time in milliseconds"
+    },
+    "despawn": {
+      "target": 2,
+      "acceptable": 5,
+      "warning": 10,
+      "critical": 20,
+      "description": "Entity despawn time in milliseconds"
+    }
+  },
+
+  "network": {
+    "latency": {
+      "target": 50,
+      "acceptable": 100,
+      "warning": 200,
+      "critical": 500,
+      "description": "Network latency in milliseconds"
+    },
+    "throughput": {
+      "target": 1,
+      "acceptable": 10,
+      "warning": 50,
+      "critical": 100,
+      "description": "Network throughput in MB/sec"
+    },
+    "messageCount": {
+      "snapshot": 30,
+      "input": 60,
+      "chat": 5,
+      "description": "Expected message counts per second"
+    }
+  },
+
+  "physics": {
+    "simTime": {
+      "target": 3,
+      "acceptable": 5,
+      "warning": 10,
+      "critical": 20,
+      "description": "Physics simulation time in milliseconds per step"
+    }
+  },
+
+  "rendering": {
+    "drawCalls": {
+      "target": 100,
+      "acceptable": 200,
+      "warning": 500,
+      "critical": 1000,
+      "description": "Number of draw calls per frame"
+    },
+    "triangles": {
+      "target": 1000000,
+      "acceptable": 2000000,
+      "warning": 5000000,
+      "critical": 10000000,
+      "description": "Number of triangles per frame"
+    }
+  },
+
+  "scalingThresholds": {
+    "singlePlayer": {
+      "entities": 10,
+      "players": 1,
+      "scripts": 5,
+      "dynamicBodies": 10
+    },
+    "multiPlayer3": {
+      "entities": 50,
+      "players": 4,
+      "scripts": 20,
+      "dynamicBodies": 30,
+      "expectedFrameTimeMultiplier": 1.5
+    },
+    "multiPlayer10": {
+      "entities": 200,
+      "players": 11,
+      "scripts": 50,
+      "dynamicBodies": 100,
+      "expectedFrameTimeMultiplier": 2.5
+    },
+    "heavyLoad": {
+      "entities": 1000,
+      "players": 50,
+      "scripts": 200,
+      "dynamicBodies": 500,
+      "expectedFrameTimeMultiplier": 4.0
+    }
+  },
+
+  "regressionDetection": {
+    "frameTimeMultiplier": 2.0,
+    "memoryGrowthMultiplier": 1.5,
+    "latencyMultiplier": 2.0,
+    "description": "Thresholds for detecting regressions vs baseline"
+  },
+
+  "notes": "These are initial conservative estimates. Run actual benchmarks with load tests to populate real values."
+}

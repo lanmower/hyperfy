@@ -44,7 +44,7 @@ export class RigidBody extends Node {
 
   mount() {
     this.needsRebuild = false
-    if (this.ctx.moving) return
+    if (this.ctx.entity?.moving) return
 
     this.matrixWorld.decompose(v[0], q[0], v[1])
     this.transform = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)

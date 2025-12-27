@@ -33,7 +33,11 @@
     "lint": "eslint . --ext .js,.jsx",
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "format": "prettier --write .",
-    "check": "npm run lint && npm run format"
+    "check": "npm run lint && npm run format",
+    "test:playwright": "playwright test",
+    "test:playwright:ui": "playwright test --ui",
+    "test:playwright:debug": "playwright test --debug",
+    "test:playwright:report": "playwright show-report"
   },
   "dependencies": {
     "@fastify/compress": "^8.0.1",
@@ -75,6 +79,7 @@
   "devDependencies": {
     "@babel/eslint-parser": "^7.23.10",
     "@babel/preset-react": "^7.23.10",
+    "@playwright/test": "^1.48.0",
     "esbuild": "^0.24.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

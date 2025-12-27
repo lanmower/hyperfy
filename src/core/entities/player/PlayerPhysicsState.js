@@ -77,7 +77,7 @@ export class PlayerPhysicsState {
     const PHYSX = this.world.PHYSX || globalThis.PHYSX
     if (!PHYSX) return
 
-    const moveSpeed = (this.player.running ? 6 : 3) * this.physics.mass
+    const moveSpeed = (this.player.running ? PhysicsConfig.RUN_SPEED : PhysicsConfig.WALK_SPEED) * this.physics.mass
     const adjustedSpeed = moveSpeed * (1 - snare)
 
     const q1 = new THREE.Quaternion()
