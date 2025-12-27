@@ -166,58 +166,90 @@ class OpenAIClient {
   }
 
   async create(prompt) {
-    const resp = await this.client.responses.create({
-      model: this.model,
-      reasoning: { effort: this.effort },
-      instructions: `
-        ${docs}
-        ===============
-        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
-      input: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
-    })
-    return resp.output_text
+    try {
+      const resp = await this.client.responses.create({
+        model: this.model,
+        reasoning: { effort: this.effort },
+        instructions: `
+          ${docs}
+          ===============
+          You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
+        input: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
+      })
+      if (!resp || !resp.output_text) {
+        throw new Error('OpenAI API response missing output_text field')
+      }
+      return resp.output_text
+    } catch (err) {
+      console.error('[ai] OpenAI create error:', err.message)
+      throw err
+    }
   }
 
   async edit(code, prompt) {
-    const resp = await this.client.responses.create({
-      model: this.model,
-      reasoning: { effort: this.effort },
-      instructions: `
-        ${docs}
-        ===============
-        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-        Here is the existing script that you will be working with:
-        ===============
-        ${code}`,
-      input: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
-    })
-    return resp.output_text
+    try {
+      const resp = await this.client.responses.create({
+        model: this.model,
+        reasoning: { effort: this.effort },
+        instructions: `
+          ${docs}
+          ===============
+          You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+          Here is the existing script that you will be working with:
+          ===============
+          ${code}`,
+        input: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
+      })
+      if (!resp || !resp.output_text) {
+        throw new Error('OpenAI API response missing output_text field')
+      }
+      return resp.output_text
+    } catch (err) {
+      console.error('[ai] OpenAI edit error:', err.message)
+      throw err
+    }
   }
 
   async fix(code, error) {
-    const resp = await this.client.responses.create({
-      model: this.model,
-      reasoning: { effort: this.effort },
-      instructions: `
-        ${docs}
-        ===============
-        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-        Here is the existing script that you will be working with:
-        ===============
-        ${code}`,
-      input: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
-    })
-    return resp.output_text
+    try {
+      const resp = await this.client.responses.create({
+        model: this.model,
+        reasoning: { effort: this.effort },
+        instructions: `
+          ${docs}
+          ===============
+          You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+          Here is the existing script that you will be working with:
+          ===============
+          ${code}`,
+        input: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
+      })
+      if (!resp || !resp.output_text) {
+        throw new Error('OpenAI API response missing output_text field')
+      }
+      return resp.output_text
+    } catch (err) {
+      console.error('[ai] OpenAI fix error:', err.message)
+      throw err
+    }
   }
 
   async classify(prompt) {
-    const resp = await this.client.responses.create({
-      model: this.model,
-      reasoning: { effort: this.effort },
-      instructions: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
-      input: `Please classify the following prompt:\n\n"${prompt}"`,
-    })
-    return resp.output_text
+    try {
+      const resp = await this.client.responses.create({
+        model: this.model,
+        reasoning: { effort: this.effort },
+        instructions: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
+        input: `Please classify the following prompt:\n\n"${prompt}"`,
+      })
+      if (!resp || !resp.output_text) {
+        throw new Error('OpenAI API response missing output_text field')
+      }
+      return resp.output_text
+    } catch (err) {
+      console.error('[ai] OpenAI classify error:', err.message)
+      throw err
+    }
   }
 }
 
@@ -229,78 +261,122 @@ class AnthropicClient {
   }
 
   async create(prompt) {
-    const resp = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system: `
-        ${docs}
-        ===============
-        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
-      messages: [
-        {
-          role: 'user',
-          content: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
-        },
-      ],
-    })
-    return resp.content[0].text
+    try {
+      const resp = await this.client.messages.create({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        system: `
+          ${docs}
+          ===============
+          You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
+        messages: [
+          {
+            role: 'user',
+            content: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
+          },
+        ],
+      })
+      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
+        throw new Error('Anthropic API returned empty content array')
+      }
+      if (!resp.content[0].text) {
+        throw new Error('Anthropic API response missing text field')
+      }
+      return resp.content[0].text
+    } catch (err) {
+      console.error('[ai] Anthropic create error:', err.message)
+      throw err
+    }
   }
 
   async edit(code, prompt) {
-    const resp = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system: `
-        ${docs}
-        ===============
-        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-        Here is the existing script that you will be working with:
-        ===============
-        ${code}`,
-      messages: [
-        {
-          role: 'user',
-          content: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
-        },
-      ],
-    })
-    return resp.content[0].text
+    try {
+      const resp = await this.client.messages.create({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        system: `
+          ${docs}
+          ===============
+          You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+          Here is the existing script that you will be working with:
+          ===============
+          ${code}`,
+        messages: [
+          {
+            role: 'user',
+            content: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
+          },
+        ],
+      })
+      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
+        throw new Error('Anthropic API returned empty content array')
+      }
+      if (!resp.content[0].text) {
+        throw new Error('Anthropic API response missing text field')
+      }
+      return resp.content[0].text
+    } catch (err) {
+      console.error('[ai] Anthropic edit error:', err.message)
+      throw err
+    }
   }
 
   async fix(code, error) {
-    const resp = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system: `
-        ${docs}
-        ===============
-        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-        Here is the existing script that you will be working with:
-        ===============
-        ${code}`,
-      messages: [
-        {
-          role: 'user',
-          content: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
-        },
-      ],
-    })
-    return resp.content[0].text
+    try {
+      const resp = await this.client.messages.create({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        system: `
+          ${docs}
+          ===============
+          You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+          Here is the existing script that you will be working with:
+          ===============
+          ${code}`,
+        messages: [
+          {
+            role: 'user',
+            content: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
+          },
+        ],
+      })
+      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
+        throw new Error('Anthropic API returned empty content array')
+      }
+      if (!resp.content[0].text) {
+        throw new Error('Anthropic API response missing text field')
+      }
+      return resp.content[0].text
+    } catch (err) {
+      console.error('[ai] Anthropic fix error:', err.message)
+      throw err
+    }
   }
 
   async classify(prompt) {
-    const resp = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
-      messages: [
-        {
-          role: 'user',
-          content: `Please classify the following prompt:\n\n"${prompt}"`,
-        },
-      ],
-    })
-    return resp.content[0].text
+    try {
+      const resp = await this.client.messages.create({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        system: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
+        messages: [
+          {
+            role: 'user',
+            content: `Please classify the following prompt:\n\n"${prompt}"`,
+          },
+        ],
+      })
+      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
+        throw new Error('Anthropic API returned empty content array')
+      }
+      if (!resp.content[0].text) {
+        throw new Error('Anthropic API response missing text field')
+      }
+      return resp.content[0].text
+    } catch (err) {
+      console.error('[ai] Anthropic classify error:', err.message)
+      throw err
+    }
   }
 }
 
@@ -312,122 +388,178 @@ class XAIClient {
   }
 
   async create(prompt) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        stream: false,
-        messages: [
-          {
-            role: 'system',
-            content: `
-              ${docs}
-              ===============
-              You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
-          },
-          {
-            role: 'user',
-            content: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
-          },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.choices[0].message.content
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          stream: false,
+          messages: [
+            {
+              role: 'system',
+              content: `
+                ${docs}
+                ===============
+                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
+            },
+            {
+              role: 'user',
+              content: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        throw new Error('XAI API returned empty choices array')
+      }
+      if (!data.choices[0].message || !data.choices[0].message.content) {
+        throw new Error('XAI API response missing message.content field')
+      }
+      return data.choices[0].message.content
+    } catch (err) {
+      console.error('[ai] XAI create error:', err.message)
+      throw err
+    }
   }
 
   async edit(code, prompt) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        stream: false,
-        messages: [
-          {
-            role: 'system',
-            content: `
-              ${docs}
-              ===============
-              You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-              Here is the existing script that you will be working with:
-              ===============
-              ${code}`,
-          },
-          {
-            role: 'user',
-            content: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
-          },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.choices[0].message.content
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          stream: false,
+          messages: [
+            {
+              role: 'system',
+              content: `
+                ${docs}
+                ===============
+                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+                Here is the existing script that you will be working with:
+                ===============
+                ${code}`,
+            },
+            {
+              role: 'user',
+              content: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        throw new Error('XAI API returned empty choices array')
+      }
+      if (!data.choices[0].message || !data.choices[0].message.content) {
+        throw new Error('XAI API response missing message.content field')
+      }
+      return data.choices[0].message.content
+    } catch (err) {
+      console.error('[ai] XAI edit error:', err.message)
+      throw err
+    }
   }
 
   async fix(code, error) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        stream: false,
-        messages: [
-          {
-            role: 'system',
-            content: `
-              ${docs}
-              ===============
-              You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-              Here is the existing script that you will be working with:
-              ===============
-              ${code}`,
-          },
-          {
-            role: 'user',
-            content: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
-          },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.choices[0].message.content
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          stream: false,
+          messages: [
+            {
+              role: 'system',
+              content: `
+                ${docs}
+                ===============
+                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+                Here is the existing script that you will be working with:
+                ===============
+                ${code}`,
+            },
+            {
+              role: 'user',
+              content: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        throw new Error('XAI API returned empty choices array')
+      }
+      if (!data.choices[0].message || !data.choices[0].message.content) {
+        throw new Error('XAI API response missing message.content field')
+      }
+      return data.choices[0].message.content
+    } catch (err) {
+      console.error('[ai] XAI fix error:', err.message)
+      throw err
+    }
   }
 
   async classify(prompt) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        stream: false,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
-          },
-          {
-            role: 'user',
-            content: `Please classify the following prompt:\n\n"${prompt}"`,
-          },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.choices[0].message.content
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          stream: false,
+          messages: [
+            {
+              role: 'system',
+              content: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
+            },
+            {
+              role: 'user',
+              content: `Please classify the following prompt:\n\n"${prompt}"`,
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        throw new Error('XAI API returned empty choices array')
+      }
+      if (!data.choices[0].message || !data.choices[0].message.content) {
+        throw new Error('XAI API response missing message.content field')
+      }
+      return data.choices[0].message.content
+    } catch (err) {
+      console.error('[ai] XAI classify error:', err.message)
+      throw err
+    }
   }
 }
 
@@ -438,118 +570,186 @@ class GoogleClient {
   }
 
   async create(prompt) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        'x-goog-api-key': this.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: {
-            text: `
-              ${docs}
-              ===============
-              You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
-          },
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': this.apiKey,
+          'Content-Type': 'application/json',
         },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `Respond with the javascript needed to generate the following:\n\n"${prompt}"` }],
+        body: JSON.stringify({
+          system_instruction: {
+            parts: {
+              text: `
+                ${docs}
+                ===============
+                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
+            },
           },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.candidates[0].content.parts[0].text
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `Respond with the javascript needed to generate the following:\n\n"${prompt}"` }],
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+        throw new Error('Google API returned empty candidates array')
+      }
+      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
+        throw new Error('Google API response missing content.parts')
+      }
+      if (!data.candidates[0].content.parts[0].text) {
+        throw new Error('Google API response missing text field')
+      }
+      return data.candidates[0].content.parts[0].text
+    } catch (err) {
+      console.error('[ai] Google create error:', err.message)
+      throw err
+    }
   }
 
   async edit(code, prompt) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        'x-goog-api-key': this.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: {
-            text: `
-              ${docs}
-              ===============
-              You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-              Here is the existing script that you will be working with:
-              ===============
-              ${code}`,
-          },
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': this.apiKey,
+          'Content-Type': 'application/json',
         },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `Please edit the code above to satisfy the following request:\n\n"${prompt}"` }],
+        body: JSON.stringify({
+          system_instruction: {
+            parts: {
+              text: `
+                ${docs}
+                ===============
+                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+                Here is the existing script that you will be working with:
+                ===============
+                ${code}`,
+            },
           },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.candidates[0].content.parts[0].text
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `Please edit the code above to satisfy the following request:\n\n"${prompt}"` }],
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+        throw new Error('Google API returned empty candidates array')
+      }
+      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
+        throw new Error('Google API response missing content.parts')
+      }
+      if (!data.candidates[0].content.parts[0].text) {
+        throw new Error('Google API response missing text field')
+      }
+      return data.candidates[0].content.parts[0].text
+    } catch (err) {
+      console.error('[ai] Google edit error:', err.message)
+      throw err
+    }
   }
 
   async fix(code, error) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        'x-goog-api-key': this.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: {
-            text: `
-              ${docs}
-              ===============
-              You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-              Here is the existing script that you will be working with:
-              ===============
-              ${code}`,
-          },
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': this.apiKey,
+          'Content-Type': 'application/json',
         },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"` }],
+        body: JSON.stringify({
+          system_instruction: {
+            parts: {
+              text: `
+                ${docs}
+                ===============
+                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+                Here is the existing script that you will be working with:
+                ===============
+                ${code}`,
+            },
           },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.candidates[0].content.parts[0].text
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"` }],
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+        throw new Error('Google API returned empty candidates array')
+      }
+      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
+        throw new Error('Google API response missing content.parts')
+      }
+      if (!data.candidates[0].content.parts[0].text) {
+        throw new Error('Google API response missing text field')
+      }
+      return data.candidates[0].content.parts[0].text
+    } catch (err) {
+      console.error('[ai] Google fix error:', err.message)
+      throw err
+    }
   }
 
   async classify(prompt) {
-    const resp = await fetch(this.url, {
-      method: 'POST',
-      headers: {
-        'x-goog-api-key': this.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: {
-            text: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
-          },
+    try {
+      const resp = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': this.apiKey,
+          'Content-Type': 'application/json',
         },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `Please classify the following prompt:\n\n"${prompt}"` }],
+        body: JSON.stringify({
+          system_instruction: {
+            parts: {
+              text: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
+            },
           },
-        ],
-      }),
-    })
-    const data = await resp.json()
-    return data.candidates[0].content.parts[0].text
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `Please classify the following prompt:\n\n"${prompt}"` }],
+            },
+          ],
+        }),
+      })
+      if (!resp.ok) {
+        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+        throw new Error('Google API returned empty candidates array')
+      }
+      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
+        throw new Error('Google API response missing content.parts')
+      }
+      if (!data.candidates[0].content.parts[0].text) {
+        throw new Error('Google API response missing text field')
+      }
+      return data.candidates[0].content.parts[0].text
+    } catch (err) {
+      console.error('[ai] Google classify error:', err.message)
+      throw err
+    }
   }
 }
 
