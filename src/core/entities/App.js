@@ -237,6 +237,13 @@ export class App extends BaseEntity {
 
     this.unbuild()
 
+    this.blueprintLoader = null
+    this.scriptExecutor = null
+    this.eventManager = null
+    this.proxyFactory = null
+    this.nodeManager = null
+    this.networkSync = null
+    this.propertyHandlers = null
     this.world.entities.remove(this.data.id)
     if (local) {
       this.world.network.send('entityRemoved', this.data.id)
