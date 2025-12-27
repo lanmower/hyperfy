@@ -57,8 +57,8 @@ export class EventManager {
 
   clearEventListeners() {
     this.listeners = {}
-    this.worldListeners.forEach((name, callback) => {
-      this.app.world.events.off(name, callback)
+    this.worldListeners.forEach((eventName, callback) => {
+      this.app.world.events.off(eventName, callback)
     })
     this.worldListeners.clear()
     this.hotEvents = 0
