@@ -42,13 +42,13 @@ export function Client({ wsUrl, onSetup }) {
           if (wsUrl instanceof Promise) wsUrl = await wsUrl
         }
         const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: '/assets' }
-        console.log('Calling onSetup and world.init')
+        console.log('Calling onSetup and setupDebugGlobals early')
         onSetup?.(world, config)
+        setupDebugGlobals(world)
         const initPromise = (async () => {
           console.log('Starting world.init')
           await world.init(config)
           console.log('world.init completed')
-          setupDebugGlobals(world)
         })()
         await initPromise
         const tick = time => {

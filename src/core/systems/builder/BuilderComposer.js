@@ -1,6 +1,5 @@
 import { UndoManager } from './UndoManager.js'
 import { ModeManager } from './ModeManager.js'
-import { GizmoManager } from './GizmoManager.js'
 import { FileDropHandler } from './FileDropHandler.js'
 import { SelectionManager } from './SelectionManager.js'
 import { TransformHandler } from './TransformHandler.js'
@@ -16,7 +15,6 @@ export class BuilderComposer {
 
     this.undoManager = new UndoManager(builder)
     this.modeManager = new ModeManager()
-    this.gizmoManager = null
     this.fileDropHandler = null
     this.selectionManager = new SelectionManager(builder)
     this.transformHandler = new TransformHandler(builder)
@@ -28,7 +26,6 @@ export class BuilderComposer {
 
   init({ world, viewport }) {
     this.viewport = viewport
-    this.gizmoManager = new GizmoManager(world, viewport)
     this.fileDropHandler = new FileDropHandler(this.builder)
     viewport.addEventListener('dragover', this.fileDropHandler.onDragOver)
     viewport.addEventListener('dragenter', this.fileDropHandler.onDragEnter)

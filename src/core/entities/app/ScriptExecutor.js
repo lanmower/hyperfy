@@ -128,7 +128,8 @@ export class ScriptExecutor {
           } catch (onLoadErr) {
             const hyperfyError = onLoadErr instanceof HyperfyError ? onLoadErr : new HyperfyError('SCRIPT_ERROR', `onLoad failed: ${onLoadErr.message}`, { originalError: onLoadErr.toString() })
             this.recordError(hyperfyError, 'onLoad')
-            console.error('[ScriptExecutor] onLoad failed:', hyperfyError)
+            console.error('[ScriptExecutor] onLoad failed, stopping execution:', hyperfyError)
+            return false
           }
         }
       } catch (hookErr) {

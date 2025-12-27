@@ -270,16 +270,23 @@ export class PlayerLocal extends BaseEntity {
       window.__DEBUG__.cameraZoom = this.control.camera.zoom
     }
 
-    if (this.avatar?.raw?.scene) {
-      this.avatar.raw.scene.position.copy(this.base.position)
-      this.avatar.raw.scene.quaternion.copy(this.base.quaternion)
-      this.avatar.raw.scene.updateMatrix()
-      this.avatar.raw.scene.updateMatrixWorld(true)
+    if (this.avatar && this.avatar.raw && this.avatar.raw.scene) {
+      const scene = this.avatar.raw.scene
+      scene.position.copy(this.base.position)
+      scene.quaternion.copy(this.base.quaternion)
+      scene.updateMatrix()
+      scene.updateMatrixWorld(true)
     }
 
     if (this.avatar && this.avatar.getBoneTransform) {
-      const matrix = this.avatar.getBoneTransform('head')
-      if (matrix) this.aura.position.setFromMatrixPosition(matrix)
+      try {
+        const matrix = this.avatar.getBoneTransform('head')
+        if (matrix && this.aura) {
+          this.aura.position.setFromMatrixPosition(matrix)
+        }
+      } catch (err) {
+        console.warn('[PlayerLocal] getBoneTransform error:', err.message)
+      }
     }
   }
 

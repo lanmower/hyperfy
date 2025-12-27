@@ -41,25 +41,10 @@ export class TransformHandler {
     const app = this.clientBuilder.selected
     if (!app) return
 
-    if (mode === 'translate' && this.isActive()) {
-      app.root.position.copy(this.gizmoController.gizmoTarget.position)
-      app.root.quaternion.copy(this.gizmoController.gizmoTarget.quaternion)
-      app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
-      if (app.threeScene && !app.blueprint?.scene) {
-        app.threeScene.position.copy(app.root.position)
-        app.threeScene.quaternion.copy(app.root.quaternion)
-        app.threeScene.scale.copy(app.root.scale)
-      }
-    }
+    if (!this.gizmoController.gizmo) return
 
-    if (mode === 'rotate') {
-      if (this.clientBuilder.control.controlLeft.pressed) {
-        this.disableRotationSnap()
-      }
-      if (this.clientBuilder.control.controlLeft.released) {
-        this.enableRotationSnap()
-      }
-      if (this.isActive()) {
+    if (mode === 'translate') {
+      if (this.gizmoController.gizmoTarget) {
         app.root.position.copy(this.gizmoController.gizmoTarget.position)
         app.root.quaternion.copy(this.gizmoController.gizmoTarget.quaternion)
         app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
@@ -71,10 +56,31 @@ export class TransformHandler {
       }
     }
 
-    if (mode === 'scale' && this.isActive()) {
-      app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
-      if (app.threeScene && !app.blueprint?.scene) {
-        app.threeScene.scale.copy(app.root.scale)
+    if (mode === 'rotate') {
+      if (this.clientBuilder.control.controlLeft.pressed) {
+        this.disableRotationSnap()
+      }
+      if (this.clientBuilder.control.controlLeft.released) {
+        this.enableRotationSnap()
+      }
+      if (this.gizmoController.gizmoTarget) {
+        app.root.position.copy(this.gizmoController.gizmoTarget.position)
+        app.root.quaternion.copy(this.gizmoController.gizmoTarget.quaternion)
+        app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
+        if (app.threeScene && !app.blueprint?.scene) {
+          app.threeScene.position.copy(app.root.position)
+          app.threeScene.quaternion.copy(app.root.quaternion)
+          app.threeScene.scale.copy(app.root.scale)
+        }
+      }
+    }
+
+    if (mode === 'scale') {
+      if (this.gizmoController.gizmoTarget) {
+        app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
+        if (app.threeScene && !app.blueprint?.scene) {
+          app.threeScene.scale.copy(app.root.scale)
+        }
       }
     }
 
