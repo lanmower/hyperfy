@@ -35,13 +35,25 @@ export class ClientLoader extends BaseLoader {
   }
 
   execPreload() {
-    let loaded = 0
-    const promises = this.preloadItems.map(item =>
-      this.load(item.type, item.url).then(() => {
-        this.events.emit('progress', (++loaded / this.preloadItems.length) * 100)
+    try {
+      let loaded = 0
+      const promises = this.preloadItems.map(item =>
+        this.load(item.type, item.url)
+          .then(() => {
+            this.events.emit('progress', (++loaded / this.preloadItems.length) * 100)
+          })
+          .catch(err => {
+            console.error(`[ClientLoader] Error preloading ${item.type}/${item.url}:`, err)
+          })
+      )
+      this.preloader = Promise.allSettled(promises).then(() => { this.preloader = null }).catch(err => {
+        console.error('[ClientLoader] Preload completed with errors:', err)
+        this.preloader = null
       })
-    )
-    this.preloader = Promise.allSettled(promises).then(() => { this.preloader = null })
+    } catch (err) {
+      console.error('[ClientLoader] Error in execPreload:', err)
+      this.preloader = null
+    }
   }
 
   setFile(url, file) { this.fileManager.set(url, file) }
@@ -49,23 +61,50 @@ export class ClientLoader extends BaseLoader {
   getFile(url, name) { return this.fileManager.get(url, name) }
 
   async load(type, url) {
-    if (this.preloader) await this.preloader
-    const key = `${type}/${url}`
-    if (this.promises.has(key)) return this.promises.get(key)
-    const file = type === 'video' ? null : await this.fileManager.load(url)
-    const promise = this.assetHandlers.handle(type, url, file, key)
-    if (!promise) {
-      console.warn(`No handler for asset type: ${type}`)
+    try {
+      if (this.preloader) await this.preloader
+      const key = `${type}/${url}`
+      if (this.promises.has(key)) return this.promises.get(key)
+
+      let file = null
+      if (type !== 'video') {
+        try {
+          file = await this.fileManager.load(url)
+        } catch (fileErr) {
+          console.error(`[ClientLoader] Error loading file (${url}):`, fileErr)
+          return null
+        }
+      }
+
+      const promise = this.assetHandlers.handle(type, url, file, key)
+      if (!promise) {
+        console.warn(`[ClientLoader] No handler for asset type: ${type}`)
+        return null
+      }
+      this.promises.set(key, promise)
+      return await promise
+    } catch (err) {
+      console.error(`[ClientLoader] Error loading asset (${type}/${url}):`, err)
       return null
     }
-    this.promises.set(key, promise)
-    return promise
   }
 
   insert(type, url, file) {
-    const key = `${type}/${url}`
-    const promise = this.assetHandlers.handleInsert(type, URL.createObjectURL(file), url, file, key)
-    if (promise) this.promises.set(key, promise)
+    try {
+      const key = `${type}/${url}`
+      let objectUrl = null
+      try {
+        objectUrl = URL.createObjectURL(file)
+      } catch (urlErr) {
+        console.error(`[ClientLoader] Error creating object URL:`, urlErr)
+        return
+      }
+
+      const promise = this.assetHandlers.handleInsert(type, objectUrl, url, file, key)
+      if (promise) this.promises.set(key, promise)
+    } catch (err) {
+      console.error(`[ClientLoader] Error in insert (${type}/${url}):`, err)
+    }
   }
 
   destroy() {

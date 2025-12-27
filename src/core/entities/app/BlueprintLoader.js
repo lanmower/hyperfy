@@ -48,47 +48,57 @@ export class BlueprintLoader {
   }
 
   async loadModel(modelUrl) {
-    const world = this.app.world
-    if (!world.loader) {
-      console.warn(`[BlueprintLoader] Loader not available (server-side model loading not supported)`)
+    try {
+      const world = this.app.world
+      if (!world.loader) {
+        console.warn(`[BlueprintLoader] Loader not available (server-side model loading not supported)`)
+        return null
+      }
+      const type = modelUrl.endsWith('.vrm') ? 'avatar' : 'model'
+
+      let glb = world.loader.get(type, modelUrl)
+      if (!glb) {
+        glb = await world.loader.load(type, modelUrl)
+      }
+
+      if (!glb) {
+        console.warn(`[BlueprintLoader] Failed to load model: ${modelUrl}`)
+        return null
+      }
+
+      return {
+        nodes: glb.toNodes(),
+        scene: glb.getScene?.(),
+      }
+    } catch (err) {
+      console.error(`[BlueprintLoader] Error loading model (${modelUrl}):`, err)
       return null
-    }
-    const type = modelUrl.endsWith('.vrm') ? 'avatar' : 'model'
-
-    let glb = world.loader.get(type, modelUrl)
-    if (!glb) {
-      glb = await world.loader.load(type, modelUrl)
-    }
-
-    if (!glb) {
-      console.warn(`[BlueprintLoader] Failed to load model: ${modelUrl}`)
-      return null
-    }
-
-    return {
-      nodes: glb.toNodes(),
-      scene: glb.getScene?.(),
     }
   }
 
   async loadScript(scriptUrl) {
-    const world = this.app.world
+    try {
+      const world = this.app.world
 
-    if (!world.loader) {
-      console.warn(`[BlueprintLoader] Loader not available (server-side script loading not supported)`)
+      if (!world.loader) {
+        console.warn(`[BlueprintLoader] Loader not available (server-side script loading not supported)`)
+        return null
+      }
+
+      let scriptCode = world.loader.get('script', scriptUrl)
+      if (!scriptCode) {
+        scriptCode = await world.loader.load('script', scriptUrl)
+      }
+
+      if (!scriptCode) {
+        console.warn(`[BlueprintLoader] Failed to load script: ${scriptUrl}`)
+        return null
+      }
+
+      return scriptCode
+    } catch (err) {
+      console.error(`[BlueprintLoader] Error loading script (${scriptUrl}):`, err)
       return null
     }
-
-    let scriptCode = world.loader.get('script', scriptUrl)
-    if (!scriptCode) {
-      scriptCode = await world.loader.load('script', scriptUrl)
-    }
-
-    if (!scriptCode) {
-      console.warn(`[BlueprintLoader] Failed to load script: ${scriptUrl}`)
-      return null
-    }
-
-    return scriptCode
   }
 }
