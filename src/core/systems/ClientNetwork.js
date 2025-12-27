@@ -57,8 +57,17 @@ export class ClientNetwork extends BaseNetwork {
 
   async upload(file) {
     try {
+      if (!file || !file.name) {
+        throw new Error('Invalid file: missing name property')
+      }
       const hash = await hashFile(file)
-      const ext = file.name.split('.').pop().toLowerCase()
+      if (!hash) {
+        throw new Error('Failed to hash file')
+      }
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      if (!ext) {
+        throw new Error('Invalid file: missing extension')
+      }
       const filename = `${hash}.${ext}`
       const url = `${this.apiUrl}/upload-check?filename=${filename}`
       const resp = await fetch(url)
@@ -66,6 +75,9 @@ export class ClientNetwork extends BaseNetwork {
         throw new Error(`Upload check failed: ${resp.status} ${resp.statusText}`)
       }
       const data = await resp.json()
+      if (typeof data !== 'object' || data === null) {
+        throw new Error('Upload check returned invalid data')
+      }
       if (data.exists) return
 
       const form = new FormData()
