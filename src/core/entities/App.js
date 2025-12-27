@@ -99,7 +99,8 @@ export class App extends BaseEntity {
         }
       }
 
-      if (crashed) {
+      if (!root || crashed) {
+        crashed = true
         const glb = await this.world.loader.load('model', 'asset://crash-block.glb')
         if (glb) root = glb.toNodes()
       }
