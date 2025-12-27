@@ -195,6 +195,10 @@ export class App extends BaseEntity {
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()
     this.proxyFactory.clear()
+    this.abortController.abort()
+    this.networkSync.networkPos = null
+    this.networkSync.networkQuat = null
+    this.networkSync.networkSca = null
     this.deadHook.dead = true
     this.deadHook = { dead: false }
     this.onFields?.([])
