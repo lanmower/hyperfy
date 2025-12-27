@@ -1,4 +1,5 @@
 import * as THREE from '../../extras/three.js'
+import { AvatarConfig } from '../../config/SystemConfig.js'
 
 export class PlayerAvatarManager {
   constructor(playerLocal) {
@@ -34,9 +35,9 @@ export class PlayerAvatarManager {
               this.playerLocal.base.add(this.playerLocal.avatar.raw.scene)
             }
             this.playerLocal.avatarUrl = avatarUrl
-            const avatarHeight = this.playerLocal.avatar?.height || 1.6
+            const avatarHeight = this.playerLocal.avatar?.height || AvatarConfig.DEFAULT_HEIGHT
             this.playerLocal.camHeight = avatarHeight * 0.9
-            const headHeight = this.playerLocal.avatar?.getHeadToHeight?.() || 1.6
+            const headHeight = this.playerLocal.avatar?.getHeadToHeight?.() || AvatarConfig.DEFAULT_HEIGHT
             if (this.playerLocal.nametag?.position) {
               this.playerLocal.nametag.position.y = headHeight + 0.2
             }

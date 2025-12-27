@@ -114,9 +114,9 @@ export class PlayerPhysics {
     const geometry = this.player.groundSweepGeometry
     const pose = this.player.capsule.getGlobalPose()
     const origin = v1.copy(pose.p)
-    origin.y += this.groundSweepRadius + 0.12
+    origin.y += this.groundSweepRadius + PhysicsConfig.GROUND_SWEEP_OFFSET
     const direction = DOWN
-    const maxDistance = 0.12 + 0.1
+    const maxDistance = PhysicsConfig.GROUND_SWEEP_OFFSET + PhysicsConfig.GROUND_SWEEP_DISTANCE
     const hitMask = Layers.environment.group | Layers.prop.group
 
     const sweepHit = this.world.physics.sweep(
@@ -164,7 +164,7 @@ export class PlayerPhysics {
           .isSet(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC)
 
         if (!isKinematic && !isStatic) {
-          const amount = -9.81 * 0.2
+          const amount = -PhysicsConfig.GRAVITY * PhysicsConfig.GRAVITY_PLATFORM_FACTOR
           const force = v1.set(0, amount, 0)
           PHYSX.PxRigidBodyExt.prototype.addForceAtPos(
             this.platform.actor,
@@ -182,7 +182,7 @@ export class PlayerPhysics {
 
     const velocity = v1.copy(this.player.capsule.getLinearVelocity())
 
-    const dragCoeff = 10 * delta
+    const dragCoeff = PhysicsConfig.DRAG_COEFFICIENT * delta
     const perpComponent = v2.copy(this.groundNormal).multiplyScalar(velocity.dot(this.groundNormal))
     const parallelComponent = v3.copy(velocity).sub(perpComponent)
     parallelComponent.multiplyScalar(1 - dragCoeff)
@@ -195,11 +195,11 @@ export class PlayerPhysics {
     }
 
     if (this.justLeftGround && !this.jumping) {
-      velocity.y = -5
+      velocity.y = PhysicsConfig.FALL_VELOCITY
     }
 
     if (this.slipping) {
-      velocity.y -= 0.5
+      velocity.y -= PhysicsConfig.SLIPPING_GRAVITY
     }
 
     if (this.pushForce) {
@@ -215,7 +215,7 @@ export class PlayerPhysics {
       }
       velocity.add(this.pushForce)
 
-      const drag = 20
+      const drag = PhysicsConfig.PUSH_DRAG
       const decayFactor = 1 - drag * delta
       if (decayFactor < 0) {
         this.pushForce.set(0, 0, 0)

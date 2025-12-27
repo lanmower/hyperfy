@@ -1,5 +1,6 @@
 import * as THREE from '../../extras/three.js'
-import { Modes } from '../../constants/AnimationModes.js'
+import { Modes } from "../../constants/AnimationModes.js"
+import { PhysicsConfig, AvatarConfig } from "../../config/SystemConfig.js"
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
@@ -26,7 +27,7 @@ export class AnimationController {
     } else if (physics?.jumping) {
       mode = Modes.JUMP
     } else if (physics?.falling) {
-      mode = physics.fallDistance > 1.6 ? Modes.FALL : Modes.JUMP
+      mode = physics.fallDistance > PhysicsConfig.FALL_DAMAGE_THRESHOLD ? Modes.FALL : Modes.JUMP
     } else if (physics?.moving) {
       mode = this.player.running ? Modes.RUN : Modes.WALK
     } else if (this.player.speaking) {

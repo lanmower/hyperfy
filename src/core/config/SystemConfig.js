@@ -1,5 +1,3 @@
-
-
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 
 export const PhysicsConfig = {
@@ -26,7 +24,21 @@ export const PhysicsConfig = {
   GROUND_SLOPE_MAX: parseFloat(env.PHYSICS_GROUND_SLOPE ?? 0.5),
   GROUND_SLOPE_THRESHOLD: parseFloat(env.PHYSICS_GROUND_THRESHOLD ?? 0.3),
 
+  GROUND_SWEEP_OFFSET: parseFloat(env.PHYSICS_GROUND_SWEEP_OFFSET ?? 0.12),
+  GROUND_SWEEP_DISTANCE: parseFloat(env.PHYSICS_GROUND_SWEEP_DISTANCE ?? 0.1),
+  PLATFORM_RAYCAST_DISTANCE: parseFloat(env.PHYSICS_PLATFORM_RAYCAST ?? 2),
+  PLATFORM_RAYCAST_OFFSET: parseFloat(env.PHYSICS_PLATFORM_OFFSET ?? 0.2),
+
   PUSH_FORCE_DECAY: parseFloat(env.PHYSICS_PUSH_DECAY ?? 0.95),
+  PUSH_DRAG: parseFloat(env.PHYSICS_PUSH_DRAG ?? 20),
+
+  FALL_DAMAGE_THRESHOLD: parseFloat(env.PHYSICS_FALL_THRESHOLD ?? 1.6),
+  FALL_TIMER_THRESHOLD: parseFloat(env.PHYSICS_FALL_TIMER ?? 0.1),
+  FALL_VELOCITY: parseFloat(env.PHYSICS_FALL_VELOCITY ?? -5),
+
+  GRAVITY_PLATFORM_FACTOR: parseFloat(env.PHYSICS_GRAVITY_PLATFORM ?? 0.2),
+  SLIPPING_GRAVITY: parseFloat(env.PHYSICS_SLIPPING_GRAVITY ?? 0.5),
+  DRAG_COEFFICIENT: parseFloat(env.PHYSICS_DRAG_COEFF ?? 10),
 }
 
 
@@ -81,6 +93,8 @@ export const InputConfig = {
   ZOOM_MIN: parseFloat(env.INPUT_ZOOM_MIN ?? 0.1),
   ZOOM_MAX: parseFloat(env.INPUT_ZOOM_MAX ?? 3),
   FIRST_PERSON_THRESHOLD: parseFloat(env.INPUT_FP_THRESHOLD ?? 0.9),
+  DEFAULT_ZOOM: parseFloat(env.INPUT_DEFAULT_ZOOM ?? 1.5),
+  STICK_DEAD_ZONE: parseFloat(env.INPUT_STICK_DEADZONE ?? 0.2),
 
   KEY_REPEAT_DELAY: parseInt(env.INPUT_REPEAT_DELAY ?? 500),
   KEY_REPEAT_INTERVAL: parseInt(env.INPUT_REPEAT_INTERVAL ?? 30),
@@ -98,6 +112,9 @@ export const AvatarConfig = {
   EMOTE_DURATION: parseFloat(env.EMOTE_DURATION ?? 3),
 
   NAMETAG_OFFSET: parseFloat(env.NAMETAG_OFFSET ?? 2),
+  DEFAULT_HEIGHT: parseFloat(env.AVATAR_DEFAULT_HEIGHT ?? 1.6),
+  HEAD_HEIGHT_OFFSET: parseFloat(env.AVATAR_HEAD_OFFSET ?? 0.2),
+  CAM_HEIGHT_FACTOR: parseFloat(env.AVATAR_CAM_HEIGHT_FACTOR ?? 0.9),
 }
 
 

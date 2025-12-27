@@ -124,7 +124,10 @@ export class Controller extends Node {
   unmount() {
     if (this.mesh) {
       this.ctx.world.graphics.scene.remove(this.mesh)
+      this.mesh.geometry.dispose()
+      this.mesh.material.dispose()
     }
+    this.mesh = null
     this.actorHandle?.destroy()
     this.actorHandle = null
     this.controller?.release()

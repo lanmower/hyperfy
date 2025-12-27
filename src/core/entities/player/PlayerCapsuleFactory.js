@@ -1,5 +1,6 @@
 import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
+import { PhysicsConfig } from '../../config/SystemConfig.js'
 
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 const q1 = new THREE.Quaternion()
@@ -63,7 +64,7 @@ export class PlayerCapsuleFactory {
         player.base.position.copy(position)
       },
     })
-    const groundSweepRadius = 0.3
+    const groundSweepRadius = PhysicsConfig.CAPSULE_RADIUS
     const groundSweepGeometry = new PHYSX.PxSphereGeometry(groundSweepRadius)
     player.groundSweepGeometry = groundSweepGeometry
     return { capsule, capsuleHandle, material }

@@ -25,7 +25,7 @@ export class PlayerPhysicsState {
       physics.fallTimer = 0
     }
 
-    if (physics.fallTimer > 0.1 && !physics.falling) {
+    if (physics.fallTimer > PhysicsConfig.FALL_TIMER_THRESHOLD && !physics.falling) {
       physics.jumping = false
       physics.airJumping = false
       physics.falling = true

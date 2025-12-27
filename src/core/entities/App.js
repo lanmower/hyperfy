@@ -184,6 +184,10 @@ export class App extends BaseEntity {
     this.control?.release()
     this.control = null
     this.nodeManager.deactivateAllNodes()
+    if (this.threeScene && this.world.stage) {
+      this.world.stage.scene.remove(this.threeScene)
+    }
+    this.threeScene = null
     this.eventManager.clearEventListeners()
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()

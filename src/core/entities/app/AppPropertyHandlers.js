@@ -17,6 +17,7 @@ export class AppPropertyHandlers {
         return true
       },
       mover: (value) => {
+        if (value === p.data.mover) return false
         p.data.mover = value
         return true
       },

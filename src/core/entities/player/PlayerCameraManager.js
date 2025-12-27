@@ -2,7 +2,8 @@ import * as THREE from '../../extras/three.js'
 import { DEG2RAD } from '../../extras/general.js'
 import { bindRotations } from '../../extras/bindRotations.js'
 import { clamp } from '../../utils.js'
-import { DEFAULT_CAM_HEIGHT, POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './CameraConstants.js'
+import { DEFAULT_CAM_HEIGHT, POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from "./CameraConstants.js"
+import { InputConfig } from "../../config/SystemConfig.js"
 import { XRInputStrategy } from './input/XRInputStrategy.js'
 import { PointerLockInputStrategy } from './input/PointerLockInputStrategy.js'
 import { TouchPanInputStrategy } from './input/TouchPanInputStrategy.js'
@@ -24,7 +25,7 @@ export class PlayerCameraManager {
     bindRotations(this.quaternion, this.rotation)
     this.quaternion.copy(this.base.quaternion)
     this.rotation.x = -15 * DEG2RAD
-    this.zoom = 1.5
+    this.zoom = InputConfig.DEFAULT_ZOOM
   }
 
   updateForAvatar(avatar) {

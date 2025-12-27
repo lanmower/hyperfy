@@ -494,6 +494,9 @@ export class Prim extends Node {
     }
     if (this.sItem) {
       this.ctx.world.stage.octree.remove(this.sItem)
+      if (this.sItem.material) {
+        this.sItem.material.dispose()
+      }
       this.sItem = null
     }
     this.unmountPhysics()

@@ -83,15 +83,54 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onClose = code => {
+    const codeMsg = code === 1000 ? 'gracefully' : `(code: ${code})`
     this.chat.add({
       id: uuid(),
       from: null,
       fromId: null,
-      body: `You have been disconnected.`,
+      body: `You have been disconnected ${codeMsg}. Attempting to reconnect...`,
       createdAt: moment().toISOString(),
     })
     this.events.emit('disconnect', code || true)
     console.log('disconnect', code)
+  }
+
+  onReconnect = () => {
+    console.log('Reconnected to server, clearing stale entities and requesting full snapshot')
+    this.clearStaleEntities()
+    this.chat.add({
+      id: uuid(),
+      from: null,
+      fromId: null,
+      body: `Reconnected. Syncing state...`,
+      createdAt: moment().toISOString(),
+    })
+    this.events.emit('reconnect')
+    this.requestFullSnapshot()
+  }
+
+  clearStaleEntities() {
+    const entities = this.world?.entities
+    if (!entities) return
+
+    const before = entities.items.size
+    const toRemove = []
+
+    entities.items.forEach((entity, id) => {
+      if (entity && typeof entity.destroy === 'function') {
+        toRemove.push(id)
+      }
+    })
+
+    toRemove.forEach(id => {
+      entities.remove(id)
+    })
+
+    console.log('Cleared stale entities:', { before, after: entities.items.size, removed: toRemove.length })
+  }
+
+  requestFullSnapshot() {
+    this.send('getSnapshot', { force: true })
   }
 
   enqueue(method, data) {

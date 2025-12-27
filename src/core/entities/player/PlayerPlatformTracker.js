@@ -1,3 +1,4 @@
+import { PhysicsConfig } from '../../config/SystemConfig.js'
 import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
 
@@ -37,7 +38,7 @@ export class PlayerPlatformTracker {
 
     const pose = this.player.capsule.getGlobalPose()
     const origin = v1.copy(pose.p)
-    origin.y += 0.2
+    origin.y += PhysicsConfig.PLATFORM_RAYCAST_OFFSET
     const hitMask = Layers.environment.group | Layers.prop.group
     const hit = this.world.physics.raycast(origin, DOWN, 2, hitMask)
     const actor = hit?.handle?.actor || null

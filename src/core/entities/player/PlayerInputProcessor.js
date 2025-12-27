@@ -1,3 +1,4 @@
+import { InputConfig } from '../../config/SystemConfig.js'
 import { clamp } from '../../utils.js'
 import * as THREE from '../../extras/three.js'
 import { DEG2RAD, RAD2DEG } from '../../extras/general.js'
@@ -6,7 +7,7 @@ import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } fr
 const UP = new THREE.Vector3(0, 1, 0)
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
-const STICK_DEAD_ZONE = 0.2
+const STICK_DEAD_ZONE = InputConfig.STICK_DEAD_ZONE
 
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const q1 = new THREE.Quaternion()
@@ -64,7 +65,7 @@ export class PlayerInputProcessor {
       cam.zoom = 0
       this.playerLocal.xrActive = true
     } else if (!isXR && this.playerLocal.xrActive) {
-      cam.zoom = 1.5
+      cam.zoom = InputConfig.DEFAULT_ZOOM
       this.playerLocal.xrActive = false
     }
 
@@ -77,7 +78,7 @@ export class PlayerInputProcessor {
         this.playerLocal.avatar.visible = false
       }
     } else if (cam.zoom > 0 && this.playerLocal.firstPerson) {
-      cam.zoom = 1.5
+      cam.zoom = InputConfig.DEFAULT_ZOOM
       this.playerLocal.firstPerson = false
       if (this.playerLocal.avatar?.raw?.scene) {
         this.playerLocal.avatar.raw.scene.visible = true
