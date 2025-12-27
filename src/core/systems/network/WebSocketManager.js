@@ -30,6 +30,10 @@ export class WebSocketManager {
       return
     }
 
+    if (this.ws) {
+      this.removeEventListeners()
+    }
+
     const authToken = storage.get('authToken')
     let url = `${this.wsUrl}?authToken=${authToken}`
     if (this.name) url += `&name=${encodeURIComponent(this.name)}`
@@ -49,6 +53,14 @@ export class WebSocketManager {
       console.error('WebSocket connection error:', err)
       this.scheduleReconnect()
     }
+  }
+
+  removeEventListeners() {
+    if (!this.ws) return
+    if (this.messageHandler) this.ws.removeEventListener('message', this.messageHandler)
+    if (this.openHandler) this.ws.removeEventListener('open', this.openHandler)
+    if (this.closeHandler) this.ws.removeEventListener('close', this.closeHandler)
+    if (this.errorHandler) this.ws.removeEventListener('error', this.errorHandler)
   }
 
   setupEventHandlers() {
