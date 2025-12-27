@@ -14,6 +14,9 @@ export class FileExtractor {
         if (url.startsWith('http')) {
           try {
             const resp = await fetch(url)
+            if (!resp.ok) {
+              throw new Error(`Fetch failed: ${resp.status} ${resp.statusText}`)
+            }
             const blob = await resp.blob()
             const filename = new URL(url).pathname.split('/').pop()
             return new File([blob], filename, { type: resp.headers.get('content-type') })

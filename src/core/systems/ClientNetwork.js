@@ -56,21 +56,32 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   async upload(file) {
-    const hash = await hashFile(file)
-    const ext = file.name.split('.').pop().toLowerCase()
-    const filename = `${hash}.${ext}`
-    const url = `${this.apiUrl}/upload-check?filename=${filename}`
-    const resp = await fetch(url)
-    const data = await resp.json()
-    if (data.exists) return
+    try {
+      const hash = await hashFile(file)
+      const ext = file.name.split('.').pop().toLowerCase()
+      const filename = `${hash}.${ext}`
+      const url = `${this.apiUrl}/upload-check?filename=${filename}`
+      const resp = await fetch(url)
+      if (!resp.ok) {
+        throw new Error(`Upload check failed: ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      if (data.exists) return
 
-    const form = new FormData()
-    form.append('file', file)
-    const uploadUrl = `${this.apiUrl}/upload`
-    await fetch(uploadUrl, {
-      method: 'POST',
-      body: form,
-    })
+      const form = new FormData()
+      form.append('file', file)
+      const uploadUrl = `${this.apiUrl}/upload`
+      const uploadResp = await fetch(uploadUrl, {
+        method: 'POST',
+        body: form,
+      })
+      if (!uploadResp.ok) {
+        throw new Error(`Upload failed: ${uploadResp.status} ${uploadResp.statusText}`)
+      }
+    } catch (err) {
+      console.error('[network] File upload error:', err.message)
+      throw err
+    }
   }
 
   onPacket = e => {

@@ -27,15 +27,23 @@ export class FileManager {
   }
 
   async load(url) {
-    url = this.resolveURL(url)
-    if (this.files.has(url)) {
-      return this.files.get(url)
+    try {
+      url = this.resolveURL(url)
+      if (this.files.has(url)) {
+        return this.files.get(url)
+      }
+      const resp = await fetch(url)
+      if (!resp.ok) {
+        throw new Error(`File load failed: ${resp.status} ${resp.statusText}`)
+      }
+      const blob = await resp.blob()
+      const file = new File([blob], url.split('/').pop(), { type: blob.type })
+      this.files.set(url, file)
+      return file
+    } catch (err) {
+      console.error('[loader] FileManager load error:', err.message)
+      throw err
     }
-    const resp = await fetch(url)
-    const blob = await resp.blob()
-    const file = new File([blob], url.split('/').pop(), { type: blob.type })
-    this.files.set(url, file)
-    return file
   }
 
   clear() {

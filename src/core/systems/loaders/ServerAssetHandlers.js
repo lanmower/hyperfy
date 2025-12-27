@@ -25,22 +25,38 @@ export class ServerAssetHandlers {
   }
 
   async fetchArrayBuffer(url) {
-    const isRemote = url.startsWith('http://') || url.startsWith('https://')
-    if (isRemote) {
-      const response = await fetch(url)
-      return await response.arrayBuffer()
+    try {
+      const isRemote = url.startsWith('http://') || url.startsWith('https://')
+      if (isRemote) {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
+        }
+        return await response.arrayBuffer()
+      }
+      const buffer = await fs.readFile(url)
+      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+    } catch (err) {
+      console.error('[loader] fetchArrayBuffer error:', err.message)
+      throw err
     }
-    const buffer = await fs.readFile(url)
-    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
   }
 
   async fetchText(url) {
-    const isRemote = url.startsWith('http://') || url.startsWith('https://')
-    if (isRemote) {
-      const response = await fetch(url)
-      return await response.text()
+    try {
+      const isRemote = url.startsWith('http://') || url.startsWith('https://')
+      if (isRemote) {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
+        }
+        return await response.text()
+      }
+      return await fs.readFile(url, { encoding: 'utf8' })
+    } catch (err) {
+      console.error('[loader] fetchText error:', err.message)
+      throw err
     }
-    return await fs.readFile(url, { encoding: 'utf8' })
   }
 
   handleModel = (url) => new Promise(async (resolve, reject) => {
