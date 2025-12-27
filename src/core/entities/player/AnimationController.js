@@ -18,7 +18,7 @@ export class AnimationController {
 
     let mode
     if (effect?.emote) {
-      // Emote takes priority
+      mode = Modes.TALK
     } else if (physics?.flying) {
       mode = Modes.FLY
     } else if (physics?.airJumping) {
@@ -31,8 +31,9 @@ export class AnimationController {
       mode = this.player.running ? Modes.RUN : Modes.WALK
     } else if (this.player.speaking) {
       mode = Modes.TALK
+    } else {
+      mode = Modes.IDLE
     }
-    if (!mode) mode = Modes.IDLE
 
     return mode
   }

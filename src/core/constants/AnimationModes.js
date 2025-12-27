@@ -6,4 +6,5 @@ export const Modes = {
   FALL: 4,
   FLY: 5,
   TALK: 6,
+  FLIP: 7,
 }

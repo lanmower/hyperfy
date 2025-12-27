@@ -233,6 +233,9 @@ export class PlayerLocal extends BaseEntity {
 
     this.animationController.updateEmote()
     this.mode = this.animationController.updateAnimationMode()
+    if (this.mode === undefined || this.mode === null) {
+      this.mode = Modes.IDLE
+    }
     this.animationController.updateGaze()
     this.animationController.applyAvatarLocomotion()
     this.avatar?.update?.(delta)
@@ -305,4 +308,81 @@ export class PlayerLocal extends BaseEntity {
   setSessionAvatar(avatar) { return this.avatarManager.setSessionAvatar(avatar) }
   chat(msg) { return this.chatBubble.chat(msg) }
   modify(data) { this.modifyHandler.modify(data) }
+
+  destroy(local) {
+    if (this.avatar?.destroy) {
+      this.avatar.destroy()
+    }
+
+    if (this.chatBubble?.chatTimer) {
+      clearTimeout(this.chatBubble.chatTimer)
+    }
+
+    if (this.effectManager?.onEffectEnd) {
+      this.effectManager.onEffectEnd = null
+    }
+
+    if (this.controlBinder?.stick) {
+      this.controlBinder.stick = null
+    }
+
+    if (this.controlBinder?.pan) {
+      this.controlBinder.pan = null
+    }
+
+    if (this.control) {
+      this.world.controls.unbind(this.control)
+      this.control = null
+    }
+
+    if (this.capsule && this.capsuleHandle && this.world.physics) {
+      this.world.physics.removeActor(this.capsuleHandle)
+      this.capsule = null
+      this.capsuleHandle = null
+    }
+
+    if (this.material) {
+      this.material = null
+    }
+
+    if (this.base && this.world.stage?.scene) {
+      this.world.stage.scene.remove(this.base)
+      this.base = null
+    }
+
+    if (this.aura && this.world.stage?.scene) {
+      this.world.stage.scene.remove(this.aura)
+      this.aura = null
+    }
+
+    if (this.avatar?.raw?.scene && this.base) {
+      this.base.remove(this.avatar.raw.scene)
+    }
+
+    this.nametag = null
+    this.bubble = null
+    this.bubbleBox = null
+    this.bubbleText = null
+    this.avatar = null
+    this.avatarUrl = null
+
+    this.physics = null
+    this.cam = null
+    this.avatarManager = null
+    this.chatBubble = null
+    this.inputProcessor = null
+    this.animationController = null
+    this.networkSynchronizer = null
+    this.teleportHandler = null
+    this.effectManager = null
+    this.modifyHandler = null
+    this.controlBinder = null
+    this.capsuleFactory = null
+
+    this.pushForce = null
+    this.stick = null
+    this.pan = null
+
+    super.destroy(local)
+  }
 }
