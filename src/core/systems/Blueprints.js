@@ -2,6 +2,7 @@ import { isEqual } from 'lodash-es'
 import { System } from './System.js'
 import { BlueprintParser } from './blueprints/BlueprintParser.js'
 import { BlueprintErrorMonitor } from './blueprints/BlueprintErrorMonitor.js'
+import { BlueprintDeserializer } from './blueprints/BlueprintDeserializer.js'
 import { InputSanitizer } from '../security/InputSanitizer.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
@@ -20,6 +21,7 @@ export class Blueprints extends System {
     this.items = new Map()
     this.parser = new BlueprintParser(world, this)
     this.monitor = new BlueprintErrorMonitor(world, this)
+    this.deserializer = new BlueprintDeserializer(this)
   }
 
   get(id) {
@@ -120,9 +122,7 @@ export class Blueprints extends System {
   }
 
   deserialize(datas) {
-    for (const data of datas) {
-      this.add(data)
-    }
+    return this.deserializer.deserialize(datas)
   }
 
   destroy() {
