@@ -1,7 +1,6 @@
 import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
 import { ServiceContainer } from './di/ServiceContainer.js'
-import { ServiceLocator } from './di/ServiceLocator.js'
 import { SystemRegistry as SystemRegistryImpl } from './di/SystemRegistry.js'
 import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
@@ -9,8 +8,6 @@ import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
 import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 import { memoryAnalyzer } from './memory/index.js'
-import { gracefulDegradation } from './systems/degradation/index.js'
-import { performanceDashboard, MetricsCollector } from './monitoring/index.js'
 import { eventAudit, eventRegistry } from './events/index.js'
 import { LoadShedder, RateLimiter, QueueManager } from './systems/load-shedding/index.js'
 import { StateBackup, StateRecovery } from './systems/backup/index.js'
@@ -35,8 +32,6 @@ export class World extends EventEmitter {
     this.di.registerSingleton('world', this)
 
     this.systemRegistry = new SystemRegistryImpl()
-    this.serviceLocator = new ServiceLocator(this.di)
-    ServiceLocator.setGlobal(this.serviceLocator)
 
     this.pluginRegistry = pluginRegistry
     this.pluginHooks = pluginHooks
@@ -45,9 +40,6 @@ export class World extends EventEmitter {
     this.performanceMonitor = performanceMonitor
     this.performanceBudget = PerformanceBudget
     this.memoryAnalyzer = memoryAnalyzer
-    this.degradation = gracefulDegradation
-    this.dashboard = performanceDashboard
-    this.metricsCollector = new MetricsCollector(this, performanceDashboard)
     this.eventAudit = eventAudit
     this.eventRegistry = eventRegistry
 
@@ -112,11 +104,11 @@ export class World extends EventEmitter {
   }
 
   getService(name) {
-    return this.serviceLocator.get(name)
+    return this.di.get(name)
   }
 
   hasService(name) {
-    return this.serviceLocator.has(name)
+    return this.di.has(name)
   }
 
   async init(options) {
