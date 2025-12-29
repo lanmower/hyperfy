@@ -450,6 +450,44 @@ export function setupDebugGlobals(world) {
       validateEventData: (name, data) => world.eventRegistry?.validateEventData(name, data),
       exportRegistry: () => world.eventRegistry?.exportRegistry(),
     },
+
+    loadShedding: {
+      registerBoundary: (name, options) => world.loadShedder?.registerBoundary(name, options),
+      updateQueueDepth: (boundary, depth, latency) => world.loadShedder?.updateQueueDepth(boundary, depth, latency),
+      shouldDropRequest: (boundary, isPriority) => world.loadShedder?.shouldDropRequest(boundary, isPriority),
+      tripCircuitBreaker: (boundary) => world.loadShedder?.tripCircuitBreaker(boundary),
+      recordDropped: (boundary, count) => world.loadShedder?.recordDropped(boundary, count),
+      recordProcessed: (boundary, count) => world.loadShedder?.recordProcessed(boundary, count),
+      getShedStatus: () => world.loadShedder?.getShedStatus(),
+      getMetrics: (boundary) => world.loadShedder?.getMetrics(boundary),
+      reset: (boundary) => world.loadShedder?.reset(boundary),
+      resetAll: () => world.loadShedder?.resetAll(),
+    },
+
+    rateLimiting: {
+      createLimiter: (name, options) => world.rateLimiter?.createLimiter(name, options),
+      canProcess: (limiter) => world.rateLimiter?.canProcess(limiter),
+      adaptThresholds: () => world.rateLimiter?.adaptThresholds(),
+      getLimiterStatus: (name) => world.rateLimiter?.getLimiterStatus(name),
+      getAllStatus: () => world.rateLimiter?.getAllStatus(),
+      reset: (name) => world.rateLimiter?.reset(name),
+      resetAll: () => world.rateLimiter?.resetAll(),
+      setAdaptive: (enabled) => world.rateLimiter?.setAdaptive(enabled),
+    },
+
+    queuing: {
+      createQueue: (name, options) => world.queueManager?.createQueue(name, options),
+      enqueue: (queue, item, priority) => world.queueManager?.enqueue(queue, item, priority),
+      dequeue: (queue, count) => world.queueManager?.dequeue(queue, count),
+      drain: (queue) => world.queueManager?.drain(queue),
+      drainAll: () => world.queueManager?.drainAll(),
+      peek: (queue, count) => world.queueManager?.peek(queue, count),
+      getQueueStats: (queue) => world.queueManager?.getQueueStats(queue),
+      getAllQueueStats: () => world.queueManager?.getAllQueueStats(),
+      isEmpty: (queue) => world.queueManager?.isEmpty(queue),
+      clear: (queue) => world.queueManager?.clear(queue),
+      clearAll: () => world.queueManager?.clearAll(),
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')

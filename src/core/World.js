@@ -12,6 +12,7 @@ import { memoryAnalyzer } from './memory/index.js'
 import { gracefulDegradation } from './systems/degradation/index.js'
 import { performanceDashboard, MetricsCollector } from './monitoring/index.js'
 import { eventAudit, eventRegistry } from './events/index.js'
+import { LoadShedder, RateLimiter, QueueManager } from './systems/load-shedding/index.js'
 
 const logger = new ComponentLogger('World')
 
@@ -48,6 +49,10 @@ export class World extends EventEmitter {
     this.metricsCollector = new MetricsCollector(this, performanceDashboard)
     this.eventAudit = eventAudit
     this.eventRegistry = eventRegistry
+
+    this.loadShedder = new LoadShedder(this)
+    this.rateLimiter = new RateLimiter(this)
+    this.queueManager = new QueueManager(this)
 
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
