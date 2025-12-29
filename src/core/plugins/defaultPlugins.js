@@ -2,6 +2,10 @@ import { AIClientPlugin } from './examples/AIClientPlugin.js'
 import { InputHandlerPlugin } from './examples/InputHandlerPlugin.js'
 import { AssetLoaderPlugin } from './examples/AssetLoaderPlugin.js'
 import { NetworkTransportPlugin } from './examples/NetworkTransportPlugin.js'
+import { NetworkPlugin } from './NetworkPlugin.js'
+import { InputPlugin } from './InputPlugin.js'
+import { AssetPlugin } from './AssetPlugin.js'
+import { RenderPlugin } from './RenderPlugin.js'
 
 export const DEFAULT_PLUGINS = [
   {
@@ -31,6 +35,26 @@ export const DEFAULT_PLUGINS = [
       reconnectAttempts: 5,
       reconnectDelay: 1000
     }
+  },
+  {
+    name: 'core-network',
+    plugin: NetworkPlugin,
+    options: {}
+  },
+  {
+    name: 'core-input',
+    plugin: InputPlugin,
+    options: {}
+  },
+  {
+    name: 'core-asset',
+    plugin: AssetPlugin,
+    options: {}
+  },
+  {
+    name: 'core-render',
+    plugin: RenderPlugin,
+    options: {}
   }
 ]
 
