@@ -488,6 +488,31 @@ export function setupDebugGlobals(world) {
       clear: (queue) => world.queueManager?.clear(queue),
       clearAll: () => world.queueManager?.clearAll(),
     },
+
+    backup: {
+      createBackup: (label, includeMetadata) => world.stateBackup?.createBackup(label, includeMetadata),
+      getBackup: (id) => world.stateBackup?.getBackup(id),
+      getLatestBackup: () => world.stateBackup?.getLatestBackup(),
+      getAllBackups: () => world.stateBackup?.getAllBackups(),
+      getBackupsByLabel: (label) => world.stateBackup?.getBackupsByLabel(label),
+      deleteBackup: (id) => world.stateBackup?.deleteBackup(id),
+      deleteOldBackups: (olderThanMs) => world.stateBackup?.deleteOldBackups(olderThanMs),
+      validateBackup: (backupId) => world.stateBackup?.validateBackup(backupId),
+      getBackupStats: () => world.stateBackup?.getBackupStats(),
+      clear: () => world.stateBackup?.clear(),
+      export: () => world.stateBackup?.export(),
+      import: (data) => world.stateBackup?.import(data),
+    },
+
+    recovery: {
+      recoverFromBackup: (backupId, options) => world.stateRecovery?.recoverFromBackup(backupId, world.stateBackup, options),
+      getRecoveryHistory: () => world.stateRecovery?.getRecoveryHistory(),
+      getRecovery: (recoveryId) => world.stateRecovery?.getRecovery(recoveryId),
+      getSuccessfulRecoveries: () => world.stateRecovery?.getSuccessfulRecoveries(),
+      getFailedRecoveries: () => world.stateRecovery?.getFailedRecoveries(),
+      getRecoveryStats: () => world.stateRecovery?.getRecoveryStats(),
+      clearHistory: () => world.stateRecovery?.clearHistory(),
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')
