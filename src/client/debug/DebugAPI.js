@@ -354,6 +354,25 @@ export function setupDebugGlobals(world) {
         }))
       },
     },
+
+    performance: {
+      getStats: (label) => world.performanceMonitor?.getStats(label) || null,
+      getAllStats: () => world.performanceMonitor?.getAllStats() || {},
+      getViolations: (limit) => world.performanceMonitor?.getViolations(limit) || [],
+      getViolationSummary: () => world.performanceMonitor?.getViolationSummary() || [],
+      getBudget: (category, path) => world.performanceBudget?.getBudget(category, path) || null,
+      getBudgets: () => world.performanceBudget?.BUDGETS || {},
+      isEnabled: () => world.performanceMonitor?.enabled || false,
+      enable: () => world.performanceMonitor?.enable(),
+      disable: () => world.performanceMonitor?.disable(),
+      setSampleRate: (rate) => world.performanceMonitor?.setSampleRate(rate),
+      clear: () => world.performanceMonitor?.clear(),
+      getSampleData: () => ({
+        framePhases: world.performanceMonitor?.samples.framePhases.getAll() || [],
+        systemPhases: world.performanceMonitor?.samples.systemPhases.getAll() || [],
+        entityOperations: world.performanceMonitor?.samples.entityOperations.getAll() || [],
+      }),
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')

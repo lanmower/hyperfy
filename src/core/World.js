@@ -7,6 +7,7 @@ import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
+import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 
 const logger = new ComponentLogger('World')
 
@@ -34,6 +35,9 @@ export class World extends EventEmitter {
     this.pluginRegistry = pluginRegistry
     this.pluginHooks = pluginHooks
     this.initializeHooks()
+
+    this.performanceMonitor = performanceMonitor
+    this.performanceBudget = PerformanceBudget
 
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
@@ -171,7 +175,14 @@ export class World extends EventEmitter {
       item.update?.(delta)
     }
     this.pluginHooks.execute('world:update', delta)
+
+    const updateStart = performance.now()
     this.systemRegistry.update(delta)
+    const updateDuration = performance.now() - updateStart
+
+    if (this.frame % 30 === 0) {
+      this.performanceMonitor.recordFramePhase('update', updateDuration)
+    }
   }
 
   postUpdate(delta) {
@@ -182,7 +193,15 @@ export class World extends EventEmitter {
     for (const item of this.hot) {
       item.lateUpdate?.(delta)
     }
+
+    const lateUpdateStart = performance.now()
     this.systemRegistry.lateUpdate(delta)
+    const lateUpdateDuration = performance.now() - lateUpdateStart
+
+    if (this.frame % 30 === 0) {
+      this.performanceMonitor.recordFramePhase('lateUpdate', lateUpdateDuration)
+      this.performanceMonitor.recordEntityOperation('hot.lateUpdate', lateUpdateDuration, this.hot.size)
+    }
   }
 
   postLateUpdate(delta) {
