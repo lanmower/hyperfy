@@ -2,8 +2,6 @@ import * as THREE from '../../extras/three.js'
 import { getRef } from '../../nodes/Node.js'
 import moment from 'moment'
 import { Layers } from '../../extras/Layers.js'
-import { HyperfyError } from '../error/ErrorCodes.js'
-import ValidationHelper from '../error/ValidationHelper.js'
 import { APIMethodWrapper } from '../../utils/api/APIMethodWrapper.js'
 import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
 

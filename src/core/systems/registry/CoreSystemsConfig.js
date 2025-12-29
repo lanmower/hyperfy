@@ -13,7 +13,7 @@ import { ClientPrefs } from '../ClientPrefs.js'
 import { ClientUI } from '../ClientUI.js'
 import { Collections } from '../Collections.js'
 import { Entities } from '../Entities.js'
-import { ErrorMonitor } from '../ErrorMonitor.js'
+import { ErrorSystem } from '../ErrorSystem.js'
 import { Events } from '../Events.js'
 import { Physics } from '../Physics.js'
 import { Scripts } from '../Scripts.js'
@@ -23,8 +23,8 @@ import { ClientLiveKit } from '../ClientLiveKit.js'
 
 export const coreSystemsConfig = [
   {
-    name: 'errorMonitor',
-    class: ErrorMonitor,
+    name: 'errors',
+    class: ErrorSystem,
     platforms: ['server', 'client'],
     priority: 1000,
     required: true,

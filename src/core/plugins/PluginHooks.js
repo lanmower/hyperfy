@@ -132,6 +132,28 @@ export class PluginHooks {
       actionCount: hook.action.length,
     }
   }
+
+  getAllHooks() {
+    const hooks = []
+    this.hooks.forEach((hook, name) => {
+      hooks.push({
+        name,
+        type: hook.type,
+        handlers: hook.before.length + hook.after.length + hook.action.length + hook.filters.length
+      })
+    })
+    return hooks
+  }
+
+  getHookCount(name) {
+    const hook = this.hooks.get(name)
+    if (!hook) return 0
+    return hook.before.length + hook.after.length + hook.action.length + hook.filters.length
+  }
+
+  hasHook(name) {
+    return this.hooks.has(name)
+  }
 }
 
 export const pluginHooks = new PluginHooks()

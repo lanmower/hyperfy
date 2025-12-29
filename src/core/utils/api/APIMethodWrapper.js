@@ -1,4 +1,3 @@
-import ValidationHelper from '../../systems/error/ValidationHelper.js'
 import { ComponentLogger } from '../logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('APIMethodWrapper')

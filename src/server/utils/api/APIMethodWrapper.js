@@ -1,6 +1,5 @@
 /* APIMethodWrapper: Wraps async methods with error handling and logging */
 import { ComponentLogger } from '../logging/ComponentLogger.js'
-import { OperationError } from '../errors/OperationError.js'
 
 const logger = new ComponentLogger('APIMethodWrapper')
 

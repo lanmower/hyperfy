@@ -1,7 +1,6 @@
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { serverNetworkHandlers } from '../config/HandlerRegistry.js'
 import { FileUploadHandler } from './server/FileUploadHandler.js'
-import { ErrorHandlingService } from './server/ErrorHandlingService.js'
 import { WorldSaveManager } from './server/WorldSaveManager.js'
 import { PlayerConnectionManager } from './server/PlayerConnectionManager.js'
 import { BuilderCommandHandler } from './server/BuilderCommandHandler.js'
@@ -11,12 +10,14 @@ import { ChatManager } from './server/ChatManager.js'
 import { Compressor } from './network/Compressor.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+let ErrorHandlingService = null
+
 const logger = new ComponentLogger('ServerNetwork')
 const PING_RATE = 1
 
 export class ServerNetwork extends BaseNetwork {
   static DEPS = {
-    errorMonitor: 'errorMonitor',
+    errors: 'errors',
     entities: 'entities',
     settings: 'settings',
     blueprints: 'blueprints',
@@ -46,7 +47,6 @@ export class ServerNetwork extends BaseNetwork {
     this.socketManager = new SocketManager(this)
     this.chatManager = new ChatManager(this)
     this.fileUploadHandler = new FileUploadHandler(this)
-    this.errorHandlingService = new ErrorHandlingService(this)
     this.worldSaveManager = new WorldSaveManager(this)
     this.playerConnectionManager = new PlayerConnectionManager(this)
     this.builderCommandHandler = new BuilderCommandHandler(this)
@@ -170,8 +170,8 @@ export class ServerNetwork extends BaseNetwork {
   onErrorReport = (socket, data) => this.errorHandlingService.onErrorReport(socket, data)
 
   onClientError = (socket, errorData) => {
-    if (this.errorMonitor) {
-      this.errorMonitor.receiveClientError({
+    if (this.errors) {
+      this.errors.receiveClientError({
         error: errorData.error,
         clientId: errorData.clientId,
         context: errorData.context,

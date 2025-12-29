@@ -1,7 +1,6 @@
 import { MonacoWorkerInit } from './MonacoWorkerInit.js'
 import { MonacoModuleLoader } from './MonacoModuleLoader.js'
 import { defineTheme } from './MonacoTheme.js'
-import { handleMonacoError, validateMonacoLoaded } from './MonacoErrorHandler.js'
 
 export class Monaco {
   constructor() {

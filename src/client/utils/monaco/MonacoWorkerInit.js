@@ -1,5 +1,4 @@
 import { MONACO_CDN } from './MonacoConfig.js'
-import { handleMonacoError } from './MonacoErrorHandler.js'
 
 export class MonacoWorkerInit {
   constructor() {

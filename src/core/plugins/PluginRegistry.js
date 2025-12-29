@@ -190,6 +190,43 @@ export class PluginRegistry {
       }
     }
   }
+
+  listAllPlugins() {
+    const list = []
+    this.plugins.forEach((plugin, name) => {
+      list.push({
+        name,
+        version: plugin.version,
+        enabled: plugin.enabled || false
+      })
+    })
+    return list
+  }
+
+  getPluginStats() {
+    const all = this.plugins.size
+    const handlers = this.assetHandlers.size
+    const networkHandlers = this.networkHandlers.size
+    const globals = this.scriptGlobals.size
+    const routes = this.serverRoutes.size
+
+    return {
+      totalPlugins: all,
+      assetHandlers: handlers,
+      networkHandlers,
+      scriptGlobals: globals,
+      serverRoutes: routes
+    }
+  }
+
+  isPluginLoaded(name) {
+    return this.plugins.has(name)
+  }
+
+  isPluginEnabled(name) {
+    const plugin = this.plugins.get(name)
+    return plugin?.api?.enabled !== false
+  }
 }
 
 export const pluginRegistry = new PluginRegistry()

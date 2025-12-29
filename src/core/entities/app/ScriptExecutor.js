@@ -1,4 +1,3 @@
-import { HyperfyError } from '../../systems/error/ErrorCodes.js'
 import { InputSanitizer } from '../../security/InputSanitizer.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 

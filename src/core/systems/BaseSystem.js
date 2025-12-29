@@ -68,29 +68,6 @@ export class BaseSystem extends SystemWithMixins {
     this.invalidateCache()
   }
 
-  getService(name) {
-    return this.world.getService(name)
-  }
-
-  hasService(name) {
-    return this.world.hasService(name)
-  }
-
-  getServiceOrThrow(name) {
-    const service = this.getService(name)
-    if (!service) {
-      throw new Error(`Service '${name}' not found in DI container`)
-    }
-    return service
-  }
-
-  requireServices(...serviceNames) {
-    const missing = serviceNames.filter(name => !this.hasService(name))
-    if (missing.length > 0) {
-      throw new Error(`System ${this.constructor.name} requires services: ${missing.join(', ')}`)
-    }
-  }
-
   destroy() {
     this.listeners.clear()
     super.destroy?.()

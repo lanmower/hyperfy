@@ -1,5 +1,4 @@
 import { MONACO_CDN, MONACO_MODULES } from './MonacoConfig.js'
-import { handleMonacoError } from './MonacoErrorHandler.js'
 
 export class MonacoModuleLoader {
   constructor() {

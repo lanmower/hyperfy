@@ -1,10 +1,14 @@
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
-import { EmitterFactory } from './particles/EmitterFactory.js'
+import { uuid } from '../utils.js'
+import { ParticleGeometryBuilder } from './particles/ParticleGeometryBuilder.js'
+import { ParticleMaterialFactory } from './particles/ParticleMaterialFactory.js'
+import { EmitterController } from './particles/EmitterController.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('Particles')
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
+const billboardModeInts = { full: 0, y: 1, direction: 2 }
 
 let worker = null
 function getWorker() {
@@ -45,16 +49,46 @@ export class Particles extends System {
   start() {
   }
 
-  register(node) {
-    const handle = EmitterFactory.create(
+  createEmitter(node) {
+    const id = uuid()
+    const config = node.getConfig()
+    const { geometry, attributes } = ParticleGeometryBuilder.create(node._max)
+    const { aPosition, aRotation, aDirection, aSize, aColor, aAlpha, aEmissive, aUV } = attributes
+    const next = ParticleGeometryBuilder.createNextBuffers(node._max)
+    const uniforms = {
+      uTexture: { value: new THREE.Texture() },
+      uBillboard: { value: billboardModeInts[node._billboard] },
+      uOrientation: node._billboard === 'full' ? this.uOrientationFull : this.uOrientationY,
+    }
+    this.loader.load('texture', node._image).then(texture => {
+      texture.colorSpace = THREE.SRGBColorSpace
+      uniforms.uTexture.value = texture
+    })
+    const material = ParticleMaterialFactory.create(node, uniforms, this.loader)
+    const mesh = new THREE.InstancedMesh(geometry, material, node._max)
+    mesh._node = node
+    mesh.count = 0
+    mesh.instanceMatrix.needsUpdate = true
+    mesh.frustumCulled = false
+    mesh.matrixAutoUpdate = false
+    mesh.matrixWorldAutoUpdate = false
+    this.stage.scene.add(mesh)
+    const controller = new EmitterController(id, node, mesh, this.worker, next, attributes, this.camera, this.stage)
+    const handle = {
+      id,
       node,
-      this.worker,
-      this.loader,
-      this.stage,
-      this.camera,
-      this.uOrientationFull,
-      this.uOrientationY
-    )
+      send: controller.send.bind(controller),
+      setEmitting: controller.setEmitting.bind(controller),
+      onMessage: controller.onMessage.bind(controller),
+      update: controller.update.bind(controller),
+      destroy: controller.destroy.bind(controller),
+    }
+    this.worker.postMessage({ op: 'create', id, ...config })
+    return handle
+  }
+
+  register(node) {
+    const handle = this.createEmitter(node)
     this.emitters.set(handle.id, handle)
     return handle
   }

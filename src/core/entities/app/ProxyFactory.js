@@ -1,14 +1,58 @@
 import { createPlayerProxy } from '../../extras/createPlayerProxy.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
-import { UnifiedProxyFactory } from '../../utils/factories/UnifiedProxyFactory.js'
+import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
 
 const logger = new ComponentLogger('ProxyFactory')
 
-export class ProxyFactory extends UnifiedProxyFactory {
+export class ProxyFactory {
   constructor(app) {
-    super(app)
+    this.target = app
     this.app = app
+    this.cachedProxy = null
+    this.proxyMap = new Map()
     this.playerProxies = new Map()
+  }
+
+  getCachedProxy(key = 'default') {
+    if (key === 'default' && this.cachedProxy) {
+      return this.cachedProxy
+    }
+    return this.proxyMap.get(key)
+  }
+
+  createProxy(customProps = {}, cacheKey = null) {
+    if (cacheKey && this.proxyMap.has(cacheKey)) {
+      return this.proxyMap.get(cacheKey)
+    }
+
+    const builder = this.getBuilder()
+    const proxy = builder.build(customProps)
+
+    if (cacheKey) {
+      this.proxyMap.set(cacheKey, proxy)
+    } else if (cacheKey === null && !customProps) {
+      this.cachedProxy = proxy
+    }
+
+    return proxy
+  }
+
+  getBuilder() {
+    throw new Error('getBuilder() must be implemented by subclass')
+  }
+
+  clear() {
+    this.cachedProxy = null
+    this.proxyMap.clear()
+    this.playerProxies.forEach(proxy => {
+      proxy?.$cleanup?.()
+    })
+    this.playerProxies.clear()
+  }
+
+  destroy() {
+    this.clear()
+    this.target = null
   }
 
   getWorldProxy() {
@@ -116,11 +160,4 @@ export class ProxyFactory extends UnifiedProxyFactory {
     return proxy
   }
 
-  clear() {
-    super.clear()
-    this.playerProxies.forEach(proxy => {
-      proxy?.$cleanup?.()
-    })
-    this.playerProxies.clear()
-  }
 }

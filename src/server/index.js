@@ -24,15 +24,7 @@ import { World } from '../core/World.js'
 import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
-import { registerErrorRoutes } from './routes/ErrorRoutes.js'
-import { registerUploadRoutes } from './routes/UploadRoutes.js'
-import { registerStatusAPI } from './routes/StatusAPI.js'
-import { registerAdminRoutes } from './routes/AdminRoutes.js'
-import { registerStatusPageRoutes } from './routes/StatusPageRoutes.js'
-import { ErrorTracker } from './logging/ErrorTracker.js'
-import { createRequestIdMiddleware, createErrorHandler } from './middleware/RequestTracking.js'
-import { setupGlobalErrorTracking } from './logging/IntegrationUtils.js'
-import { AIProviderHealth } from './health/AIProviderHealth.js'
+import { registerRoutes } from './routes/index.js'
 import { Telemetry } from './telemetry/Telemetry.js'
 import { Metrics } from './services/Metrics.js'
 import { TimeoutManager } from './services/TimeoutManager.js'
@@ -78,31 +70,6 @@ const shutdownManager = new ShutdownManager(logger, {
 
 const errorTracker = new ErrorTracker({ logger, samplingRate: env === 'production' ? 0.5 : 1.0 })
 const metrics = new Metrics('Server')
-const aiProviderHealth = new AIProviderHealth(logger)
-if (process.env.ANTHROPIC_API_KEY) {
-  aiProviderHealth.addProvider('anthropic', {
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    healthEndpoint: AIProviderConfig.providers.anthropic.healthCheckEndpoint,
-  })
-}
-if (process.env.OPENAI_API_KEY) {
-  aiProviderHealth.addProvider('openai', {
-    apiKey: process.env.OPENAI_API_KEY,
-    healthEndpoint: AIProviderConfig.providers.openai.healthCheckEndpoint,
-  })
-}
-if (process.env.XAI_API_KEY) {
-  aiProviderHealth.addProvider('xai', {
-    apiKey: process.env.XAI_API_KEY,
-    healthEndpoint: AIProviderConfig.providers.xai.healthCheckEndpoint,
-  })
-}
-if (process.env.GOOGLE_API_KEY) {
-  aiProviderHealth.addProvider('google', {
-    apiKey: process.env.GOOGLE_API_KEY,
-    healthEndpoint: AIProviderConfig.providers.google.healthCheckEndpoint,
-  })
-}
 
 const telemetry = new Telemetry(logger, {
   batchInterval: 60000,
@@ -216,7 +183,6 @@ fastify.metrics = metrics
 fastify.errorTracker = errorTracker
 fastify.logger = logger
 fastify.telemetry = telemetry
-fastify.aiProviderHealth = aiProviderHealth
 fastify.timeoutManager = timeoutManager
 fastify.circuitBreakerManager = circuitBreakerManager
 fastify.degradationManager = degradationManager
@@ -303,14 +269,7 @@ fastify.register(multipart, {
 fastify.register(ws)
 fastify.register(worldNetwork)
 
-registerErrorRoutes(fastify, world)
-registerUploadRoutes(fastify, assetsDir)
-registerStatusRoutes(fastify, world)
-registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
-registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
-registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
-registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
-registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
+registerRoutes(fastify, world, assetsDir)
 
 fastify.get('/', async (req, reply) => {
   const title = world.settings.title || 'World'
@@ -374,7 +333,6 @@ async function startServer(retries = 10) {
     await fastify.listen({ port, host: '0.0.0.0', exclusive: false })
     logger.info(`Server running on port ${port}`, { port, env })
     metrics.gauge('server.port', port)
-    aiProviderHealth.start()
     telemetry.start()
 
     shutdownManager.addShutdownHandler('cache', async () => {
@@ -403,11 +361,6 @@ async function startServer(retries = 10) {
       logger.info('[SHUTDOWN] Stopping telemetry')
       telemetry.stop()
     }, 60)
-
-    shutdownManager.addShutdownHandler('aiProviderHealth', async () => {
-      logger.info('[SHUTDOWN] Stopping AI provider health')
-      aiProviderHealth.stop()
-    }, 50)
 
     shutdownManager.addShutdownHandler('degradationManager', async () => {
       logger.info('[SHUTDOWN] Shutting down degradation manager')

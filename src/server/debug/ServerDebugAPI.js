@@ -165,12 +165,12 @@ export function setupServerDebugGlobals(world) {
     },
 
     getErrors: () => {
-      const errorMonitor = world.errorMonitor
-      if (!errorMonitor) return { error: 'Error monitoring not available' }
+      const errors = world.errors
+      if (!errors) return { error: 'Error monitoring not available' }
       return {
-        totalErrors: errorMonitor.errorCount || 0,
-        recentErrors: errorMonitor.getRecentErrors?.() || [],
-        errorsBySystem: errorMonitor.getErrorsBySystem?.() || {},
+        totalErrors: errors.errors?.length || 0,
+        recentErrors: errors.getErrors?.() || [],
+        stats: errors.getStats?.() || {},
       }
     },
 

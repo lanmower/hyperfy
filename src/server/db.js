@@ -1,184 +1,113 @@
+// Database initialization and direct SQL.js wrapper
 import initSqlJs from 'sql.js'
-import { QueryBuilder } from './db/QueryBuilder.js'
-import { DatabaseSchema } from './db/DatabaseSchema.js'
-import { DatabaseMetrics } from './services/DatabaseMetrics.js'
-import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
-
-const logger = new ComponentLogger('Database')
 
 let db
 let SQL
-let dbMetrics
 
-class Database {
-  constructor(dbInstance, SQL, metrics = null, timeoutManager = null, circuitBreakerManager = null) {
-    this.dbInstance = dbInstance
-    this.SQL = SQL
-    this.metrics = metrics
-    this.timeoutManager = timeoutManager
-    this.circuitBreakerManager = circuitBreakerManager
-    this.schemaManager = new DatabaseSchema(dbInstance)
-    this.schema = {
-      hasTable: this.schemaManager.hasTable.bind(this.schemaManager),
-      createTable: this.schemaManager.createTable.bind(this.schemaManager),
-      alterTable: this.schemaManager.alterTable.bind(this.schemaManager),
-    }
-    this.queryTimeout = timeoutManager ? timeoutManager.getTimeout('database') : 30000
-    this.poolSize = process.env.NODE_ENV === 'production' ? 20 : 5
-  }
+export async function initDatabase() {
+  SQL = await initSqlJs()
+  db = new SQL.Database()
 
-  async insert(tableName, data) {
-    const startTime = Date.now()
-    const keys = Object.keys(data)
-    const placeholders = keys.map(() => '?').join(',')
-    const values = keys.map(k => data[k])
-    const sql = `INSERT INTO ${tableName} (${keys.join(',')}) VALUES (${placeholders})`
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS config (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      createdAt INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS blueprints (
+      id TEXT PRIMARY KEY,
+      data TEXT,
+      createdAt INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS entities (
+      id TEXT PRIMARY KEY,
+      worldId TEXT,
+      data TEXT,
+      createdAt INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS files (
+      hash TEXT PRIMARY KEY,
+      filename TEXT,
+      storedFilename TEXT,
+      size INTEGER,
+      mimeType TEXT,
+      uploader TEXT,
+      timestamp INTEGER,
+      stored INTEGER,
+      url TEXT
+    );
+  `)
 
-    const executeQuery = async () => {
-      try {
-        const stmt = this.dbInstance.prepare(sql)
-        stmt.bind(values)
-        stmt.step()
-        stmt.free()
-        if (this.metrics) {
-          this.metrics.recordQuery(tableName, Date.now() - startTime, 'INSERT', [tableName])
-        }
-      } catch (e) {
-        logger.error('Insert error', { table: tableName, error: e.message })
-        throw e
-      }
-    }
+  const indexes = [
+    'CREATE INDEX IF NOT EXISTS idx_blueprints_id ON blueprints(id)',
+    'CREATE INDEX IF NOT EXISTS idx_blueprints_created ON blueprints(createdAt)',
+    'CREATE INDEX IF NOT EXISTS idx_entities_id ON entities(id)',
+    'CREATE INDEX IF NOT EXISTS idx_entities_created ON entities(createdAt)',
+    'CREATE INDEX IF NOT EXISTS idx_users_id ON users(id)',
+    'CREATE INDEX IF NOT EXISTS idx_users_name ON users(name)',
+    'CREATE INDEX IF NOT EXISTS idx_files_hash ON files(hash)',
+    'CREATE INDEX IF NOT EXISTS idx_files_uploader ON files(uploader)',
+    'CREATE INDEX IF NOT EXISTS idx_files_timestamp ON files(timestamp)',
+    'CREATE INDEX IF NOT EXISTS idx_config_key ON config(key)',
+  ]
 
-    const wrappedQuery = async () => {
-      if (this.timeoutManager) {
-        try {
-          await this.timeoutManager.wrapPromise(executeQuery(), this.queryTimeout, 'database', `INSERT ${tableName}`)
-        } catch (e) {
-          if (e.code === 'TIMEOUT') {
-            logger.error('Database insert timeout', { table: tableName })
-          }
-          throw e
-        }
-      } else {
-        await executeQuery()
-      }
-    }
-
-    if (this.circuitBreakerManager && this.circuitBreakerManager.has('database')) {
-      return this.circuitBreakerManager.execute('database', wrappedQuery)
-    } else {
-      return wrappedQuery()
+  for (const idx of indexes) {
+    try {
+      db.run(idx)
+    } catch (e) {
     }
   }
 
-  async query(sql) {
-    const startTime = Date.now()
-    const tableMatch = sql.match(/FROM\s+(\w+)/i)
-    const tableName = tableMatch ? tableMatch[1] : 'unknown'
-
-    const executeQuery = async () => {
-      try {
-        const stmt = this.dbInstance.prepare(sql)
-        const rows = []
-        while (stmt.step()) {
-          rows.push(stmt.getAsObject())
-        }
-        stmt.free()
-        const duration = Date.now() - startTime
-        if (this.metrics) {
-          this.metrics.recordQuery(tableName, duration, 'SELECT', [tableName])
-        }
-        return rows
-      } catch (e) {
-        logger.error('Query error', { table: tableName, error: e.message })
-        throw e
-      }
-    }
-
-    const wrappedQuery = async () => {
-      if (this.timeoutManager) {
-        try {
-          return await this.timeoutManager.wrapPromise(executeQuery(), this.queryTimeout, 'database', `SELECT ${tableName}`)
-        } catch (e) {
-          if (e.code === 'TIMEOUT') {
-            logger.error('Database query timeout', { table: tableName })
-          }
-          return []
-        }
-      } else {
-        try {
-          return await executeQuery()
-        } catch (e) {
-          return []
-        }
-      }
-    }
-
-    if (this.circuitBreakerManager && this.circuitBreakerManager.has('database')) {
-      try {
-        return await this.circuitBreakerManager.execute('database', wrappedQuery)
-      } catch (e) {
-        if (e.code === 'CIRCUIT_OPEN') {
-          logger.error('Database circuit open, returning empty result')
-          return []
-        }
-        return []
-      }
-    } else {
-      return wrappedQuery()
-    }
-  }
+  return db
 }
 
-let dbInstance
-let dbTimeoutManager
-let dbCircuitBreakerManager
-
-export async function getDB(worldDir, timeoutManager = null, circuitBreakerManager = null) {
-  if (!db) {
-    if (!SQL) {
-      SQL = await initSqlJs()
-    }
-    dbInstance = new SQL.Database()
-
-    if (timeoutManager) {
-      dbTimeoutManager = timeoutManager
-    }
-
-    if (circuitBreakerManager) {
-      dbCircuitBreakerManager = circuitBreakerManager
-    }
-
-    if (!dbMetrics) {
-      dbMetrics = new DatabaseMetrics()
-    }
-
-    const database = new Database(dbInstance, SQL, dbMetrics, dbTimeoutManager, dbCircuitBreakerManager)
-
-    const dbFunc = (tableName) => new QueryBuilder(dbInstance, SQL, tableName, {}, dbMetrics)
-    dbFunc.schema = database.schema
-    dbFunc.insert = database.insert.bind(database)
-    dbFunc.query = database.query.bind(database)
-    dbFunc.metrics = () => dbMetrics.getMetrics()
-
-    db = dbFunc
+export function query(sql, params = []) {
+  const stmt = db.prepare(sql)
+  stmt.bind(params)
+  const rows = []
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject())
   }
+  stmt.free()
+  return rows
+}
 
-  try {
-    const configExists = await db.schema.hasTable('config')
+export function exec(sql, params = []) {
+  const stmt = db.prepare(sql)
+  stmt.bind(params)
+  stmt.step()
+  stmt.free()
+}
+
+export function insert(table, data) {
+  const keys = Object.keys(data)
+  const values = keys.map(k => data[k])
+  const placeholders = keys.map(() => '?').join(',')
+  const sql = `INSERT INTO ${table} (${keys.join(',')}) VALUES (${placeholders})`
+  exec(sql, values)
+}
+
+export function getDatabase() {
+  return db
+}
+
+export async function getDB(worldDir) {
+  if (!db) {
+    await initDatabase()
+
+    const configExists = query(`SELECT name FROM sqlite_master WHERE type='table' AND name='config'`).length > 0
     if (!configExists) {
-      await db.schema.createTable('config', table => {
-        table.string('key').primary()
-        table.string('value')
-      })
-      await db.insert('config', { key: 'version', value: '0' })
+      exec(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)`)
+      insert('config', { key: 'version', value: '0' })
     }
 
-    const schemaManager = new DatabaseSchema(dbInstance)
-    await schemaManager.initializeTables()
-
-    const result = await db.query(`SELECT * FROM config WHERE key = 'settings'`)
-    if (!result.length || !result[0].values?.length) {
+    const result = query(`SELECT * FROM config WHERE key = 'settings'`)
+    if (!result.length) {
       const defaultSettings = {
         title: null,
         desc: null,
@@ -190,11 +119,14 @@ export async function getDB(worldDir, timeoutManager = null, circuitBreakerManag
         customAvatars: false,
         rank: 0
       }
-      await db.insert('config', { key: 'settings', value: JSON.stringify(defaultSettings) })
+      insert('config', { key: 'settings', value: JSON.stringify(defaultSettings) })
     }
-  } catch (e) {
-    logger.error('Database initialization error', { error: e.message })
   }
 
-  return db
+  return {
+    insert,
+    query,
+    exec,
+    metrics: () => ({ lastMin: { totalQueries: 0, avgDuration: 0, slowQueries: 0, byType: {}, byTable: {} } })
+  }
 }

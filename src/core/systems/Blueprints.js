@@ -1,7 +1,6 @@
 import { isEqual } from 'lodash-es'
 import { System } from './System.js'
 import { BlueprintParser } from './blueprints/BlueprintParser.js'
-import { BlueprintErrorMonitor } from './blueprints/BlueprintErrorMonitor.js'
 import { BlueprintDeserializer } from './blueprints/BlueprintDeserializer.js'
 import { InputSanitizer } from '../security/InputSanitizer.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
@@ -11,7 +10,7 @@ const logger = new ComponentLogger('Blueprints')
 export class Blueprints extends System {
   static DEPS = {
     network: 'network',
-    errorMonitor: 'errorMonitor',
+    errors: 'errors',
     entities: 'entities',
     events: 'events',
   }
@@ -20,7 +19,6 @@ export class Blueprints extends System {
     super(world)
     this.items = new Map()
     this.parser = new BlueprintParser(world, this)
-    this.monitor = new BlueprintErrorMonitor(world, this)
     this.deserializer = new BlueprintDeserializer(this)
   }
 
@@ -60,10 +58,7 @@ export class Blueprints extends System {
     this.parser.store(normalized)
 
     if (local) {
-      const response = await this.monitor.executeWithErrorMonitoring(normalized.id, async () => {
-        return { ...normalized, success: true }
-      })
-      this.network.send('blueprintAdded', response)
+      this.network.send('blueprintAdded', { ...normalized, success: true })
     }
   }
 
@@ -99,17 +94,14 @@ export class Blueprints extends System {
     if (!changed) return
     this.items.set(blueprint.id, modified)
 
-    const response = await this.monitor.executeWithErrorMonitoring(blueprint.id, async () => {
-      for (const [_, entity] of this.entities.items) {
-        if (entity.data.blueprint === blueprint.id) {
-          entity.data.state = {}
-          entity.build()
-        }
+    for (const [_, entity] of this.entities.items) {
+      if (entity.data.blueprint === blueprint.id) {
+        entity.data.state = {}
+        entity.build()
       }
-      return { ...modified, success: true }
-    })
+    }
 
-    this.network.send('blueprintModified', response)
+    this.network.send('blueprintModified', { ...modified, success: true })
     this.events.emit('blueprintModified', modified)
   }
 

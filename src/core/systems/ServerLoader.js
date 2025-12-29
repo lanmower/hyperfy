@@ -3,14 +3,14 @@ import { ServerAssetHandlers } from './loaders/ServerAssetHandlers.js'
 
 export class ServerLoader extends BaseLoader {
   static DEPS = {
-    errorMonitor: 'errorMonitor',
+    errors: 'errors',
     scripts: 'scripts',
   }
 
   constructor(world) {
     super(world)
     this.isServer = true
-    this.handlers = new ServerAssetHandlers(world, this.errorMonitor, this.scripts)
+    this.handlers = new ServerAssetHandlers(world, this.errors, this.scripts)
     globalThis.self = { URL }
     globalThis.window = {}
     globalThis.document = { createElementNS: () => ({ style: {} }) }

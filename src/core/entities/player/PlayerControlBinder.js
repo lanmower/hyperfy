@@ -13,7 +13,7 @@ export class PlayerControlBinder {
   }
 
   initControl() {
-    const controls = this.player.world.getService('controls')
+    const controls = this.player.world.controls
     if (!controls) {
       logger.warn('Controls service not available')
       return
@@ -35,7 +35,7 @@ export class PlayerControlBinder {
       onTouchEnd: touch => {
         if (this.stick?.touch === touch) {
           this.stick = null
-          const events = this.player.world.getService('events')
+          const events = this.player.world.events
           events?.emit('stick', null)
         }
         if (this.pan === touch) {

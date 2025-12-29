@@ -1,18 +1,46 @@
 import { getRef, secure } from '../Node.js'
 import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
-import { UnifiedProxyFactory } from '../../utils/factories/UnifiedProxyFactory.js'
 
-export class ProxyFactory extends UnifiedProxyFactory {
+export class ProxyFactory {
   constructor(node) {
-    super(node)
+    this.target = node
     this.node = node
+    this.cachedProxy = null
+    this.proxyMap = new Map()
   }
 
-  createProxy(customProps = {}) {
-    if (!this.cachedProxy) {
-      this.cachedProxy = this.getBuilder().build(customProps)
+  getCachedProxy(key = 'default') {
+    if (key === 'default' && this.cachedProxy) {
+      return this.cachedProxy
     }
-    return this.cachedProxy
+    return this.proxyMap.get(key)
+  }
+
+  createProxy(customProps = {}, cacheKey = null) {
+    if (cacheKey && this.proxyMap.has(cacheKey)) {
+      return this.proxyMap.get(cacheKey)
+    }
+
+    const builder = this.getBuilder()
+    const proxy = builder.build(customProps)
+
+    if (cacheKey) {
+      this.proxyMap.set(cacheKey, proxy)
+    } else if (cacheKey === null && !customProps) {
+      this.cachedProxy = proxy
+    }
+
+    return proxy
+  }
+
+  clear() {
+    this.cachedProxy = null
+    this.proxyMap.clear()
+  }
+
+  destroy() {
+    this.clear()
+    this.target = null
   }
 
   getBuilder() {

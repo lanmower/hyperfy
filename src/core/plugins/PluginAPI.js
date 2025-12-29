@@ -119,15 +119,46 @@ export class PluginAPI {
   }
 
   getSystem(name) {
-    return this.world.serviceLocator?.get(name) || this.world[name]
+    return this.world[name] || null
   }
 
-  getService(name) {
-    try {
-      return this.world.di?.get(name)
-    } catch {
-      return null
+  getAllSystems() {
+    const systems = {}
+    const registryKeys = Object.keys(this.world)
+    for (const key of registryKeys) {
+      if (this.world[key] && typeof this.world[key] === 'object') {
+        systems[key] = this.world[key]
+      }
     }
+    return systems
+  }
+
+  registerGlobalFunction(name, fn) {
+    if (typeof fn !== 'function') {
+      logger.error('Invalid function', { plugin: this.pluginName, name })
+      return false
+    }
+
+    pluginRegistry.registerScriptGlobal(this.pluginName, name, fn)
+    return true
+  }
+
+  onAssetResolve(fn) {
+    if (typeof fn !== 'function') {
+      logger.error('Invalid asset resolver', { plugin: this.pluginName })
+      return
+    }
+
+    return pluginHooks.filter('asset:resolve', fn)
+  }
+
+  onWorldDestroy(fn) {
+    if (typeof fn !== 'function') {
+      logger.error('Invalid hook handler', { plugin: this.pluginName })
+      return
+    }
+
+    return pluginHooks.before('world:destroy', fn)
   }
 
   log(level, message, data) {

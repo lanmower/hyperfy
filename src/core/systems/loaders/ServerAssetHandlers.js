@@ -10,9 +10,9 @@ import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 const logger = new ComponentLogger('ServerAssetHandlers')
 
 export class ServerAssetHandlers {
-  constructor(world, errorMonitor, scripts) {
+  constructor(world, errors, scripts) {
     this.world = world
-    this.errorMonitor = errorMonitor
+    this.errors = errors
     this.scripts = scripts
     this.gltfLoader = new GLTFLoader()
     this.registry = new AssetHandlerRegistry()
@@ -68,14 +68,14 @@ export class ServerAssetHandlers {
       this.gltfLoader.parse(arrayBuffer, '',
         glb => resolve({ toNodes: () => glbToNodes(glb, this.world).clone(true) }),
         err => {
-          this.errorMonitor?.captureError('gltfloader.error', {
+          this.errors?.captureError('gltfloader.error', {
             message: err.message || String(err), url, type: 'model'
           }, err.stack)
           reject(err)
         }
       )
     } catch (err) {
-      this.errorMonitor?.captureError('model.load.error', {
+      this.errors?.captureError('model.load.error', {
         message: err.message || String(err), url, type: 'model'
       }, err.stack)
       reject(err)
@@ -91,14 +91,14 @@ export class ServerAssetHandlers {
           resolve({ toClip: options => factory.toClip(options) })
         },
         err => {
-          this.errorMonitor?.captureError('gltfloader.error', {
+          this.errors?.captureError('gltfloader.error', {
             message: err.message || String(err), url, type: 'emote'
           }, err.stack)
           reject(err)
         }
       )
     } catch (err) {
-      this.errorMonitor?.captureError('emote.load.error', {
+      this.errors?.captureError('emote.load.error', {
         message: err.message || String(err), url, type: 'emote'
       }, err.stack)
       reject(err)

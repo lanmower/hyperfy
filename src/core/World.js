@@ -1,7 +1,5 @@
 import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
-import { ServiceContainer } from './di/ServiceContainer.js'
-import { SystemRegistry as SystemRegistryImpl } from './di/SystemRegistry.js'
 import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
@@ -9,8 +7,6 @@ import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js
 import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 import { memoryAnalyzer } from './memory/index.js'
 import { eventAudit, eventRegistry } from './events/index.js'
-import { LoadShedder, RateLimiter, QueueManager } from './systems/load-shedding/index.js'
-import { StateBackup, StateRecovery } from './systems/backup/index.js'
 
 const logger = new ComponentLogger('World')
 
@@ -28,11 +24,6 @@ export class World extends EventEmitter {
     this.assetsDir = null
     this.hot = new Set()
 
-    this.di = new ServiceContainer()
-    this.di.registerSingleton('world', this)
-
-    this.systemRegistry = new SystemRegistryImpl()
-
     this.pluginRegistry = pluginRegistry
     this.pluginHooks = pluginHooks
     this.initializeHooks()
@@ -42,13 +33,6 @@ export class World extends EventEmitter {
     this.memoryAnalyzer = memoryAnalyzer
     this.eventAudit = eventAudit
     this.eventRegistry = eventRegistry
-
-    this.loadShedder = new LoadShedder(this)
-    this.rateLimiter = new RateLimiter(this)
-    this.queueManager = new QueueManager(this)
-
-    this.stateBackup = new StateBackup(this)
-    this.stateRecovery = new StateRecovery(this)
 
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
@@ -66,8 +50,7 @@ export class World extends EventEmitter {
 
   register(key, System) {
     const system = new System(this)
-    this.systemRegistry.register(key, system)
-    this.di.registerSingleton(key, system)
+    systemRegistry.register(key, system)
     this[key] = system
     return system
   }
@@ -103,13 +86,6 @@ export class World extends EventEmitter {
     }
   }
 
-  getService(name) {
-    return this.di.get(name)
-  }
-
-  hasService(name) {
-    return this.di.has(name)
-  }
 
   async init(options) {
     this.storage = options.storage
@@ -272,6 +248,64 @@ export class World extends EventEmitter {
 
   inject(runtime) {
     this.apps.inject(runtime)
+  }
+
+  getPlugin(name) {
+    return this.pluginRegistry.getPlugin(name)
+  }
+
+  listPlugins() {
+    return this.pluginRegistry.listAllPlugins()
+  }
+
+  getPluginStats() {
+    return this.pluginRegistry.getPluginStats()
+  }
+
+  isPluginLoaded(name) {
+    return this.pluginRegistry.isPluginLoaded(name)
+  }
+
+  getPluginAPI(name) {
+    const plugin = this.pluginRegistry.getPlugin(name)
+    return plugin?.api || null
+  }
+
+  getAllHooks() {
+    return this.pluginHooks.getAllHooks()
+  }
+
+  getHookCount(name) {
+    return this.pluginHooks.getHookCount(name)
+  }
+
+  async loadDefaultPlugins() {
+    const { createDefaultPlugins } = await import('./plugins/defaultPlugins.js')
+    const plugins = createDefaultPlugins(this)
+    await this.initializePlugins(plugins)
+    return plugins
+  }
+
+  isPluginEnabled(name) {
+    return this.pluginRegistry.isPluginEnabled(name)
+  }
+
+  enablePlugin(name) {
+    const plugin = this.pluginRegistry.getPlugin(name)
+    if (plugin?.enable) {
+      plugin.enable()
+      return true
+    }
+    return false
+  }
+
+  disablePlugin(name) {
+    const plugin = this.pluginRegistry.getPlugin(name)
+    if (plugin?.disable) {
+      plugin.disable()
+      return true
+    }
+    return false
   }
 
   destroy() {

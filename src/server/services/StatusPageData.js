@@ -86,7 +86,7 @@ export class StatusPageData {
       return { status: 'down', message: 'Database not initialized' }
     }
 
-    const metrics = db.metrics ? db.metrics.getMetrics() : null
+    const metrics = db.metrics ? db.metrics() : null
     const circuitBreaker = this.circuitBreakerManager?.has('database')
       ? this.circuitBreakerManager.getStats('database')
       : null
@@ -99,11 +99,6 @@ export class StatusPageData {
       status,
       metrics: metrics?.lastMin || null,
       circuitBreaker,
-      cache: db.queryCache ? {
-        size: db.queryCache.cache?.size || 0,
-        maxSize: db.queryCache.maxSize || 0,
-        hitRate: db.queryCache.getHitRate ? db.queryCache.getHitRate() : 0,
-      } : null,
     }
   }
 
@@ -235,7 +230,7 @@ export class StatusPageData {
     const metrics = {}
 
     if (this.world?.db?.metrics) {
-      metrics.database = this.world.db.metrics.getMetrics()
+      metrics.database = this.world.db.metrics()
     }
 
     if (this.timeoutManager) {

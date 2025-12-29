@@ -1,7 +1,6 @@
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { ConsoleCapture } from './ConsoleCapture.js'
 import { ResourceTracker } from '../../core/debug/ResourceTracker.js'
-import { dependencyValidator } from '../../core/di/DependencyValidator.js'
 import { cleanupTracker, printCleanupGuide } from '../../core/lifecycle/index.js'
 
 const logger = new ComponentLogger('DebugAPI')
@@ -320,13 +319,6 @@ export function setupDebugGlobals(world) {
       trackApp: (app, metadata) => ResourceTracker.trackApp(app, metadata),
     },
 
-    dependencies: {
-      validateGraph: () => dependencyValidator.validateGraph(),
-      getReport: () => dependencyValidator.getReport(),
-      getExecutionOrder: () => dependencyValidator.getExecutionOrder(),
-      getDependencyGraph: () => dependencyValidator.getDependencyGraph(),
-      registerSystem: (name, deps, metadata) => dependencyValidator.registerSystem(name, deps, metadata),
-    },
 
     cleanup: {
       getStats: () => cleanupTracker.getStats(),
@@ -451,68 +443,6 @@ export function setupDebugGlobals(world) {
       exportRegistry: () => world.eventRegistry?.exportRegistry(),
     },
 
-    loadShedding: {
-      registerBoundary: (name, options) => world.loadShedder?.registerBoundary(name, options),
-      updateQueueDepth: (boundary, depth, latency) => world.loadShedder?.updateQueueDepth(boundary, depth, latency),
-      shouldDropRequest: (boundary, isPriority) => world.loadShedder?.shouldDropRequest(boundary, isPriority),
-      tripCircuitBreaker: (boundary) => world.loadShedder?.tripCircuitBreaker(boundary),
-      recordDropped: (boundary, count) => world.loadShedder?.recordDropped(boundary, count),
-      recordProcessed: (boundary, count) => world.loadShedder?.recordProcessed(boundary, count),
-      getShedStatus: () => world.loadShedder?.getShedStatus(),
-      getMetrics: (boundary) => world.loadShedder?.getMetrics(boundary),
-      reset: (boundary) => world.loadShedder?.reset(boundary),
-      resetAll: () => world.loadShedder?.resetAll(),
-    },
-
-    rateLimiting: {
-      createLimiter: (name, options) => world.rateLimiter?.createLimiter(name, options),
-      canProcess: (limiter) => world.rateLimiter?.canProcess(limiter),
-      adaptThresholds: () => world.rateLimiter?.adaptThresholds(),
-      getLimiterStatus: (name) => world.rateLimiter?.getLimiterStatus(name),
-      getAllStatus: () => world.rateLimiter?.getAllStatus(),
-      reset: (name) => world.rateLimiter?.reset(name),
-      resetAll: () => world.rateLimiter?.resetAll(),
-      setAdaptive: (enabled) => world.rateLimiter?.setAdaptive(enabled),
-    },
-
-    queuing: {
-      createQueue: (name, options) => world.queueManager?.createQueue(name, options),
-      enqueue: (queue, item, priority) => world.queueManager?.enqueue(queue, item, priority),
-      dequeue: (queue, count) => world.queueManager?.dequeue(queue, count),
-      drain: (queue) => world.queueManager?.drain(queue),
-      drainAll: () => world.queueManager?.drainAll(),
-      peek: (queue, count) => world.queueManager?.peek(queue, count),
-      getQueueStats: (queue) => world.queueManager?.getQueueStats(queue),
-      getAllQueueStats: () => world.queueManager?.getAllQueueStats(),
-      isEmpty: (queue) => world.queueManager?.isEmpty(queue),
-      clear: (queue) => world.queueManager?.clear(queue),
-      clearAll: () => world.queueManager?.clearAll(),
-    },
-
-    backup: {
-      createBackup: (label, includeMetadata) => world.stateBackup?.createBackup(label, includeMetadata),
-      getBackup: (id) => world.stateBackup?.getBackup(id),
-      getLatestBackup: () => world.stateBackup?.getLatestBackup(),
-      getAllBackups: () => world.stateBackup?.getAllBackups(),
-      getBackupsByLabel: (label) => world.stateBackup?.getBackupsByLabel(label),
-      deleteBackup: (id) => world.stateBackup?.deleteBackup(id),
-      deleteOldBackups: (olderThanMs) => world.stateBackup?.deleteOldBackups(olderThanMs),
-      validateBackup: (backupId) => world.stateBackup?.validateBackup(backupId),
-      getBackupStats: () => world.stateBackup?.getBackupStats(),
-      clear: () => world.stateBackup?.clear(),
-      export: () => world.stateBackup?.export(),
-      import: (data) => world.stateBackup?.import(data),
-    },
-
-    recovery: {
-      recoverFromBackup: (backupId, options) => world.stateRecovery?.recoverFromBackup(backupId, world.stateBackup, options),
-      getRecoveryHistory: () => world.stateRecovery?.getRecoveryHistory(),
-      getRecovery: (recoveryId) => world.stateRecovery?.getRecovery(recoveryId),
-      getSuccessfulRecoveries: () => world.stateRecovery?.getSuccessfulRecoveries(),
-      getFailedRecoveries: () => world.stateRecovery?.getFailedRecoveries(),
-      getRecoveryStats: () => world.stateRecovery?.getRecoveryStats(),
-      clearHistory: () => world.stateRecovery?.clearHistory(),
-    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')
