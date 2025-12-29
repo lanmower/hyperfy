@@ -24,6 +24,7 @@ import { PlayerEffectManager } from './player/PlayerEffectManager.js'
 import { PlayerModifyHandler } from './player/PlayerModifyHandler.js'
 import { PlayerControlBinder } from './player/PlayerControlBinder.js'
 import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
+import { TransformSyncManager } from './player/TransformSyncManager.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
@@ -149,6 +150,9 @@ export class PlayerLocal extends BaseEntity {
       this.controlBinder.initControl()
       logger.info('Control binding initialized')
 
+      this.transformSync = new TransformSyncManager(this)
+      logger.info('Transform sync manager initialized')
+
       this.world.setHot(this, true)
       logger.info('Player marked as hot, emitting ready event')
       this.world.events.emit('ready', true)
@@ -272,24 +276,7 @@ export class PlayerLocal extends BaseEntity {
       window.__DEBUG__.cameraZoom = this.control.camera.zoom
     }
 
-    if (this.avatar && this.avatar.raw && this.avatar.raw.scene) {
-      const scene = this.avatar.raw.scene
-      scene.position.copy(this.base.position)
-      scene.quaternion.copy(this.base.quaternion)
-      scene.updateMatrix()
-      scene.updateMatrixWorld(true)
-    }
-
-    if (this.avatar && this.avatar.getBoneTransform) {
-      try {
-        const matrix = this.avatar.getBoneTransform('head')
-        if (matrix && this.aura) {
-          this.aura.position.setFromMatrixPosition(matrix)
-        }
-      } catch (err) {
-        logger.warn('getBoneTransform error', err)
-      }
-    }
+    this.transformSync?.sync()
   }
 
   teleport({ position, rotationY }) { this.teleportHandler.teleport({ position, rotationY }) }
@@ -309,6 +296,11 @@ export class PlayerLocal extends BaseEntity {
   modify(data) { this.modifyHandler.modify(data) }
 
   destroy(local) {
+    if (this.transformSync) {
+      this.transformSync.clear()
+      this.transformSync = null
+    }
+
     if (this.avatar?.destroy) {
       this.avatar.destroy()
     }
