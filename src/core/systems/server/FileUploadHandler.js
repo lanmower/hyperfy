@@ -1,4 +1,5 @@
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { FileUploadValidator } from '../../security/FileUploadValidator.js'
 
 const logger = new ComponentLogger('FileUploadHandler')
 
@@ -9,7 +10,28 @@ export class FileUploadHandler {
 
   onFileUpload = async (socket, data) => {
     try {
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid upload data structure')
+      }
+
       const { buffer, filename, mimeType, metadata } = data
+
+      const validation = FileUploadValidator.validateFileData({
+        name: filename,
+        type: mimeType || 'application/octet-stream',
+        data: buffer,
+        metadata: metadata || {},
+      })
+
+      if (!validation.valid) {
+        logger.error('File validation failed', { filename, errors: validation.errors })
+        socket.send('fileUploadError', {
+          filename: filename || 'unknown',
+          error: `File validation failed: ${validation.errors[0]}`
+        })
+        return
+      }
+
       const bufferData = Buffer.from(buffer)
 
       const result = await this.serverNetwork.fileUploader.uploadFile(bufferData, filename, {
