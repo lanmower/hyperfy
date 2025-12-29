@@ -1,5 +1,6 @@
 import { PacketCodec } from '../network/PacketCodec.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { WebSocketValidator } from '../../security/WebSocketValidator.js'
 
 const logger = new ComponentLogger('SocketManager')
 
@@ -7,6 +8,8 @@ export class SocketManager {
   constructor(network) {
     this.network = network
     this.circuitBreakerManager = null
+    this.messageLimiters = new Map()
+    this.connectionLimiter = WebSocketValidator.createConnectionLimiter()
   }
 
   setCircuitBreakerManager(manager) {
@@ -14,6 +17,12 @@ export class SocketManager {
   }
 
   send(name, data, ignoreSocketId) {
+    const validation = WebSocketValidator.validatePacket(name, data)
+    if (!validation.valid) {
+      logger.error('WebSocket send validation failed', { name, errors: validation.errors })
+      return
+    }
+
     const executeSend = async () => {
       const compressed = this.network.compressor.compress(data)
       const packet = PacketCodec.encode(name, compressed)
@@ -55,5 +64,51 @@ export class SocketManager {
       }
     })
     dead.forEach(socket => socket.disconnect())
+  }
+
+  validateMessage(socketId, message) {
+    const validation = WebSocketValidator.validateMessage(message)
+    if (!validation.valid) {
+      logger.warn('WebSocket message validation failed', { socketId, errors: validation.errors })
+      return false
+    }
+
+    if (!this.messageLimiters.has(socketId)) {
+      this.messageLimiters.set(socketId, WebSocketValidator.createRateLimiter())
+    }
+
+    const limiter = this.messageLimiters.get(socketId)
+    const rateCheck = limiter.check()
+
+    if (!rateCheck.allowed) {
+      logger.warn('WebSocket rate limit exceeded', { socketId, count: rateCheck.count, limit: rateCheck.limit })
+      return false
+    }
+
+    return true
+  }
+
+  cleanupSocket(socketId) {
+    this.messageLimiters.delete(socketId)
+  }
+
+  validateConnection(ip) {
+    const result = this.connectionLimiter.add(ip)
+    if (!result.allowed) {
+      logger.warn('WebSocket connection limit reached', { ip, count: result.count, limit: result.limit })
+    }
+    return result.allowed
+  }
+
+  removeConnection(ip) {
+    this.connectionLimiter.remove(ip)
+  }
+
+  getWebSocketStats() {
+    return {
+      activeConnections: this.network.sockets.size,
+      rateLimiters: this.messageLimiters.size,
+      connectionsByIP: this.connectionLimiter.getAll(),
+    }
   }
 }
