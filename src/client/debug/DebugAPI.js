@@ -1,6 +1,7 @@
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { ConsoleCapture } from './ConsoleCapture.js'
 import { ResourceTracker } from '../../core/debug/ResourceTracker.js'
+import { dependencyValidator } from '../../core/di/DependencyValidator.js'
 
 const logger = new ComponentLogger('DebugAPI')
 
@@ -316,6 +317,14 @@ export function setupDebugGlobals(world) {
       trackNode: (node, metadata) => ResourceTracker.trackNode(node, metadata),
       trackEntity: (entity, metadata) => ResourceTracker.trackEntity(entity, metadata),
       trackApp: (app, metadata) => ResourceTracker.trackApp(app, metadata),
+    },
+
+    dependencies: {
+      validateGraph: () => dependencyValidator.validateGraph(),
+      getReport: () => dependencyValidator.getReport(),
+      getExecutionOrder: () => dependencyValidator.getExecutionOrder(),
+      getDependencyGraph: () => dependencyValidator.getDependencyGraph(),
+      registerSystem: (name, deps, metadata) => dependencyValidator.registerSystem(name, deps, metadata),
     },
   }
 
