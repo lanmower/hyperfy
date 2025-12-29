@@ -11,6 +11,7 @@ import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 import { memoryAnalyzer } from './memory/index.js'
 import { gracefulDegradation } from './systems/degradation/index.js'
 import { performanceDashboard, MetricsCollector } from './monitoring/index.js'
+import { eventAudit, eventRegistry } from './events/index.js'
 
 const logger = new ComponentLogger('World')
 
@@ -45,6 +46,8 @@ export class World extends EventEmitter {
     this.degradation = gracefulDegradation
     this.dashboard = performanceDashboard
     this.metricsCollector = new MetricsCollector(this, performanceDashboard)
+    this.eventAudit = eventAudit
+    this.eventRegistry = eventRegistry
 
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)

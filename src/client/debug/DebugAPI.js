@@ -430,6 +430,26 @@ export function setupDebugGlobals(world) {
       getMetricsByCategory: () => world.metricsCollector?.getMetricsByCategory(),
       setThreshold: (metric, value, severity) => world.dashboard?.setThreshold(metric, value, severity),
     },
+
+    events: {
+      getEmitterStats: (name) => world.eventAudit?.getEmitterStats(name),
+      getAllStats: () => world.eventAudit?.getAllStats(),
+      getEventHistory: (emitter, event, limit) => world.eventAudit?.getEventHistory(emitter, event, limit),
+      getTopEvents: (limit) => world.eventAudit?.getTopEvents(limit),
+      getAnomalies: (threshold) => world.eventAudit?.getAnomalies(threshold),
+      getAuditReport: () => world.eventAudit?.getReport(),
+      enableAudit: () => world.eventAudit?.enable(),
+      disableAudit: () => world.eventAudit?.disable(),
+      clearAudit: () => world.eventAudit?.clear(),
+      registerEvent: (name, options) => world.eventRegistry?.registerEvent(name, options),
+      getEvent: (name) => world.eventRegistry?.getEvent(name),
+      getEventsByCategory: (category) => world.eventRegistry?.getEventsByCategory(category),
+      getAllEvents: () => world.eventRegistry?.getAllEvents(),
+      getDocumentation: (name) => world.eventRegistry?.getEventDocumentation(name),
+      getAllDocumentation: () => world.eventRegistry?.getAllDocumentation(),
+      validateEventData: (name, data) => world.eventRegistry?.validateEventData(name, data),
+      exportRegistry: () => world.eventRegistry?.exportRegistry(),
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')
