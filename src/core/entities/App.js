@@ -4,6 +4,7 @@ import moment from 'moment'
 
 import { BaseEntity } from './BaseEntity.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { NullSafetyHelper } from '../utils/safety/NullSafetyHelper.js'
 
 const logger = new ComponentLogger('App')
 import { createNode } from '../extras/createNode.js'
@@ -141,7 +142,8 @@ export class App extends BaseEntity {
       const runScript =
         (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
       if (runScript) {
-        const success = this.scriptExecutor.executeScript(script, blueprint, blueprint.props, this.setTimeout, this.getWorldProxy.bind(this), this.getAppProxy.bind(this), this.fetch)
+        const blueprintProps = NullSafetyHelper.getBlueprintProps(this)
+        const success = this.scriptExecutor.executeScript(script, blueprint, blueprintProps, this.setTimeout, this.getWorldProxy.bind(this), this.getAppProxy.bind(this), this.fetch)
         if (!success) return this.crash()
       }
       if (this.mode === Modes.MOVING) {
