@@ -26,13 +26,9 @@ import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
 import { registerErrorRoutes } from './routes/ErrorRoutes.js'
 import { registerUploadRoutes } from './routes/UploadRoutes.js'
-import { registerStatusRoutes } from './routes/StatusRoutes.js'
-import { registerHealthRoutes } from './routes/HealthRoutes.js'
-import { registerCacheRoutes } from './routes/CacheRoutes.js'
+import { registerStatusAPI } from './routes/StatusAPI.js'
 import { registerAdminRoutes } from './routes/AdminRoutes.js'
-import { registerTelemetryRoutes } from './routes/TelemetryRoutes.js'
 import { registerStatusPageRoutes } from './routes/StatusPageRoutes.js'
-import { Logger, ConsoleSink, FileSink } from './logging/Logger.js'
 import { ErrorTracker } from './logging/ErrorTracker.js'
 import { createRequestIdMiddleware, createErrorHandler } from './middleware/RequestTracking.js'
 import { setupGlobalErrorTracking } from './logging/IntegrationUtils.js'
@@ -310,11 +306,11 @@ fastify.register(worldNetwork)
 registerErrorRoutes(fastify, world)
 registerUploadRoutes(fastify, assetsDir)
 registerStatusRoutes(fastify, world)
-registerHealthRoutes(fastify, world, logger, errorTracker, aiProviderHealth, circuitBreakerManager, degradationManager, world?.db)
-registerCacheRoutes(fastify, world?.db)
-registerAdminRoutes(fastify)
-registerTelemetryRoutes(fastify, logger)
-registerStatusPageRoutes(fastify, statusPageData)
+registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
+registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
+registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
+registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
+registerStatusAPI(fastify, { world, timeoutManager, circuitBreakerManager, rateLimiterManager })
 
 fastify.get('/', async (req, reply) => {
   const title = world.settings.title || 'World'

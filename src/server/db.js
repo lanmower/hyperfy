@@ -1,9 +1,6 @@
 import initSqlJs from 'sql.js'
 import { QueryBuilder } from './db/QueryBuilder.js'
-import { CachedQueryBuilder } from './db/CachedQueryBuilder.js'
 import { DatabaseSchema } from './db/DatabaseSchema.js'
-import { QueryCache } from './cache/QueryCache.js'
-import { RedisCache } from './cache/RedisCache.js'
 import { DatabaseMetrics } from './services/DatabaseMetrics.js'
 import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
 
@@ -11,15 +8,12 @@ const logger = new ComponentLogger('Database')
 
 let db
 let SQL
-let queryCache
-let redisCache
 let dbMetrics
 
 class Database {
-  constructor(dbInstance, SQL, queryCache = null, metrics = null, timeoutManager = null, circuitBreakerManager = null) {
+  constructor(dbInstance, SQL, metrics = null, timeoutManager = null, circuitBreakerManager = null) {
     this.dbInstance = dbInstance
     this.SQL = SQL
-    this.queryCache = queryCache
     this.metrics = metrics
     this.timeoutManager = timeoutManager
     this.circuitBreakerManager = circuitBreakerManager
@@ -46,9 +40,6 @@ class Database {
         stmt.bind(values)
         stmt.step()
         stmt.free()
-        if (this.queryCache) {
-          this.queryCache.invalidateTable(tableName)
-        }
         if (this.metrics) {
           this.metrics.recordQuery(tableName, Date.now() - startTime, 'INSERT', [tableName])
         }
@@ -162,30 +153,12 @@ export async function getDB(worldDir, timeoutManager = null, circuitBreakerManag
       dbMetrics = new DatabaseMetrics()
     }
 
-    if (!queryCache) {
-      if (process.env.REDIS_URL) {
-        try {
-          redisCache = await RedisCache.create()
-          queryCache = new QueryCache(redisCache)
-          logger.info('Redis cache enabled')
-        } catch (e) {
-          logger.warn('Redis cache failed, using fallback', { error: e.message })
-          queryCache = new QueryCache()
-        }
-      } else {
-        queryCache = new QueryCache()
-        logger.info('In-memory cache enabled')
-      }
-    }
+    const database = new Database(dbInstance, SQL, dbMetrics, dbTimeoutManager, dbCircuitBreakerManager)
 
-    const database = new Database(dbInstance, SQL, queryCache, dbMetrics, dbTimeoutManager, dbCircuitBreakerManager)
-
-    const dbFunc = (tableName) => new CachedQueryBuilder(dbInstance, SQL, tableName, {}, queryCache, dbMetrics)
+    const dbFunc = (tableName) => new QueryBuilder(dbInstance, SQL, tableName, {}, dbMetrics)
     dbFunc.schema = database.schema
     dbFunc.insert = database.insert.bind(database)
     dbFunc.query = database.query.bind(database)
-    dbFunc.cache = queryCache
-    dbFunc.stats = () => queryCache.getStats()
     dbFunc.metrics = () => dbMetrics.getMetrics()
 
     db = dbFunc
