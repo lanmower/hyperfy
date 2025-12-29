@@ -8,6 +8,12 @@ const logger = new ComponentLogger('SnapshotProcessor')
 export class SnapshotProcessor {
   constructor(network) {
     this.network = network
+    this.stateSync = null
+  }
+
+  setStateSync(stateSync) {
+    this.stateSync = stateSync
+    logger.debug('StateSync manager registered')
   }
 
   process(data) {
@@ -20,7 +26,13 @@ export class SnapshotProcessor {
 
     this.preloadAssets(data)
     logger.info('Deserializing snapshot state')
-    SnapshotCodec.deserializeState(data, this.network)
+
+    if (this.stateSync) {
+      this.stateSync.decodeSnapshot(data)
+    } else {
+      SnapshotCodec.deserializeState(data, this.network)
+    }
+
     logger.info('Snapshot state deserialization complete')
     storage.set('authToken', data.authToken)
   }
