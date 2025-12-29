@@ -20,7 +20,6 @@ import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
 import { AnimationController } from './player/AnimationController.js'
 import { NetworkSynchronizer } from './player/NetworkSynchronizer.js'
 import { PlayerTeleportHandler } from './player/PlayerTeleportHandler.js'
-import { PlayerEffectManager } from './player/PlayerEffectManager.js'
 import { PlayerModifyHandler } from './player/PlayerModifyHandler.js'
 import { PlayerControlBinder } from './player/PlayerControlBinder.js'
 import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
@@ -124,7 +123,7 @@ export class PlayerLocal extends BaseEntity {
       this.animationController = new AnimationController(this)
       this.networkSynchronizer = new NetworkSynchronizer(this)
       this.teleportHandler = new PlayerTeleportHandler(this)
-      this.effectManager = new PlayerEffectManager(this)
+      this.effectOnEnd = null
       this.modifyHandler = new PlayerModifyHandler(this)
       this.controlBinder = new PlayerControlBinder(this)
       this.capsuleFactory = new PlayerCapsuleFactory(this.world)
@@ -244,7 +243,12 @@ export class PlayerLocal extends BaseEntity {
     this.avatar?.update?.(delta)
 
     this.networkSynchronizer.sync(delta)
-    this.effectManager.updateDuration(delta)
+    if (this.data.effect?.duration) {
+      this.data.effect.duration -= delta
+      if (this.data.effect.duration <= 0) {
+        this.setEffect(null)
+      }
+    }
   }
 
   lateUpdate(delta) {
@@ -280,7 +284,20 @@ export class PlayerLocal extends BaseEntity {
   }
 
   teleport({ position, rotationY }) { this.teleportHandler.teleport({ position, rotationY }) }
-  setEffect(effect, onEnd) { this.effectManager.setEffect(effect, onEnd) }
+  setEffect(effect, onEnd) {
+    if (this.data.effect === effect) return
+    if (this.data.effect) {
+      this.data.effect = null
+      this.effectOnEnd?.()
+      this.effectOnEnd = null
+    }
+    this.data.effect = effect
+    this.effectOnEnd = onEnd
+    this.world.network.send('entityModified', {
+      id: this.data.id,
+      ef: effect,
+    })
+  }
   setSpeaking(speaking) { return this.chatBubble.setSpeaking(speaking) }
   push(force) {
     force = v1.fromArray(force)
@@ -309,8 +326,8 @@ export class PlayerLocal extends BaseEntity {
       clearTimeout(this.chatBubble.chatTimer)
     }
 
-    if (this.effectManager?.onEffectEnd) {
-      this.effectManager.onEffectEnd = null
+    if (this.effectOnEnd) {
+      this.effectOnEnd = null
     }
 
     if (this.controlBinder?.stick) {
@@ -365,7 +382,7 @@ export class PlayerLocal extends BaseEntity {
     this.animationController = null
     this.networkSynchronizer = null
     this.teleportHandler = null
-    this.effectManager = null
+    this.effectOnEnd = null
     this.modifyHandler = null
     this.controlBinder = null
     this.capsuleFactory = null
