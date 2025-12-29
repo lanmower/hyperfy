@@ -1,5 +1,6 @@
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { ConsoleCapture } from './ConsoleCapture.js'
+import { ResourceTracker } from '../../core/debug/ResourceTracker.js'
 
 const logger = new ComponentLogger('DebugAPI')
 
@@ -305,6 +306,16 @@ export function setupDebugGlobals(world) {
         assertions,
         all_pass: assertions.every(a => a.startsWith('✅')),
       }
+    },
+
+    resources: {
+      snapshot: () => ResourceTracker.snapshot(),
+      getReport: (threshold = 10) => ResourceTracker.getReport(threshold),
+      getStats: () => ResourceTracker.getStats(),
+      clear: () => ResourceTracker.clear(),
+      trackNode: (node, metadata) => ResourceTracker.trackNode(node, metadata),
+      trackEntity: (entity, metadata) => ResourceTracker.trackEntity(entity, metadata),
+      trackApp: (app, metadata) => ResourceTracker.trackApp(app, metadata),
     },
   }
 
