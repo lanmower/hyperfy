@@ -1,79 +1,50 @@
-/**
- * @file Unified logging for all components
- */
+import { StructuredLogger } from './StructuredLogger.js'
 
-/**
- * @class ComponentLogger
- * Provides consistent console logging with component name prefixes
- * @example
- * const logger = new ComponentLogger('EntitySpawner')
- * logger.error('Failed to spawn:', err)
- * logger.warn('Missing data')
- * logger.info('Created entity:', id)
- * logger.debug('Internal state:', state)
- */
 export class ComponentLogger {
-  /**
-   * @param {string} name Component or module name
-   */
   constructor(name) {
     this.name = name
+    this.logger = new StructuredLogger(name, {
+      minLevel: globalThis.__LOG_LEVEL__ || 'INFO',
+      includeTimestamp: false
+    })
   }
 
-  /**
-   * Log error with component prefix
-   * @param {string} message
-   * @param {Error|any} [data]
-   */
-  error(message, data = null) {
-    if (data instanceof Error) {
-      console.error(`[${this.name}]`, message, data.message)
-    } else if (data) {
-      console.error(`[${this.name}]`, message, data)
-    } else {
-      console.error(`[${this.name}]`, message)
+  error(message, context = null) {
+    if (context instanceof Error) {
+      context = { error: context.message, stack: context.stack }
     }
+    this.logger.error(message, context || {})
   }
 
-  /**
-   * Log warning with component prefix
-   * @param {string} message
-   * @param {any} [data]
-   */
-  warn(message, data = null) {
-    if (data) {
-      console.warn(`[${this.name}]`, message, data)
-    } else {
-      console.warn(`[${this.name}]`, message)
-    }
+  warn(message, context = null) {
+    this.logger.warn(message, context || {})
   }
 
-  /**
-   * Log info with component prefix
-   * @param {string} message
-   * @param {any} [data]
-   */
-  info(message, data = null) {
-    if (data) {
-      console.log(`[${this.name}]`, message, data)
-    } else {
-      console.log(`[${this.name}]`, message)
-    }
+  info(message, context = null) {
+    this.logger.info(message, context || {})
   }
 
-  /**
-   * Log debug message (only if DEBUG env var is set)
-   * @param {string} message
-   * @param {any} [data]
-   */
-  debug(message, data = null) {
-    if (process.env.DEBUG === 'true') {
-      if (data) {
-        console.log(`[${this.name}] DEBUG:`, message, data)
-      } else {
-        console.log(`[${this.name}] DEBUG:`, message)
-      }
+  debug(message, context = null) {
+    this.logger.debug(message, context || {})
+  }
+
+  trace(message, context = null) {
+    this.logger.trace(message, context || {})
+  }
+
+  time(label) {
+    return this.logger.time(label)
+  }
+
+  static setGlobalLevel(level) {
+    globalThis.__LOG_LEVEL__ = level
+  }
+
+  static addGlobalHandler(handler) {
+    if (!globalThis.__LOG_HANDLERS__) {
+      globalThis.__LOG_HANDLERS__ = []
     }
+    globalThis.__LOG_HANDLERS__.push(handler)
   }
 }
 

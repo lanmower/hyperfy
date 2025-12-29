@@ -1,0 +1,219 @@
+import { LogLevels, LogLevelNames, getLevelValue, shouldLog } from './LogLevels.js'
+
+export class StructuredLogger {
+  constructor(category = 'App', options = {}) {
+    this.category = category
+    this.minLevel = getLevelValue(options.minLevel || 'INFO')
+    this.maxContextDepth = options.maxContextDepth ?? 3
+    this.includeTimestamp = options.includeTimestamp ?? true
+    this.includeCategory = options.includeCategory ?? true
+    this.handlers = options.handlers || [defaultConsoleHandler]
+    this.contextStack = []
+    this.metadata = {}
+  }
+
+  setMinLevel(levelName) {
+    this.minLevel = getLevelValue(levelName)
+    return this
+  }
+
+  pushContext(key, value) {
+    this.contextStack.push({ key, value })
+    if (this.contextStack.length > 50) {
+      this.contextStack.shift()
+    }
+    return this
+  }
+
+  popContext(key) {
+    const index = this.contextStack.findIndex(c => c.key === key)
+    if (index >= 0) {
+      this.contextStack.splice(index, 1)
+    }
+    return this
+  }
+
+  setMetadata(key, value) {
+    this.metadata[key] = value
+    return this
+  }
+
+  getContext() {
+    const context = {}
+    for (const { key, value } of this.contextStack) {
+      context[key] = value
+    }
+    return { ...context, ...this.metadata }
+  }
+
+  formatLog(level, message, context = {}) {
+    const timestamp = this.includeTimestamp ? new Date().toISOString() : null
+    const levelName = LogLevelNames[level] || 'UNKNOWN'
+    const fullContext = { ...this.getContext(), ...context }
+
+    return {
+      timestamp,
+      level: levelName,
+      category: this.category,
+      message,
+      context: Object.keys(fullContext).length > 0 ? fullContext : null,
+      metadata: this.metadata
+    }
+  }
+
+  log(level, message, context = {}) {
+    if (!shouldLog(this.minLevel, level)) {
+      return this
+    }
+
+    const logEntry = this.formatLog(level, message, context)
+
+    for (const handler of this.handlers) {
+      try {
+        handler(logEntry)
+      } catch (err) {
+        console.error('Log handler error:', err.message)
+      }
+    }
+
+    return this
+  }
+
+  trace(message, context = {}) {
+    return this.log(LogLevels.TRACE, message, context)
+  }
+
+  debug(message, context = {}) {
+    return this.log(LogLevels.DEBUG, message, context)
+  }
+
+  info(message, context = {}) {
+    return this.log(LogLevels.INFO, message, context)
+  }
+
+  warn(message, context = {}) {
+    return this.log(LogLevels.WARN, message, context)
+  }
+
+  error(message, context = {}) {
+    if (context instanceof Error) {
+      context = {
+        error: context.message,
+        stack: context.stack,
+        name: context.name
+      }
+    }
+    return this.log(LogLevels.ERROR, message, context)
+  }
+
+  fatal(message, context = {}) {
+    return this.log(LogLevels.FATAL, message, context)
+  }
+
+  time(label) {
+    const start = Date.now()
+    return () => {
+      const duration = Date.now() - start
+      this.info(`${label} completed`, { duration: `${duration}ms` })
+      return duration
+    }
+  }
+
+  addHandler(handler) {
+    if (typeof handler !== 'function') {
+      throw new Error('Handler must be a function')
+    }
+    this.handlers.push(handler)
+    return this
+  }
+
+  removeHandler(handler) {
+    const index = this.handlers.indexOf(handler)
+    if (index >= 0) {
+      this.handlers.splice(index, 1)
+    }
+    return this
+  }
+
+  clearHandlers() {
+    this.handlers = []
+    return this
+  }
+
+  createChild(childCategory) {
+    const child = new StructuredLogger(childCategory, {
+      minLevel: LogLevelNames[this.minLevel],
+      maxContextDepth: this.maxContextDepth,
+      includeTimestamp: this.includeTimestamp,
+      includeCategory: this.includeCategory,
+      handlers: this.handlers
+    })
+
+    child.metadata = { ...this.metadata }
+    for (const { key, value } of this.contextStack) {
+      child.pushContext(key, value)
+    }
+
+    return child
+  }
+
+  stats() {
+    return {
+      category: this.category,
+      minLevel: LogLevelNames[this.minLevel],
+      handlerCount: this.handlers.length,
+      contextStackSize: this.contextStack.length,
+      metadataSize: Object.keys(this.metadata).length
+    }
+  }
+}
+
+export function defaultConsoleHandler(logEntry) {
+  const { timestamp, level, category, message, context } = logEntry
+
+  const prefix = [
+    timestamp && `[${timestamp}]`,
+    `[${level}]`,
+    `[${category}]`
+  ].filter(Boolean).join(' ')
+
+  const logMessage = context ? `${message} ${JSON.stringify(context)}` : message
+
+  if (level === 'TRACE' || level === 'DEBUG') {
+    console.debug(`${prefix} ${logMessage}`)
+  } else if (level === 'INFO') {
+    console.log(`${prefix} ${logMessage}`)
+  } else if (level === 'WARN') {
+    console.warn(`${prefix} ${logMessage}`)
+  } else if (level === 'ERROR' || level === 'FATAL') {
+    console.error(`${prefix} ${logMessage}`)
+  }
+}
+
+export function createLogBuffer(maxSize = 1000) {
+  const buffer = []
+
+  return {
+    handler: (logEntry) => {
+      buffer.push({
+        ...logEntry,
+        timestamp: logEntry.timestamp || Date.now()
+      })
+      if (buffer.length > maxSize) {
+        buffer.shift()
+      }
+    },
+    getAll: () => [...buffer],
+    getByLevel: (level) => buffer.filter(e => e.level === level),
+    getLast: (count) => buffer.slice(-count),
+    clear: () => buffer.length = 0,
+    stats: () => ({ size: buffer.length, maxSize })
+  }
+}
+
+export function createFileHandler(filePath) {
+  // Placeholder for file handler - would use fs in Node.js
+  return (logEntry) => {
+    // Implementation depends on platform (Node.js vs Browser)
+  }
+}
