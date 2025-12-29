@@ -411,6 +411,25 @@ export function setupDebugGlobals(world) {
       getReport: () => world.degradation?.getReport(),
       activateFallback: (name) => world.degradation?.activateFallback(name),
     },
+
+    dashboard: {
+      getDashboard: () => world.dashboard?.getDashboard(),
+      getMetric: (name) => world.dashboard?.getMetric(name),
+      getAllMetrics: () => world.dashboard?.getAllMetrics(),
+      getMetricHistory: (name, limit) => world.dashboard?.getMetricHistory(name, limit),
+      getMetricStats: (name) => world.dashboard?.getMetricStats(name),
+      getActiveAlerts: () => world.dashboard?.getActiveAlerts(),
+      acknowledgeAlert: (alertId) => world.dashboard?.acknowledgeAlert(alertId),
+      clearAlerts: () => world.dashboard?.clearAlerts(),
+      getSummary: () => world.dashboard?.getSummary(),
+      getTrends: () => world.dashboard?.getTrends(),
+      getTopMetrics: (limit) => world.dashboard?.getTopMetrics(limit),
+      startCollection: () => world.metricsCollector?.setupDefaultCollectors().setupThresholds().start(),
+      stopCollection: () => world.metricsCollector?.stop(),
+      getHealthReport: () => world.metricsCollector?.getHealthReport(),
+      getMetricsByCategory: () => world.metricsCollector?.getMetricsByCategory(),
+      setThreshold: (metric, value, severity) => world.dashboard?.setThreshold(metric, value, severity),
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')
