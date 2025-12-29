@@ -8,6 +8,7 @@ import { PhysicsCallbackManager } from './physics/PhysicsCallbackManager.js'
 import { PhysicsInterpolationManager } from './physics/PhysicsInterpolationManager.js'
 import { Layers } from '../extras/Layers.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { tracer } from '../utils/tracing/index.js'
 
 const logger = new ComponentLogger('Physics')
 
@@ -118,11 +119,39 @@ export class Physics extends System {
 
   postFixedUpdate(delta) {
     if (!this.scene) return
-    this.scene.simulate(delta)
-    this.scene.fetchResults(true)
-    this.callbackManager.processContactCallbacks()
-    this.callbackManager.processTriggerCallbacks()
-    this.interpolationManager.processActiveActors(this.scene, this.handles, this.active)
+
+    const span = tracer.startSpan(`physics_step`, null)
+    span?.setAttribute('delta', delta)
+
+    try {
+      const simulateSpan = tracer.startSpan(`physics_simulate`, span?.traceId)
+      this.scene.simulate(delta)
+      tracer.endSpan(simulateSpan)
+
+      const fetchSpan = tracer.startSpan(`physics_fetch_results`, span?.traceId)
+      this.scene.fetchResults(true)
+      tracer.endSpan(fetchSpan)
+
+      const contactSpan = tracer.startSpan(`physics_contact_callbacks`, span?.traceId)
+      this.callbackManager.processContactCallbacks()
+      tracer.endSpan(contactSpan)
+
+      const triggerSpan = tracer.startSpan(`physics_trigger_callbacks`, span?.traceId)
+      this.callbackManager.processTriggerCallbacks()
+      tracer.endSpan(triggerSpan)
+
+      const interpolateSpan = tracer.startSpan(`physics_interpolation`, span?.traceId)
+      this.interpolationManager.processActiveActors(this.scene, this.handles, this.active)
+      tracer.endSpan(interpolateSpan)
+
+      span?.setAttribute('activeActors', this.active.size)
+      span?.setAttribute('status', 'success')
+      tracer.endSpan(span)
+    } catch (err) {
+      span?.setAttribute('status', 'error')
+      tracer.endSpan(span, 'error', err)
+      throw err
+    }
   }
 
   preUpdate(alpha) {

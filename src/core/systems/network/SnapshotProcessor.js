@@ -2,6 +2,7 @@ import { emoteUrls } from '../../extras/playerEmotes.js'
 import { storage } from '../../storage.js'
 import { SnapshotCodec } from './SnapshotCodec.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { tracer } from '../../utils/tracing/index.js'
 
 const logger = new ComponentLogger('SnapshotProcessor')
 
@@ -17,24 +18,46 @@ export class SnapshotProcessor {
   }
 
   process(data) {
-    logger.info('Snapshot process started', { networkId: data.id, entityCount: data.entities?.length, blueprintCount: data.blueprints?.length })
-    this.network.id = data.id
-    this.network.serverTimeOffset = data.serverTime - performance.now()
-    this.network.apiUrl = data.apiUrl
-    this.network.maxUploadSize = data.maxUploadSize
-    this.network.assetsUrl = data.assetsUrl
+    tracer.traceSync(`snapshot_process`, span => {
+      logger.info('Snapshot process started', { networkId: data.id, entityCount: data.entities?.length, blueprintCount: data.blueprints?.length })
 
-    this.preloadAssets(data)
-    logger.info('Deserializing snapshot state')
+      span?.setAttribute('networkId', data.id)
+      span?.setAttribute('entityCount', data.entities?.length || 0)
+      span?.setAttribute('blueprintCount', data.blueprints?.length || 0)
+      span?.setAttribute('timestamp', data.serverTime)
 
-    if (this.stateSync) {
-      this.stateSync.decodeSnapshot(data)
-    } else {
-      SnapshotCodec.deserializeState(data, this.network)
-    }
+      this.network.id = data.id
+      this.network.serverTimeOffset = data.serverTime - performance.now()
+      this.network.apiUrl = data.apiUrl
+      this.network.maxUploadSize = data.maxUploadSize
+      this.network.assetsUrl = data.assetsUrl
 
-    logger.info('Snapshot state deserialization complete')
-    storage.set('authToken', data.authToken)
+      const preloadSpan = tracer.startSpan(`snapshot_preload_assets`, span?.traceId)
+      this.preloadAssets(data)
+      tracer.endSpan(preloadSpan)
+
+      logger.info('Deserializing snapshot state')
+      span?.addEvent('deserialization_started')
+
+      const deserializeSpan = tracer.startSpan(`snapshot_deserialize`, span?.traceId)
+      try {
+        if (this.stateSync) {
+          this.stateSync.decodeSnapshot(data)
+        } else {
+          SnapshotCodec.deserializeState(data, this.network)
+        }
+        span?.setAttribute('deserializeStatus', 'success')
+        tracer.endSpan(deserializeSpan)
+      } catch (err) {
+        span?.setAttribute('deserializeStatus', 'error')
+        tracer.endSpan(deserializeSpan, 'error', err)
+        throw err
+      }
+
+      logger.info('Snapshot state deserialization complete')
+      storage.set('authToken', data.authToken)
+      span?.setAttribute('status', 'success')
+    })
   }
 
   preloadAssets(data) {
