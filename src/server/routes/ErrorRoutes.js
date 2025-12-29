@@ -1,5 +1,6 @@
 import { readJWT } from '../../core/utils/helpers/crypto.js'
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { ErrorResponse, SuccessResponse } from '../utils/errors/ErrorResponse.js'
 
 const logger = new ComponentLogger('ErrorRoutes')
 const VALID_SIDES = new Set(['client', 'server', 'client-reported'])
@@ -51,7 +52,8 @@ export function registerErrorRoutes(fastify, world) {
     try {
       const isAdmin = await validateAdminToken(request)
       if (!isAdmin) {
-        return reply.code(401).send({ error: 'Authentication required' })
+        const response = ErrorResponse.unauthorized('Authentication required')
+        return reply.code(response.statusCode).send(response.toJSON())
       }
 
       const clientIP = request.headers['x-forwarded-for']?.split(',')[0].trim() ||
@@ -60,7 +62,8 @@ export function registerErrorRoutes(fastify, world) {
         'unknown'
 
       if (!checkAdminRateLimit(clientIP)) {
-        return reply.code(429).send({ error: 'Rate limit exceeded' })
+        const response = ErrorResponse.tooManyRequests('Rate limit exceeded', 60)
+        return reply.code(response.statusCode).send(response.toJSON())
       }
 
       const { limit, type, since, side, critical } = request.query
@@ -90,7 +93,8 @@ export function registerErrorRoutes(fastify, world) {
       }
 
       if (!world.errorMonitor) {
-        return reply.code(503).send({ error: 'Error monitoring not available' })
+        const response = ErrorResponse.serviceUnavailable('Error monitoring not available')
+        return reply.code(response.statusCode).send(response.toJSON())
       }
 
       const errors = world.errorMonitor.getErrors(options)
@@ -99,18 +103,16 @@ export function registerErrorRoutes(fastify, world) {
       const degradationManager = fastify.degradationManager
       const degradationStats = degradationManager ? degradationManager.getStats() : null
 
-      return reply.code(200).send({
+      const response = SuccessResponse.ok({
         errors,
         stats,
         degradation: degradationStats,
-        timestamp: new Date().toISOString()
       })
+      return reply.code(response.statusCode).send(response.toJSON())
     } catch (error) {
       logger.error('Error endpoint failed', { error: error.message })
-      return reply.code(500).send({
-        error: 'Internal server error',
-        timestamp: new Date().toISOString(),
-      })
+      const response = ErrorResponse.internalError('Internal server error')
+      return reply.code(response.statusCode).send(response.toJSON())
     }
   })
 
@@ -118,7 +120,8 @@ export function registerErrorRoutes(fastify, world) {
     try {
       const isAdmin = await validateAdminToken(request)
       if (!isAdmin) {
-        return reply.code(401).send({ error: 'Authentication required' })
+        const response = ErrorResponse.unauthorized('Authentication required')
+        return reply.code(response.statusCode).send(response.toJSON())
       }
 
       const clientIP = request.headers['x-forwarded-for']?.split(',')[0].trim() ||
@@ -127,26 +130,24 @@ export function registerErrorRoutes(fastify, world) {
         'unknown'
 
       if (!checkAdminRateLimit(clientIP)) {
-        return reply.code(429).send({ error: 'Rate limit exceeded' })
+        const response = ErrorResponse.tooManyRequests('Rate limit exceeded', 60)
+        return reply.code(response.statusCode).send(response.toJSON())
       }
 
       if (!world.errorMonitor) {
-        return reply.code(503).send({ error: 'Error monitoring not available' })
+        const response = ErrorResponse.serviceUnavailable('Error monitoring not available')
+        return reply.code(response.statusCode).send(response.toJSON())
       }
 
       const count = world.errorMonitor.clearErrors()
       logger.info('Errors cleared by admin', { clearedCount: count })
 
-      return reply.code(200).send({
-        cleared: count,
-        timestamp: new Date().toISOString()
-      })
+      const response = SuccessResponse.ok({ cleared: count })
+      return reply.code(response.statusCode).send(response.toJSON())
     } catch (error) {
       logger.error('Error clear endpoint failed', { error: error.message })
-      return reply.code(500).send({
-        error: 'Internal server error',
-        timestamp: new Date().toISOString(),
-      })
+      const response = ErrorResponse.internalError('Internal server error')
+      return reply.code(response.statusCode).send(response.toJSON())
     }
   })
 

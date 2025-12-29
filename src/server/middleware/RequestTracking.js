@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import { ErrorResponse } from '../utils/errors/ErrorResponse.js'
 
 export function createRequestIdMiddleware() {
   return (fastify, opts, done) => {
@@ -59,14 +60,15 @@ export function createErrorHandler(logger, errorTracker) {
         path: request.url,
       })
 
-      const statusCode = err.statusCode || 500
-      reply.code(statusCode).send({
-        error: {
-          message: err.message,
-          requestId,
-          timestamp: new Date().toISOString(),
-        },
-      })
+      let response
+      if (err.code) {
+        response = ErrorResponse.fromOperationError(err)
+      } else {
+        response = ErrorResponse.fromError(err, requestId)
+      }
+      response.setCorrelationId(requestId)
+
+      reply.code(response.statusCode).send(response.toJSON())
     })
 
     done()
