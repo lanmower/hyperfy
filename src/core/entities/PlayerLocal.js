@@ -330,7 +330,7 @@ export class PlayerLocal extends BaseEntity {
     }
 
     if (this.control) {
-      this.world.controls.unbind(this.control)
+      this.control.release()
       this.control = null
     }
 

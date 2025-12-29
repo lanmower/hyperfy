@@ -1,5 +1,7 @@
 import { ControlPriorities } from '../../extras/ControlPriorities.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('PlayerControlBinder')
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
 
@@ -11,7 +13,13 @@ export class PlayerControlBinder {
   }
 
   initControl() {
-    this.player.control = this.player.world.controls.bind({
+    const controls = this.player.world.getService('controls')
+    if (!controls) {
+      logger.warn('Controls service not available')
+      return
+    }
+
+    this.player.control = controls.bind({
       priority: ControlPriorities.PLAYER,
       onTouch: touch => {
         if (!this.stick && touch.position.x < this.player.control.screen.width / 2) {
@@ -27,7 +35,8 @@ export class PlayerControlBinder {
       onTouchEnd: touch => {
         if (this.stick?.touch === touch) {
           this.stick = null
-          this.player.world.events.emit('stick', null)
+          const events = this.player.world.getService('events')
+          events?.emit('stick', null)
         }
         if (this.pan === touch) {
           this.pan = null
