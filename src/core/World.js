@@ -6,6 +6,7 @@ import { SystemRegistry as SystemRegistryImpl } from './di/SystemRegistry.js'
 import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
 
 const logger = new ComponentLogger('World')
 
@@ -30,6 +31,10 @@ export class World extends EventEmitter {
     this.serviceLocator = new ServiceLocator(this.di)
     ServiceLocator.setGlobal(this.serviceLocator)
 
+    this.pluginRegistry = pluginRegistry
+    this.pluginHooks = pluginHooks
+    this.initializeHooks()
+
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
     this.rig.add(this.camera)
@@ -52,6 +57,37 @@ export class World extends EventEmitter {
     return system
   }
 
+  initializeHooks() {
+    this.pluginHooks.register('world:init', 'before')
+    this.pluginHooks.register('world:start', 'before')
+    this.pluginHooks.register('world:update', 'action')
+    this.pluginHooks.register('world:destroy', 'before')
+    this.pluginHooks.register('entity:created', 'after')
+    this.pluginHooks.register('entity:destroyed', 'before')
+    this.pluginHooks.register('script:error', 'after')
+    this.pluginHooks.register('asset:resolve', 'filter')
+  }
+
+  async initializePlugins(pluginList = []) {
+    for (const pluginConfig of pluginList) {
+      const { name, plugin } = pluginConfig
+      if (!plugin) continue
+
+      const api = createPluginAPI(this, name)
+      plugin.api = api
+
+      try {
+        if (plugin.init) {
+          await Promise.resolve(plugin.init(api))
+        }
+        this.pluginRegistry.register(name, plugin)
+        logger.info('Plugin loaded', { name, version: plugin.version })
+      } catch (error) {
+        logger.error('Plugin initialization failed', { name, error: error.message })
+      }
+    }
+  }
+
   getService(name) {
     return this.serviceLocator.get(name)
   }
@@ -64,11 +100,18 @@ export class World extends EventEmitter {
     this.storage = options.storage
     this.assetsDir = options.assetsDir
     this.assetsUrl = options.assetsUrl
+
+    if (options.plugins) {
+      await this.initializePlugins(options.plugins)
+    }
+
+    await this.pluginHooks.execute('world:init', this)
     await this.systemRegistry.init(options)
     await this.start()
   }
 
   async start() {
+    await this.pluginHooks.execute('world:start', this)
     await this.systemRegistry.start()
   }
 
@@ -127,6 +170,7 @@ export class World extends EventEmitter {
     for (const item of this.hot) {
       item.update?.(delta)
     }
+    this.pluginHooks.execute('world:update', delta)
     this.systemRegistry.update(delta)
   }
 
@@ -201,6 +245,10 @@ export class World extends EventEmitter {
   }
 
   destroy() {
+    this.pluginHooks.execute('world:destroy', this)
+    this.pluginRegistry.getAllPlugins().forEach(plugin => {
+      this.pluginRegistry.unregister(plugin.name)
+    })
     this.systemRegistry.destroy()
   }
 }
