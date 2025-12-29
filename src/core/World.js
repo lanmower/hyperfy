@@ -9,6 +9,7 @@ import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
 import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 import { memoryAnalyzer } from './memory/index.js'
+import { gracefulDegradation } from './systems/degradation/index.js'
 
 const logger = new ComponentLogger('World')
 
@@ -40,6 +41,7 @@ export class World extends EventEmitter {
     this.performanceMonitor = performanceMonitor
     this.performanceBudget = PerformanceBudget
     this.memoryAnalyzer = memoryAnalyzer
+    this.degradation = gracefulDegradation
 
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)

@@ -398,6 +398,19 @@ export function setupDebugGlobals(world) {
         }
       },
     },
+
+    degradation: {
+      registerFeature: (name, options) => world.degradation?.registerFeature(name, options),
+      enableFeature: (name, testFn) => world.degradation?.enableFeature(name, testFn),
+      getFeatureStatus: (name) => world.degradation?.getFeatureStatus(name),
+      getAllStatus: () => world.degradation?.getAllStatus(),
+      getDegradationStatus: () => world.degradation?.getDegradationStatus(),
+      isFeatureAvailable: (name) => world.degradation?.isFeatureAvailable(name),
+      isFeatureDegraded: (name) => world.degradation?.isFeatureDegraded(name),
+      canContinue: (name) => world.degradation?.canContinue(name),
+      getReport: () => world.degradation?.getReport(),
+      activateFallback: (name) => world.degradation?.activateFallback(name),
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')
