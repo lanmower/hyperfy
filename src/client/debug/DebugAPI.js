@@ -2,6 +2,7 @@ import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { ConsoleCapture } from './ConsoleCapture.js'
 import { ResourceTracker } from '../../core/debug/ResourceTracker.js'
 import { dependencyValidator } from '../../core/di/DependencyValidator.js'
+import { cleanupTracker, printCleanupGuide } from '../../core/lifecycle/index.js'
 
 const logger = new ComponentLogger('DebugAPI')
 
@@ -325,6 +326,15 @@ export function setupDebugGlobals(world) {
       getExecutionOrder: () => dependencyValidator.getExecutionOrder(),
       getDependencyGraph: () => dependencyValidator.getDependencyGraph(),
       registerSystem: (name, deps, metadata) => dependencyValidator.registerSystem(name, deps, metadata),
+    },
+
+    cleanup: {
+      getStats: () => cleanupTracker.getStats(),
+      getReport: () => cleanupTracker.getDetailedReport(),
+      register: (name, fn, priority) => cleanupTracker.registerCleanup(name, fn, priority),
+      execute: (filter) => cleanupTracker.executeCleanups(filter),
+      printGuide: (category) => printCleanupGuide(category),
+      reset: () => cleanupTracker.reset(),
     },
   }
 
