@@ -373,6 +373,31 @@ export function setupDebugGlobals(world) {
         entityOperations: world.performanceMonitor?.samples.entityOperations.getAll() || [],
       }),
     },
+
+    memory: {
+      takeSnapshot: (label) => world.memoryAnalyzer?.takeSnapshot(label)?.export(),
+      getSnapshot: (index) => world.memoryAnalyzer?.getSnapshot(index)?.export() || null,
+      getAllSnapshots: () => world.memoryAnalyzer?.getAllSnapshots().map(s => s.export()) || [],
+      compareSnapshots: (index1, index2) => world.memoryAnalyzer?.compareSnapshots(index1, index2) || null,
+      getLeaks: () => world.memoryAnalyzer?.detectLeaks() || [],
+      getReport: () => world.memoryAnalyzer?.getReport() || null,
+      getGrowthRate: (startIndex, endIndex) => world.memoryAnalyzer?.getGrowthRate(startIndex, endIndex) || null,
+      getHeapTrend: () => world.memoryAnalyzer?.getHeapTrend() || [],
+      getObjectTypeTrend: (type) => world.memoryAnalyzer?.getObjectTypeGrowthTrend(type) || [],
+      clear: () => world.memoryAnalyzer?.clear(),
+      getMetadata: () => {
+        const snapshots = world.memoryAnalyzer?.getAllSnapshots() || []
+        return {
+          snapshotCount: snapshots.length,
+          totalCapacity: world.memoryAnalyzer?.maxSnapshots || 0,
+          timespan: snapshots.length > 1 ? {
+            start: snapshots[0].timestamp,
+            end: snapshots[snapshots.length - 1].timestamp,
+            duration: snapshots[snapshots.length - 1].timestamp - snapshots[0].timestamp,
+          } : null,
+        }
+      },
+    },
   }
 
   logger.info('Global debug utilities available at window.__DEBUG__')
