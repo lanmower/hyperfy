@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('BatchUploader')
+
 export class BatchUploader {
   constructor(fileUploader) {
     this.fileUploader = fileUploader
@@ -48,7 +52,7 @@ export class BatchUploader {
           }
         })
       } catch (error) {
-        console.error('Batch upload error:', error)
+        logger.error('Batch upload error', { error: error.message })
       }
     }
 

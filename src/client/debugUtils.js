@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('DebugGlobals')
+
 export function setupDebugGlobals(world) {
   if (typeof window === 'undefined') return
 
@@ -204,6 +208,18 @@ export function setupDebugGlobals(world) {
       playersCount: Array.from(world.entities.items.values()).filter(e => e.isPlayer).length,
     }),
 
+    // FEATURE DETECTION & DEGRADATION
+    getFeatures: () => world.features || {},
+    getCapabilities: () => world.capabilities || {},
+    getDegradationStatus: () => ({
+      audio: world.audio?.degraded || false,
+      livekit: world.livekit?.degraded || false,
+      network: world.network?.offlineMode || false,
+      features: world.features || {},
+      capabilities: world.capabilities || {},
+    }),
+    getFallbackLog: () => world.loader?.getFallbackLog?.() || [],
+
     // QUICK CHECKS
     checkSceneApp: () => {
       const apps = Array.from(world.entities.items.values()).filter(e => e.isApp)
@@ -328,8 +344,8 @@ export function setupDebugGlobals(world) {
     return originalError.apply(console, args)
   }
 
-  console.log('[DEBUG] Global debug utilities available at window.__DEBUG__')
-  console.log('[DEBUG] Player: window.__DEBUG__.player() | playerState() | avatarHierarchy() | playerPerformance()')
-  console.log('[DEBUG] Quick check: window.__DEBUG__.checkSceneApp() | getPerformanceMetrics()')
-  console.log('[DEBUG] Apps: window.__DEBUG__.apps() | getAppState("app-id") | findNodesByName("sky")')
+  logger.info('Global debug utilities available at window.__DEBUG__')
+  logger.info('Player: window.__DEBUG__.player() | playerState() | avatarHierarchy() | playerPerformance()')
+  logger.info('Quick check: window.__DEBUG__.checkSceneApp() | getPerformanceMetrics()')
+  logger.info('Apps: window.__DEBUG__.apps() | getAppState("app-id") | findNodesByName("sky")')
 }

@@ -1,5 +1,8 @@
 import * as THREE from '../extras/three'
 import { isBoolean, isNumber, isString, isArray, isObject, isFunction, isEqual } from 'lodash-es'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Prim')
 
 import { Node, secureRef } from './Node'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry'
@@ -344,7 +347,7 @@ export class Prim extends Node {
         this.pmesh = pmesh // Store for cleanup
       } else {
         // TODO: think we can remove this? why would this happen?
-        console.warn(`[prim] Failed to create convex mesh for ${this._type}, falling back to box`)
+        logger.warn('Failed to create convex mesh, falling back to box', { type: this._type })
         const boxSize = this.getColliderSize()
         pxGeometry = new PHYSX.PxBoxGeometry(boxSize[0] / 2, boxSize[1] / 2, boxSize[2] / 2)
       }
@@ -964,7 +967,7 @@ export class Prim extends Node {
           // return self.transparent
         },
         set transparent(value) {
-          console.warn('prim.transparent deprecated')
+          logger.warn('prim.transparent is deprecated', {})
           // self.transparent = value
         },
         get texture() {

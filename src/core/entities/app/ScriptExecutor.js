@@ -1,4 +1,8 @@
 import { HyperfyError } from '../../systems/error/ErrorCodes.js'
+import { InputSanitizer } from '../../security/InputSanitizer.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ScriptExecutor')
 
 export class ScriptExecutor {
   constructor(app) {
@@ -54,9 +58,22 @@ export class ScriptExecutor {
       try {
         if (typeof scriptCode === 'string') {
           if (scriptCode.trim().length === 0) {
-            console.warn('[ScriptExecutor] Empty script code provided')
+            logger.warn('Empty script code provided')
             return true
           }
+
+          const validation = InputSanitizer.validateScript(scriptCode)
+          if (!validation.valid) {
+            const hyperfyError = new HyperfyError('SCRIPT_VALIDATION_FAILED', 'Script contains dangerous patterns', {
+              appId: this.app.data.id,
+              blueprintId: blueprint?.id,
+              violations: validation.violations,
+            })
+            this.recordError(hyperfyError, 'validation')
+            logger.error('Script validation failed:', hyperfyError)
+            return false
+          }
+
           evaluated = scripts.evaluate(scriptCode)
         } else if (scriptCode.exec && scriptCode.code) {
           evaluated = scriptCode
@@ -66,12 +83,12 @@ export class ScriptExecutor {
       } catch (parseErr) {
         const hyperfyError = parseErr instanceof HyperfyError ? parseErr : new HyperfyError('SCRIPT_ERROR', `Script parsing failed: ${parseErr.message}`, { originalError: parseErr.toString() })
         this.recordError(hyperfyError, 'parse')
-        console.error('[ScriptExecutor] Script parsing failed:', hyperfyError)
+        logger.error('Script parsing failed:', hyperfyError)
         return false
       }
 
       if (!evaluated) {
-        console.warn('[ScriptExecutor] Script evaluation returned null')
+        logger.warn('Script evaluation returned null')
         return true
       }
 
@@ -91,11 +108,24 @@ export class ScriptExecutor {
           throw new HyperfyError('NULL_REFERENCE', 'App proxy not available', { phase: 'executeScript' })
         }
 
-        appContext = evaluated.exec(worldProxy, appProxy, fetchFn, props || {}, setTimeoutFn)
+        const safeProps = props || {}
+        const propValidation = InputSanitizer.validateProperties(safeProps)
+        if (!propValidation.valid) {
+          const hyperfyError = new HyperfyError('PROPERTY_VALIDATION_FAILED', 'Blueprint properties contain invalid data', {
+            appId: this.app.data.id,
+            blueprintId: blueprint?.id,
+            violations: propValidation.violations,
+          })
+          this.recordError(hyperfyError, 'propertyValidation')
+          logger.error('Property validation failed:', hyperfyError)
+          return false
+        }
+
+        appContext = evaluated.exec(worldProxy, appProxy, fetchFn, safeProps, setTimeoutFn)
       } catch (execErr) {
         const hyperfyError = execErr instanceof HyperfyError ? execErr : new HyperfyError('SCRIPT_ERROR', `Script execution failed: ${execErr.message}`, { originalError: execErr.toString() })
         this.recordError(hyperfyError, 'execution')
-        console.error('[ScriptExecutor] Script execution failed:', hyperfyError)
+        logger.error('Script execution failed:', hyperfyError)
         return false
       }
 
@@ -128,14 +158,14 @@ export class ScriptExecutor {
           } catch (onLoadErr) {
             const hyperfyError = onLoadErr instanceof HyperfyError ? onLoadErr : new HyperfyError('SCRIPT_ERROR', `onLoad failed: ${onLoadErr.message}`, { originalError: onLoadErr.toString() })
             this.recordError(hyperfyError, 'onLoad')
-            console.error('[ScriptExecutor] onLoad failed, stopping execution:', hyperfyError)
+            logger.error('onLoad failed, stopping execution:', hyperfyError)
             return false
           }
         }
       } catch (hookErr) {
         const hyperfyError = hookErr instanceof HyperfyError ? hookErr : new HyperfyError('SCRIPT_ERROR', `Failed to register script hooks: ${hookErr.message}`, { originalError: hookErr.toString() })
         this.recordError(hyperfyError, 'hookRegistration')
-        console.error('[ScriptExecutor] Hook registration failed:', hyperfyError)
+        logger.error('Hook registration failed:', hyperfyError)
         return false
       }
 
@@ -143,7 +173,7 @@ export class ScriptExecutor {
     } catch (err) {
       const hyperfyError = err instanceof HyperfyError ? err : new HyperfyError('SCRIPT_ERROR', `Unexpected error in script executor: ${err.message}`, { originalError: err.toString() })
       this.recordError(hyperfyError, 'executor')
-      console.error('[ScriptExecutor] Unexpected error:', hyperfyError)
+      logger.error('Unexpected error:', hyperfyError)
       return false
     }
   }
@@ -156,7 +186,7 @@ export class ScriptExecutor {
     } catch (err) {
       const hyperfyError = err instanceof HyperfyError ? err : new HyperfyError('SCRIPT_ERROR', `fixedUpdate error: ${err.message}`, { originalError: err.toString() })
       this.recordError(hyperfyError, 'fixedUpdate')
-      console.error('[ScriptExecutor] fixedUpdate error:', hyperfyError)
+      logger.error('fixedUpdate error:', hyperfyError)
     }
   }
 
@@ -168,7 +198,7 @@ export class ScriptExecutor {
     } catch (err) {
       const hyperfyError = err instanceof HyperfyError ? err : new HyperfyError('SCRIPT_ERROR', `update error: ${err.message}`, { originalError: err.toString() })
       this.recordError(hyperfyError, 'update')
-      console.error('[ScriptExecutor] update error:', hyperfyError)
+      logger.error('update error:', hyperfyError)
     }
   }
 
@@ -180,7 +210,7 @@ export class ScriptExecutor {
     } catch (err) {
       const hyperfyError = err instanceof HyperfyError ? err : new HyperfyError('SCRIPT_ERROR', `lateUpdate error: ${err.message}`, { originalError: err.toString() })
       this.recordError(hyperfyError, 'lateUpdate')
-      console.error('[ScriptExecutor] lateUpdate error:', hyperfyError)
+      logger.error('lateUpdate error:', hyperfyError)
     }
   }
 
@@ -192,7 +222,7 @@ export class ScriptExecutor {
         } catch (err) {
           const hyperfyError = err instanceof HyperfyError ? err : new HyperfyError('SCRIPT_ERROR', `onUnload failed: ${err.message}`, { originalError: err.toString() })
           this.recordError(hyperfyError, 'onUnload')
-          console.error('[ScriptExecutor] onUnload failed:', hyperfyError)
+          logger.error('onUnload failed:', hyperfyError)
         }
       }
 
@@ -208,7 +238,7 @@ export class ScriptExecutor {
     } catch (cleanupErr) {
       const hyperfyError = cleanupErr instanceof HyperfyError ? cleanupErr : new HyperfyError('SCRIPT_ERROR', `Cleanup error: ${cleanupErr.message}`, { originalError: cleanupErr.toString() })
       this.recordError(hyperfyError, 'cleanup')
-      console.error('[ScriptExecutor] Cleanup error:', hyperfyError)
+      logger.error('Cleanup error:', hyperfyError)
     } finally {
       this.context = null
       this.script = null

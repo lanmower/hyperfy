@@ -2,6 +2,9 @@ import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { exportApp } from '../../../core/extras/appTools.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { isBoolean } from 'lodash-es'
+import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('useAppLogic')
 
 const extToType = {
   glb: 'model',
@@ -14,7 +17,7 @@ export function useAppLogic(world) {
       const file = await exportApp(blueprint, world.loader.loadFile)
       downloadFile(file)
     } catch (err) {
-      console.error(err)
+      logger.error('Failed to download app', { blueprintId: blueprint.id, error: err.message })
     }
   }
 

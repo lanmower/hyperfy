@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('PhysicsSimulationEvents')
+
 export class PhysicsSimulationEvents {
   constructor(physics) {
     this.physics = physics
@@ -103,7 +107,7 @@ export class PhysicsSimulationEvents {
     }
 
     simulationEventCallback.onConstraintBreak = (...args) => {
-      console.error('TODO: onContraintBreak', ...args)
+      logger.warn('Constraint break event not yet implemented', {})
     }
 
     return simulationEventCallback

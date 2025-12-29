@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('QueryBuilder')
+
 export class QueryBuilder {
   constructor(db, SQL, tableName, where) {
     this.db = db
@@ -27,7 +31,7 @@ export class QueryBuilder {
       stmt.step()
       stmt.free()
     } catch (e) {
-      console.error('Insert error:', e.message)
+      logger.error('Insert error', { table: this.tableName, error: e.message })
     }
   }
 
@@ -59,7 +63,7 @@ export class QueryBuilder {
       stmt.free()
       return null
     } catch (e) {
-      console.error('First error:', e.message)
+      logger.error('First error', { table: this.tableName, error: e.message })
       return null
     }
   }
@@ -81,7 +85,7 @@ export class QueryBuilder {
       stmt.step()
       stmt.free()
     } catch (e) {
-      console.error('Update error:', e.message)
+      logger.error('Update error', { table: this.tableName, error: e.message })
     }
   }
 
@@ -98,7 +102,7 @@ export class QueryBuilder {
       stmt.step()
       stmt.free()
     } catch (e) {
-      console.error('Delete error:', e.message)
+      logger.error('Delete error', { table: this.tableName, error: e.message })
     }
   }
 
@@ -127,7 +131,7 @@ export class QueryBuilder {
       stmt.free()
       return rows
     } catch (e) {
-      console.error('Get all rows error:', e.message)
+      logger.error('Get all rows error', { table: this.tableName, error: e.message })
       return []
     }
   }

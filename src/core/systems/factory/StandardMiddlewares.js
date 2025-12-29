@@ -1,8 +1,12 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('StandardMiddlewares')
+
 export class StandardMiddlewares {
   static createLoggerMiddleware(verbose = false) {
     return (system, world, options) => {
       if (verbose) {
-        console.log(`[System] Creating ${system.constructor.name}`)
+        logger.info('Creating system', { system: system.constructor.name })
       }
 
       const originalInit = system.init?.bind(system)
@@ -11,11 +15,11 @@ export class StandardMiddlewares {
       if (originalInit) {
         system.init = async function (...args) {
           if (verbose) {
-            console.log(`[System] Initializing ${system.constructor.name}`)
+            logger.info('Initializing system', { system: system.constructor.name })
           }
           const result = await originalInit(...args)
           if (verbose) {
-            console.log(`[System] Initialized ${system.constructor.name}`)
+            logger.info('System initialized', { system: system.constructor.name })
           }
           return result
         }
@@ -24,11 +28,11 @@ export class StandardMiddlewares {
       if (originalStart) {
         system.start = async function (...args) {
           if (verbose) {
-            console.log(`[System] Starting ${system.constructor.name}`)
+            logger.info('Starting system', { system: system.constructor.name })
           }
           const result = await originalStart(...args)
           if (verbose) {
-            console.log(`[System] Started ${system.constructor.name}`)
+            logger.info('System started', { system: system.constructor.name })
           }
           return result
         }
@@ -54,14 +58,14 @@ export class StandardMiddlewares {
 
             if (result instanceof Promise) {
               return result.catch(err => {
-                console.error(`Error in ${system.constructor.name}.${method}:`, err)
+                logger.error('Error in system method', { system: system.constructor.name, method, error: err.message })
                 throw err
               })
             }
 
             return result
           } catch (err) {
-            console.error(`Error in ${system.constructor.name}.${method}:`, err)
+            logger.error('Error in system method', { system: system.constructor.name, method, error: err.message })
             throw err
           }
         }

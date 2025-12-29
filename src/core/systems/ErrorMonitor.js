@@ -8,6 +8,9 @@ import { ErrorForwarder } from './monitors/ErrorForwarder.js'
 import { ErrorAnalytics } from './monitors/ErrorAnalytics.js'
 import { GlobalErrorInterceptor } from './monitors/GlobalErrorInterceptor.js'
 import { ClientErrorReporter } from './monitors/ClientErrorReporter.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ErrorMonitor')
 
 let ServerErrorReporter = null
 let isServerEnv = typeof process !== 'undefined' && process.versions?.node
@@ -121,7 +124,7 @@ export class ErrorMonitor extends System {
         this.events.emit('criticalError', errorEvent)
       }
     } catch (err) {
-      console.error('Failed to process error data:', err)
+      logger.error('Failed to process error data', { error: err.message })
     }
   }
 

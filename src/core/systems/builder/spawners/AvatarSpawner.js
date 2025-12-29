@@ -1,4 +1,7 @@
 import { uuid, hashFile } from '../../../utils-client.js'
+import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AvatarSpawner')
 
 export class AvatarSpawner {
   constructor(entitySpawner) {
@@ -78,7 +81,7 @@ export class AvatarSpawner {
     try {
       await this.clientBuilder.network.upload(file)
     } catch (err) {
-      console.error('Failed to upload avatar:', err)
+      logger.error('Avatar upload failed', { error: err.message })
       player.modify({ avatar: prevUrl })
       return
     }

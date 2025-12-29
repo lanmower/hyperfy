@@ -1,0 +1,159 @@
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('EventListenerManager')
+
+export class EventListenerManager {
+  constructor(owner) {
+    this.owner = owner
+    this.listeners = []
+  }
+
+  on(emitter, event, handler) {
+    if (!emitter || typeof emitter.on !== 'function') {
+      logger.error('Invalid emitter provided to on()', { owner: this.owner.constructor.name })
+      return
+    }
+
+    const boundHandler = typeof handler === 'function' ? handler.bind(this.owner) : handler
+    emitter.on(event, boundHandler)
+
+    this.listeners.push({
+      emitter,
+      event,
+      handler: boundHandler,
+      original: handler
+    })
+
+    return boundHandler
+  }
+
+  once(emitter, event, handler) {
+    if (!emitter || typeof emitter.once !== 'function') {
+      logger.error('Invalid emitter provided to once()', { owner: this.owner.constructor.name })
+      return
+    }
+
+    const boundHandler = typeof handler === 'function' ? handler.bind(this.owner) : handler
+    emitter.once(event, boundHandler)
+
+    this.listeners.push({
+      emitter,
+      event,
+      handler: boundHandler,
+      original: handler,
+      once: true
+    })
+
+    return boundHandler
+  }
+
+  addEventListener(target, event, handler, options = {}) {
+    if (!target || typeof target.addEventListener !== 'function') {
+      logger.error('Invalid target provided to addEventListener()', { owner: this.owner.constructor.name })
+      return
+    }
+
+    const boundHandler = typeof handler === 'function' ? handler.bind(this.owner) : handler
+    target.addEventListener(event, boundHandler, options)
+
+    this.listeners.push({
+      target,
+      event,
+      handler: boundHandler,
+      original: handler,
+      dom: true,
+      options
+    })
+
+    return boundHandler
+  }
+
+  off(emitter, event, handler) {
+    const index = this.listeners.findIndex(l =>
+      l.emitter === emitter &&
+      l.event === event &&
+      (l.original === handler || l.handler === handler)
+    )
+
+    if (index >= 0) {
+      const listener = this.listeners[index]
+      emitter.off(event, listener.handler)
+      this.listeners.splice(index, 1)
+    }
+  }
+
+  removeEventListener(target, event, handler, options = {}) {
+    const index = this.listeners.findIndex(l =>
+      l.target === target &&
+      l.event === event &&
+      (l.original === handler || l.handler === handler) &&
+      l.dom
+    )
+
+    if (index >= 0) {
+      const listener = this.listeners[index]
+      target.removeEventListener(event, listener.handler, options)
+      this.listeners.splice(index, 1)
+    }
+  }
+
+  removeAllListeners(emitterOrTarget) {
+    const toRemove = this.listeners.filter(l => l.emitter === emitterOrTarget || l.target === emitterOrTarget)
+
+    for (const listener of toRemove) {
+      if (listener.dom) {
+        listener.target.removeEventListener(listener.event, listener.handler, listener.options)
+      } else {
+        listener.emitter.off(listener.event, listener.handler)
+      }
+    }
+
+    this.listeners = this.listeners.filter(l => !toRemove.includes(l))
+  }
+
+  clear() {
+    for (const listener of this.listeners) {
+      try {
+        if (listener.dom) {
+          listener.target.removeEventListener(listener.event, listener.handler, listener.options)
+        } else {
+          listener.emitter.off(listener.event, listener.handler)
+        }
+      } catch (err) {
+        logger.error('Failed to remove listener during cleanup', {
+          owner: this.owner.constructor.name,
+          event: listener.event,
+          error: err.message
+        })
+      }
+    }
+
+    this.listeners = []
+  }
+
+  getStats() {
+    const domListeners = this.listeners.filter(l => l.dom).length
+    const emitterListeners = this.listeners.filter(l => !l.dom).length
+
+    return {
+      total: this.listeners.length,
+      dom: domListeners,
+      emitter: emitterListeners,
+      byEvent: this.getListenersByEvent()
+    }
+  }
+
+  getListenersByEvent() {
+    const byEvent = {}
+    for (const listener of this.listeners) {
+      const event = listener.event
+      byEvent[event] = (byEvent[event] || 0) + 1
+    }
+    return byEvent
+  }
+
+  destroy() {
+    this.clear()
+    this.owner = null
+  }
+}

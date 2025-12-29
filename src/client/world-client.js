@@ -5,6 +5,10 @@ import { css } from '@firebolt-dev/css'
 import { World } from '../core/World.js'
 import { CoreUI } from './components/CoreUI.js'
 import { setupDebugGlobals } from './debugUtils.js'
+import { FeatureDetector } from '../core/FeatureDetector.js'
+import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('WorldClient')
 
 export { System } from '../core/systems/System.js'
 
@@ -22,12 +26,31 @@ export function Client({ wsUrl, onSetup }) {
   useEffect(() => {
     const init = async () => {
       try {
-        console.log('World init started')
+        logger.info('World initialization started', {})
+
+        const featureDetector = new FeatureDetector()
+        const features = await featureDetector.detect()
+        const capabilities = featureDetector.getCapabilities()
+
+        logger.info('Client feature detection complete', { capabilities })
+
+        if (!capabilities.canRender3D) {
+          logger.error('WebGL not supported - cannot render 3D content', {})
+          return
+        }
+
+        if (!capabilities.canUseWebSocket) {
+          logger.warn('WebSocket not supported - entering offline mode', {})
+        }
+
+        world.features = features
+        world.capabilities = capabilities
+
         const viewport = viewportRef.current
         const ui = uiRef.current
         const baseEnvironment = {
           model: '/base-environment.glb',
-          bg: null, // '/day2-2k.jpg',
+          bg: null,
           hdr: '/Clear_08_4pm_LDR.hdr',
           rotationY: 0,
           sunDirection: new THREE.Vector3(-1, -2, -2).normalize(),
@@ -41,14 +64,14 @@ export function Client({ wsUrl, onSetup }) {
           wsUrl = wsUrl()
           if (wsUrl instanceof Promise) wsUrl = await wsUrl
         }
-        const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: '/assets' }
-        console.log('Calling onSetup and setupDebugGlobals early')
+        const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: '/assets', capabilities }
+        logger.info('Calling onSetup and initializing debug globals', {})
         onSetup?.(world, config)
         setupDebugGlobals(world)
         const initPromise = (async () => {
-          console.log('Starting world.init')
+          logger.info('Starting world initialization', {})
           await world.init(config)
-          console.log('world.init completed')
+          logger.info('World initialization completed', {})
         })()
         await initPromise
         const tick = time => {
@@ -57,7 +80,8 @@ export function Client({ wsUrl, onSetup }) {
         }
         requestAnimationFrame(tick)
       } catch (err) {
-        console.error('World initialization error:', err)
+        logger.error('World initialization error', { error: err.message })
+        logger.error('Unable to start application - check logs for details', {})
       }
     }
     init()

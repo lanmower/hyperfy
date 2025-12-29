@@ -1,4 +1,7 @@
 import { TableBuilder, AlterTableBuilder } from './TableBuilder.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('DatabaseSchema')
 
 export class DatabaseSchema {
   constructor(dbInstance) {
@@ -24,7 +27,7 @@ export class DatabaseSchema {
     try {
       this.db.run(sql)
     } catch (e) {
-      console.error('Create table error:', e.message)
+      logger.error('Failed to create table', { tableName, error: e.message })
     }
   }
 
@@ -52,6 +55,7 @@ export class DatabaseSchema {
             table.string('name').notNullable()
             table.string('avatar').nullable()
             table.integer('rank').notNullable()
+            table.unique('id')
           })
         } else if (tableName === 'files') {
           await this.createTable('files', table => {
@@ -64,6 +68,7 @@ export class DatabaseSchema {
             table.integer('timestamp').notNullable()
             table.integer('stored').notNullable()
             table.string('url').notNullable()
+            table.unique('hash')
           })
         } else {
           await this.createTable(tableName, table => {
@@ -71,9 +76,43 @@ export class DatabaseSchema {
             table.text('data').notNullable()
             table.timestamp('createdAt').notNullable()
             table.timestamp('updatedAt').notNullable()
+            table.unique('id')
           })
         }
       }
+    }
+
+    await this.createIndexes()
+  }
+
+  async createIndexes() {
+    const indexes = [
+      { table: 'blueprints', column: 'id', name: 'idx_blueprints_id' },
+      { table: 'blueprints', column: 'createdAt', name: 'idx_blueprints_created' },
+      { table: 'entities', column: 'id', name: 'idx_entities_id' },
+      { table: 'entities', column: 'createdAt', name: 'idx_entities_created' },
+      { table: 'users', column: 'id', name: 'idx_users_id' },
+      { table: 'users', column: 'name', name: 'idx_users_name' },
+      { table: 'files', column: 'hash', name: 'idx_files_hash' },
+      { table: 'files', column: 'uploader', name: 'idx_files_uploader' },
+      { table: 'files', column: 'timestamp', name: 'idx_files_timestamp' },
+      { table: 'config', column: 'key', name: 'idx_config_key' },
+    ]
+
+    for (const idx of indexes) {
+      try {
+        this.db.run(`CREATE INDEX IF NOT EXISTS ${idx.name} ON ${idx.table}(${idx.column})`)
+      } catch (e) {
+      }
+    }
+
+    try {
+      this.db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_id_unique ON users(id)`)
+      this.db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_files_hash_unique ON files(hash)`)
+      this.db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_blueprints_id_unique ON blueprints(id)`)
+      this.db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_entities_id_unique ON entities(id)`)
+      this.db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_config_key_unique ON config(key)`)
+    } catch (e) {
     }
   }
 }

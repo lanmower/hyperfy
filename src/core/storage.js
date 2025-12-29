@@ -1,3 +1,7 @@
+import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Storage')
+
 class LocalStorage {
   get(key, defaultValue = null) {
     const data = localStorage.getItem(key)
@@ -6,7 +10,7 @@ class LocalStorage {
     try {
       value = JSON.parse(data)
     } catch (err) {
-      console.error('error reading storage key:', key)
+      logger.error('Failed to read storage key', { key, error: err.message })
       value = null
     }
     if (value === undefined) return defaultValue
@@ -60,7 +64,7 @@ class NodeStorage {
     try {
       this.fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8')
     } catch (err) {
-      console.error('error writing to storage file:', err)
+      logger.error('Failed to write storage file', { file: this.file, error: err.message })
     }
   }
 

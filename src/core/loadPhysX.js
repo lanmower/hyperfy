@@ -1,5 +1,7 @@
 import PhysXModule from './physx-js-webidl.js'
+import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('loadPhysX')
 let promise
 export function loadPhysX() {
   if (!promise) {
@@ -18,12 +20,12 @@ export function loadPhysX() {
 
       Promise.resolve()
         .then(() => {
-          console.log('[loadPhysX] Starting PhysX module initialization')
+          logger.info('Starting PhysX module initialization')
           const moduleObj = {}
-          console.log('[loadPhysX] Created moduleObj, calling PhysXModule factory')
+          logger.info('Created moduleObj, calling PhysXModule factory')
           return PhysXModule(moduleObj).then(() => {
-            console.log('[loadPhysX] PhysXModule factory returned, checking moduleObj contents')
-            console.log('[loadPhysX] moduleObj keys:', Object.keys(moduleObj).length)
+            logger.info('PhysXModule factory returned, checking moduleObj contents')
+            logger.info('moduleObj keys', { count: Object.keys(moduleObj).length })
             return moduleObj
           })
         })
@@ -31,7 +33,7 @@ export function loadPhysX() {
           if (originalError) console.error = originalError
           if (originalWarn) console.warn = originalWarn
 
-          console.log('[loadPhysX] Setting globalThis.PHYSX with', Object.keys(moduleObj).length, 'properties')
+          logger.info('Setting globalThis.PHYSX', { properties: Object.keys(moduleObj).length })
           globalThis.PHYSX = moduleObj
 
           if (!globalThis.PHYSX) {
@@ -42,29 +44,27 @@ export function loadPhysX() {
             throw new Error('PHYSX.PHYSICS_VERSION is undefined - moduleObj not populated correctly. Available properties: ' + Object.keys(globalThis.PHYSX).slice(0, 10).join(', '))
           }
 
-          console.log('[loadPhysX] PHYSICS_VERSION available:', globalThis.PHYSX.PHYSICS_VERSION)
-          console.log('[loadPhysX] Creating allocator and error callback')
+          logger.info('PHYSICS_VERSION available', { version: globalThis.PHYSX.PHYSICS_VERSION })
+          logger.info('Creating allocator and error callback')
 
           const version = globalThis.PHYSX.PHYSICS_VERSION
           const allocator = new globalThis.PHYSX.PxDefaultAllocator()
           const errorCb = new globalThis.PHYSX.PxDefaultErrorCallback()
 
-          console.log('[loadPhysX] Creating foundation')
+          logger.info('Creating foundation')
           const foundation = globalThis.PHYSX.CreateFoundation(version, allocator, errorCb)
 
           if (!foundation) {
             throw new Error('Failed to create PhysX foundation')
           }
 
-          console.log('[loadPhysX] PhysX initialization complete, returning module info')
+          logger.info('PhysX initialization complete, returning module info')
           resolve({ version, allocator, errorCb, foundation })
         })
         .catch(err => {
           if (originalError) console.error = originalError
           if (originalWarn) console.warn = originalWarn
-          console.error('[loadPhysX] CRITICAL ERROR during PhysX initialization:', err.message || err.toString())
-          console.error('[loadPhysX] Error stack:', err.stack)
-          console.error('[loadPhysX] Full error:', err)
+          logger.error('CRITICAL ERROR during PhysX initialization', err)
           reject(err)
         })
     })

@@ -1,4 +1,7 @@
 import * as THREE from '../../extras/three.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('PhysicsCallbackManager')
 
 function createPool(factory) {
   const pool = []
@@ -67,14 +70,14 @@ export class PhysicsCallbackManager {
             try {
               this.fn0(this.event0)
             } catch (err) {
-              console.error(err)
+              logger.error('Contact callback execution failed', { error: err.message })
             }
           }
           if (this.fn1) {
             try {
               this.fn1(this.event1)
             } catch (err) {
-              console.error(err)
+              logger.error('Contact callback execution failed', { error: err.message })
             }
           }
           this.release()
@@ -93,7 +96,7 @@ export class PhysicsCallbackManager {
           try {
             this.fn(this.event)
           } catch (err) {
-            console.error(err)
+            logger.error('Trigger callback execution failed', { error: err.message })
           }
           this.release()
         },

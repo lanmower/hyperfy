@@ -1,6 +1,9 @@
 import { clamp, uuid } from '../../utils/helpers/misc.js'
 import * as THREE from '../three.js'
 import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('PlayerProxy')
 
 const HEALTH_MAX = 100
 
@@ -123,16 +126,16 @@ export function createPlayerProxy(entity, player) {
     },
     screenshare(targetId) {
       if (!targetId) {
-        return console.error(`screenshare has invalid targetId: ${targetId}`)
+        return logger.error('Screenshare has invalid targetId', { targetId })
       }
       if (player.data.userId !== world.network.id) {
-        return console.error('screenshare can only be called on local player')
+        return logger.error('Screenshare can only be called on local player', {})
       }
       world.livekit.setScreenShareTarget(targetId)
     },
     setVoiceLevel(level) {
       if (!world.network.isServer) {
-        return console.error(`[setVoiceLevel] must be applied on the server`)
+        return logger.error('setVoiceLevel must be applied on the server', {})
       }
       if (!level && !voiceMod) {
         return // no modifiers to remove, this is a noop

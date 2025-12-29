@@ -1,4 +1,8 @@
 
+import { ComponentLogger } from '../logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('EventBus')
+
 export class EventBus {
   constructor() {
     this.listeners = new Map()
@@ -32,7 +36,7 @@ export class EventBus {
       try {
         callback(...args)
       } catch (err) {
-        console.error(`Event listener error for '${event}':`, err)
+        logger.error('Event listener error', { event, error: err.message })
       }
     }
   }

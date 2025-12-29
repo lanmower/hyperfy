@@ -76,7 +76,7 @@ export class FileStorage {
   }
 
   async saveRecord(record) {
-    const exists = await this.db('files').where('hash', record.hash).first()
+    const exists = await this.db('files').where('hash', record.hash).cacheAs('getAssetMetadata').first()
     if (exists) {
       await this.db('files').where('hash', record.hash).update({
         filename: record.filename,
@@ -103,7 +103,7 @@ export class FileStorage {
   }
 
   async getRecord(hash) {
-    const row = await this.db('files').where('hash', hash).first()
+    const row = await this.db('files').where('hash', hash).cacheAs('getAssetMetadata').first()
     if (!row) return null
     return {
       hash: row.hash,
@@ -124,7 +124,7 @@ export class FileStorage {
 
   async listRecords(options = {}) {
     const { limit = 100, offset = 0, uploader = null } = options
-    let query = this.db('files')
+    let query = this.db('files').cacheAs('listAssets')
 
     if (uploader) {
       query = query.where('uploader', uploader)

@@ -1,6 +1,9 @@
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { v } from '../utils/TempVectors.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ClientAudio')
 
 const up = new THREE.Vector3(0, 1, 0)
 
@@ -18,36 +21,53 @@ export class ClientAudio extends System {
   constructor(world) {
     super(world)
     this.handles = new Set()
-    this.ctx = new AudioContext()
-    this.masterGain = this.ctx.createGain()
-    this.masterGain.connect(this.ctx.destination)
-    this.groupGains = {
-      music: this.ctx.createGain(),
-      sfx: this.ctx.createGain(),
-      voice: this.ctx.createGain(),
+    this.degraded = false
+
+    const capabilities = world.capabilities
+    if (capabilities && !capabilities.canUseAudio) {
+      logger.warn('Web Audio API unavailable - audio disabled')
+      this.degraded = true
+      this.ctx = null
+      this.masterGain = null
+      this.groupGains = {}
+      this.listener = null
+      this.lastDelta = 0
+      this.queue = []
+      this.unlocked = false
+      return
     }
-    this.groupGains.music.gain.value = this.prefs.state.get('music')
-    this.groupGains.sfx.gain.value = this.prefs.state.get('sfx')
-    this.groupGains.voice.gain.value = this.prefs.state.get('voice')
-    this.groupGains.music.connect(this.masterGain)
-    this.groupGains.sfx.connect(this.masterGain)
-    this.groupGains.voice.connect(this.masterGain)
-    this.listener = this.ctx.listener
-    this.listener.positionX.value = 0
-    this.listener.positionY.value = 0
-    this.listener.positionZ.value = 0
-    this.listener.forwardX.value = 0
-    this.listener.forwardY.value = 0
-    this.listener.forwardZ.value = -1
-    this.listener.upX.value = 0
-    this.listener.upY.value = 1
-    this.listener.upZ.value = 0
-    this.lastDelta = 0
-    this.queue = []
-    this.unlocked = this.ctx.state !== 'suspended'
-    if (!this.unlocked) {
-      const complete = () => {
-        this.unlocked = true
+
+    try {
+      this.ctx = new AudioContext()
+      this.masterGain = this.ctx.createGain()
+      this.masterGain.connect(this.ctx.destination)
+      this.groupGains = {
+        music: this.ctx.createGain(),
+        sfx: this.ctx.createGain(),
+        voice: this.ctx.createGain(),
+      }
+      this.groupGains.music.gain.value = this.prefs.state.get('music')
+      this.groupGains.sfx.gain.value = this.prefs.state.get('sfx')
+      this.groupGains.voice.gain.value = this.prefs.state.get('voice')
+      this.groupGains.music.connect(this.masterGain)
+      this.groupGains.sfx.connect(this.masterGain)
+      this.groupGains.voice.connect(this.masterGain)
+      this.listener = this.ctx.listener
+      this.listener.positionX.value = 0
+      this.listener.positionY.value = 0
+      this.listener.positionZ.value = 0
+      this.listener.forwardX.value = 0
+      this.listener.forwardY.value = 0
+      this.listener.forwardZ.value = -1
+      this.listener.upX.value = 0
+      this.listener.upY.value = 1
+      this.listener.upZ.value = 0
+      this.lastDelta = 0
+      this.queue = []
+      this.unlocked = this.ctx.state !== 'suspended'
+      if (!this.unlocked) {
+        const complete = () => {
+          this.unlocked = true
         document.removeEventListener('click', unlock)
         document.removeEventListener('touchstart', unlock)
         document.removeEventListener('keydown', unlock)
@@ -67,10 +87,10 @@ export class ClientAudio extends System {
             video.pause()
             video.remove()
           }).catch((err) => {
-            console.error('Failed to unlock audio context:', err)
+            logger.error('Failed to unlock audio context', { error: err.message })
           })
         } catch (err) {
-          console.error(err)
+          logger.error('Audio context resume error', { error: err.message })
         } finally {
           complete()
         }
@@ -78,15 +98,28 @@ export class ClientAudio extends System {
       document.addEventListener('click', unlock)
       document.addEventListener('touchstart', unlock)
       document.addEventListener('keydown', unlock)
+      }
+    } catch (err) {
+      logger.error('Failed to initialize AudioContext', { error: err.message })
+      this.degraded = true
+      this.ctx = null
+      this.masterGain = null
+      this.groupGains = {}
+      this.listener = null
+      this.lastDelta = 0
+      this.queue = []
+      this.unlocked = false
     }
   }
 
   ready(fn) {
+    if (this.degraded) return
     if (this.unlocked) return fn()
     this.queue.push(fn)
   }
 
   lateUpdate(delta) {
+    if (this.degraded || !this.listener) return
     const target = this.rig
     const dir = v[0].set(0, 0, -1).applyQuaternion(target.quaternion)
     if (this.listener.positionX) {

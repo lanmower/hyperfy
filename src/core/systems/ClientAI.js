@@ -1,5 +1,8 @@
 import { System } from './System.js'
 import { uuid } from '../utils.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ClientAI')
 
 export class ClientAI extends System {
   constructor(world) {
@@ -15,7 +18,7 @@ export class ClientAI extends System {
     this.provider = data.provider
     this.model = data.model
     this.effort = data.effort
-    console.log('[ai]', data)
+    logger.info('AI deserialized', data)
   }
 
   onCommand = ({ args }) => {
@@ -30,7 +33,8 @@ export class ClientAI extends System {
 
   create = async ({ value: prompt }) => {
     if (!this.enabled) {
-      return console.error('[ai] not enabled')
+      logger.error('AI not enabled')
+      return
     }
     if (!this.world.builder.canBuild()) return
     const blueprint = {
@@ -77,20 +81,23 @@ export class ClientAI extends System {
       appId: appData.id,
       prompt,
     }
-    console.log('[ai] creating', action)
+    logger.info('Creating AI model', action)
     this.world.network.send('ai', action)
   }
 
   edit = async ({ value: prompt }) => {
     if (!this.enabled) {
-      return console.error('[ai] not enabled')
+      logger.error('AI not enabled')
+      return
     }
     if (!this.world.builder.canBuild()) {
-      return console.error('[ai] not a builder')
+      logger.error('Not a builder')
+      return
     }
     const entity = this.world.builder.getEntityAtReticle()
     if (!entity || !entity.isApp || entity.blueprint.scene) {
-      return console.error('[ai] no app found at reticle')
+      logger.error('No app found at reticle')
+      return
     }
     const action = {
       name: 'edit',
@@ -99,22 +106,26 @@ export class ClientAI extends System {
       prompt,
     }
     this.world.network.send('ai', action)
-    console.log('[ai] editing', action)
+    logger.info('Editing AI model', action)
   }
 
   fix = async () => {
     if (!this.enabled) {
-      return console.error('[ai] not enabled')
+      logger.error('AI not enabled')
+      return
     }
     if (!this.world.builder.canBuild()) {
-      return console.error('[ai] not a builder')
+      logger.error('Not a builder')
+      return
     }
     const entity = this.world.builder.getEntityAtReticle()
     if (!entity || !entity.isApp || entity.blueprint.scene) {
-      return console.error('[ai] no app found at reticle')
+      logger.error('No app found at reticle')
+      return
     }
     if (!entity.scriptError) {
-      return console.error('[ai] no script error to fix')
+      logger.error('No script error to fix')
+      return
     }
     const action = {
       name: 'fix',
@@ -123,6 +134,6 @@ export class ClientAI extends System {
       error: entity.scriptError,
     }
     this.world.network.send('ai', action)
-    console.log('[ai] fixing', action)
+    logger.info('Fixing AI model', action)
   }
 }

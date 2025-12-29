@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('FileManager')
+
 export class FileManager {
   constructor(resolveURL) {
     this.files = new Map()
@@ -41,7 +45,7 @@ export class FileManager {
       this.files.set(url, file)
       return file
     } catch (err) {
-      console.error('[loader] FileManager load error:', err.message)
+      logger.error('File load failed', { url, error: err.message })
       throw err
     }
   }

@@ -2,6 +2,9 @@ import moment from 'moment'
 import { uuid } from '../../utils-client.js'
 import { FileExtractor } from './FileExtractor.js'
 import { EntitySpawner } from './EntitySpawner.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('FileDropHandler')
 
 export class FileDropHandler {
   constructor(clientBuilder) {
@@ -54,7 +57,7 @@ export class FileDropHandler {
         body: `File size too large (>${maxUploadSize}mb)`,
         createdAt: moment().toISOString(),
       })
-      console.error(`File too large. Maximum size is ${maxUploadSize}MB`)
+      logger.error('File too large for upload', { fileName: file.name, fileSize: file.size, maxSize, maxUploadSize })
       return
     }
 

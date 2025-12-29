@@ -1,6 +1,7 @@
-
-
 import { validateBlueprint, normalizeBlueprint, isListableApp } from '../schemas/AppBlueprint.schema.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AppValidator')
 
 export class AppValidator {
   
@@ -69,7 +70,7 @@ export class AppValidator {
       try {
         return this.isAppListable(app, blueprintMap)
       } catch (err) {
-        console.warn(`App ${app?.id} failed listability check:`, err.message)
+        logger.warn('App failed listability check', { appId: app?.id, error: err.message })
         return false
       }
     })

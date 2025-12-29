@@ -7,6 +7,9 @@ import { PhysicsSimulationEvents } from './physics/PhysicsSimulationEvents.js'
 import { PhysicsCallbackManager } from './physics/PhysicsCallbackManager.js'
 import { PhysicsInterpolationManager } from './physics/PhysicsInterpolationManager.js'
 import { Layers } from '../extras/Layers.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Physics')
 
 export class Physics extends System {
   static DEPS = {
@@ -29,24 +32,22 @@ export class Physics extends System {
       this.errorCb = info.errorCb
       this.foundation = info.foundation
 
-      console.log('[Physics] PhysX module loaded')
-      console.log('[Physics] globalThis.PHYSX available:', !!globalThis.PHYSX)
-      console.log('[Physics] globalThis.PHYSX.PHYSICS_VERSION:', globalThis.PHYSX?.PHYSICS_VERSION)
+      logger.info('PhysX module loaded', { version: this.version })
+      logger.info('PhysX availability check', { physxAvailable: !!globalThis.PHYSX, version: globalThis.PHYSX?.PHYSICS_VERSION })
 
       if (!globalThis.PHYSX) {
         throw new Error('PhysX module failed to initialize - globalThis.PHYSX is undefined')
       }
 
       this.world.PHYSX = globalThis.PHYSX
-      console.log('[Physics] Set world.PHYSX for access by PlayerPhysics and other systems')
+      logger.info('PhysX set on world for access by systems')
     } catch (err) {
-      console.error('[Physics] Failed to load PhysX:', err.message || err.toString())
-      console.error('[Physics] Error details:', err)
+      logger.error('Failed to load PhysX', { error: err.message || err.toString() })
       return
     }
 
     if (!this.foundation) {
-      console.error('[Physics] Foundation not initialized')
+      logger.error('Foundation not initialized after PhysX load')
       return
     }
 

@@ -1,5 +1,7 @@
 
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('HandlerRegistry')
 
 export const clientNetworkHandlers = {
   'snapshot': 'onSnapshot',
@@ -82,7 +84,7 @@ export function createHandlerMap(handlerNames, instance) {
   for (const [name, methodName] of Object.entries(handlerNames)) {
     const method = instance[methodName]
     if (!method) {
-      console.warn(`Handler method not found: ${methodName}`)
+      logger.warn('Handler method not found', { methodName })
       continue
     }
     handlers[name] = method.bind(instance)

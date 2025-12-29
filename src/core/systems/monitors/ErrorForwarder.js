@@ -1,4 +1,7 @@
 import { ErrorLevels, ErrorSources } from '../../schemas/ErrorEvent.schema.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ErrorForwarder')
 
 export class ErrorForwarder {
   constructor(errorMonitor) {
@@ -40,7 +43,7 @@ export class ErrorForwarder {
       try {
         listener('error', errorEntry)
       } catch (err) {
-        console.error('Error in listener:', err)
+        logger.error('Error in error listener callback', { error: err.message })
       }
     }
 

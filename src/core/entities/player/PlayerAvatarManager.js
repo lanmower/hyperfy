@@ -1,5 +1,8 @@
 import * as THREE from '../../extras/three.js'
 import { AvatarConfig } from '../../config/SystemConfig.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('PlayerAvatarManager')
 
 export class PlayerAvatarManager {
   constructor(playerLocal) {
@@ -49,12 +52,12 @@ export class PlayerAvatarManager {
             }
             resolve(this.playerLocal.avatar)
           } catch (err) {
-            console.error('Factory error:', err.message)
+            logger.error('Failed to create avatar from factory', { error: err.message, avatarUrl })
             reject(err)
           }
         })
         .catch(err => {
-          console.error('Load error:', err.message)
+          logger.error('Failed to load avatar asset', { error: err.message, avatarUrl })
           reject(err)
         })
     })

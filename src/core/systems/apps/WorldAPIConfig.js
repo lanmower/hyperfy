@@ -4,61 +4,45 @@ import moment from 'moment'
 import { Layers } from '../../extras/Layers.js'
 import { HyperfyError } from '../error/ErrorCodes.js'
 import ValidationHelper from '../error/ValidationHelper.js'
+import { APIMethodWrapper } from '../../utils/api/APIMethodWrapper.js'
+import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
 
 export const WorldAPIConfig = {
   getters: {
-    networkId: (apps, entity) => {
-      try {
+    networkId: APIMethodWrapper.wrapMethod(
+      (apps, entity) => {
         if (!apps?.world?.network) {
           throw new HyperfyError('INVALID_STATE', 'Network system not available')
         }
         return apps.world.network.id
-      } catch (e) {
-        console.error('[WorldAPIConfig.networkId]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'networkId' }
+    ),
 
-    isServer: (apps, entity) => {
-      try {
-        if (!apps?.world?.network) {
-          return false
-        }
-        return apps.world.network.isServer
-      } catch (e) {
-        console.error('[WorldAPIConfig.isServer]', e.message)
-        return false
-      }
-    },
+    isServer: APIMethodWrapper.wrapMethod(
+      (apps, entity) => apps?.world?.network?.isServer || false,
+      { module: 'WorldAPIConfig', method: 'isServer', defaultReturn: false }
+    ),
 
-    isClient: (apps, entity) => {
-      try {
-        if (!apps?.world?.network) {
-          return false
-        }
-        return apps.world.network.isClient
-      } catch (e) {
-        console.error('[WorldAPIConfig.isClient]', e.message)
-        return false
-      }
-    },
+    isClient: APIMethodWrapper.wrapMethod(
+      (apps, entity) => apps?.world?.network?.isClient || false,
+      { module: 'WorldAPIConfig', method: 'isClient', defaultReturn: false }
+    ),
 
-    props: (apps, entity) => {
-      try {
+    props: APIMethodWrapper.wrapMethod(
+      (apps, entity) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'get props' })
         return entity.blueprint?.props || {}
-      } catch (e) {
-        console.error('[WorldAPIConfig.props]', e.message)
-        return {}
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'props', defaultReturn: {} }
+    ),
   },
 
   setters: {},
 
   methods: {
-    add: (apps, entity, pNode) => {
-      try {
+    add: APIMethodWrapper.wrapMethod(
+      (apps, entity, pNode) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'add' })
         ValidationHelper.assertNotNull(pNode, 'node', { operation: 'add' })
 
@@ -72,13 +56,12 @@ export const WorldAPIConfig = {
         }
         entity.worldNodes.add(node)
         node.activate({ world: apps.world, entity })
-      } catch (e) {
-        console.error('[WorldAPIConfig.add]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'add' }
+    ),
 
-    remove: (apps, entity, pNode) => {
-      try {
+    remove: APIMethodWrapper.wrapMethod(
+      (apps, entity, pNode) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'remove' })
         ValidationHelper.assertNotNull(pNode, 'node', { operation: 'remove' })
 
@@ -90,13 +73,12 @@ export const WorldAPIConfig = {
 
         entity.worldNodes.delete(node)
         node.deactivate()
-      } catch (e) {
-        console.error('[WorldAPIConfig.remove]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'remove' }
+    ),
 
-    attach: (apps, entity, pNode) => {
-      try {
+    attach: APIMethodWrapper.wrapMethod(
+      (apps, entity, pNode) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'attach' })
         ValidationHelper.assertNotNull(pNode, 'node', { operation: 'attach' })
 
@@ -121,44 +103,38 @@ export const WorldAPIConfig = {
         finalMatrix.decompose(node.position, node.quaternion, node.scale)
         node.activate({ world: apps.world, entity })
         entity.worldNodes.add(node)
-      } catch (e) {
-        console.error('[WorldAPIConfig.attach]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'attach' }
+    ),
 
-    on: (apps, entity, name, callback) => {
-      try {
+    on: APIMethodWrapper.wrapMethod(
+      (apps, entity, name, callback) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'on', eventName: name })
         ValidationHelper.assertIsString(name, 'name', { operation: 'on' })
         ValidationHelper.assertNotNull(callback, 'callback', { operation: 'on' })
 
         entity.onWorldEvent(name, callback)
-      } catch (e) {
-        console.error('[WorldAPIConfig.on]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'on' }
+    ),
 
-    off: (apps, entity, name, callback) => {
-      try {
+    off: APIMethodWrapper.wrapMethod(
+      (apps, entity, name, callback) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'off', eventName: name })
         ValidationHelper.assertIsString(name, 'name', { operation: 'off' })
         ValidationHelper.assertNotNull(callback, 'callback', { operation: 'off' })
 
         entity.offWorldEvent(name, callback)
-      } catch (e) {
-        console.error('[WorldAPIConfig.off]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'off' }
+    ),
 
-    emit: (apps, entity, name, data) => {
-      try {
+    emit: APIMethodWrapper.wrapMethod(
+      (apps, entity, name, data) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'emit', eventName: name })
         ValidationHelper.assertIsString(name, 'name', { operation: 'emit' })
 
-        const internalEvents = [
-          'fixedUpdate', 'updated', 'lateUpdate', 'destroy',
-          'enter', 'leave', 'chat', 'command', 'health',
-        ]
+        const internalEvents = SYSTEM_INTERNAL_EVENTS
         if (internalEvents.includes(name)) {
           throw new HyperfyError('PERMISSION_DENIED', `apps cannot emit internal events (${name})`, {
             eventName: name,
@@ -171,58 +147,50 @@ export const WorldAPIConfig = {
         }
 
         apps.world.events.emit(name, data)
-      } catch (e) {
-        console.error('[WorldAPIConfig.emit]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'emit' }
+    ),
 
-    getTime: (apps, entity) => {
-      try {
+    getTime: APIMethodWrapper.wrapMethod(
+      (apps, entity) => {
         if (!apps?.world?.network) {
           throw new HyperfyError('INVALID_STATE', 'Network system not available', { operation: 'getTime' })
         }
         return apps.world.network.getTime()
-      } catch (e) {
-        console.error('[WorldAPIConfig.getTime]', e.message)
-        return Date.now()
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'getTime', defaultReturn: Date.now }
+    ),
 
-    getTimestamp: (apps, entity, format) => {
-      try {
+    getTimestamp: APIMethodWrapper.wrapMethod(
+      (apps, entity, format) => {
         if (!format) return moment().toISOString()
         return moment().format(format)
-      } catch (e) {
-        console.error('[WorldAPIConfig.getTimestamp]', e.message)
-        return moment().toISOString()
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'getTimestamp', defaultReturn: moment().toISOString }
+    ),
 
-    chat: (apps, entity, msg, broadcast) => {
-      try {
+    chat: APIMethodWrapper.wrapMethod(
+      (apps, entity, msg, broadcast) => {
         ValidationHelper.assertNotNull(msg, 'msg', { operation: 'chat' })
         if (!apps?.world?.chat) {
           throw new HyperfyError('INVALID_STATE', 'Chat system not available', { operation: 'chat' })
         }
         apps.world.chat.add(msg, broadcast)
-      } catch (e) {
-        console.error('[WorldAPIConfig.chat]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'chat' }
+    ),
 
-    getPlayer: (apps, entity, playerId) => {
-      try {
+    getPlayer: APIMethodWrapper.wrapMethod(
+      (apps, entity, playerId) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'getPlayer' })
         ValidationHelper.assertIsString(playerId, 'playerId', { operation: 'getPlayer' })
         return entity.getPlayerProxy(playerId)
-      } catch (e) {
-        console.error('[WorldAPIConfig.getPlayer]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'getPlayer' }
+    ),
 
-    getPlayers: (apps, entity) => {
-      try {
+    getPlayers: APIMethodWrapper.wrapMethod(
+      (apps, entity) => {
         ValidationHelper.assertEntityValid(entity, { operation: 'getPlayers' })
 
         const players = []
@@ -230,14 +198,12 @@ export const WorldAPIConfig = {
           players.push(entity.getPlayerProxy(player.data.id))
         })
         return players
-      } catch (e) {
-        console.error('[WorldAPIConfig.getPlayers]', e.message)
-        return []
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'getPlayers', defaultReturn: [] }
+    ),
 
-    createLayerMask: (apps, entity, ...groups) => {
-      try {
+    createLayerMask: APIMethodWrapper.wrapMethod(
+      (apps, entity, ...groups) => {
         let mask = 0
         for (const group of groups) {
           if (!Layers[group]) {
@@ -249,14 +215,12 @@ export const WorldAPIConfig = {
           mask |= Layers[group].group
         }
         return mask
-      } catch (e) {
-        console.error('[WorldAPIConfig.createLayerMask]', e.message)
-        return 0
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'createLayerMask', defaultReturn: 0 }
+    ),
 
-    raycast: (apps, entity, origin, direction, maxDistance, layerMask) => {
-      try {
+    raycast: APIMethodWrapper.wrapMethod(
+      (apps, entity, origin, direction, maxDistance, layerMask) => {
         ValidationHelper.assertIsVector3(origin, 'origin', { operation: 'raycast' })
         ValidationHelper.assertIsVector3(direction, 'direction', { operation: 'raycast' })
 
@@ -291,14 +255,12 @@ export const WorldAPIConfig = {
         apps.raycastHit.tag = hit.handle?.tag
         apps.raycastHit.playerId = hit.handle?.playerId
         return apps.raycastHit
-      } catch (e) {
-        console.error('[WorldAPIConfig.raycast]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'raycast' }
+    ),
 
-    overlapSphere: (apps, entity, radius, origin, layerMask) => {
-      try {
+    overlapSphere: APIMethodWrapper.wrapMethod(
+      (apps, entity, radius, origin, layerMask) => {
         ValidationHelper.assertIsNumber(radius, 'radius', { operation: 'overlapSphere' })
         ValidationHelper.assertIsVector3(origin, 'origin', { operation: 'overlapSphere' })
 
@@ -312,33 +274,28 @@ export const WorldAPIConfig = {
 
         const hits = apps.world.physics.overlapSphere(radius, origin, layerMask)
         return hits.map(hit => hit.proxy)
-      } catch (e) {
-        console.error('[WorldAPIConfig.overlapSphere]', e.message)
-        return []
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'overlapSphere', defaultReturn: [] }
+    ),
 
-    get: (apps, entity, key) => {
-      try {
+    get: APIMethodWrapper.wrapMethod(
+      (apps, entity, key) => {
         ValidationHelper.assertIsString(key, 'key', { operation: 'get' })
         return apps.world.storage?.get(key)
-      } catch (e) {
-        console.error('[WorldAPIConfig.get]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'get' }
+    ),
 
-    set: (apps, entity, key, value) => {
-      try {
+    set: APIMethodWrapper.wrapMethod(
+      (apps, entity, key, value) => {
         ValidationHelper.assertIsString(key, 'key', { operation: 'set' })
         apps.world.storage?.set(key, value)
-      } catch (e) {
-        console.error('[WorldAPIConfig.set]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'set' }
+    ),
 
-    open: (apps, entity, url, newWindow = false) => {
-      try {
+    open: APIMethodWrapper.wrapMethod(
+      (apps, entity, url, newWindow = false) => {
         ValidationHelper.assertNotNull(url, 'url', { operation: 'open' })
         ValidationHelper.assertIsString(url, 'url', { operation: 'open' })
 
@@ -361,10 +318,9 @@ export const WorldAPIConfig = {
             url,
           })
         }
-      } catch (e) {
-        console.error('[WorldAPIConfig.open]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'open' }
+    ),
 
     load: (apps, entity, type, url) => {
       return new Promise(async (resolve, reject) => {
@@ -409,8 +365,8 @@ export const WorldAPIConfig = {
       })
     },
 
-    getQueryParam: (apps, entity, key) => {
-      try {
+    getQueryParam: APIMethodWrapper.wrapMethod(
+      (apps, entity, key) => {
         ValidationHelper.assertIsString(key, 'key', { operation: 'getQueryParam' })
 
         if (typeof window === 'undefined') {
@@ -421,14 +377,12 @@ export const WorldAPIConfig = {
 
         const urlParams = new URLSearchParams(window.location.search)
         return urlParams.get(key)
-      } catch (e) {
-        console.error('[WorldAPIConfig.getQueryParam]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'getQueryParam' }
+    ),
 
-    setQueryParam: (apps, entity, key, value) => {
-      try {
+    setQueryParam: APIMethodWrapper.wrapMethod(
+      (apps, entity, key, value) => {
         ValidationHelper.assertIsString(key, 'key', { operation: 'setQueryParam' })
 
         if (typeof window === 'undefined') {
@@ -446,9 +400,8 @@ export const WorldAPIConfig = {
 
         const newUrl = window.location.pathname + '?' + urlParams.toString()
         window.history.replaceState({}, '', newUrl)
-      } catch (e) {
-        console.error('[WorldAPIConfig.setQueryParam]', e.message)
-      }
-    },
+      },
+      { module: 'WorldAPIConfig', method: 'setQueryParam' }
+    ),
   },
 }

@@ -1,5 +1,7 @@
 import { Color } from '../../core/extras/three.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('CurveInterpolators')
 const color1 = new Color()
 
 function toRGB(color) {
@@ -7,7 +9,7 @@ function toRGB(color) {
     color1.set(color)
     return [color1.r, color1.g, color1.b]
   } catch (error) {
-    console.warn(`[particles] color '${color}' could not be parsed, using white instead.`)
+    logger.warn('Color could not be parsed, using white instead', { color })
     return [1, 1, 1]
   }
 }

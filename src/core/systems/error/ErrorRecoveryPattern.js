@@ -1,5 +1,8 @@
 import { HyperfyError } from './ErrorCodes.js'
 import ErrorBoundary from './ErrorBoundary.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ErrorRecoveryPattern')
 
 export class ErrorRecoveryPattern {
   static createErrorContext(systemName) {
@@ -34,7 +37,7 @@ export class ErrorRecoveryPattern {
           try {
             return strategy(hyperfyError, context)
           } catch (strategyErr) {
-            console.error(`[${this.systemName}] Recovery strategy failed:`, strategyErr)
+            logger.error('Recovery strategy failed', { system: this.systemName, error: strategyErr })
             return null
           }
         }
@@ -54,7 +57,7 @@ export class ErrorRecoveryPattern {
             try {
               return fallback(err)
             } catch (fallbackErr) {
-              console.error(`[${this.systemName}] Fallback also failed:`, fallbackErr)
+              logger.error('Fallback also failed', { system: this.systemName, error: fallbackErr })
             }
           }
           return fallback
@@ -73,7 +76,7 @@ export class ErrorRecoveryPattern {
             try {
               return await fallback(err)
             } catch (fallbackErr) {
-              console.error(`[${this.systemName}] Async fallback also failed:`, fallbackErr)
+              logger.error('Async fallback also failed', { system: this.systemName, error: fallbackErr })
             }
           }
           return fallback
@@ -97,52 +100,52 @@ export class ErrorRecoveryPattern {
   static createStandardRecoveries() {
     return {
       NULL_REFERENCE: (error, context) => {
-        console.warn(`[${context.systemName}] Null reference in ${context.operation}:`, error.message)
+        logger.warn('Null reference in operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       INVALID_STATE: (error, context) => {
-        console.warn(`[${context.systemName}] Invalid state for ${context.operation}:`, error.message)
+        logger.warn('Invalid state for operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       RESOURCE_NOT_FOUND: (error, context) => {
-        console.warn(`[${context.systemName}] Resource not found for ${context.operation}:`, error.message)
+        logger.warn('Resource not found for operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       TYPE_MISMATCH: (error, context) => {
-        console.warn(`[${context.systemName}] Type mismatch in ${context.operation}:`, error.message)
+        logger.warn('Type mismatch in operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       INPUT_VALIDATION: (error, context) => {
-        console.warn(`[${context.systemName}] Input validation failed for ${context.operation}:`, error.message)
+        logger.warn('Input validation failed for operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       PERMISSION_DENIED: (error, context) => {
-        console.warn(`[${context.systemName}] Permission denied for ${context.operation}:`, error.message)
+        logger.warn('Permission denied for operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       RESOURCE_LIMIT: (error, context) => {
-        console.warn(`[${context.systemName}] Resource limit exceeded for ${context.operation}:`, error.message)
+        logger.warn('Resource limit exceeded for operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       SCRIPT_ERROR: (error, context) => {
-        console.error(`[${context.systemName}] Script error in ${context.operation}:`, error.message)
+        logger.error('Script error in operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       NETWORK_FAILURE: (error, context) => {
-        console.error(`[${context.systemName}] Network failure in ${context.operation}:`, error.message)
+        logger.error('Network failure in operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
 
       PHYSICS_ERROR: (error, context) => {
-        console.error(`[${context.systemName}] Physics error in ${context.operation}:`, error.message)
+        logger.error('Physics error in operation', { system: context.systemName, operation: context.operation, error: error.message })
         return null
       },
     }

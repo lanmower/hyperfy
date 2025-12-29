@@ -3,7 +3,9 @@ import { isArray, isNumber } from 'lodash-es'
 import { Node } from '../Node.js'
 import { Display, FlexDirection, JustifyContent, AlignItems, AlignContent, FlexWrap } from '../../extras/yoga.js'
 import { fillRoundRect } from '../../extras/roundRect.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('UINodeBase')
 const isBrowser = typeof window !== 'undefined'
 
 export function createYogaPropertyHandlers(res) {
@@ -107,7 +109,7 @@ export class UIChildNode extends Node {
     if (!isBrowser) return
     this.ui = this.parent?.ui
     if (!this.ui) {
-      console.error(`${this.name}: must be child of ui node`)
+      logger.error('Node must be child of UI node', { nodeName: this.name })
       return
     }
     this.yogaNode = this.createYogaNode()

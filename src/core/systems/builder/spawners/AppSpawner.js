@@ -1,5 +1,8 @@
 import { uuid } from '../../../utils-client.js'
 import { importApp } from '../../../extras/appTools.js'
+import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AppSpawner')
 
 export class AppSpawner {
   constructor(entitySpawner) {
@@ -101,7 +104,7 @@ export class AppSpawner {
       await Promise.all(promises)
       app.onUploaded()
     } catch (err) {
-      console.error('Failed to upload .hyp assets:', err)
+      logger.error('Asset upload failed', { error: err.message })
       app.destroy()
     }
   }

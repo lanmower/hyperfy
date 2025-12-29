@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ParticleWorkerCoordinator')
+
 export class ParticleWorkerCoordinator {
   constructor(worker) {
     this.worker = worker
@@ -42,7 +46,7 @@ export class ParticleWorkerCoordinator {
   }
 
   handleWorkerError(error) {
-    console.error('[ParticleWorkerCoordinator]', error)
+    logger.error('Particle worker error', { error: error.message || String(error) })
   }
 
   dispose() {

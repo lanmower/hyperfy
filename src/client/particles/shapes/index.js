@@ -5,6 +5,9 @@ import { createConeShape } from './ConeShape.js'
 import { createBoxShape } from './BoxShape.js'
 import { createCircleShape } from './CircleShape.js'
 import { createRectangleShape } from './RectangleShape.js'
+import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('shapes')
 
 export function createShape(config) {
   const [type, ...args] = config
@@ -24,7 +27,7 @@ export function createShape(config) {
     case 'rectangle':
       return createRectangleShape(...args)
     default:
-      console.warn(`[particles] unknown shape: ${type}, using 'point' as fallback`)
+      logger.warn('Unknown shape type, using point as fallback', { type })
       return createPointShape()
   }
 }

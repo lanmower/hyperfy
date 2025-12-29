@@ -1,7 +1,9 @@
 import * as THREE from '../extras/three.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { System } from './System.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('ClientPointer')
 const PointerEvents = { ENTER: 'pointerenter', LEAVE: 'pointerleave', DOWN: 'pointerdown', UP: 'pointerup' }
 const CURSOR_DEFAULT = 'default'
 
@@ -45,14 +47,14 @@ export class ClientPointer extends System {
     for (let j = oldPath.length - 1; j >= i; j--) {
       if (oldPath[j].onPointerLeave) {
         this.event.set(PointerEvents.LEAVE)
-        try { oldPath[j].onPointerLeave?.(this.event) } catch (err) { console.error(err) }
+        try { oldPath[j].onPointerLeave?.(this.event) } catch (err) { logger.error('Failed to handle pointer leave event', { node: oldPath[j].name, error: err.message }) }
       }
       this.activePath.delete(oldPath[j])
     }
     for (let j = i; j < newPath.length; j++) {
       if (newPath[j].onPointerEnter) {
         this.event.set(PointerEvents.ENTER)
-        try { newPath[j].onPointerEnter?.(this.event) } catch (err) { console.error(err) }
+        try { newPath[j].onPointerEnter?.(this.event) } catch (err) { logger.error('Failed to handle pointer enter event', { node: newPath[j].name, error: err.message }) }
         if (this.event._propagationStopped) break
       }
       this.activePath.add(newPath[j])
@@ -72,7 +74,7 @@ export class ClientPointer extends System {
         const node = newPath[i]
         if (node.onPointerDown) {
           this.event.set(PointerEvents.DOWN)
-          try { node.onPointerDown(this.event) } catch (err) { console.error(err) }
+          try { node.onPointerDown(this.event) } catch (err) { logger.error('Failed to handle pointer down event', { node: node.name, error: err.message }) }
           this.pressedNodes.add(node)
           if (this.event._propagationStopped) break
         }
@@ -82,7 +84,7 @@ export class ClientPointer extends System {
       for (const node of this.pressedNodes) {
         if (node.onPointerUp) {
           this.event.set(PointerEvents.UP)
-          try { node.onPointerUp(this.event) } catch (err) { console.error(err) }
+          try { node.onPointerUp(this.event) } catch (err) { logger.error('Failed to handle pointer up event', { node: node.name, error: err.message }) }
           if (this.event._propagationStopped) break
         }
       }

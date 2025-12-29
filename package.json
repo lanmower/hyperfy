@@ -21,6 +21,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:legacy": "node scripts/build.mjs --dev",
     "build": "node scripts/build.mjs",
+    "build:staging": "node scripts/build.mjs --staging",
     "start": "node build/index.js",
     "world:clean": "node scripts/clean-world.mjs",
     "world:backup": "node scripts/backup-world.mjs",
@@ -30,14 +31,16 @@
     "client:build": "node scripts/build-client.mjs",
     "node-client:dev": "node scripts/build-node-client.mjs --dev",
     "node-client:build": "node scripts/build-node-client.mjs",
+    "analyze": "npm run client:build && node scripts/analyze-bundle.js",
+    "profile:memory": "node --expose-gc scripts/memory-profile.js",
+    "perf:report": "node scripts/performance-report.js",
+    "perf:verify": "node scripts/verify-optimizations.js",
     "lint": "eslint . --ext .js,.jsx",
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "format": "prettier --write .",
     "check": "npm run lint && npm run format",
-    "test:playwright": "playwright test",
-    "test:playwright:ui": "playwright test --ui",
-    "test:playwright:debug": "playwright test --debug",
-    "test:playwright:report": "playwright show-report"
+    "verify": "node src/scripts/verify-deploy.js",
+    "rollback": "node src/scripts/rollback.js"
   },
   "dependencies": {
     "@fastify/compress": "^8.0.1",
@@ -78,8 +81,8 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.23.10",
+    "@babel/preset-env": "^7.28.5",
     "@babel/preset-react": "^7.23.10",
-    "@playwright/test": "^1.48.0",
     "esbuild": "^0.24.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

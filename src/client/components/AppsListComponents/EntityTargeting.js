@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('EntityTargeting')
+
 export class EntityTargeting {
   constructor(world) {
     this.world = world
@@ -9,7 +13,7 @@ export class EntityTargeting {
     const localPlayer = players.find(p => p.isLocal) || players[0]
     const playerPosition = localPlayer?.base?.position
     if (!playerPosition) {
-      console.warn('[EntityTargeting.getClosest] No player position found')
+      logger.warn('No player position found', {})
       return null
     }
 

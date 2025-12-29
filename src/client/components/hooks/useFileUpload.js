@@ -2,6 +2,9 @@ import { useRef, useState } from 'react'
 import { hashFile } from '../../../core/utils-client.js'
 import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { useUpdate } from '../../useUpdate.js'
+import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('useFileUpload')
 
 export const fileKinds = {
   avatar: { type: 'avatar', accept: '.vrm', exts: ['vrm'], placeholder: 'vrm' },
@@ -27,7 +30,7 @@ export function useFileUpload(world, kindName) {
 
     const ext = file.name.split('.').pop().toLowerCase()
     if (!kind.exts.includes(ext)) {
-      console.error(`attempted invalid file extension for ${kindName}: ${ext}`)
+      logger.error('Invalid file extension', { kindName, ext })
       return
     }
 
@@ -59,7 +62,10 @@ export function useFileUpload(world, kindName) {
       await world.loader.loadFile(value.url)
     }
     const file = world.loader.getFile(value.url, value.name)
-    if (!file) return console.error('could not load file')
+    if (!file) {
+      logger.error('Could not load file', { url: value.url })
+      return
+    }
     downloadFile(file)
   }
 

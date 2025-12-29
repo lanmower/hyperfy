@@ -1,6 +1,9 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
 export class LoadTestFramework {
   constructor(world) {
     this.world = world
+    this.logger = new ComponentLogger('LoadTestFramework')
     this.tests = []
     this.running = false
     this.results = []
@@ -11,7 +14,7 @@ export class LoadTestFramework {
   }
 
   async runAll() {
-    console.log('[LoadTest] Starting load test suite')
+    this.logger.info('Starting load test suite')
     this.results = []
 
     for (const test of this.tests) {
@@ -22,7 +25,7 @@ export class LoadTestFramework {
   }
 
   async runTest(test) {
-    console.log(`[LoadTest] Running: ${test.name}`)
+    this.logger.info(`Running: ${test.name}`)
     const startTime = performance.now()
 
     try {
@@ -43,7 +46,7 @@ export class LoadTestFramework {
         duration,
         timestamp: new Date().toISOString(),
       })
-      console.error(`[LoadTest] Failed: ${test.name}`, err)
+      this.logger.error(`Failed: ${test.name}`, err.message)
     }
   }
 
@@ -54,13 +57,14 @@ export class LoadTestFramework {
 
 export function createLoadTests(world) {
   const framework = new LoadTestFramework(world)
+  const logger = framework.logger
 
   framework.registerTest('Single Player Baseline', { duration: 60 }, async (world) => {
     const metrics = world.performanceMonitor.metrics
     metrics.reset()
     await sleep(60000)
     const snapshot = metrics.getSnapshot()
-    console.log('[LoadTest] Single player baseline:', snapshot.frameTime.avg.toFixed(2) + 'ms')
+    logger.info(`Single player baseline: ${snapshot.frameTime.avg.toFixed(2)}ms`)
   })
 
   framework.registerTest('Spawn Entities - 10', { count: 10 }, async (world) => {
@@ -70,7 +74,7 @@ export function createLoadTests(world) {
       await sleep(10)
     }
     const duration = performance.now() - start
-    console.log(`[LoadTest] Spawned 10 entities in ${duration.toFixed(2)}ms (avg ${(duration / 10).toFixed(2)}ms per entity)`)
+    logger.info(`Spawned 10 entities in ${duration.toFixed(2)}ms (avg ${(duration / 10).toFixed(2)}ms per entity)`)
   })
 
   framework.registerTest('Spawn Entities - 50', { count: 50 }, async (world) => {
@@ -82,7 +86,7 @@ export function createLoadTests(world) {
       if (i % 10 === 0) await sleep(5)
     }
     const duration = performance.now() - start
-    console.log(`[LoadTest] Spawned 50 entities in ${duration.toFixed(2)}ms`)
+    logger.info(`Spawned 50 entities in ${duration.toFixed(2)}ms`)
   })
 
   framework.registerTest('Spawn Entities - 100', { count: 100 }, async (world) => {
@@ -92,7 +96,7 @@ export function createLoadTests(world) {
       if (i % 20 === 0) await sleep(5)
     }
     const duration = performance.now() - start
-    console.log(`[LoadTest] Spawned 100 entities in ${duration.toFixed(2)}ms`)
+    logger.info(`Spawned 100 entities in ${duration.toFixed(2)}ms`)
   })
 
   framework.registerTest('Script Count Test - 10', { count: 10 }, async (world) => {
@@ -101,7 +105,7 @@ export function createLoadTests(world) {
       const script = world.scripts.create(`(world, app) => console.log('Script ${i}')`)
       scripts.push(script)
     }
-    console.log(`[LoadTest] Created 10 scripts`)
+    logger.info(`Created 10 scripts`)
   })
 
   framework.registerTest('Physics Simulation - 10 Bodies', { count: 10 }, async (world) => {
@@ -114,7 +118,7 @@ export function createLoadTests(world) {
       })
     }
     const duration = performance.now() - start
-    console.log(`[LoadTest] Created 10 physics bodies in ${duration.toFixed(2)}ms`)
+    logger.info(`Created 10 physics bodies in ${duration.toFixed(2)}ms`)
   })
 
   framework.registerTest('Network Message Flood', { count: 100 }, async (world) => {
@@ -124,17 +128,17 @@ export function createLoadTests(world) {
       if (i % 20 === 0) await sleep(5)
     }
     const duration = performance.now() - start
-    console.log(`[LoadTest] Sent 100 network messages in ${duration.toFixed(2)}ms`)
+    logger.info(`Sent 100 network messages in ${duration.toFixed(2)}ms`)
   })
 
   framework.registerTest('Memory Growth Test - 1 Hour', { duration: 3600 }, async (world) => {
     const metrics = world.performanceMonitor.metrics
     const initialMemory = metrics.memory.current
-    console.log(`[LoadTest] Starting 1-hour memory test (initial: ${initialMemory.toFixed(2)}MB)`)
+    logger.info(`Starting 1-hour memory test (initial: ${initialMemory.toFixed(2)}MB)`)
     await sleep(10000)
     const finalMemory = metrics.memory.current
     const growth = finalMemory - initialMemory
-    console.log(`[LoadTest] Memory after 10s: ${finalMemory.toFixed(2)}MB (growth: ${growth.toFixed(2)}MB)`)
+    logger.info(`Memory after 10s: ${finalMemory.toFixed(2)}MB (growth: ${growth.toFixed(2)}MB)`)
   })
 
   return framework

@@ -1,7 +1,9 @@
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
 import { EmitterFactory } from './particles/EmitterFactory.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('Particles')
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 
 let worker = null
@@ -74,7 +76,7 @@ export class Particles extends System {
   }
 
   onError = err => {
-    console.error('[ParticleSystem]', err)
+    logger.error('Particle system error', { error: err.message })
   }
 
   onXRSession = session => {

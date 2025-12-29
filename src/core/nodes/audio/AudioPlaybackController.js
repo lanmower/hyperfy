@@ -1,4 +1,7 @@
 import { isNumber } from 'lodash-es'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AudioPlaybackController')
 
 export class AudioPlaybackController {
   constructor(audioNode) {
@@ -19,7 +22,7 @@ export class AudioPlaybackController {
       buffer = loader.get('audio', this.node._src)
       if (!buffer) buffer = await loader.load('audio', this.node._src)
     } catch (err) {
-      console.error(err)
+      logger.error('Failed to load audio', { source: this.node._src, error: err.message })
       return
     }
     if (n !== this.node.n) return

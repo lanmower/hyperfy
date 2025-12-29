@@ -1,4 +1,7 @@
 import { System } from '../systems/System.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('BaseNetwork')
 
 export class BaseNetwork extends System {
   constructor(world, handlers = {}) {
@@ -22,7 +25,7 @@ export class BaseNetwork extends System {
           const { type, payload } = JSON.parse(data)
           this.protocol.enqueue(null, type, payload)
         } catch (err) {
-          console.error('Failed to process packet:', err)
+          logger.error('Failed to process packet', { error: err.message })
         }
       },
       getTime: () => {

@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('FileExtractor')
+
 export class FileExtractor {
   async extractFromDrop(e) {
     if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
@@ -21,7 +25,7 @@ export class FileExtractor {
             const filename = new URL(url).pathname.split('/').pop()
             return new File([blob], filename, { type: resp.headers.get('content-type') })
           } catch (err) {
-            console.error('Failed to fetch URL:', err)
+            logger.error('Failed to fetch URL', { url, error: err.message })
             return null
           }
         }

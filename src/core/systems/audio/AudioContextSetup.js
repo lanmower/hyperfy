@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AudioContextSetup')
+
 export class AudioContextSetup {
   static createContext(prefs) {
     const ctx = new AudioContext()
@@ -36,7 +40,7 @@ export class AudioContextSetup {
       while (queue.length) {
         queue.pop()()
       }
-      console.log('[audio] unlocked')
+      logger.info('Audio context unlocked', {})
     }
     const unlock = async () => {
       try {
@@ -51,13 +55,13 @@ export class AudioContextSetup {
           .then(() => {
             video.pause()
             video.remove()
-            console.log('[audio] video played')
+            logger.info('Audio setup video played', {})
           })
           .catch(err => {
-            console.log('[audio] video failed')
+            logger.warn('Audio setup video failed', { error: err.message })
           })
       } catch (err) {
-        console.error(err)
+        logger.error('Audio context resume failed', { error: err.message })
       } finally {
         complete()
       }
@@ -65,6 +69,6 @@ export class AudioContextSetup {
     document.addEventListener('click', unlock)
     document.addEventListener('touchstart', unlock)
     document.addEventListener('keydown', unlock)
-    console.log('[audio] suspended, waiting for interact...')
+    logger.info('Audio context suspended - waiting for user interaction', {})
   }
 }

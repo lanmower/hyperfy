@@ -1,0 +1,29 @@
+=== COMPRESSION TEST ===
+
+Original Data:
+  Size: 23.21 KB
+  Entities: 100
+  Blueprints: 20
+
+Compressed Data:
+  Compressed: true
+  Size: 6.27 KB
+  Ratio: 73.0% reduction
+  Savings: 16.94 KB
+
+Decompression:
+  Success: true
+  Data Integrity: PASS
+
+Compressor Stats:
+  Compressed: 1
+  Uncompressed: 0
+  Ratio: 79.7%
+  Avg Original: 23.21 KB
+  Avg Compressed: 4.70 KB
+
+Small Payload Test (<1KB):
+  Original: {"ping":1766863564596}
+  Compressed: false
+  Reason: Skip compression for payloads <1KB
+

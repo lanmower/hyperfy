@@ -1,4 +1,7 @@
 import { System } from './System.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('BaseLoader')
 
 export class BaseLoader extends System {
   constructor(world) {
@@ -49,7 +52,7 @@ export class BaseLoader extends System {
 
     const handler = this.typeHandlers[type]
     if (!handler) {
-      console.warn(`No handler for asset type: ${type}`)
+      logger.warn('No handler for asset type', { type, url })
       return Promise.resolve(null)
     }
 

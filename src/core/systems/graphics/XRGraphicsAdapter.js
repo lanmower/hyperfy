@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('XRGraphicsAdapter')
+
 export class XRGraphicsAdapter {
   constructor(renderer, renderState) {
     this.renderer = renderer
@@ -19,10 +23,7 @@ export class XRGraphicsAdapter {
       this.renderState.xrWidth = baseLayer.framebufferWidth
       this.renderState.xrHeight = baseLayer.framebufferHeight
       this.renderState.xrDimensionsNeeded = false
-      console.log({
-        xrWidth: this.renderState.xrWidth,
-        xrHeight: this.renderState.xrHeight
-      })
+      logger.info('XR dimensions detected', { xrWidth: this.renderState.xrWidth, xrHeight: this.renderState.xrHeight })
     }
   }
 }

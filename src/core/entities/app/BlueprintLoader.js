@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('BlueprintLoader')
+
 export class BlueprintLoader {
   constructor(app) {
     this.app = app
@@ -14,7 +18,7 @@ export class BlueprintLoader {
 
     const blueprintData = world.blueprints.get(blueprintId)
     if (!blueprintData) {
-      console.warn(`[BlueprintLoader] Blueprint not found: ${blueprintId}`)
+      logger.warn('Blueprint not found', { blueprintId })
       return null
     }
 
@@ -42,7 +46,7 @@ export class BlueprintLoader {
         blueprint: blueprintData,
       }
     } catch (err) {
-      console.error(`[BlueprintLoader] Failed to load blueprint:`, err)
+      logger.error('Failed to load blueprint', { blueprintId, error: err.message })
       return null
     }
   }
@@ -51,7 +55,7 @@ export class BlueprintLoader {
     try {
       const world = this.app.world
       if (!world.loader) {
-        console.warn(`[BlueprintLoader] Loader not available (server-side model loading not supported)`)
+        logger.warn('Loader not available (server-side model loading not supported)')
         return null
       }
       const type = modelUrl.endsWith('.vrm') ? 'avatar' : 'model'
@@ -62,7 +66,7 @@ export class BlueprintLoader {
       }
 
       if (!glb) {
-        console.warn(`[BlueprintLoader] Failed to load model: ${modelUrl}`)
+        logger.warn('Failed to load model', { modelUrl })
         return null
       }
 
@@ -71,7 +75,7 @@ export class BlueprintLoader {
         scene: glb.getScene?.(),
       }
     } catch (err) {
-      console.error(`[BlueprintLoader] Error loading model (${modelUrl}):`, err)
+      logger.error('Error loading model', { modelUrl, error: err.message })
       return null
     }
   }
@@ -81,7 +85,7 @@ export class BlueprintLoader {
       const world = this.app.world
 
       if (!world.loader) {
-        console.warn(`[BlueprintLoader] Loader not available (server-side script loading not supported)`)
+        logger.warn('Loader not available (server-side script loading not supported)')
         return null
       }
 
@@ -91,13 +95,13 @@ export class BlueprintLoader {
       }
 
       if (!scriptCode) {
-        console.warn(`[BlueprintLoader] Failed to load script: ${scriptUrl}`)
+        logger.warn('Failed to load script', { scriptUrl })
         return null
       }
 
       return scriptCode
     } catch (err) {
-      console.error(`[BlueprintLoader] Error loading script (${scriptUrl}):`, err)
+      logger.error('Error loading script', { scriptUrl, error: err.message })
       return null
     }
   }

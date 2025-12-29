@@ -1,7 +1,9 @@
 import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('PlayerCapsuleFactory')
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 const q1 = new THREE.Quaternion()
 const v1 = new THREE.Vector3()
@@ -15,7 +17,7 @@ export class PlayerCapsuleFactory {
   createCapsule(player) {
     const PHYSX = this.world.PHYSX || globalThis.PHYSX
     if (!PHYSX) {
-      console.warn('[PlayerCapsuleFactory] PHYSX not available - world.PHYSX and globalThis.PHYSX both undefined')
+      logger.warn('PHYSX not available - world.PHYSX and globalThis.PHYSX both undefined', {})
       return { capsule: null, capsuleHandle: null, material: null }
     }
     const radius = player.capsuleRadius

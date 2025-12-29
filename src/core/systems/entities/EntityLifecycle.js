@@ -1,4 +1,7 @@
 import { EVENT } from '../../constants/EventNames.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('EntityLifecycle')
 
 export class EntityLifecycle {
   constructor(world, entities) {
@@ -8,7 +11,7 @@ export class EntityLifecycle {
 
   remove(id) {
     const entity = this.entities.items.get(id)
-    if (!entity) return console.warn(`tried to remove entity that did not exist: ${id}`)
+    if (!entity) return logger.warn('Attempted to remove non-existent entity', { entityId: id })
     if (entity.isPlayer) this.entities.players.delete(entity.data.id)
     entity.destroy()
     this.entities.items.delete(id)

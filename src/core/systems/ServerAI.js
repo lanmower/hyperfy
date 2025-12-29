@@ -4,8 +4,10 @@ import Anthropic, { toFile } from '@anthropic-ai/sdk'
 import { OpenAI } from 'openai'
 import { fileURLToPath } from 'url'
 
+import { AIProviderConfig } from '../../server/config/AIProviderConfig.js'
 import { System } from './System.js'
 import { hashFile } from '../utils-server.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -14,6 +16,7 @@ const prefix = `app.remove(app.get('Block'))
 `
 
 const docs = fs.readFileSync(path.join(__dirname, '../client/public/ai-docs.md'), 'utf8')
+const logger = new ComponentLogger('ServerAI')
 
 export class ServerAI extends System {
   constructor(world) {
@@ -67,7 +70,7 @@ export class ServerAI extends System {
   }
 
   async create({ blueprintId, appId, prompt }) {
-    console.log('[ai] creating...')
+    logger.info('creating...')
     this.classify({ blueprintId, prompt })
     const startAt = performance.now()
     let output = await this.client.create(prompt)
@@ -75,7 +78,7 @@ export class ServerAI extends System {
     const changelog = [`create: ${prompt}`]
     const code = prefix + writeChangelog(output, changelog)
     const elapsed = (performance.now() - startAt) / 1000
-    console.log(`[ai] created in ${elapsed}s`)
+    logger.info(`created in ${elapsed}s`)
     const file = new File([code], 'script.js', { type: 'text/plain' })
     const fileContent = await file.arrayBuffer()
     const hash = await hashFile(Buffer.from(fileContent))
@@ -91,9 +94,9 @@ export class ServerAI extends System {
   }
 
   async edit({ blueprintId, appId, prompt }) {
-    console.log('[ai] editing...')
+    logger.info('editing...')
     let blueprint = this.world.blueprints.get(blueprintId)
-    if (!blueprint) return console.error('[ai] edit blueprint but blueprint not found')
+    if (!blueprint) return logger.error('edit blueprint but blueprint not found')
     let script = this.world.loader.get('script', blueprint.script)
     if (!script) script = await this.world.loader.load('script', blueprint.script)
     const startAt = performance.now()
@@ -104,7 +107,7 @@ export class ServerAI extends System {
     output = stripCodeFences(output)
     const newCode = prefix + writeChangelog(output, changelog)
     const elapsed = (performance.now() - startAt) / 1000
-    console.log(`[ai] edited in ${elapsed}s`)
+    logger.info(`edited in ${elapsed}s`)
     const file = new File([newCode], 'script.js', { type: 'text/plain' })
     const fileContent = await file.arrayBuffer()
     const hash = await hashFile(Buffer.from(fileContent))
@@ -120,9 +123,9 @@ export class ServerAI extends System {
   }
 
   async fix({ blueprintId, appId, error }) {
-    console.log('[ai] fixing...')
+    logger.info('fixing...')
     let blueprint = this.world.blueprints.get(blueprintId)
-    if (!blueprint) return console.error('[ai] fix blueprint but blueprint not found')
+    if (!blueprint) return logger.error('fix blueprint but blueprint not found')
     let script = this.world.loader.get('script', blueprint.script)
     if (!script) script = await this.world.loader.load('script', blueprint.script)
     const startAt = performance.now()
@@ -132,7 +135,7 @@ export class ServerAI extends System {
     output = stripCodeFences(output)
     const newCode = prefix + writeChangelog(output, changelog)
     const elapsed = (performance.now() - startAt) / 1000
-    console.log(`[ai] fixed in ${elapsed}s`)
+    logger.info(`fixed in ${elapsed}s`)
     const file = new File([newCode], 'script.js', { type: 'text/plain' })
     const fileContent = await file.arrayBuffer()
     const hash = await hashFile(Buffer.from(fileContent))
@@ -163,10 +166,26 @@ class OpenAIClient {
     this.client = new OpenAI({ apiKey })
     this.model = model
     this.effort = effort
+    this.logger = new ComponentLogger('OpenAI')
+  }
+
+  async wrapCall(fn, operation) {
+    try {
+      return await fn()
+    } catch (err) {
+      this.logger.error(`${operation} error:`, err.message)
+      throw err
+    }
+  }
+
+  validateResponse(resp, operation) {
+    if (!resp || !resp.output_text) {
+      throw new Error(`${operation}: API response missing output_text field`)
+    }
   }
 
   async create(prompt) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.responses.create({
         model: this.model,
         reasoning: { effort: this.effort },
@@ -176,18 +195,13 @@ class OpenAIClient {
           You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
         input: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
       })
-      if (!resp || !resp.output_text) {
-        throw new Error('OpenAI API response missing output_text field')
-      }
+      this.validateResponse(resp, 'create')
       return resp.output_text
-    } catch (err) {
-      console.error('[ai] OpenAI create error:', err.message)
-      throw err
-    }
+    }, 'create')
   }
 
   async edit(code, prompt) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.responses.create({
         model: this.model,
         reasoning: { effort: this.effort },
@@ -200,18 +214,13 @@ class OpenAIClient {
           ${code}`,
         input: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
       })
-      if (!resp || !resp.output_text) {
-        throw new Error('OpenAI API response missing output_text field')
-      }
+      this.validateResponse(resp, 'edit')
       return resp.output_text
-    } catch (err) {
-      console.error('[ai] OpenAI edit error:', err.message)
-      throw err
-    }
+    }, 'edit')
   }
 
   async fix(code, error) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.responses.create({
         model: this.model,
         reasoning: { effort: this.effort },
@@ -224,32 +233,22 @@ class OpenAIClient {
           ${code}`,
         input: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
       })
-      if (!resp || !resp.output_text) {
-        throw new Error('OpenAI API response missing output_text field')
-      }
+      this.validateResponse(resp, 'fix')
       return resp.output_text
-    } catch (err) {
-      console.error('[ai] OpenAI fix error:', err.message)
-      throw err
-    }
+    }, 'fix')
   }
 
   async classify(prompt) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.responses.create({
         model: this.model,
         reasoning: { effort: this.effort },
         instructions: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
         input: `Please classify the following prompt:\n\n"${prompt}"`,
       })
-      if (!resp || !resp.output_text) {
-        throw new Error('OpenAI API response missing output_text field')
-      }
+      this.validateResponse(resp, 'classify')
       return resp.output_text
-    } catch (err) {
-      console.error('[ai] OpenAI classify error:', err.message)
-      throw err
-    }
+    }, 'classify')
   }
 }
 
@@ -258,10 +257,29 @@ class AnthropicClient {
     this.client = new Anthropic({ apiKey })
     this.model = model
     this.maxTokens = 8192
+    this.logger = new ComponentLogger('Anthropic')
+  }
+
+  async wrapCall(fn, operation) {
+    try {
+      return await fn()
+    } catch (err) {
+      this.logger.error(`${operation} error:`, err.message)
+      throw err
+    }
+  }
+
+  validateResponse(resp, operation) {
+    if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
+      throw new Error(`${operation}: API returned empty content array`)
+    }
+    if (!resp.content[0].text) {
+      throw new Error(`${operation}: API response missing text field`)
+    }
   }
 
   async create(prompt) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.messages.create({
         model: this.model,
         max_tokens: this.maxTokens,
@@ -276,21 +294,13 @@ class AnthropicClient {
           },
         ],
       })
-      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
-        throw new Error('Anthropic API returned empty content array')
-      }
-      if (!resp.content[0].text) {
-        throw new Error('Anthropic API response missing text field')
-      }
+      this.validateResponse(resp, 'create')
       return resp.content[0].text
-    } catch (err) {
-      console.error('[ai] Anthropic create error:', err.message)
-      throw err
-    }
+    }, 'create')
   }
 
   async edit(code, prompt) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.messages.create({
         model: this.model,
         max_tokens: this.maxTokens,
@@ -308,21 +318,13 @@ class AnthropicClient {
           },
         ],
       })
-      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
-        throw new Error('Anthropic API returned empty content array')
-      }
-      if (!resp.content[0].text) {
-        throw new Error('Anthropic API response missing text field')
-      }
+      this.validateResponse(resp, 'edit')
       return resp.content[0].text
-    } catch (err) {
-      console.error('[ai] Anthropic edit error:', err.message)
-      throw err
-    }
+    }, 'edit')
   }
 
   async fix(code, error) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.messages.create({
         model: this.model,
         max_tokens: this.maxTokens,
@@ -340,21 +342,13 @@ class AnthropicClient {
           },
         ],
       })
-      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
-        throw new Error('Anthropic API returned empty content array')
-      }
-      if (!resp.content[0].text) {
-        throw new Error('Anthropic API response missing text field')
-      }
+      this.validateResponse(resp, 'fix')
       return resp.content[0].text
-    } catch (err) {
-      console.error('[ai] Anthropic fix error:', err.message)
-      throw err
-    }
+    }, 'fix')
   }
 
   async classify(prompt) {
-    try {
+    return this.wrapCall(async () => {
       const resp = await this.client.messages.create({
         model: this.model,
         max_tokens: this.maxTokens,
@@ -366,17 +360,9 @@ class AnthropicClient {
           },
         ],
       })
-      if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
-        throw new Error('Anthropic API returned empty content array')
-      }
-      if (!resp.content[0].text) {
-        throw new Error('Anthropic API response missing text field')
-      }
+      this.validateResponse(resp, 'classify')
       return resp.content[0].text
-    } catch (err) {
-      console.error('[ai] Anthropic classify error:', err.message)
-      throw err
-    }
+    }, 'classify')
   }
 }
 
@@ -384,372 +370,231 @@ class XAIClient {
   constructor(apiKey, model) {
     this.apiKey = apiKey
     this.model = model
-    this.url = 'https://api.x.ai/v1/chat/completions'
+    this.url = AIProviderConfig.providers.xai.apiEndpoint + '/chat/completions'
+    this.logger = new ComponentLogger('XAI')
+  }
+
+  async wrapCall(fn, operation) {
+    try {
+      return await fn()
+    } catch (err) {
+      this.logger.error(`${operation} error:`, err.message)
+      throw err
+    }
+  }
+
+  validateResponse(data, operation) {
+    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      throw new Error(`${operation}: API returned empty choices array`)
+    }
+    if (!data.choices[0].message || !data.choices[0].message.content) {
+      throw new Error(`${operation}: API response missing message.content field`)
+    }
+  }
+
+  async fetchResponse(messages, operation) {
+    const resp = await fetch(this.url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.model,
+        stream: false,
+        messages,
+      }),
+    })
+    if (!resp.ok) {
+      throw new Error(`${operation}: API returned ${resp.status} ${resp.statusText}`)
+    }
+    return resp.json()
   }
 
   async create(prompt) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse([
+        {
+          role: 'system',
+          content: `
+            ${docs}
+            ===============
+            You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
         },
-        body: JSON.stringify({
-          model: this.model,
-          stream: false,
-          messages: [
-            {
-              role: 'system',
-              content: `
-                ${docs}
-                ===============
-                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
-            },
-            {
-              role: 'user',
-              content: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-        throw new Error('XAI API returned empty choices array')
-      }
-      if (!data.choices[0].message || !data.choices[0].message.content) {
-        throw new Error('XAI API response missing message.content field')
-      }
+        {
+          role: 'user',
+          content: `Respond with the javascript needed to generate the following:\n\n"${prompt}"`,
+        },
+      ], 'create')
+      this.validateResponse(data, 'create')
       return data.choices[0].message.content
-    } catch (err) {
-      console.error('[ai] XAI create error:', err.message)
-      throw err
-    }
+    }, 'create')
   }
 
   async edit(code, prompt) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse([
+        {
+          role: 'system',
+          content: `
+            ${docs}
+            ===============
+            You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+            Here is the existing script that you will be working with:
+            ===============
+            ${code}`,
         },
-        body: JSON.stringify({
-          model: this.model,
-          stream: false,
-          messages: [
-            {
-              role: 'system',
-              content: `
-                ${docs}
-                ===============
-                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-                Here is the existing script that you will be working with:
-                ===============
-                ${code}`,
-            },
-            {
-              role: 'user',
-              content: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-        throw new Error('XAI API returned empty choices array')
-      }
-      if (!data.choices[0].message || !data.choices[0].message.content) {
-        throw new Error('XAI API response missing message.content field')
-      }
+        {
+          role: 'user',
+          content: `Please edit the code above to satisfy the following request:\n\n"${prompt}"`,
+        },
+      ], 'edit')
+      this.validateResponse(data, 'edit')
       return data.choices[0].message.content
-    } catch (err) {
-      console.error('[ai] XAI edit error:', err.message)
-      throw err
-    }
+    }, 'edit')
   }
 
   async fix(code, error) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse([
+        {
+          role: 'system',
+          content: `
+            ${docs}
+            ===============
+            You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+            Here is the existing script that you will be working with:
+            ===============
+            ${code}`,
         },
-        body: JSON.stringify({
-          model: this.model,
-          stream: false,
-          messages: [
-            {
-              role: 'system',
-              content: `
-                ${docs}
-                ===============
-                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-                Here is the existing script that you will be working with:
-                ===============
-                ${code}`,
-            },
-            {
-              role: 'user',
-              content: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-        throw new Error('XAI API returned empty choices array')
-      }
-      if (!data.choices[0].message || !data.choices[0].message.content) {
-        throw new Error('XAI API response missing message.content field')
-      }
+        {
+          role: 'user',
+          content: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`,
+        },
+      ], 'fix')
+      this.validateResponse(data, 'fix')
       return data.choices[0].message.content
-    } catch (err) {
-      console.error('[ai] XAI fix error:', err.message)
-      throw err
-    }
+    }, 'fix')
   }
 
   async classify(prompt) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse([
+        {
+          role: 'system',
+          content: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
         },
-        body: JSON.stringify({
-          model: this.model,
-          stream: false,
-          messages: [
-            {
-              role: 'system',
-              content: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
-            },
-            {
-              role: 'user',
-              content: `Please classify the following prompt:\n\n"${prompt}"`,
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`XAI API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-        throw new Error('XAI API returned empty choices array')
-      }
-      if (!data.choices[0].message || !data.choices[0].message.content) {
-        throw new Error('XAI API response missing message.content field')
-      }
+        {
+          role: 'user',
+          content: `Please classify the following prompt:\n\n"${prompt}"`,
+        },
+      ], 'classify')
+      this.validateResponse(data, 'classify')
       return data.choices[0].message.content
-    } catch (err) {
-      console.error('[ai] XAI classify error:', err.message)
-      throw err
-    }
+    }, 'classify')
   }
 }
 
 class GoogleClient {
   constructor(apiKey, model) {
     this.apiKey = apiKey
-    this.url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    this.url = `${AIProviderConfig.providers.google.apiEndpoint}/v1beta/models/${model}:generateContent`
+    this.logger = new ComponentLogger('Google')
+  }
+
+  async wrapCall(fn, operation) {
+    try {
+      return await fn()
+    } catch (err) {
+      this.logger.error(`${operation} error:`, err.message)
+      throw err
+    }
+  }
+
+  validateResponse(data, operation) {
+    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+      throw new Error(`${operation}: API returned empty candidates array`)
+    }
+    if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
+      throw new Error(`${operation}: API response missing content.parts`)
+    }
+    if (!data.candidates[0].content.parts[0].text) {
+      throw new Error(`${operation}: API response missing text field`)
+    }
+  }
+
+  async fetchResponse(systemInstruction, userContent, operation) {
+    const resp = await fetch(this.url, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': this.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: {
+            text: systemInstruction,
+          },
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: userContent }],
+          },
+        ],
+      }),
+    })
+    if (!resp.ok) {
+      throw new Error(`${operation}: API returned ${resp.status} ${resp.statusText}`)
+    }
+    return resp.json()
   }
 
   async create(prompt) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: {
-              text: `
-                ${docs}
-                ===============
-                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`,
-            },
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `Respond with the javascript needed to generate the following:\n\n"${prompt}"` }],
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-        throw new Error('Google API returned empty candidates array')
-      }
-      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
-        throw new Error('Google API response missing content.parts')
-      }
-      if (!data.candidates[0].content.parts[0].text) {
-        throw new Error('Google API response missing text field')
-      }
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse(`
+        ${docs}
+        ===============
+        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.`, `Respond with the javascript needed to generate the following:\n\n"${prompt}"`, 'create')
+      this.validateResponse(data, 'create')
       return data.candidates[0].content.parts[0].text
-    } catch (err) {
-      console.error('[ai] Google create error:', err.message)
-      throw err
-    }
+    }, 'create')
   }
 
   async edit(code, prompt) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: {
-              text: `
-                ${docs}
-                ===============
-                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-                Here is the existing script that you will be working with:
-                ===============
-                ${code}`,
-            },
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `Please edit the code above to satisfy the following request:\n\n"${prompt}"` }],
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-        throw new Error('Google API returned empty candidates array')
-      }
-      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
-        throw new Error('Google API response missing content.parts')
-      }
-      if (!data.candidates[0].content.parts[0].text) {
-        throw new Error('Google API response missing text field')
-      }
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse(`
+        ${docs}
+        ===============
+        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+        Here is the existing script that you will be working with:
+        ===============
+        ${code}`, `Please edit the code above to satisfy the following request:\n\n"${prompt}"`, 'edit')
+      this.validateResponse(data, 'edit')
       return data.candidates[0].content.parts[0].text
-    } catch (err) {
-      console.error('[ai] Google edit error:', err.message)
-      throw err
-    }
+    }, 'edit')
   }
 
   async fix(code, error) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: {
-              text: `
-                ${docs}
-                ===============
-                You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
-                Here is the existing script that you will be working with:
-                ===============
-                ${code}`,
-            },
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"` }],
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-        throw new Error('Google API returned empty candidates array')
-      }
-      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
-        throw new Error('Google API response missing content.parts')
-      }
-      if (!data.candidates[0].content.parts[0].text) {
-        throw new Error('Google API response missing text field')
-      }
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse(`
+        ${docs}
+        ===============
+        You are an artist and code generator. Always respond with raw code only, never use markdown code blocks or any other formatting.
+        Here is the existing script that you will be working with:
+        ===============
+        ${code}`, `This code has an error please fix it:\n\n"${JSON.stringify(error, null, 2)}"`, 'fix')
+      this.validateResponse(data, 'fix')
       return data.candidates[0].content.parts[0].text
-    } catch (err) {
-      console.error('[ai] Google fix error:', err.message)
-      throw err
-    }
+    }, 'fix')
   }
 
   async classify(prompt) {
-    try {
-      const resp = await fetch(this.url, {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: {
-              text: `You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`,
-            },
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `Please classify the following prompt:\n\n"${prompt}"` }],
-            },
-          ],
-        }),
-      })
-      if (!resp.ok) {
-        throw new Error(`Google API returned ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-        throw new Error('Google API returned empty candidates array')
-      }
-      if (!data.candidates[0].content || !Array.isArray(data.candidates[0].content.parts) || data.candidates[0].content.parts.length === 0) {
-        throw new Error('Google API response missing content.parts')
-      }
-      if (!data.candidates[0].content.parts[0].text) {
-        throw new Error('Google API response missing text field')
-      }
+    return this.wrapCall(async () => {
+      const data = await this.fetchResponse(`You are a classifier. We will give you a prompt that a user has entered to generate a 3D object and your job is respond with a short name for the object. For example if someone prompts "a cool gamer desk with neon lights" you would respond with something like "Gamer Desk" because it is a short descriptive name that captures the essence of the object.`, `Please classify the following prompt:\n\n"${prompt}"`, 'classify')
+      this.validateResponse(data, 'classify')
       return data.candidates[0].content.parts[0].text
-    } catch (err) {
-      console.error('[ai] Google classify error:', err.message)
-      throw err
-    }
+    }, 'classify')
   }
 }
 

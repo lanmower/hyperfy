@@ -7,11 +7,15 @@ import { Curve } from '../extras/Curve.js'
 import { prng } from '../extras/prng.js'
 import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
 import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Scripts')
 
 
 export class Scripts extends System {
   constructor(world) {
     super(world)
+    const scriptLogger = new ComponentLogger('ScriptExecution')
     this.compartment = new Compartment({
       console: {
         log: (...args) => console.log(...args),
@@ -19,6 +23,9 @@ export class Scripts extends System {
         error: (...args) => console.error(...args),
         time: (...args) => console.time(...args),
         timeEnd: (...args) => console.timeEnd(...args),
+      },
+      scriptLogger: {
+        error: (message, context) => scriptLogger.error(message, context),
       },
       Date: {
         now: () => Date.now(),
@@ -78,7 +85,7 @@ function wrapRawCode(code) {
       try {
         ${code}
       } catch (err) {
-        console.error('[Script] Error executing app script:', err.message)
+        scriptLogger.error('Error executing app script', { error: err.message })
       }
     }
   })()

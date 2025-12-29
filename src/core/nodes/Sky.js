@@ -3,6 +3,9 @@ import { defineProps } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import * as THREE from '../extras/three.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Sky')
 
 const rebuild = () => function() { this.needsRebuild = true; this.setDirty() }
 const propertySchema = schema('bg', 'hdr', 'rotationY', 'sunDirection', 'sunIntensity', 'fogNear', 'fogFar', 'fogColor')
@@ -27,9 +30,9 @@ export class Sky extends Node {
   }
 
   mount() {
-    console.log('[Sky.mount] called', { hasCtx: !!this.ctx, hasWorld: !!this.ctx?.world })
+    logger.info('Sky mount started', { hasCtx: !!this.ctx, hasWorld: !!this.ctx?.world })
     this.handle = this.ctx.world.environment.addSky?.(this)
-    console.log('[Sky.mount] completed', { handleSet: !!this.handle })
+    logger.info('Sky mount completed', { handleSet: !!this.handle })
   }
 
   commit(didMove) {

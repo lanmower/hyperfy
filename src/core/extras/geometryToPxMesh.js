@@ -1,6 +1,8 @@
 import * as THREE from './three.js'
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('GeometryToPxMesh')
 const cache = new Map()
 
 class PMeshHandle {
@@ -88,8 +90,7 @@ export function geometryToPxMesh(world, geometry, convex) {
     try {
       pmesh = PHYSX.CreateTriangleMesh(cookingParams, desc)
     } catch (err) {
-      console.error('geometryToPxMesh failed...')
-      console.error(err)
+      logger.error('Triangle mesh creation failed', { error: err.message })
     } finally {
       PHYSX._webidl_free(indexPtr)
     }

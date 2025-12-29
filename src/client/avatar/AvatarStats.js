@@ -1,4 +1,5 @@
 import { Ranks } from '../../core/extras/ranks.js'
+import { AvatarConfig } from '../config/AvatarConfig.js'
 
 const materialSlots = [
   'alphaMap',
@@ -57,10 +58,9 @@ export class AvatarStats {
         info.textureBytes += width * height * bytesPerPixel
       }
     })
-    const MB = 1024 * 1024
-    if (info.fileSize > 10 * MB || info.textureBytes > 32 * MB || info.triangles > 100000) {
+    if (info.fileSize > AvatarConfig.limits.maxFileSize || info.textureBytes > AvatarConfig.limits.maxTextureBytes || info.triangles > AvatarConfig.limits.maxTriangles) {
       info.rank = Ranks.ADMIN
-    } else if (info.fileSize > 5 * MB || info.textureBytes > 16 * MB || info.triangles > 50000) {
+    } else if (info.fileSize > AvatarConfig.limits.builderFileSize || info.textureBytes > AvatarConfig.limits.builderTextureBytes || info.triangles > AvatarConfig.limits.builderTriangles) {
       info.rank = Ranks.BUILDER
     }
     return info

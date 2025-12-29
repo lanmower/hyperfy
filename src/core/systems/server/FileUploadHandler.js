@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('FileUploadHandler')
+
 export class FileUploadHandler {
   constructor(serverNetwork) {
     this.serverNetwork = serverNetwork
@@ -26,7 +30,7 @@ export class FileUploadHandler {
       })
 
     } catch (error) {
-      console.error('File upload error:', error)
+      logger.error('File upload failed', { filename: data.filename, error: error.message })
       socket.send('fileUploadError', {
         filename: data.filename,
         error: error.message
@@ -46,7 +50,7 @@ export class FileUploadHandler {
         record
       })
     } catch (error) {
-      console.error('File upload check error:', error)
+      logger.error('File upload check failed', { hash: data.hash, error: error.message })
       socket.send('fileUploadCheckResult', {
         hash: data.hash,
         exists: false,
@@ -65,7 +69,7 @@ export class FileUploadHandler {
         storage: storageStats
       })
     } catch (error) {
-      console.error('File upload stats error:', error)
+      logger.error('Failed to get file upload stats', { error: error.message })
       socket.send('fileUploadStats', {
         error: error.message
       })

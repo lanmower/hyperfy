@@ -6,6 +6,9 @@ import { createVRMFactory } from '../../extras/createVRMFactory.js'
 import { createNode } from '../../extras/createNode.js'
 import { createVideoFactory } from './VideoFactory.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AssetHandlers')
 
 export class AssetHandlers {
   constructor(clientLoader, world) {
@@ -19,6 +22,7 @@ export class AssetHandlers {
     this.resolveURL = world.resolveURL
     this.setupMaterial = world.setupMaterial
     this.results = clientLoader.results
+    this.fallbackManager = clientLoader.fallbackManager
     this.vrmHooks = null
     this.registry = new AssetHandlerRegistry()
     this.insertRegistry = new AssetHandlerRegistry()
@@ -169,6 +173,14 @@ export class AssetHandlers {
       const model = this.createModelResult(glbToNodes(glb, this.world), file, glb.scene)
       this.results.set(key, model)
       return model
+    }).catch(err => {
+      logger.error('Model parse error', { url, error: err.message })
+      const fallback = this.fallbackManager.getFallback('model', url, err)
+      if (fallback) {
+        this.results.set(key, fallback)
+        return fallback
+      }
+      throw err
     })
   }
 
@@ -195,6 +207,14 @@ export class AssetHandlers {
       const script = this.scripts.evaluate(code)
       this.results.set(key, script)
       return script
+    }).catch(err => {
+      logger.error('Script evaluation error', { url, error: err.message })
+      const fallback = this.fallbackManager.getFallback('script', url, err)
+      if (fallback) {
+        this.results.set(key, fallback)
+        return fallback
+      }
+      throw err
     })
   }
 
@@ -204,6 +224,14 @@ export class AssetHandlers {
     ).then(audioBuffer => {
       this.results.set(key, audioBuffer)
       return audioBuffer
+    }).catch(err => {
+      logger.error('Audio decode error', { url, error: err.message })
+      const fallback = this.fallbackManager.getFallback('audio', url, err)
+      if (fallback) {
+        this.results.set(key, fallback)
+        return fallback
+      }
+      throw err
     })
   }
 

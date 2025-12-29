@@ -1,6 +1,28 @@
 import { HyperfyError } from './ErrorCodes.js'
 
+/**
+ * @typedef {Object} ValidationContext
+ * @property {string} [operation]
+ * @property {string} [operationName]
+ * @property {string} [paramName]
+ * @property {*} [value]
+ * @property {string} [entity]
+ */
+
+/**
+ * Validation helper for type checking and assertion
+ * Centralizes all parameter validation to reduce duplication
+ * @class
+ */
 export class ValidationHelper {
+  /**
+   * Assert value is not null or undefined
+   * @param {*} value
+   * @param {string} paramName
+   * @param {ValidationContext} context
+   * @returns {*} The validated value
+   * @throws {HyperfyError} If value is null or undefined
+   */
   static assertNotNull(value, paramName, context = {}) {
     if (value === null || value === undefined) {
       throw new HyperfyError('NULL_REFERENCE', `Parameter ${paramName} is null or undefined`, {
@@ -11,6 +33,15 @@ export class ValidationHelper {
     return value
   }
 
+  /**
+   * Assert value is of expected type
+   * @param {*} value
+   * @param {string} expectedType
+   * @param {string} paramName
+   * @param {ValidationContext} context
+   * @returns {*}
+   * @throws {HyperfyError} If type doesn't match
+   */
   static assertType(value, expectedType, paramName, context = {}) {
     if (typeof value !== expectedType) {
       throw new HyperfyError('TYPE_MISMATCH', `Parameter ${paramName} must be ${expectedType}, got ${typeof value}`, {
@@ -23,6 +54,14 @@ export class ValidationHelper {
     return value
   }
 
+  /**
+   * Assert value is a Three.js Vector3
+   * @param {*} value
+   * @param {string} paramName
+   * @param {ValidationContext} context
+   * @returns {THREE.Vector3}
+   * @throws {HyperfyError} If not a Vector3
+   */
   static assertIsVector3(value, paramName, context = {}) {
     if (!value?.isVector3) {
       throw new HyperfyError('TYPE_MISMATCH', `Parameter ${paramName} must be a Vector3`, {

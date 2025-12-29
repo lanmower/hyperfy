@@ -1,4 +1,7 @@
 import { createErrorEvent, isSameError, mergeErrorEvents } from '../schemas/ErrorEvent.schema.js'
+import { ComponentLogger } from './logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ErrorEventBus')
 
 export class ErrorEventBus {
   constructor() {
@@ -34,7 +37,7 @@ export class ErrorEventBus {
       try {
         listener(event, isDuplicate)
       } catch (err) {
-        console.error('ErrorEventBus listener error:', err)
+        logger.error('Error event listener failed', { error: err.message })
       }
     })
   }

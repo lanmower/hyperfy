@@ -8,6 +8,12 @@ import { SnapshotProcessor } from './network/SnapshotProcessor.js'
 import { ClientPacketHandlers } from './network/ClientPacketHandlers.js'
 import { PacketCodec } from './network/PacketCodec.js'
 import { storage } from '../storage.js'
+import { Compressor } from './network/Compressor.js'
+import { clientTimeoutManager } from './network/TimeoutManager.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { TimeoutConfig } from '../../server/config/TimeoutConfig.js'
+
+const logger = new ComponentLogger('ClientNetwork')
 
 export class ClientNetwork extends BaseNetwork {
   static DEPS = {
@@ -32,26 +38,56 @@ export class ClientNetwork extends BaseNetwork {
     this.protocol.isClient = true
     this.protocol.flushTarget = this
     this.assetsUrl = world.assetsUrl
+    this.compressor = new Compressor()
     this.wsManager = new WebSocketManager(this)
     this.snapshotProcessor = new SnapshotProcessor(this)
     this.packetHandlers = new ClientPacketHandlers(this)
+    this.offlineMode = false
+    this.lastKnownState = null
+    this.timeoutManager = clientTimeoutManager
   }
 
   init({ wsUrl, name, avatar }) {
-    console.log('ClientNetwork.init() called', { wsUrl, name, avatar })
+    logger.info('init() called', { wsUrl, name, avatar })
     if (!wsUrl) {
-      console.error('ClientNetwork.init() ERROR: wsUrl is missing!')
+      logger.error('init() ERROR: wsUrl is missing!')
+      this.enterOfflineMode('No WebSocket URL provided')
       return
     }
+
+    const capabilities = this.world.capabilities
+    if (capabilities && !capabilities.canUseWebSocket) {
+      logger.warn('WebSocket not available - entering offline mode')
+      this.enterOfflineMode('WebSocket not supported')
+      return
+    }
+
     this.wsManager.init(wsUrl, name, avatar)
   }
 
+  enterOfflineMode(reason) {
+    this.offlineMode = true
+    logger.info(`Offline mode activated: ${reason}`)
+    this.events.emit('offlineMode', { active: true, reason })
+  }
+
+  exitOfflineMode() {
+    this.offlineMode = false
+    logger.info('Offline mode deactivated')
+    this.events.emit('offlineMode', { active: false })
+  }
+
   send(name, data) {
+    if (this.offlineMode) {
+      logger.warn('Cannot send in offline mode:', name)
+      return
+    }
     const ignore = ['ping']
     if (!ignore.includes(name) && data.id != this.id) {
-      console.log('->', name, data)
+      logger.debug('->', { name, data })
     }
-    const packet = PacketCodec.encode(name, data)
+    const compressed = this.compressor.compress(data)
+    const packet = PacketCodec.encode(name, compressed)
     this.wsManager.send(packet)
   }
 
@@ -70,7 +106,7 @@ export class ClientNetwork extends BaseNetwork {
       }
       const filename = `${hash}.${ext}`
       const url = `${this.apiUrl}/upload-check?filename=${filename}`
-      const resp = await fetch(url)
+      const resp = await this.timeoutManager.fetchWithTimeout(url, {}, TimeoutConfig.api.defaultFetchTimeout)
       if (!resp.ok) {
         throw new Error(`Upload check failed: ${resp.status} ${resp.statusText}`)
       }
@@ -83,24 +119,25 @@ export class ClientNetwork extends BaseNetwork {
       const form = new FormData()
       form.append('file', file)
       const uploadUrl = `${this.apiUrl}/upload`
-      const uploadResp = await fetch(uploadUrl, {
+      const uploadResp = await this.timeoutManager.fetchWithTimeout(uploadUrl, {
         method: 'POST',
         body: form,
-      })
+      }, 120000)
       if (!uploadResp.ok) {
         throw new Error(`Upload failed: ${uploadResp.status} ${uploadResp.statusText}`)
       }
     } catch (err) {
-      console.error('[network] File upload error:', err.message)
+      logger.error('File upload error:', err)
       throw err
     }
   }
 
   onPacket = e => {
-    const [method, data] = PacketCodec.decode(e.data)
-    console.log('Packet decoded:', { method, dataSize: data ? JSON.stringify(data).length : 0 })
+    const [method, compressedData] = PacketCodec.decode(e.data)
+    const data = this.compressor.decompress(compressedData)
+    logger.debug('Packet decoded:', { method, dataSize: data ? JSON.stringify(data).length : 0 })
     if (method && typeof this[method] === 'function') {
-      console.log('Executing:', method)
+      logger.debug('Executing:', method)
       this[method](data)
     }
   }
@@ -111,21 +148,23 @@ export class ClientNetwork extends BaseNetwork {
       id: uuid(),
       from: null,
       fromId: null,
-      body: `You have been disconnected ${codeMsg}. Attempting to reconnect...`,
+      body: `Connection lost. Entering offline mode. Your changes will not be saved.`,
       createdAt: moment().toISOString(),
     })
+    this.enterOfflineMode(`Connection closed ${codeMsg}`)
     this.events.emit('disconnect', code || true)
-    console.log('disconnect', code)
+    logger.info('disconnect', code)
   }
 
   onReconnect = () => {
-    console.log('Reconnected to server, clearing stale entities and requesting full snapshot')
+    logger.info('Reconnected to server, clearing stale entities and requesting full snapshot')
+    this.exitOfflineMode()
     this.clearStaleEntities()
     this.chat.add({
       id: uuid(),
       from: null,
       fromId: null,
-      body: `Reconnected. Syncing state...`,
+      body: `Connection restored. Syncing with server...`,
       createdAt: moment().toISOString(),
     })
     this.events.emit('reconnect')
@@ -149,7 +188,7 @@ export class ClientNetwork extends BaseNetwork {
       entities.remove(id)
     })
 
-    console.log('Cleared stale entities:', { before, after: entities.items.size, removed: toRemove.length })
+    logger.info('Cleared stale entities:', { before, after: entities.items.size, removed: toRemove.length })
   }
 
   requestFullSnapshot() {
@@ -165,15 +204,16 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onSnapshot(data) {
-    console.log('onSnapshot called', { id: data.id, entityCount: data.entities?.length })
+    logger.info('onSnapshot called', { id: data.id, entityCount: data.entities?.length })
     this.id = data.id
     this.serverTimeOffset = data.serverTime - performance.now()
     this.apiUrl = data.apiUrl
     this.maxUploadSize = data.maxUploadSize
     this.assetsUrl = data.assetsUrl
-    console.log('Calling snapshotProcessor.process()')
+    this.lastKnownState = data
+    logger.debug('Calling snapshotProcessor.process()')
     this.snapshotProcessor.process(data)
-    console.log('snapshotProcessor.process() completed')
+    logger.debug('snapshotProcessor.process() completed')
   }
 
   onSettingsModified = data => this.packetHandlers.handleSettingsModified(data)

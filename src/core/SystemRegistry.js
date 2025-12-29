@@ -1,4 +1,8 @@
 
+import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('SystemRegistry')
+
 export class SystemRegistry {
   constructor() {
     this.systems = new Map()
@@ -8,7 +12,7 @@ export class SystemRegistry {
 
   register(name, SystemClass, options = {}) {
     if (this.systems.has(name)) {
-      console.warn(`System ${name} already registered, overwriting`)
+      logger.warn('System already registered, overwriting', { name })
     }
     this.systems.set(name, { Class: SystemClass, options, name })
     this.priority.set(name, options.priority || 0)
@@ -40,9 +44,9 @@ export class SystemRegistry {
         }
 
         this.initialized.add(name)
-        console.log(`Initialized system: ${name}`)
+        logger.info('System initialized', { name })
       } catch (err) {
-        console.error(`Failed to initialize ${name}:`, err)
+        logger.error('System initialization failed', { name, error: err.message })
         throw err
       }
     }
@@ -58,7 +62,7 @@ export class SystemRegistry {
           delete world[name]
           this.initialized.delete(name)
         } catch (err) {
-          console.error(`Error destroying ${name}:`, err)
+          logger.error('System destruction failed', { name, error: err.message })
         }
       }
     }

@@ -2,7 +2,9 @@ import { AccessToken, TrackSource } from 'livekit-server-sdk'
 
 import { System } from './System.js'
 import { uuid } from '../utils.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('ServerLiveKit')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const levels = ['disabled', 'spatial', 'global']
 const levelPriorities = {
@@ -64,7 +66,7 @@ export class ServerLiveKit extends System {
   }
 
   addModifier(playerId, level) {
-    if (!levels.includes(level)) return console.error(`[livekit] invalid level: ${level}`)
+    if (!levels.includes(level)) return logger.error('Invalid audio level for modifier', { playerId, level })
     let modifiers = this.modifiers[playerId]
     if (!modifiers) {
       modifiers = new Set()
@@ -77,11 +79,11 @@ export class ServerLiveKit extends System {
   }
 
   updateModifier(mod, level) {
-    if (!levels.includes(level)) return console.error(`[livekit] invalid level: ${level}`)
+    if (!levels.includes(level)) return logger.error('Invalid audio level for update', { playerId: mod.playerId, level })
     const playerId = mod.playerId
     const modifiers = this.modifiers[playerId]
     if (!modifiers) return
-    if (!modifiers.has(mod)) return console.error('updateModifier: mod not found')
+    if (!modifiers.has(mod)) return logger.error('Modifier not found during update', { playerId })
     mod.level = level
     this.checkLevel(playerId)
     return mod

@@ -2,6 +2,40 @@ import { uuid } from '../../core/utils.js'
 import { Ranks } from '../../core/extras/ranks.js'
 import moment from 'moment'
 import { serializeForNetwork } from '../../core/schemas/ChatMessage.schema.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('CommandHandler')
+
+const MAX_ADMIN_ATTEMPTS = 5
+const ADMIN_LOCKOUT_TIME = 5 * 60 * 1000
+const adminAttempts = new Map()
+
+function checkAdminAttempts(clientIP) {
+  const now = Date.now()
+  if (!adminAttempts.has(clientIP)) {
+    adminAttempts.set(clientIP, { attempts: 0, lockedUntil: 0 })
+  }
+
+  const record = adminAttempts.get(clientIP)
+  if (record.lockedUntil > now) {
+    return false
+  }
+
+  record.attempts += 1
+  if (record.attempts >= MAX_ADMIN_ATTEMPTS) {
+    record.lockedUntil = now + ADMIN_LOCKOUT_TIME
+    record.attempts = 0
+    return false
+  }
+
+  return true
+}
+
+function resetAdminAttempts(clientIP) {
+  adminAttempts.delete(clientIP)
+}
+
+const ALLOWED_COMMANDS = new Set(['admin', 'name', 'spawn', 'chat', 'server'])
 
 export class CommandHandler {
   constructor(world, db) {
@@ -20,7 +54,43 @@ export class CommandHandler {
     }
   }
 
+  validateCommand(args) {
+    if (!Array.isArray(args)) {
+      logger.error('Command args is not array', { received: typeof args })
+      return { valid: false, error: 'Invalid command structure' }
+    }
+
+    if (args.length === 0) {
+      logger.error('Empty command received', {})
+      return { valid: false, error: 'Empty command' }
+    }
+
+    const [cmd] = args
+
+    if (typeof cmd !== 'string') {
+      logger.error('Command method is not string', { received: typeof cmd, value: cmd })
+      return { valid: false, error: 'Invalid command type' }
+    }
+
+    if (!ALLOWED_COMMANDS.has(cmd)) {
+      logger.error('Unknown command method', { command: cmd })
+      return { valid: false, error: 'Unknown command' }
+    }
+
+    return { valid: true }
+  }
+
   async execute(socket, args) {
+    const validation = this.validateCommand(args)
+    if (!validation.valid) {
+      logger.error('Command validation failed', {
+        error: validation.error,
+        socketId: socket.id,
+        argsLength: args?.length
+      })
+      return
+    }
+
     const player = socket.player
     const playerId = player.data.id
     const [cmd, arg1, arg2] = args
@@ -36,13 +106,32 @@ export class CommandHandler {
   }
 
   async admin(socket, player, code) {
-    if (!process.env.ADMIN_CODE || process.env.ADMIN_CODE !== code) return
+    const clientIP = socket.ws?.remoteAddress || 'unknown'
 
+    if (!process.env.ADMIN_CODE) {
+      this.sendChat(socket, 'Admin code not configured')
+      return
+    }
+
+    if (!checkAdminAttempts(clientIP)) {
+      logger.warn('Admin code brute-force attempt blocked', { clientIP })
+      this.sendChat(socket, 'Admin code attempts locked. Try again later.')
+      return
+    }
+
+    if (process.env.ADMIN_CODE !== code) {
+      logger.warn('Failed admin code attempt', { clientIP })
+      this.sendChat(socket, 'Invalid admin code')
+      return
+    }
+
+    resetAdminAttempts(clientIP)
     const id = player.data.id
     const userId = player.data.userId
     const granted = !player.isAdmin()
     const rank = granted ? Ranks.ADMIN : Ranks.VISITOR
 
+    logger.info('Admin privilege modified', { playerName: player.data.name, userId, granted, action: granted ? 'granted' : 'revoked' })
     player.modify({ rank })
     this.world.network.send('entityModified', { id, rank })
     this.sendChat(socket, granted ? 'Admin granted!' : 'Admin revoked!')

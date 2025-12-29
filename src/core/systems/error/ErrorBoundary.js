@@ -1,4 +1,7 @@
 import { HyperfyError } from './ErrorCodes.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ErrorBoundary')
 
 export class ErrorBoundary {
   constructor(context = {}) {
@@ -32,13 +35,13 @@ export class ErrorBoundary {
       } catch (error) {
         const hyperfyError = error instanceof HyperfyError ? error : new HyperfyError('OPERATION_NOT_SUPPORTED', error.message, { originalError: error.toString() })
         this.recordError(hyperfyError)
-        console.error(`[ErrorBoundary] ${this.context.name || 'Operation'} failed:`, hyperfyError)
+        logger.error('Operation failed', { context: this.context.name || 'Unknown', error: hyperfyError.message, code: hyperfyError.code })
 
         if (fallback !== null && typeof fallback === 'function') {
           try {
             return fallback(hyperfyError)
           } catch (fallbackError) {
-            console.error('[ErrorBoundary] Fallback also failed:', fallbackError)
+            logger.error('Fallback also failed', { error: fallbackError.message, context: this.context.name || 'Unknown' })
           }
         }
 
@@ -53,13 +56,13 @@ export class ErrorBoundary {
     } catch (error) {
       const hyperfyError = error instanceof HyperfyError ? error : new HyperfyError('OPERATION_NOT_SUPPORTED', error.message, { originalError: error.toString() })
       this.recordError(hyperfyError)
-      console.error(`[ErrorBoundary] Async operation failed:`, hyperfyError)
+      logger.error('Async operation failed', { context: this.context.name || 'Unknown', error: hyperfyError.message, code: hyperfyError.code })
 
       if (fallback !== null && typeof fallback === 'function') {
         try {
           return await fallback(hyperfyError)
         } catch (fallbackError) {
-          console.error('[ErrorBoundary] Async fallback also failed:', fallbackError)
+          logger.error('Async fallback also failed', { error: fallbackError.message, context: this.context.name || 'Unknown' })
         }
       }
 

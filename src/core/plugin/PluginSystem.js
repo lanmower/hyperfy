@@ -1,3 +1,6 @@
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('PluginSystem')
 
 export class PluginSystem {
   constructor(world) {
@@ -34,7 +37,7 @@ export class PluginSystem {
     }
 
     if (instance.enabled) {
-      console.warn(`Plugin already enabled: ${name}`)
+      logger.warn('Plugin already enabled', { name })
       return false
     }
 
@@ -43,10 +46,10 @@ export class PluginSystem {
       await instance.plugin.install(this.world, config)
       instance.enabled = true
       this.executeHook('pluginEnabled', name)
-      console.log(`Plugin enabled: ${name}`)
+      logger.info('Plugin enabled', { name })
       return true
     } catch (err) {
-      console.error(`Failed to enable plugin ${name}:`, err)
+      logger.error('Failed to enable plugin', { name, error: err.message })
       throw err
     }
   }
@@ -58,7 +61,7 @@ export class PluginSystem {
     }
 
     if (!instance.enabled) {
-      console.warn(`Plugin not enabled: ${name}`)
+      logger.warn('Plugin not enabled', { name })
       return false
     }
 
@@ -68,10 +71,10 @@ export class PluginSystem {
       }
       instance.enabled = false
       this.executeHook('pluginDisabled', name)
-      console.log(`Plugin disabled: ${name}`)
+      logger.info('Plugin disabled', { name })
       return true
     } catch (err) {
-      console.error(`Failed to disable plugin ${name}:`, err)
+      logger.error('Failed to disable plugin', { name, error: err.message })
       throw err
     }
   }
@@ -99,7 +102,7 @@ export class PluginSystem {
       try {
         callback(...args)
       } catch (err) {
-        console.error(`Error in hook ${event}:`, err)
+        logger.error('Error in hook', { event, error: err.message })
       }
     }
   }
@@ -110,7 +113,7 @@ export class PluginSystem {
       try {
         await callback(...args)
       } catch (err) {
-        console.error(`Error in hook ${event}:`, err)
+        logger.error('Error in hook (async)', { event, error: err.message })
       }
     }
   }
@@ -130,7 +133,7 @@ export class PluginSystem {
       try {
         result = await fn(result, this.world)
       } catch (err) {
-        console.error(`Error in middleware ${name}:`, err)
+        logger.error('Error in middleware', { name, error: err.message })
       }
     }
     return result

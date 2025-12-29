@@ -1,0 +1,138 @@
+import { RATE_LIMIT_PRESETS } from '../config/RateLimitConfig.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('RateLimiter')
+const rateLimitStore = new Map()
+const violationLog = []
+
+function getClientIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+    req.headers['x-real-ip'] ||
+    req.ip ||
+    'unknown'
+}
+
+function cleanupExpiredRequests() {
+  const now = Date.now()
+  for (const [key, data] of rateLimitStore.entries()) {
+    const cutoff = now - data.config.window
+    data.requests = data.requests.filter(ts => ts > cutoff)
+    if (data.requests.length === 0) {
+      rateLimitStore.delete(key)
+    }
+  }
+}
+
+setInterval(cleanupExpiredRequests, 60000)
+
+function checkRateLimit(clientIP, endpoint, config) {
+  const now = Date.now()
+  const key = `${clientIP}:${endpoint}`
+  const cutoff = now - config.window
+
+  if (!rateLimitStore.has(key)) {
+    rateLimitStore.set(key, {
+      requests: [],
+      config,
+    })
+  }
+
+  const data = rateLimitStore.get(key)
+  data.requests = data.requests.filter(ts => ts > cutoff)
+
+  const currentCount = data.requests.length
+  const burstLimit = Math.floor(config.max * config.burst)
+
+  if (currentCount >= burstLimit) {
+    return {
+      allowed: false,
+      current: currentCount,
+      limit: config.max,
+      resetIn: Math.min(...data.requests) + config.window - now,
+    }
+  }
+
+  data.requests.push(now)
+
+  return {
+    allowed: true,
+    current: currentCount + 1,
+    limit: config.max,
+    resetIn: config.window,
+  }
+}
+
+function logViolation(clientIP, endpoint, current, limit) {
+  const violation = {
+    timestamp: new Date().toISOString(),
+    ip: clientIP,
+    endpoint,
+    current,
+    limit,
+  }
+
+  violationLog.push(violation)
+  if (violationLog.length > 1000) {
+    violationLog.shift()
+  }
+
+  logger.warn('Rate limit violation', { ip: clientIP, endpoint, current, limit })
+}
+
+export function createRateLimiter(endpoint, customConfig = {}) {
+  const config = { ...RATE_LIMIT_PRESETS[endpoint] || RATE_LIMIT_PRESETS.api, ...customConfig }
+
+  return async (req, reply) => {
+    const isDevelopment = process.env.NODE_ENV !== 'production'
+    if (isDevelopment) {
+      return
+    }
+
+    const clientIP = getClientIP(req)
+    const result = checkRateLimit(clientIP, endpoint, config)
+
+    reply.header('X-RateLimit-Limit', result.limit)
+    reply.header('X-RateLimit-Remaining', Math.max(0, result.limit - result.current))
+    reply.header('X-RateLimit-Reset', Math.ceil(result.resetIn / 1000))
+
+    if (!result.allowed) {
+      logViolation(clientIP, endpoint, result.current, result.limit)
+      return reply.code(429).send({
+        error: 'Too Many Requests',
+        retryAfter: Math.ceil(result.resetIn / 1000),
+        limit: result.limit,
+        current: result.current,
+      })
+    }
+  }
+}
+
+export function getRateLimitStats() {
+  const stats = {
+    totalKeys: rateLimitStore.size,
+    violations: violationLog.length,
+    recentViolations: violationLog.slice(-10),
+    activeIPs: new Set(),
+  }
+
+  for (const [key] of rateLimitStore.entries()) {
+    const ip = key.split(':')[0]
+    stats.activeIPs.add(ip)
+  }
+
+  stats.activeIPCount = stats.activeIPs.size
+  delete stats.activeIPs
+
+  return stats
+}
+
+export function clearRateLimitForIP(ip) {
+  let cleared = 0
+  for (const [key] of rateLimitStore.entries()) {
+    if (key.startsWith(ip + ':')) {
+      rateLimitStore.delete(key)
+      cleared++
+    }
+  }
+  return cleared
+}

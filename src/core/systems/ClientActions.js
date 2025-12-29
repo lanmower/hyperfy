@@ -6,6 +6,9 @@ import { isTouch } from '../../client/utils.js'
 import { clamp, BatchProcessor } from '../utils.js'
 import { CanvasDrawUtils } from './actions/CanvasDrawUtils.js'
 import { RenderConfig } from '../config/SystemConfig.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ClientActions')
 
 const BATCH_SIZE = RenderConfig.ACTION_BATCH_SIZE
 const sizes = [128, 256, 512, 2048, 4096]
@@ -184,18 +187,18 @@ export class ClientActions extends System {
     if (this.btnDown) {
       if (this.actionNode.progress === 0) {
         this.cancelled = false
-        try { this.actionNode._onStart() } catch (err) { console.error('action.onStart:', err) }
+        try { this.actionNode._onStart() } catch (err) { logger.error('Failed to execute action start', { action: this.actionNode._label, error: err.message }) }
       }
       this.actionNode.progress += delta
       if (this.actionNode.progress > this.actionNode._duration) this.actionNode.progress = this.actionNode._duration
       this.draw(this.actionNode._label, this.actionNode.progress / this.actionNode._duration)
       if (this.actionNode.progress === this.actionNode._duration) {
         this.actionNode.progress = 0
-        try { this.actionNode._onTrigger({ playerId: this.world.entities.player.data.id }) } catch (err) { console.error('action.onTrigger:', err) }
+        try { this.actionNode._onTrigger({ playerId: this.world.entities.player.data.id }) } catch (err) { logger.error('Failed to execute action trigger', { action: this.actionNode._label, playerId: this.world.entities.player.data.id, error: err.message }) }
       }
     } else if (this.actionNode.progress > 0) {
       if (!this.cancelled) {
-        try { this.actionNode._onCancel() } catch (err) { console.error('action.onCancel:', err) }
+        try { this.actionNode._onCancel() } catch (err) { logger.error('Failed to execute action cancel', { action: this.actionNode._label, error: err.message }) }
         this.cancelled = true
       }
       this.actionNode.progress -= delta

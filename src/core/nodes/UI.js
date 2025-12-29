@@ -3,6 +3,9 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import Yoga from 'yoga-layout'
 
 import { Node } from './Node.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('UI')
 import { defineProps } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
@@ -114,7 +117,10 @@ export class UI extends Node {
 
   mount() {
     if (this.ctx.world.network.isServer) return
-    if (this.parent?.ui) return console.error('ui: cannot be nested inside another ui')
+    if (this.parent?.ui) {
+      logger.error('UI cannot be nested inside another UI', {})
+      return
+    }
     this.yogaNode = this.layoutManager.createYogaNode()
     this.build()
     this.needsRedraw = true

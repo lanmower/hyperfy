@@ -5,7 +5,9 @@ import { uuid } from '../../utils.js'
 import { createJWT, readJWT } from '../../utils/helpers/crypto.js'
 import moment from 'moment'
 import { EVENT } from '../../constants/EventNames.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('PlayerConnectionManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const HEALTH_MAX = 100
 
@@ -35,7 +37,7 @@ export class PlayerConnectionManager {
           const { userId } = await readJWT(authToken)
           user = await this.serverNetwork.persistence.loadUser(userId)
         } catch (err) {
-          console.error('failed to read authToken:', authToken)
+          logger.error('Failed to read auth token', { error: err.message })
         }
       }
       if (!user) {
@@ -99,7 +101,7 @@ export class PlayerConnectionManager {
 
       this.serverNetwork.events.emit(EVENT.game.enter, { playerId: socket.player.data.id })
     } catch (err) {
-      console.error(err)
+      logger.error('Player connection failed', { error: err.message })
     }
   }
 

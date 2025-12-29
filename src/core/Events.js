@@ -1,5 +1,7 @@
-
 import { EventBus } from './utils/EventBus.js'
+import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Events')
 
 export class Events {
   constructor(name = 'Events') {
@@ -52,7 +54,7 @@ export class Events {
     for (const [key, type] of Object.entries(schema)) {
       const value = data[key]
       if (typeof value !== type && value !== undefined) {
-        console.warn(`Event "${event}" field "${key}" expected ${type}, got ${typeof value}`)
+        logger.warn('Event field type mismatch', { event, field: key, expected: type, got: typeof value })
       }
     }
   }

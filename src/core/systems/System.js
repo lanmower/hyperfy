@@ -21,6 +21,25 @@ export class System extends EventEmitter {
     return this.world[name]
   }
 
+  hasService(name) {
+    return this.world.hasService?.(name) || this.world.di?.has?.(name) || name in this.world
+  }
+
+  getServiceOrThrow(name) {
+    const service = this.getService(name)
+    if (!service) {
+      throw new Error(`Service '${name}' not found`)
+    }
+    return service
+  }
+
+  requireServices(...serviceNames) {
+    const missing = serviceNames.filter(name => !this.hasService(name))
+    if (missing.length > 0) {
+      throw new Error(`System ${this.constructor.name} requires services: ${missing.join(', ')}`)
+    }
+  }
+
   async init() {
   }
 

@@ -1,4 +1,8 @@
 
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('StateManager')
+
 export class StateManager {
   constructor(initialState = {}) {
     this.state = { ...initialState }
@@ -79,7 +83,7 @@ export class StateManager {
       try {
         callback(value, prev, path)
       } catch (err) {
-        console.error(`Error in watcher for ${path}:`, err)
+        logger.error('Watcher callback failed', { path, error: err.message })
       }
     }
 
@@ -87,7 +91,7 @@ export class StateManager {
       try {
         callback({ path, value, prev })
       } catch (err) {
-        console.error(`Error in subscription:`, err)
+        logger.error('Subscription callback failed', { path, error: err.message })
       }
     }
   }

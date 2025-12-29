@@ -1,6 +1,8 @@
 import { Packr } from 'msgpackr'
 import { PACKET_NAMES } from './packets.constants.js'
+import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('packets')
 const packr = new Packr({ structuredClone: true })
 
 const names = PACKET_NAMES
@@ -39,7 +41,7 @@ export function readPacket(packet) {
     if (!info) throw new Error(`readPacket failed: ${id} (id not found)`)
     return [info.method, data]
   } catch (err) {
-    console.error(err)
+    logger.error('Failed to read packet', { error: err.message })
     return []
   }
 }

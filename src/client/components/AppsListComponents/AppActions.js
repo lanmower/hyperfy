@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AppActions')
+
 export class AppActions {
   constructor(world, network, blueprints, entityTargeting, setRefresh) {
     this.world = world
@@ -11,12 +15,12 @@ export class AppActions {
     try {
       const entity = this.entityTargeting.getClosest(item)
       if (!entity) {
-        console.warn('[AppActions.inspect] No entity found for item:', item.name)
+        logger.warn('No entity found for item', { itemName: item.name })
         return
       }
       this.world.ui.setApp(entity)
     } catch (e) {
-      console.error('[AppActions.inspect] Error:', e.message)
+      logger.error('Inspect failed', { error: e.message, itemName: item.name })
     }
   }
 

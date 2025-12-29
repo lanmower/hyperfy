@@ -8,6 +8,9 @@ import { schema } from '../utils/validation/createNodeSchema.js'
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
 import { v, q } from '../utils/TempVectors.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Collider')
 
 const rebuildIfShape = onSetRebuildIf(function() { return !!this.shape })
 
@@ -43,7 +46,7 @@ export class Collider extends Node {
     } else if (this._type === 'geometry') {
       const isConvex = this._trigger || this._convex
       pmesh = geometryToPxMesh(this.ctx.world, this._geometry, isConvex)
-      if (!pmesh) return console.error('failed to generate collider pmesh')
+      if (!pmesh) return logger.error('Failed to generate collider pmesh', { isConvex })
       this.matrixWorld.decompose(v[0], q[0], v[1])
       const scale = new PHYSX.PxMeshScale(new PHYSX.PxVec3(v[1].x, v[1].y, v[1].z), new PHYSX.PxQuat(0, 0, 0, 1))
       if (isConvex) {
@@ -70,8 +73,7 @@ export class Collider extends Node {
     try {
       this.shape = this.ctx.world.physics.physics.createShape(geometry, material, true, flags)
     } catch (err) {
-      console.error('[collider] failed to create shape')
-      console.error(err)
+      logger.error('Failed to create physics shape', { layer: this._layer, error: err.message })
       if (geometry) {
         PHYSX.destroy(geometry)
       }

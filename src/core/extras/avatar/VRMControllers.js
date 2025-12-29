@@ -2,6 +2,9 @@ import * as THREE from '../three.js'
 import { AimAxis, UpAxis, DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
 import { getQueryParams } from './VRMUtilities.js'
 import { Modes } from '../../constants/AnimationModes.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('VRMControllers')
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -31,8 +34,8 @@ function createAimSystem(vrmSceneOrMatrix, glbVrm, skeleton) {
     } = options
     const bone = findBone(boneName)
     const parentBone = glbVrm.humanoid.humanBones[boneName].node.parent
-    if (!bone) return console.warn(`aimBone: missing bone (${boneName})`)
-    if (!parentBone) return console.warn(`aimBone: no parent bone`)
+    if (!bone) return logger.warn('Missing bone for aim target', { boneName })
+    if (!parentBone) return logger.warn('No parent bone for aim target', { boneName })
     const boneId = bone.uuid
     if (!smoothedRotations.has(boneId)) {
       smoothedRotations.set(boneId, {
@@ -104,7 +107,7 @@ function createAimSystem(vrmSceneOrMatrix, glbVrm, skeleton) {
 
   const aimBoneAt = (boneName, targetPos, getBoneTransform, delta, options = {}) => {
     const bone = findBone(boneName)
-    if (!bone) return console.warn(`aimBone: missing bone (${boneName})`)
+    if (!bone) return logger.warn('Missing bone for aim-at target', { boneName })
     const boneWorldMatrix = getBoneTransform(boneName)
     const boneWorldPos = v1.setFromMatrixPosition(boneWorldMatrix)
     const aimBoneDir = new THREE.Vector3().subVectors(targetPos, boneWorldPos).normalize()

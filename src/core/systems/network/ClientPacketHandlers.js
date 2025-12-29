@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ClientPacketHandlers')
+
 export class ClientPacketHandlers {
   constructor(network) {
     this.network = network
@@ -29,7 +33,10 @@ export class ClientPacketHandlers {
 
   handleEntityModified(data) {
     const entity = this.network.entities.get(data.id)
-    if (!entity) return console.error('onEntityModified: no entity found', data)
+    if (!entity) {
+      logger.error('Entity not found for modification', { entityId: data.id })
+      return
+    }
     entity.modify(data)
   }
 
@@ -72,7 +79,7 @@ export class ClientPacketHandlers {
   }
 
   handleHotReload(data) {
-    console.log('[HMR] Reloading...')
+    logger.info('Hot reload triggered', {})
     location.reload()
   }
 

@@ -3,6 +3,7 @@ import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { System } from './System.js'
 import { NametagRenderer } from '../../client/canvas/NametagRenderer.js'
 import * as Config from '../config/NametagConfig.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 export class Nametags extends System {
   static DEPS = { rig: 'rig', stage: 'stage', events: 'events' }
@@ -10,6 +11,7 @@ export class Nametags extends System {
 
   constructor(world) {
     super(world)
+    this.logger = new ComponentLogger('Nametags')
     this.renderer = new NametagRenderer()
     this.uniforms = { uAtlas: { value: this.renderer.texture }, uXR: { value: 0 }, uOrientation: { value: this.rig.quaternion } }
     this.nametags = []
@@ -92,7 +94,10 @@ export class Nametags extends System {
 
   add({ name, health }) {
     const idx = this.nametags.length
-    if (idx >= Config.MAX_INSTANCES) return console.error('nametags: reached max')
+    if (idx >= Config.MAX_INSTANCES) {
+      this.logger.error('reached max')
+      return
+    }
     this.mesh.count++
     this.mesh.instanceMatrix.needsUpdate = true
     const coords = this.mesh.geometry.attributes.coords
@@ -116,7 +121,10 @@ export class Nametags extends System {
   }
 
   remove(nametag) {
-    if (!this.nametags.includes(nametag)) return console.warn('nametags: attempted to remove non-existent nametag')
+    if (!this.nametags.includes(nametag)) {
+      this.logger.warn('attempted to remove non-existent nametag')
+      return
+    }
     const last = this.nametags[this.nametags.length - 1]
     const isLast = nametag === last
     if (isLast) {

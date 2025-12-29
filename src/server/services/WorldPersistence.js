@@ -1,5 +1,9 @@
 
 import { PersistenceBase } from '../../core/services/PersistenceBase.js'
+import { ScriptValidator } from '../security/ScriptValidator.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('WorldPersistence')
 
 export class WorldPersistence extends PersistenceBase {
   constructor(db, fileUploader = null) {
@@ -8,7 +12,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async loadSpawn() {
-    const row = await this.db('config').where('key', 'spawn').first()
+    const row = await this.db('config').where('key', 'spawn').cacheAs('getConfigValue').first()
     return row?.value || '{ "position": [0, 0, 0], "quaternion": [0, 0, 0, 1] }'
   }
 
@@ -17,7 +21,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async loadSettings() {
-    const row = await this.db('config').where('key', 'settings').first()
+    const row = await this.db('config').where('key', 'settings').cacheAs('getConfigValue').first()
     return row ? JSON.parse(row.value) : {}
   }
 
@@ -26,18 +30,40 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async loadBlueprints() {
-    return await this.db('blueprints')
+    return await this.db('blueprints').cacheAs('getBlueprints')
   }
 
   async saveBlueprint(id, data, createdAt, updatedAt) {
+    const validation = ScriptValidator.validateBlueprint(data, {
+      blueprintId: id,
+    })
+
+    if (!validation.valid) {
+      logger.warn('Blueprint validation failed before saving', {
+        blueprintId: id,
+        violations: validation.violations,
+      })
+    }
+
     return this.save('blueprints', id, data, createdAt, updatedAt)
   }
 
   async loadEntities() {
-    return await this.db('entities')
+    return await this.db('entities').cacheAs('getEntities')
   }
 
   async saveEntity(id, data, createdAt, updatedAt) {
+    const validation = ScriptValidator.validateEntityData(data, {
+      entityId: id,
+    })
+
+    if (!validation.valid) {
+      logger.warn('Entity data validation failed before saving', {
+        entityId: id,
+        violations: validation.violations,
+      })
+    }
+
     return this.save('entities', id, data, createdAt, updatedAt)
   }
 
@@ -46,7 +72,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async loadUser(userId) {
-    return await this.db('users').where('id', userId).first()
+    return await this.db('users').where('id', userId).cacheAs('getUserById').first()
   }
 
   async saveUser(userId, data) {
@@ -62,7 +88,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async getConfig(key) {
-    const row = await this.db('config').where('key', key).first()
+    const row = await this.db('config').where('key', key).cacheAs('getConfigValue').first()
     return row?.value
   }
 

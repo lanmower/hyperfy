@@ -1,6 +1,8 @@
 import * as THREE from '../../extras/three.js'
 import { v, q, m } from '../../utils/TempVectors.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('TransformSystem')
 const EPSILON = 0.000000001
 
 export class TransformSystem {
@@ -31,7 +33,7 @@ export class TransformSystem {
         })
       }
     } catch (e) {
-      console.warn('[TransformSystem] Failed to setup position onChange:', e.message)
+      logger.warn('Failed to setup position change listener', { error: e.message })
     }
     try {
       if (node.rotation && typeof node.rotation._onChange === 'function') {
@@ -41,7 +43,7 @@ export class TransformSystem {
         })
       }
     } catch (e) {
-      console.warn('[TransformSystem] Failed to setup rotation onChange:', e.message)
+      logger.warn('Failed to setup rotation change listener', { error: e.message })
     }
     try {
       if (node.quaternion && typeof node.quaternion._onChange === 'function') {
@@ -51,7 +53,7 @@ export class TransformSystem {
         })
       }
     } catch (e) {
-      console.warn('[TransformSystem] Failed to setup quaternion onChange:', e.message)
+      logger.warn('Failed to setup quaternion change listener', { error: e.message })
     }
     try {
       if (node.scale && typeof node.scale._onChange === 'function') {
@@ -67,7 +69,7 @@ export class TransformSystem {
         })
       }
     } catch (e) {
-      console.warn('[TransformSystem] Failed to setup scale onChange:', e.message)
+      logger.warn('Failed to setup scale change listener', { error: e.message })
     }
   }
 

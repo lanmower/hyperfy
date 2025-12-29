@@ -26,6 +26,7 @@ import { PlayerControlBinder } from './player/PlayerControlBinder.js'
 import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
@@ -50,21 +51,22 @@ const m3 = new THREE.Matrix4()
 
 const gazeTiltAngle = 10 * DEG2RAD
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
+const logger = new ComponentLogger('PlayerLocal')
 
 export class PlayerLocal extends BaseEntity {
   constructor(world, data, local) {
-    console.log('PlayerLocal constructor called', { userId: data.userId, id: data.id })
+    logger.info('constructor called', { userId: data.userId, id: data.id })
     super(world, data, local)
     this.isPlayer = true
     this.isLocal = true
-    console.log('Calling PlayerLocal.init()')
+    logger.info('Calling init()')
     this.init()
-    console.log('PlayerLocal.init() called (returns promise)')
+    logger.info('init() called (returns promise)')
   }
 
   async init() {
     try {
-      console.log('PlayerLocal.init() started')
+      logger.info('init() started')
       this.mass = PhysicsConfig.MASS
       this.capsuleRadius = PhysicsConfig.CAPSULE_RADIUS
       this.capsuleHeight = PhysicsConfig.CAPSULE_HEIGHT
@@ -127,38 +129,35 @@ export class PlayerLocal extends BaseEntity {
       this.capsuleFactory = new PlayerCapsuleFactory(this.world)
 
       if (this.world.loader?.preloader) {
-        console.log('Waiting for preloader')
+        logger.info('Waiting for preloader')
         await this.world.loader.preloader
-        console.log('Preloader ready')
+        logger.info('Preloader ready')
       }
 
       if (this.world.loader) {
-        console.log('Applying avatar')
+        logger.info('Applying avatar')
         await this.avatarManager.applyAvatar()
-        console.log('Avatar applied')
+        logger.info('Avatar applied')
       } else {
-        console.log('Loader not available, skipping avatar')
+        logger.info('Loader not available, skipping avatar')
       }
 
-      console.log('About to call initCapsule')
+      logger.info('About to call initCapsule')
       this.initCapsule()
-      console.log('Capsule initialized, capsule:', !!this.capsule, 'physics:', !!this.physics)
+      logger.info('Capsule initialized', { capsule: !!this.capsule, physics: !!this.physics })
 
       this.controlBinder.initControl()
-      console.log('Control binding initialized')
+      logger.info('Control binding initialized')
 
       this.world.setHot(this, true)
-      console.log('Player marked as hot, emitting ready event')
+      logger.info('Player marked as hot, emitting ready event')
       this.world.events.emit('ready', true)
-      console.log('PlayerLocal.init() completed')
+      logger.info('init() completed')
     } catch (err) {
-      console.error('PlayerLocal.init() error:', err.message || err.toString())
-      console.error('PlayerLocal.init() error stack:', err.stack)
-      console.error('PlayerLocal.init() full error:', err)
-      console.log('Setting hot and emitting ready from catch block')
+      logger.error('init() error', err)
       this.world.setHot(this, true)
       this.world.events.emit('ready', true)
-      console.log('Ready event emitted from catch block')
+      logger.info('Ready event emitted from catch block')
     }
   }
 
@@ -288,7 +287,7 @@ export class PlayerLocal extends BaseEntity {
           this.aura.position.setFromMatrixPosition(matrix)
         }
       } catch (err) {
-        console.warn('[PlayerLocal] getBoneTransform error:', err.message)
+        logger.warn('getBoneTransform error', err)
       }
     }
   }

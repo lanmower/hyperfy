@@ -6,7 +6,9 @@ import { PointerInputHandler } from './PointerInputHandler.js'
 import { KeyboardInputHandler } from './KeyboardInputHandler.js'
 import { XRInputHandler } from './XRInputHandler.js'
 import { TouchInputHandler } from './TouchInputHandler.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('InputSystem')
 const isBrowser = typeof window !== 'undefined'
 
 let actionIds = 0
@@ -253,7 +255,7 @@ export class InputSystem extends System {
         })
       }
     } catch (e) {
-      console.warn('Failed to request pointer lock:', e.message)
+      logger.warn('Failed to request pointer lock', { error: e.message })
       this.pointer.shouldLock = false
     }
   }
@@ -264,7 +266,7 @@ export class InputSystem extends System {
     try {
       document.exitPointerLock()
     } catch (e) {
-      console.warn('Failed to exit pointer lock:', e.message)
+      logger.warn('Failed to exit pointer lock', { error: e.message })
     }
   }
 

@@ -1,0 +1,41 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-arrow-callback": "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-duplicate-imports": "error",
+    "no-useless-concat": "error",
+    "no-useless-return": "error",
+    "no-nested-ternary": "warn",
+    "max-depth": ["warn", 4],
+    "max-lines": ["warn", 500],
+    "complexity": ["warn", 15],
+    "no-console": "off",
+    "eqeqeq": ["error", "always"],
+    "curly": "error",
+    "brace-style": "error",
+    "indent": ["error", 2],
+    "semi": ["error", "never"],
+    "quotes": ["error", "single"],
+    "comma-dangle": ["error", "only-multiline"],
+    "space-before-function-paren": ["error", {
+      "anonymous": "always",
+      "named": "never",
+      "asyncArrow": "always"
+    }],
+    "arrow-spacing": "error"
+  }
+}

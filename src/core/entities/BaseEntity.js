@@ -1,5 +1,8 @@
 
 import { uuid } from '../utils.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('BaseEntity')
 
 export class BaseEntity {
   constructor(world, data = {}, local = false) {
@@ -85,7 +88,7 @@ export class BaseEntity {
         try {
           callback(...args)
         } catch (err) {
-          console.error(`Error in event listener for ${eventName}:`, err)
+          logger.error('Error in event listener', { eventName, error: err.message })
         }
       }
     }

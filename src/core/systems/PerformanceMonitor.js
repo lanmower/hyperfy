@@ -1,6 +1,9 @@
 import { System } from './System.js'
 import { PerformanceMetrics } from './performance/PerformanceMetrics.js'
 import { PerformanceDisplay } from './performance/PerformanceDisplay.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('PerformanceMonitor')
 
 export class PerformanceMonitor extends System {
   static DEPS = {
@@ -127,9 +130,9 @@ export class PerformanceMonitor extends System {
     if (this.regressions.length > 100) this.regressions.shift()
 
     if (level === 'critical') {
-      console.error(`[Performance] CRITICAL ${name}: ${value.toFixed(2)} (threshold: ${threshold.toFixed(2)})`)
+      logger.error('Critical performance regression', { name, value: value.toFixed(2), threshold: threshold.toFixed(2) })
     } else {
-      console.warn(`[Performance] WARNING ${name}: ${value.toFixed(2)} (threshold: ${threshold.toFixed(2)})`)
+      logger.warn('Performance warning', { name, value: value.toFixed(2), threshold: threshold.toFixed(2) })
     }
   }
 

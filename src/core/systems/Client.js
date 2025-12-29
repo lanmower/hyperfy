@@ -87,12 +87,10 @@ export class Client extends System {
             intervalId = setInterval(() => {
               self.postMessage(1);
             }, rate);
-            console.log('[worker] tick started')
           }
           if (e.data === 'stop' && intervalId) {
             clearInterval(intervalId);
             intervalId = null;
-            console.log('[worker] tick stopped')
           }
         }
       `

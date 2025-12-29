@@ -3,6 +3,9 @@ import { System } from './System.js'
 import { isBoolean } from 'lodash-es'
 import { Room, RoomEvent, ParticipantEvent, ScreenSharePresets } from 'livekit-client'
 import { EVENT } from '../constants/EventNames.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ClientLiveKit')
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
@@ -38,9 +41,17 @@ export class ClientLiveKit extends System {
     this.voices = new Map()
     this.screens = []
     this.screenNodes = new Set()
+    this.degraded = false
   }
 
   start() {
+    const capabilities = this.world.capabilities
+    if (capabilities && !capabilities.canUseVoiceChat) {
+      logger.warn('Voice chat unavailable - audio/video disabled', {})
+      this.degraded = true
+      this.status.available = false
+      return
+    }
     this.defaultLevel = this.settings.get('voice')
     this.status.level = this.defaultLevel
   }
@@ -111,7 +122,7 @@ export class ClientLiveKit extends System {
       if (track.source === 'microphone') {
         if (isSubscribe) {
           const player = this.entities.getPlayer(playerId)
-          if (!player) return console.error('onTrackSubscribed failed: no player')
+          if (!player) return logger.error('Failed to subscribe to track', { playerId, reason: 'player not found' })
           const level = this.levels[playerId] || this.defaultLevel
           const muted = this.muted.has(playerId)
           this.createVoiceController(player, level, muted, track, participant)
@@ -287,14 +298,14 @@ export class ClientLiveKit extends System {
   }
 
   setMicrophoneEnabled(value) {
-    if (!this.room) return console.error('[livekit] setMicrophoneEnabled failed (not connected)')
+    if (!this.room) return logger.error('setMicrophoneEnabled failed', { reason: 'not connected' })
     value = isBoolean(value) ? value : !this.room.localParticipant.isMicrophoneEnabled
     if (this.status.mic === value) return
     this.room.localParticipant.setMicrophoneEnabled(value)
   }
 
   setScreenShareTarget(targetId = null) {
-    if (!this.room) return console.error('[livekit] setScreenShareTarget failed (not connected)')
+    if (!this.room) return logger.error('setScreenShareTarget failed', { reason: 'not connected' })
     if (this.status.screenshare === targetId) return
     const metadata = JSON.stringify({ screenTargetId: targetId })
     this.room.localParticipant.setMetadata(metadata)

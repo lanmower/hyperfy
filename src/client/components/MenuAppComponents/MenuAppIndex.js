@@ -4,6 +4,9 @@ import { exportApp } from '../../../core/extras/appTools.js'
 import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { MenuItemField } from './MenuItemField.js'
+import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('MenuAppIndex')
 
 const extToType = {
   glb: 'model',
@@ -60,7 +63,7 @@ export function MenuAppIndex({ world, app, blueprint, pop, push }) {
       const file = await exportApp(app.blueprint, world.loader.loadFile)
       downloadFile(file)
     } catch (err) {
-      console.error(err)
+      logger.error('Failed to export app', { blueprintId: app.blueprint?.id, error: err.message })
     }
   }
 

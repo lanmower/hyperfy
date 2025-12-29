@@ -1,25 +1,34 @@
 import { createPlayerProxy } from '../../extras/createPlayerProxy.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { UnifiedProxyFactory } from '../../utils/factories/UnifiedProxyFactory.js'
 
-export class ProxyFactory {
+const logger = new ComponentLogger('ProxyFactory')
+
+export class ProxyFactory extends UnifiedProxyFactory {
   constructor(app) {
+    super(app)
     this.app = app
-    this.worldProxy = null
-    this.appProxy = null
     this.playerProxies = new Map()
   }
 
   getWorldProxy() {
-    if (!this.worldProxy) {
-      this.worldProxy = this.createWorldProxy()
-    }
-    return this.worldProxy
+    return this.getCachedProxy('world') || this.createAndCacheWorldProxy()
+  }
+
+  createAndCacheWorldProxy() {
+    const proxy = this.createWorldProxy()
+    this.proxyMap.set('world', proxy)
+    return proxy
   }
 
   getAppProxy() {
-    if (!this.appProxy) {
-      this.appProxy = this.createAppProxy()
-    }
-    return this.appProxy
+    return this.getCachedProxy('app') || this.createAndCacheAppProxy()
+  }
+
+  createAndCacheAppProxy() {
+    const proxy = this.createAppProxy()
+    this.proxyMap.set('app', proxy)
+    return proxy
   }
 
   getPlayerProxy(playerId) {
@@ -39,7 +48,7 @@ export class ProxyFactory {
     const proxy = {}
 
     if (!apps) {
-      console.warn('[ProxyFactory] Apps system not available, returning empty world proxy')
+      logger.warn('Apps system not available for world proxy', {})
       return proxy
     }
 
@@ -59,7 +68,7 @@ export class ProxyFactory {
         }
         Object.defineProperty(proxy, key, descriptor)
       } catch (err) {
-        console.warn(`Failed to define property for ${key}:`, err.message)
+        logger.warn('Failed to define property', { property: key, error: err.message })
       }
     }
 
@@ -76,7 +85,7 @@ export class ProxyFactory {
     const proxy = {}
 
     if (!apps) {
-      console.warn('[ProxyFactory] Apps system not available, returning empty app proxy')
+      logger.warn('Apps system not available for app proxy', {})
       return proxy
     }
 
@@ -96,7 +105,7 @@ export class ProxyFactory {
         }
         Object.defineProperty(proxy, key, descriptor)
       } catch (err) {
-        console.warn(`Failed to define property for ${key}:`, err.message)
+        logger.warn('Failed to define property', { property: key, error: err.message })
       }
     }
 
@@ -108,8 +117,7 @@ export class ProxyFactory {
   }
 
   clear() {
-    this.worldProxy = null
-    this.appProxy = null
+    super.clear()
     this.playerProxies.forEach(proxy => {
       proxy?.$cleanup?.()
     })

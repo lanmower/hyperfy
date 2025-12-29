@@ -4,6 +4,9 @@ import { UserIcon, XIcon } from 'lucide-react'
 
 import { usePane } from './usePane.js'
 import { AvatarPreview } from '../AvatarPreview.js'
+import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AvatarPane')
 
 export function AvatarPane({ world, info }) {
   const viewportRef = useRef()
@@ -14,7 +17,7 @@ export function AvatarPane({ world, info }) {
     const preview = new AvatarPreview(world, viewport)
     previewRef.current = preview
     preview.load(info.file, info.url).then(stats => {
-      console.log('stats', stats)
+      logger.info('Avatar loaded', { file: info.file, stats: JSON.stringify(stats) })
       setStats(stats)
     })
     return () => preview.destroy()

@@ -2,6 +2,10 @@ import { isEqual } from 'lodash-es'
 import { System } from './System.js'
 import { BlueprintParser } from './blueprints/BlueprintParser.js'
 import { BlueprintErrorMonitor } from './blueprints/BlueprintErrorMonitor.js'
+import { InputSanitizer } from '../security/InputSanitizer.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Blueprints')
 
 export class Blueprints extends System {
   static DEPS = {
@@ -27,6 +31,28 @@ export class Blueprints extends System {
   }
 
   async add(data, local) {
+    if (data.script) {
+      const scriptValidation = InputSanitizer.validateScript(data.script)
+      if (!scriptValidation.valid) {
+        logger.warn('Script validation failed for blueprint', {
+          blueprintId: data.id,
+          violationCount: scriptValidation.violations.length,
+          violations: scriptValidation.violations,
+        })
+      }
+    }
+
+    if (data.props) {
+      const propsValidation = InputSanitizer.validateProperties(data.props)
+      if (!propsValidation.valid) {
+        logger.warn('Properties validation failed for blueprint', {
+          blueprintId: data.id,
+          violationCount: propsValidation.violations.length,
+          violations: propsValidation.violations,
+        })
+      }
+    }
+
     this.parser.validate(data)
     const normalized = this.parser.normalize(data)
     this.parser.store(normalized)
@@ -40,6 +66,28 @@ export class Blueprints extends System {
   }
 
   async modify(data) {
+    if (data.script) {
+      const scriptValidation = InputSanitizer.validateScript(data.script)
+      if (!scriptValidation.valid) {
+        logger.warn('Script validation failed for blueprint modification', {
+          blueprintId: data.id,
+          violationCount: scriptValidation.violations.length,
+          violations: scriptValidation.violations,
+        })
+      }
+    }
+
+    if (data.props) {
+      const propsValidation = InputSanitizer.validateProperties(data.props)
+      if (!propsValidation.valid) {
+        logger.warn('Properties validation failed for blueprint modification', {
+          blueprintId: data.id,
+          violationCount: propsValidation.violations.length,
+          violations: propsValidation.violations,
+        })
+      }
+    }
+
     const blueprint = this.items.get(data.id)
     const modified = {
       ...blueprint,

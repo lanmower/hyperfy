@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ErrorHandlerRegistry')
+
 export class ErrorHandlerRegistry {
   constructor() {
     this.handlers = new Map()
@@ -39,7 +43,7 @@ export class ErrorHandlerRegistry {
           handled.push(name)
         }
       } catch (err) {
-        console.error(`Handler ${name} error:`, err)
+        logger.error('Handler execution failed', { handlerName: name, error: err.message })
       }
     }
 
@@ -47,7 +51,7 @@ export class ErrorHandlerRegistry {
       try {
         handler.handle(event, isDuplicate)
       } catch (err) {
-        console.error('Global handler error:', err)
+        logger.error('Global handler execution failed', { error: err.message })
       }
     }
 

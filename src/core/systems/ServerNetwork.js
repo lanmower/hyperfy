@@ -8,7 +8,10 @@ import { BuilderCommandHandler } from './server/BuilderCommandHandler.js'
 import { ServerLifecycleManager } from './server/ServerLifecycleManager.js'
 import { SocketManager } from './server/SocketManager.js'
 import { ChatManager } from './server/ChatManager.js'
+import { Compressor } from './network/Compressor.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('ServerNetwork')
 const PING_RATE = 1
 
 export class ServerNetwork extends BaseNetwork {
@@ -38,6 +41,7 @@ export class ServerNetwork extends BaseNetwork {
     this.protocol.isServer = true
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
+    this.compressor = new Compressor()
     this.lifecycleManager = new ServerLifecycleManager(this)
     this.socketManager = new SocketManager(this)
     this.chatManager = new ChatManager(this)
@@ -54,7 +58,7 @@ export class ServerNetwork extends BaseNetwork {
     if (typeof process !== 'undefined' && process.on) {
       process.on('message', msg => {
         if (msg?.type === 'hotReload') {
-          console.log('[HMR] Broadcasting reload to clients')
+          logger.info('Broadcasting hot reload to clients', {})
           this.send('hotReload', { timestamp: Date.now() })
         }
       })

@@ -26,27 +26,24 @@ const buildDirectory = path.join(rootDir, 'build')
     format: 'esm',
     bundle: true,
     treeShaking: true,
-    minify: false,
-    sourcemap: 'inline',
+    minify: !dev,
+    sourcemap: dev ? 'inline' : false,
     metafile: true,
     jsx: 'automatic',
     jsxImportSource: '@firebolt-dev/jsx',
-    // define: {
-    //   // 'process.env.NODE_ENV': '"development"',
-    // },
+    splitting: false,
     loader: {
       '.js': 'jsx',
     },
     external: ['three', 'react', 'react-dom', 'ses'],
-    // alias: {
-    //   react: 'react', // always use our own local react (jsx)
-    // },
     plugins: [polyfillNode({})],
   })
   if (dev) {
     await clientCtx.watch()
   } else {
-    await clientCtx.rebuild()
+    const result = await clientCtx.rebuild()
+    await fs.writeJson(path.join(buildDir, 'meta.json'), result.metafile, { spaces: 2 })
+    console.log('Build complete. Metafile saved to build/meta.json')
     process.exit(0)
   }
 }

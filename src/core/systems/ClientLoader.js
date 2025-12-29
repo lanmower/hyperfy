@@ -4,6 +4,10 @@ import { VRMLoaderPlugin } from '@pixiv/three-vrm'
 import { BaseLoader } from './BaseLoader.js'
 import { AssetHandlers } from './loaders/AssetHandlers.js'
 import { FileManager } from './loaders/FileManager.js'
+import { FallbackManager } from './loaders/FallbackManager.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ClientLoader')
 
 export class ClientLoader extends BaseLoader {
   static DEPS = {
@@ -22,6 +26,7 @@ export class ClientLoader extends BaseLoader {
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
     this.fileManager = new FileManager(world.resolveURL.bind(world))
     this.assetHandlers = new AssetHandlers(this, world)
+    this.fallbackManager = new FallbackManager()
   }
 
   start() {
@@ -43,15 +48,15 @@ export class ClientLoader extends BaseLoader {
             this.events.emit('progress', (++loaded / this.preloadItems.length) * 100)
           })
           .catch(err => {
-            console.error(`[ClientLoader] Error preloading ${item.type}/${item.url}:`, err)
+            logger.error('Error preloading asset', { type: item.type, url: item.url, error: err.message })
           })
       )
       this.preloader = Promise.allSettled(promises).then(() => { this.preloader = null }).catch(err => {
-        console.error('[ClientLoader] Preload completed with errors:', err)
+        logger.error('Preload completed with errors', { error: err.message })
         this.preloader = null
       })
     } catch (err) {
-      console.error('[ClientLoader] Error in execPreload:', err)
+      logger.error('Error in execPreload', { error: err.message })
       this.preloader = null
     }
   }
@@ -71,20 +76,37 @@ export class ClientLoader extends BaseLoader {
         try {
           file = await this.fileManager.load(url)
         } catch (fileErr) {
-          console.error(`[ClientLoader] Error loading file (${url}):`, fileErr)
+          logger.error('Error loading file', { url, error: fileErr.message })
+          const fallback = this.fallbackManager.getFallback(type, url, fileErr)
+          if (fallback) {
+            this.results.set(key, fallback)
+            return fallback
+          }
           return null
         }
       }
 
       const promise = this.assetHandlers.handle(type, url, file, key)
       if (!promise) {
-        console.warn(`[ClientLoader] No handler for asset type: ${type}`)
+        logger.warn('No handler for asset type', { type })
+        const fallback = this.fallbackManager.getFallback(type, url, new Error('No handler'))
+        if (fallback) {
+          this.results.set(key, fallback)
+          return fallback
+        }
         return null
       }
       this.promises.set(key, promise)
-      return await promise
+      const result = await promise
+      return result
     } catch (err) {
-      console.error(`[ClientLoader] Error loading asset (${type}/${url}):`, err)
+      logger.error('Error loading asset', { type, url, error: err.message })
+      const fallback = this.fallbackManager.getFallback(type, url, err)
+      if (fallback) {
+        const key = `${type}/${url}`
+        this.results.set(key, fallback)
+        return fallback
+      }
       return null
     }
   }
@@ -96,15 +118,19 @@ export class ClientLoader extends BaseLoader {
       try {
         objectUrl = URL.createObjectURL(file)
       } catch (urlErr) {
-        console.error(`[ClientLoader] Error creating object URL:`, urlErr)
+        logger.error('Error creating object URL', { error: urlErr.message })
         return
       }
 
       const promise = this.assetHandlers.handleInsert(type, objectUrl, url, file, key)
       if (promise) this.promises.set(key, promise)
     } catch (err) {
-      console.error(`[ClientLoader] Error in insert (${type}/${url}):`, err)
+      logger.error('Error in insert', { type, url, error: err.message })
     }
+  }
+
+  getFallbackLog() {
+    return this.fallbackManager.getUsageLog()
   }
 
   destroy() {

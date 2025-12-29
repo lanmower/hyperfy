@@ -1,9 +1,13 @@
 import fs from 'fs-extra'
 import { cloneDeep, throttle } from 'lodash-es'
+import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Storage')
 
 export class Storage {
-  constructor(file) {
+  constructor(file, circuitBreakerManager = null) {
     this.file = file
+    this.circuitBreakerManager = circuitBreakerManager
     try {
       this.data = fs.readJsonSync(this.file)
     } catch (err) {
@@ -22,16 +26,33 @@ export class Storage {
       this.data[key] = value
       this.save()
     } catch (err) {
-      console.error(err)
+      logger.error('Failed to set storage value', { key, error: err.message })
     }
   }
 
   async persist() {
-    try {
-      await fs.writeJson(this.file, this.data)
-    } catch (err) {
-      console.error(err)
-      console.log('failed to persist storage')
+    const executePersist = async () => {
+      try {
+        await fs.writeJson(this.file, this.data)
+      } catch (err) {
+        logger.error('Failed to persist storage', { file: this.file, error: err.message })
+        throw err
+      }
+    }
+
+    if (this.circuitBreakerManager && this.circuitBreakerManager.has('storage')) {
+      try {
+        await this.circuitBreakerManager.execute('storage', executePersist)
+      } catch (err) {
+        if (err.code === 'CIRCUIT_OPEN') {
+          logger.error('Storage circuit open, persist skipped', { status: 'CIRCUIT_OPEN' })
+        }
+      }
+    } else {
+      try {
+        await executePersist()
+      } catch (err) {
+      }
     }
   }
 }

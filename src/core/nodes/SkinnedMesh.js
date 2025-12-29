@@ -7,6 +7,9 @@ import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('SkinnedMesh')
 
 const defaultStopOpts = { fade: 0.15 }
 
@@ -39,7 +42,7 @@ function createAnimationManager(ctx, obj, clips, animations) {
       action = actions[name]
       if (!action) {
         const clip = clips[name]
-        if (!clip) return console.warn(`[skinnedmesh] animation not found: ${name}`)
+        if (!clip) return logger.warn('Animation not found', { animation: name })
         action = mixer.clipAction(clip)
         actions[name] = action
       }
@@ -172,7 +175,7 @@ export class SkinnedMesh extends Node {
     }
     const bone = this.bones[name]
     if (!bone) {
-      console.warn(`[skinnedmesh] bone not found: ${name}`)
+      logger.warn('Bone not found', { bone: name })
       return null
     }
     return bone

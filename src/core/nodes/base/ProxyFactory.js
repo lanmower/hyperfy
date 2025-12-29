@@ -1,16 +1,18 @@
 import { getRef, secure } from '../Node.js'
 import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
+import { UnifiedProxyFactory } from '../../utils/factories/UnifiedProxyFactory.js'
 
-export class ProxyFactory {
+export class ProxyFactory extends UnifiedProxyFactory {
   constructor(node) {
+    super(node)
     this.node = node
   }
 
   createProxy(customProps = {}) {
-    if (!this.node.proxy) {
-      this.node.proxy = this.getBuilder().build(customProps)
+    if (!this.cachedProxy) {
+      this.cachedProxy = this.getBuilder().build(customProps)
     }
-    return this.node.proxy
+    return this.cachedProxy
   }
 
   getBuilder() {

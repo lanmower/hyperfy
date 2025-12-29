@@ -1,5 +1,7 @@
 import moment from 'moment'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('WorldSaveManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
 
@@ -18,8 +20,7 @@ export class WorldSaveManager {
         counts.upsertedBlueprints++
         this.serverNetwork.dirtyBlueprints.delete(id)
       } catch (err) {
-        console.log(`error saving blueprint: ${blueprint.id}`)
-        console.error(err)
+        logger.error('Failed to save blueprint', { blueprintId: blueprint.id, error: err.message })
       }
     }
     for (const id of this.serverNetwork.dirtyApps) {
@@ -31,8 +32,7 @@ export class WorldSaveManager {
           counts.upsertedApps++
           this.serverNetwork.dirtyApps.delete(id)
         } catch (err) {
-          console.log(`error saving entity: ${entity.data.id}`)
-          console.error(err)
+          logger.error('Failed to save entity', { entityId: entity.data.id, error: err.message })
         }
       } else {
         await this.serverNetwork.persistence.deleteEntity(id)
@@ -42,7 +42,7 @@ export class WorldSaveManager {
     }
     const didSave = counts.upsertedBlueprints > 0 || counts.upsertedApps > 0 || counts.deletedApps > 0
     if (didSave) {
-      console.log(`world saved (${counts.upsertedBlueprints} blueprints, ${counts.upsertedApps} apps, ${counts.deletedApps} deleted)`)
+      logger.info('World saved', { blueprints: counts.upsertedBlueprints, apps: counts.upsertedApps, deleted: counts.deletedApps })
     }
     this.serverNetwork.saveTimerId = setTimeout(this.save, SAVE_INTERVAL * 1000)
   }

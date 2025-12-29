@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('LifecycleManager')
+
 export class LifecycleManager {
   constructor(node) {
     this.node = node
@@ -32,7 +36,7 @@ export class LifecycleManager {
 
   add(node) {
     const parent = this.node
-    if (!node) return console.error('no node to add')
+    if (!node) return logger.error('Attempted to add null or undefined node', {})
     if (node.parent) {
       node.parent.remove(node)
     }

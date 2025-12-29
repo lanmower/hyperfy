@@ -3,7 +3,10 @@ import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
 import { MaterialFactory } from './stage/MaterialFactory.js'
 import { MeshInserter } from './stage/MeshInserter.js'
+import { ObjectPool } from './stage/ObjectPool.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('Stage')
 const raycasterVec2 = new THREE.Vector2()
 
 export class Stage extends System {
@@ -25,18 +28,25 @@ export class Stage extends System {
     this.world = world
     this.materialFactory = new MaterialFactory(world)
     this.meshInserter = new MeshInserter(this)
+    this.objectPool = new ObjectPool()
     this.raycaster = new THREE.Raycaster()
     this.raycaster.firstHitOnly = true
     this.raycastHits = []
     this.maskNone = new THREE.Layers()
     this.maskNone.enableAll()
+    this.renderStats = {
+      drawCalls: 0,
+      triangles: 0,
+      points: 0,
+      lines: 0,
+    }
   }
 
   init({ viewport }) {
     this.viewport = viewport
-    console.log('Stage.init() adding rig to scene')
+    logger.info('Adding rig to scene', {})
     this.scene.add(this.rig)
-    console.log('Stage scene children:', this.scene.children.length, this.scene.children)
+    logger.info('Scene initialized', { childrenCount: this.scene.children.length })
   }
 
   update(delta) {

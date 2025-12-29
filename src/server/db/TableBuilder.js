@@ -1,3 +1,7 @@
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('TableBuilder')
+
 export class TableBuilder {
   constructor(name) {
     this.name = name
@@ -16,6 +20,10 @@ export class TableBuilder {
         return this
       },
       nullable: () => this,
+      unique: () => {
+        this.columns[this.columns.length - 1] += ' UNIQUE'
+        return this
+      },
     }
   }
 
@@ -51,6 +59,15 @@ export class TableBuilder {
         return this
       },
     }
+  }
+
+  unique(columns) {
+    if (Array.isArray(columns)) {
+      this.columns.push(`UNIQUE(${columns.join(', ')})`)
+    } else {
+      this.columns.push(`UNIQUE(${columns})`)
+    }
+    return this
   }
 
   renameColumn() {
@@ -92,7 +109,7 @@ export class AlterTableBuilder {
             try {
               this.db.run(`ALTER TABLE ${this.name} ADD COLUMN ${name} INTEGER DEFAULT 0`)
             } catch (e) {
-              console.error(`Failed to add column ${name} to table ${this.name}:`, e)
+              logger.error('Failed to add column to table', { tableName: this.name, columnName: name, error: e.message })
               throw e
             }
             return this

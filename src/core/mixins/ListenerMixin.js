@@ -1,3 +1,6 @@
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ListenerMixin')
 
 export function ListenerMixin(Base) {
   return class extends Base {
@@ -16,7 +19,7 @@ export function ListenerMixin(Base) {
         try {
           callback(...args)
         } catch (err) {
-          console.error('Listener error:', err)
+          logger.error('Listener callback failed', { error: err.message })
         }
       })
     }

@@ -1,0 +1,149 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  manual-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    permissions:
+      contents: write
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.11.0'
+          cache: 'npm'
+
+      - name: Create deployment status
+        uses: actions/github-script@v7
+        id: deployment
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: '${{ github.event.inputs.environment }}',
+              required_contexts: [],
+              auto_merge: false
+            })
+            return deployment.data.id
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint code
+        run: npm run lint --max-warnings 0
+        continue-on-error: false
+
+      - name: Build for ${{ github.event.inputs.environment }}
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "staging" ]; then
+            npm run build:staging
+          else
+            npm run build
+          fi
+
+      - name: Run pre-deployment checks
+        run: node src/scripts/verify-deploy.js
+
+      - name: Get deployment info
+        id: deploy-info
+        run: |
+          BUILD_HASH=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          VERSION=$(jq -r .version package.json)
+          echo "BUILD_HASH=$BUILD_HASH" >> $GITHUB_OUTPUT
+          echo "BUILD_TIME=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create deployment artifact
+        run: |
+          tar -czf hyperfy-${{ github.event.inputs.environment }}-${{ steps.deploy-info.outputs.BUILD_HASH }}.tar.gz build/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyperfy-${{ github.event.inputs.environment }}-${{ steps.deploy-info.outputs.BUILD_HASH }}
+          path: hyperfy-${{ github.event.inputs.environment }}-${{ steps.deploy-info.outputs.BUILD_HASH }}.tar.gz
+          retention-days: 60
+
+      - name: Deploy to ${{ github.event.inputs.environment }}
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          DEPLOYMENT_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+        run: |
+          if [ -n "$COOLIFY_WEBHOOK" ]; then
+            curl -X POST "$COOLIFY_WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $DEPLOYMENT_TOKEN" \
+              -d '{
+                "event": "manual_deployment",
+                "environment": "'$ENVIRONMENT'",
+                "commit": "${{ steps.deploy-info.outputs.BUILD_HASH }}",
+                "branch": "${{ github.ref_name }}",
+                "version": "${{ steps.deploy-info.outputs.VERSION }}",
+                "timestamp": "${{ steps.deploy-info.outputs.BUILD_TIME }}",
+                "triggered_by": "${{ github.actor }}"
+              }' || echo "Deployment webhook failed"
+          else
+            echo "Warning: Coolify webhook not configured"
+          fi
+
+      - name: Update deployment status
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: 'success',
+              description: 'Deployment to ${{ github.event.inputs.environment }} successful',
+              environment_url: '${{ secrets[format("{0}_URL", github.event.inputs.environment)] }}'
+            })
+
+      - name: Update deployment status on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: 'failure',
+              description: 'Deployment to ${{ github.event.inputs.environment }} failed'
+            })
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          echo "## Manual Deployment - ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.deploy-info.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ steps.deploy-info.outputs.BUILD_HASH }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** ${{ steps.deploy-info.outputs.BUILD_TIME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

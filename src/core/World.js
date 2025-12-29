@@ -3,6 +3,9 @@ import EventEmitter from 'eventemitter3'
 import { ServiceContainer } from './di/ServiceContainer.js'
 import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
+import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('World')
 
 export class World extends EventEmitter {
   constructor() {
@@ -44,6 +47,19 @@ export class World extends EventEmitter {
     this[key] = system
     this.di.registerSingleton(key, system)
     return system
+  }
+
+  getService(name) {
+    try {
+      return this.di.get(name)
+    } catch (err) {
+      logger.error('Failed to get service', { name, error: err.message })
+      return null
+    }
+  }
+
+  hasService(name) {
+    return this.di.has(name)
   }
 
   async init(options) {
@@ -192,7 +208,7 @@ export class World extends EventEmitter {
       } else if (this.assetsUrl) {
         return url.replace('asset:/', this.assetsUrl)
       } else {
-        console.error('resolveURL: no assetsUrl or assetsDir defined')
+        logger.error('resolveURL: no assetsUrl or assetsDir defined', { url })
         return url
       }
     }

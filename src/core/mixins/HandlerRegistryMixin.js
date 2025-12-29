@@ -1,4 +1,6 @@
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('HandlerRegistry')
 
 export const withHandlerRegistry = (Base) => class extends Base {
   constructor(...args) {
@@ -40,13 +42,13 @@ export const withHandlerRegistry = (Base) => class extends Base {
   dispatch(name, ...args) {
     const handler = this.handlers.get(name)
     if (!handler) {
-      console.warn(`No handler registered for: ${name}`)
+      logger.warn('No handler registered', { name })
       return null
     }
     try {
       return handler(...args)
     } catch (err) {
-      console.error(`Error in handler '${name}':`, err)
+      logger.error('Handler execution failed', { name, error: err.message })
       throw err
     }
   }
@@ -55,13 +57,13 @@ export const withHandlerRegistry = (Base) => class extends Base {
   async dispatchAsync(name, ...args) {
     const handler = this.handlers.get(name)
     if (!handler) {
-      console.warn(`No handler registered for: ${name}`)
+      logger.warn('No handler registered', { name })
       return null
     }
     try {
       return await handler(...args)
     } catch (err) {
-      console.error(`Error in async handler '${name}':`, err)
+      logger.error('Async handler execution failed', { name, error: err.message })
       throw err
     }
   }

@@ -1,7 +1,9 @@
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
 import { XRControllerModelFactory } from 'three/addons'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('XR')
 const UP = new THREE.Vector3(0, 1, 0)
 
 const v1 = new THREE.Vector3()
@@ -38,8 +40,7 @@ export class XR extends System {
     try {
       session.updateTargetFrameRate(72)
     } catch (err) {
-      console.error(err)
-      console.error('xr session.updateTargetFrameRate(72) failed')
+      logger.error('Failed to update XR frame rate', { error: err.message })
     }
     this.graphics.renderer.xr.setSession(session)
     session.addEventListener('end', this.onSessionEnd)

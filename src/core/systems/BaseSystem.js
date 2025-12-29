@@ -3,6 +3,8 @@ import { System } from './System.js'
 import { withHandlerRegistry } from '../mixins/HandlerRegistryMixin.js'
 import { withCacheable } from '../mixins/CacheableMixin.js'
 import { withStateManager } from '../mixins/StateManagerMixin.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { EventListenerManager } from './EventListenerManager.js'
 
 const SystemWithMixins = withStateManager(withCacheable(withHandlerRegistry(System)))
 
@@ -16,6 +18,8 @@ export class BaseSystem extends SystemWithMixins {
     }
 
     this._isBaseSystem = true
+    this.logger = new ComponentLogger(this.constructor.name)
+    this.listeners = new EventListenerManager(this)
   }
 
   getDefaultConfig() {
@@ -38,16 +42,16 @@ export class BaseSystem extends SystemWithMixins {
     this.setConfig('enabled', enabled)
   }
 
-  log(...args) {
-    console.log(`[${this.constructor.name}]`, ...args)
+  log(message, context = {}) {
+    this.logger.info(message, context)
   }
 
-  warn(...args) {
-    console.warn(`[${this.constructor.name}]`, ...args)
+  warn(message, context = {}) {
+    this.logger.warn(message, context)
   }
 
-  error(...args) {
-    console.error(`[${this.constructor.name}]`, ...args)
+  error(message, context = {}) {
+    this.logger.error(message, context)
   }
 
   getMetadata() {
@@ -62,5 +66,33 @@ export class BaseSystem extends SystemWithMixins {
   reset() {
     this.resetState()
     this.invalidateCache()
+  }
+
+  getService(name) {
+    return this.world.getService(name)
+  }
+
+  hasService(name) {
+    return this.world.hasService(name)
+  }
+
+  getServiceOrThrow(name) {
+    const service = this.getService(name)
+    if (!service) {
+      throw new Error(`Service '${name}' not found in DI container`)
+    }
+    return service
+  }
+
+  requireServices(...serviceNames) {
+    const missing = serviceNames.filter(name => !this.hasService(name))
+    if (missing.length > 0) {
+      throw new Error(`System ${this.constructor.name} requires services: ${missing.join(', ')}`)
+    }
+  }
+
+  destroy() {
+    this.listeners.clear()
+    super.destroy?.()
   }
 }

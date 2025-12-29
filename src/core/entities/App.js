@@ -3,6 +3,9 @@ import { isArray, isFunction, isNumber, isString } from 'lodash-es'
 import moment from 'moment'
 
 import { BaseEntity } from './BaseEntity.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('App')
 import { createNode } from '../extras/createNode.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
@@ -17,6 +20,10 @@ import { AppNetworkSync } from './app/AppNetworkSync.js'
 import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
 import { RigidBody } from '../nodes/RigidBody.js'
 import { Collider } from '../nodes/Collider.js'
+import { InputSanitizer } from '../security/InputSanitizer.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('App')
 
 const Modes = {
   ACTIVE: 'active',
@@ -50,7 +57,7 @@ export class App extends BaseEntity {
     this.worldNodes = this.nodeManager.worldNodes
     this.snaps = this.nodeManager.snaps
     this.build().catch(err => {
-      console.error('App.build() failed:', err.message)
+      logger.error('Failed to build app', { appId: this.data.id, blueprint: this.data.blueprint, error: err.message })
     })
   }
 
@@ -276,6 +283,17 @@ export class App extends BaseEntity {
 
   fetch = async (url, options = {}) => {
     try {
+      const validation = InputSanitizer.validateURL(url)
+      if (!validation.valid) {
+        logger.error('Fetch URL validation failed', {
+          url,
+          appId: this.data.id,
+          blueprintId: this.blueprint?.id,
+          violations: validation.violations,
+        })
+        throw new Error(`URL validation failed: ${validation.violations.map(v => v.message).join(', ')}`)
+      }
+
       const resp = await fetch(url, {
         ...options,
         signal: this.abortController.signal,
@@ -292,7 +310,7 @@ export class App extends BaseEntity {
       }
       return secureResp
     } catch (err) {
-      console.error(err)
+      logger.error('Fetch failed', { url, error: err.message })
     }
   }
 

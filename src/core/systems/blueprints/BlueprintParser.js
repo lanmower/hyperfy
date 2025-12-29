@@ -1,5 +1,8 @@
 import { AppValidator } from '../../validators/AppValidator.js'
 import { normalizeBlueprint } from '../../schemas/AppBlueprint.schema.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('BlueprintParser')
 
 export class BlueprintParser {
   constructor(world, blueprints) {
@@ -10,7 +13,7 @@ export class BlueprintParser {
   validate(data) {
     const validation = AppValidator.validateBlueprint(data)
     if (!validation.valid) {
-      console.warn(`Blueprint validation warning for ${data.id}:`, validation.error)
+      logger.warn('Blueprint validation warning', { blueprintId: data.id, error: validation.error })
     }
     return validation
   }

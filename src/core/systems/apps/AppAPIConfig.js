@@ -4,6 +4,11 @@ import { ControlPriorities } from '../../extras/ControlPriorities.js'
 import * as NodeClasses from '../../nodes/index.js'
 import { HyperfyError } from '../error/ErrorCodes.js'
 import ValidationHelper from '../error/ValidationHelper.js'
+import { APIMethodWrapper } from '../../utils/api/APIMethodWrapper.js'
+import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('AppAPIConfig')
 
 const fileRemaps = {
   avatar: field => {
@@ -42,79 +47,43 @@ const fileRemaps = {
 
 export const AppAPIConfig = {
   getters: {
-    instanceId: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get instanceId' })
-        return entity.data.id
-      } catch (e) {
-        console.error('[AppAPIConfig.instanceId]', e.message)
-        return null
-      }
-    },
+    instanceId: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.data.id,
+      { module: 'AppAPIConfig', method: 'instanceId', defaultReturn: null }
+    ),
 
-    version: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get version' })
-        return entity.blueprint?.version
-      } catch (e) {
-        console.error('[AppAPIConfig.version]', e.message)
-        return null
-      }
-    },
+    version: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.blueprint?.version,
+      { module: 'AppAPIConfig', method: 'version', defaultReturn: null }
+    ),
 
-    modelUrl: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get modelUrl' })
-        return entity.blueprint?.model
-      } catch (e) {
-        console.error('[AppAPIConfig.modelUrl]', e.message)
-        return null
-      }
-    },
+    modelUrl: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.blueprint?.model,
+      { module: 'AppAPIConfig', method: 'modelUrl', defaultReturn: null }
+    ),
 
-    state: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get state' })
-        return entity.data.state
-      } catch (e) {
-        console.error('[AppAPIConfig.state]', e.message)
-        return {}
-      }
-    },
+    state: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.data.state,
+      { module: 'AppAPIConfig', method: 'state', defaultReturn: {} }
+    ),
 
-    props: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get props' })
-        return entity.blueprint?.props || {}
-      } catch (e) {
-        console.error('[AppAPIConfig.props]', e.message)
-        return {}
-      }
-    },
+    props: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.blueprint?.props || {},
+      { module: 'AppAPIConfig', method: 'props', defaultReturn: {} }
+    ),
 
-    config: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get config' })
-        return entity.blueprint?.props || {}
-      } catch (e) {
-        console.error('[AppAPIConfig.config]', e.message)
-        return {}
-      }
-    },
+    config: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.blueprint?.props || {},
+      { module: 'AppAPIConfig', method: 'config', defaultReturn: {} }
+    ),
 
-    keepActive: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get keepActive' })
-        return entity.keepActive
-      } catch (e) {
-        console.error('[AppAPIConfig.keepActive]', e.message)
-        return false
-      }
-    },
+    keepActive: APIMethodWrapper.wrapGetter(
+      (apps, entity) => entity.keepActive,
+      { module: 'AppAPIConfig', method: 'keepActive', defaultReturn: false }
+    ),
 
-    matrixWorld: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get matrixWorld' })
+    matrixWorld: APIMethodWrapper.wrapGetter(
+      (apps, entity) => {
         const m = new THREE.Matrix4()
         const pos = entity.data?.position || [0, 0, 0]
         const quat = entity.data?.quaternion || [0, 0, 0, 1]
@@ -125,103 +94,80 @@ export const AppAPIConfig = {
           new THREE.Vector3(scale[0], scale[1], scale[2])
         )
         return m
-      } catch (e) {
-        console.error('[AppAPIConfig.matrixWorld]', e.message)
-        return new THREE.Matrix4()
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'matrixWorld', defaultReturn: new THREE.Matrix4() }
+    ),
 
-    position: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get position' })
+    position: APIMethodWrapper.wrapGetter(
+      (apps, entity) => {
         const pos = entity.data?.position || [0, 0, 0]
         return new THREE.Vector3(pos[0], pos[1], pos[2])
-      } catch (e) {
-        console.error('[AppAPIConfig.position]', e.message)
-        return new THREE.Vector3()
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'position', defaultReturn: new THREE.Vector3() }
+    ),
 
-    quaternion: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get quaternion' })
+    quaternion: APIMethodWrapper.wrapGetter(
+      (apps, entity) => {
         const quat = entity.data?.quaternion || [0, 0, 0, 1]
         return new THREE.Quaternion(quat[0], quat[1], quat[2], quat[3])
-      } catch (e) {
-        console.error('[AppAPIConfig.quaternion]', e.message)
-        return new THREE.Quaternion()
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'quaternion', defaultReturn: new THREE.Quaternion() }
+    ),
 
-    scale: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'get scale' })
+    scale: APIMethodWrapper.wrapGetter(
+      (apps, entity) => {
         const scale = entity.data?.scale || [1, 1, 1]
         return new THREE.Vector3(scale[0], scale[1], scale[2])
-      } catch (e) {
-        console.error('[AppAPIConfig.scale]', e.message)
-        return new THREE.Vector3(1, 1, 1)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'scale', defaultReturn: new THREE.Vector3(1, 1, 1) }
+    ),
   },
 
   setters: {
-    state: (apps, entity, value) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'set state' })
+    state: APIMethodWrapper.wrapSetter(
+      (apps, entity, value) => {
         ValidationHelper.assertIsObject(value, 'state', { operation: 'set state' })
         entity.data.state = value
-      } catch (e) {
-        console.error('[AppAPIConfig.setState]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'state' }
+    ),
 
-    keepActive: (apps, entity, value) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'set keepActive' })
+    keepActive: APIMethodWrapper.wrapSetter(
+      (apps, entity, value) => {
         if (typeof value !== 'boolean') {
-          console.warn('[AppAPIConfig.setKeepActive] Expected boolean, got', typeof value)
+          logger.warn('Expected boolean for keepActive', { received: typeof value })
           return
         }
         entity.keepActive = value
-      } catch (e) {
-        console.error('[AppAPIConfig.setKeepActive]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'keepActive' }
+    ),
   },
 
   methods: {
-    on: (apps, entity, name, callback) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'on', eventName: name })
+    on: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, name, callback) => {
         ValidationHelper.assertIsString(name, 'name', { operation: 'on' })
         ValidationHelper.assertNotNull(callback, 'callback', { operation: 'on' })
         entity.on(name, callback)
-      } catch (e) {
-        console.error('[AppAPIConfig.on]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'on', operation: 'on' }
+    ),
 
-    off: (apps, entity, name, callback) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'off', eventName: name })
+    off: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, name, callback) => {
         ValidationHelper.assertIsString(name, 'name', { operation: 'off' })
         ValidationHelper.assertNotNull(callback, 'callback', { operation: 'off' })
         entity.off(name, callback)
-      } catch (e) {
-        console.error('[AppAPIConfig.off]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'off', operation: 'off' }
+    ),
 
-    send: (apps, entity, name, data, ignoreSocketId) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'send', eventName: name })
+    send: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, name, data, ignoreSocketId) => {
         ValidationHelper.assertIsString(name, 'name', { operation: 'send' })
 
-        const internalEvents = [
-          'fixedUpdate', 'updated', 'lateUpdate', 'destroy',
-          'enter', 'leave', 'chat', 'command', 'health',
-        ]
+        const internalEvents = SYSTEM_INTERNAL_EVENTS
         if (internalEvents.includes(name)) {
           throw new HyperfyError('PERMISSION_DENIED', `apps cannot send internal events (${name})`, {
             eventName: name,
@@ -235,14 +181,12 @@ export const AppAPIConfig = {
 
         const event = [entity.data.id, entity.blueprint?.version, name, data]
         apps.world.network.send('entityEvent', event, ignoreSocketId)
-      } catch (e) {
-        console.error('[AppAPIConfig.send]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'send', operation: 'send' }
+    ),
 
-    sendTo: (apps, entity, playerId, name, data) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'sendTo', eventName: name })
+    sendTo: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, playerId, name, data) => {
         ValidationHelper.assertIsString(name, 'name', { operation: 'sendTo' })
         ValidationHelper.assertIsString(playerId, 'playerId', { operation: 'sendTo' })
 
@@ -252,10 +196,7 @@ export const AppAPIConfig = {
           })
         }
 
-        const internalEvents = [
-          'fixedUpdate', 'updated', 'lateUpdate', 'destroy',
-          'enter', 'leave', 'chat', 'command', 'health',
-        ]
+        const internalEvents = SYSTEM_INTERNAL_EVENTS
         if (internalEvents.includes(name)) {
           throw new HyperfyError('PERMISSION_DENIED', `apps cannot send internal events (${name})`, {
             eventName: name,
@@ -265,26 +206,21 @@ export const AppAPIConfig = {
 
         const player = apps.world.entities.get(playerId)
         if (!player) {
-          console.warn('[AppAPIConfig.sendTo] Player not found:', playerId)
+          logger.warn('Player not found for sendTo', { playerId })
           return
         }
 
         const event = [entity.data.id, entity.blueprint?.version, name, data]
         apps.world.network.sendTo(playerId, 'entityEvent', event)
-      } catch (e) {
-        console.error('[AppAPIConfig.sendTo]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'sendTo', operation: 'sendTo' }
+    ),
 
-    emit: (apps, entity, name, data) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'emit', eventName: name })
+    emit: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, name, data) => {
         ValidationHelper.assertIsString(name, 'name', { operation: 'emit' })
 
-        const internalEvents = [
-          'fixedUpdate', 'updated', 'lateUpdate', 'destroy',
-          'enter', 'leave', 'chat', 'command', 'health',
-        ]
+        const internalEvents = SYSTEM_INTERNAL_EVENTS
         if (internalEvents.includes(name)) {
           throw new HyperfyError('PERMISSION_DENIED', `apps cannot emit internal events (${name})`, {
             eventName: name,
@@ -297,14 +233,12 @@ export const AppAPIConfig = {
         }
 
         apps.world.events.emit(name, data)
-      } catch (e) {
-        console.error('[AppAPIConfig.emit]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'emit', operation: 'emit' }
+    ),
 
-    create: (apps, entity, name, data) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'create', nodeName: name })
+    create: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, name, data) => {
         ValidationHelper.assertIsString(name, 'name', { operation: 'create' })
 
         if (!entity.createNode || typeof entity.createNode !== 'function') {
@@ -324,15 +258,12 @@ export const AppAPIConfig = {
 
         const node = entity.createNode(name, data)
         return node.getProxy?.() || node
-      } catch (e) {
-        console.error('[AppAPIConfig.create]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'create', operation: 'create', defaultReturn: null }
+    ),
 
-    control: (apps, entity, options) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'control' })
+    control: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, options) => {
         ValidationHelper.assertIsObject(options, 'options', { operation: 'control' })
 
         if (!apps?.world?.controls) {
@@ -346,16 +277,12 @@ export const AppAPIConfig = {
           object: entity,
         })
         return entity.control
-      } catch (e) {
-        console.error('[AppAPIConfig.control]', e.message)
-        return null
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'control', operation: 'control', defaultReturn: null }
+    ),
 
-    configure: (apps, entity, fields) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'configure' })
-
+    configure: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, fields) => {
         if (!isArray(fields)) {
           entity.fields = []
         } else {
@@ -363,14 +290,14 @@ export const AppAPIConfig = {
         }
 
         if (!entity.blueprint) {
-          console.warn('[AppAPIConfig.configure] Blueprint not loaded yet')
+          logger.warn('Blueprint not loaded yet for configure', { entityId: entity.data.id })
           return
         }
 
         const props = entity.blueprint.props
         for (const field of entity.fields) {
           if (!field || typeof field !== 'object') {
-            console.warn('[AppAPIConfig.configure] Invalid field object:', field)
+            logger.warn('Invalid field object in configure', { field, entityId: entity.data.id })
             continue
           }
           fileRemaps[field.type]?.(field)
@@ -379,14 +306,12 @@ export const AppAPIConfig = {
           }
         }
         entity.onFields?.(entity.fields)
-      } catch (e) {
-        console.error('[AppAPIConfig.configure]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'configure', operation: 'configure' }
+    ),
 
-    add: (apps, entity, node) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'add' })
+    add: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, node) => {
         ValidationHelper.assertNotNull(node, 'node', { operation: 'add' })
 
         if (!entity.root) {
@@ -402,14 +327,12 @@ export const AppAPIConfig = {
         entity.root.add(ref)
         ref.mount?.()
         ref.activate?.({ world: apps.world, entity })
-      } catch (e) {
-        console.error('[AppAPIConfig.add]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'add', operation: 'add' }
+    ),
 
-    remove: (apps, entity, node) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'remove' })
+    remove: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, node) => {
         ValidationHelper.assertNotNull(node, 'node', { operation: 'remove' })
 
         if (!entity.root) {
@@ -421,14 +344,12 @@ export const AppAPIConfig = {
           entity.root.remove(ref)
         }
         ref?.deactivate?.()
-      } catch (e) {
-        console.error('[AppAPIConfig.remove]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'remove', operation: 'remove' }
+    ),
 
-    traverse: (apps, entity, callback) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'traverse' })
+    traverse: APIMethodWrapper.wrapWithValidation(
+      (apps, entity, callback) => {
         ValidationHelper.assertNotNull(callback, 'callback', { operation: 'traverse' })
 
         if (!entity.root) {
@@ -436,24 +357,20 @@ export const AppAPIConfig = {
         }
 
         entity.root.traverse(callback)
-      } catch (e) {
-        console.error('[AppAPIConfig.traverse]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'traverse', operation: 'traverse' }
+    ),
 
-    clean: (apps, entity) => {
-      try {
-        ValidationHelper.assertEntityValid(entity, { operation: 'clean' })
-
+    clean: APIMethodWrapper.wrapWithValidation(
+      (apps, entity) => {
         if (!entity.root) {
-          console.warn('[AppAPIConfig.clean] Entity root not initialized')
+          logger.warn('Entity root not initialized for clean', { entityId: entity.data.id })
           return
         }
 
         entity.root.clean?.()
-      } catch (e) {
-        console.error('[AppAPIConfig.clean]', e.message)
-      }
-    },
+      },
+      { module: 'AppAPIConfig', method: 'clean', operation: 'clean' }
+    ),
   },
 }

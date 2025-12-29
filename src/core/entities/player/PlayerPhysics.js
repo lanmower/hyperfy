@@ -58,6 +58,9 @@ export class PlayerPhysics {
 
     this.lastJumpAt = 0
 
+    this.frameCount = 0
+    this.groundCheckInterval = 2
+
     this.platformTracker = new PlayerPlatformTracker(world, player, this.platform)
     this.physicsState = new PlayerPhysicsState(world, player, this)
   }
@@ -100,9 +103,14 @@ export class PlayerPhysics {
   }
 
   updateStandardPhysics(delta, snare) {
+    this.frameCount++
     this.platformTracker.update(this.grounded)
-    this.detectGround()
-    this.handleSteepSlopes()
+
+    if (this.frameCount % this.groundCheckInterval === 0 || this.jumping || this.falling) {
+      this.detectGround()
+      this.handleSteepSlopes()
+    }
+
     this.physicsState.updateMaterialFriction()
     this.physicsState.updateJumpFallState(delta)
     this.updateGravityAndVelocity(delta, snare)

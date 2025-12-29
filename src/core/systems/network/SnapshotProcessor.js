@@ -1,6 +1,9 @@
 import { emoteUrls } from '../../extras/playerEmotes.js'
 import { storage } from '../../storage.js'
 import { SnapshotCodec } from './SnapshotCodec.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('SnapshotProcessor')
 
 export class SnapshotProcessor {
   constructor(network) {
@@ -8,7 +11,7 @@ export class SnapshotProcessor {
   }
 
   process(data) {
-    console.log('SnapshotProcessor.process() called with', { id: data.id, entityCount: data.entities?.length, blueprintCount: data.blueprints?.length })
+    logger.info('Snapshot process started', { networkId: data.id, entityCount: data.entities?.length, blueprintCount: data.blueprints?.length })
     this.network.id = data.id
     this.network.serverTimeOffset = data.serverTime - performance.now()
     this.network.apiUrl = data.apiUrl
@@ -16,15 +19,15 @@ export class SnapshotProcessor {
     this.network.assetsUrl = data.assetsUrl
 
     this.preloadAssets(data)
-    console.log('Calling SnapshotCodec.deserializeState')
+    logger.info('Deserializing snapshot state')
     SnapshotCodec.deserializeState(data, this.network)
-    console.log('SnapshotCodec.deserializeState completed')
+    logger.info('Snapshot state deserialization complete')
     storage.set('authToken', data.authToken)
   }
 
   preloadAssets(data) {
     if (!this.network.loader) {
-      console.log('loader not available yet, skipping preload')
+      logger.info('Loader not available, skipping preload')
       return
     }
     if (data.settings.avatar) {

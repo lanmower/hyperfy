@@ -2,7 +2,9 @@ import { FileStorage } from '../../../server/services/FileStorage.js'
 import { FileUploader } from '../../../server/services/FileUploader.js'
 import { CommandHandler } from '../../../server/services/CommandHandler.js'
 import { WorldPersistence } from '../../../server/services/WorldPersistence.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
+const logger = new ComponentLogger('ServerLifecycleManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
 
@@ -35,7 +37,7 @@ export class ServerLifecycleManager {
       for (const blueprint of collection.blueprints) {
         const existingBlueprint = this.network.blueprints.get(blueprint.id)
         if (!existingBlueprint) {
-          console.log('Adding blueprint from collection:', blueprint.id)
+          logger.info('Adding blueprint from collection', { blueprintId: blueprint.id })
           this.network.blueprints.add(blueprint, true)
         }
       }
@@ -65,16 +67,16 @@ export class ServerLifecycleManager {
       try {
         this.network.entities.add(data, true)
       } catch (err) {
-        console.error('Failed to add entity:', data.id, err.message)
+        logger.error('Failed to add entity', { entityId: data.id, error: err.message })
       }
     }
 
     if (sceneEntity && !entityIds.has(sceneEntityId)) {
-      console.log('Creating and adding scene entity:', sceneEntityId)
+      logger.info('Creating and adding scene entity', { sceneEntityId })
       try {
         this.network.entities.add(sceneEntity, true)
       } catch (err) {
-        console.error('Failed to add scene entity:', err.message)
+        logger.error('Failed to add scene entity', { error: err.message })
       }
     }
 
@@ -83,7 +85,7 @@ export class ServerLifecycleManager {
       this.network.settings.deserialize(settings)
       this.network.settings.setHasAdminCode(!!env.ADMIN_CODE)
     } catch (err) {
-      console.error(err)
+      logger.error('Failed to load settings', { error: err.message })
     }
 
     if (SAVE_INTERVAL) {

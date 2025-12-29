@@ -5,6 +5,9 @@ import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'
 import { createEmoteFactory } from '../../extras/createEmoteFactory.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
+import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('ServerAssetHandlers')
 
 export class ServerAssetHandlers {
   constructor(world, errorMonitor, scripts) {
@@ -37,7 +40,7 @@ export class ServerAssetHandlers {
       const buffer = await fs.readFile(url)
       return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
     } catch (err) {
-      console.error('[loader] fetchArrayBuffer error:', err.message)
+      logger.error('Failed to fetch array buffer', { url, error: err.message })
       throw err
     }
   }
@@ -54,7 +57,7 @@ export class ServerAssetHandlers {
       }
       return await fs.readFile(url, { encoding: 'utf8' })
     } catch (err) {
-      console.error('[loader] fetchText error:', err.message)
+      logger.error('Failed to fetch text', { url, error: err.message })
       throw err
     }
   }

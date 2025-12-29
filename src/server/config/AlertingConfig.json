@@ -1,0 +1,130 @@
+{
+  "enabled": true,
+  "channels": {
+    "console": {
+      "enabled": true,
+      "minLevel": "warning"
+    },
+    "email": {
+      "enabled": false,
+      "provider": "sendgrid",
+      "recipients": [],
+      "minLevel": "error"
+    },
+    "slack": {
+      "enabled": false,
+      "webhookUrl": "",
+      "minLevel": "error",
+      "channel": "#alerts"
+    },
+    "sentry": {
+      "enabled": true,
+      "minLevel": "warning"
+    }
+  },
+  "alerts": [
+    {
+      "id": "high_error_rate",
+      "name": "High Error Rate",
+      "metric": "errors_per_minute",
+      "threshold": 10,
+      "operator": "greaterThan",
+      "duration": 300,
+      "level": "error",
+      "enabled": true
+    },
+    {
+      "id": "high_memory",
+      "name": "High Memory Usage",
+      "metric": "memory_usage_percent",
+      "threshold": 85,
+      "operator": "greaterThan",
+      "duration": 300,
+      "level": "warning",
+      "enabled": true
+    },
+    {
+      "id": "high_cpu",
+      "name": "High CPU Usage",
+      "metric": "cpu_usage_percent",
+      "threshold": 80,
+      "operator": "greaterThan",
+      "duration": 180,
+      "level": "warning",
+      "enabled": true
+    },
+    {
+      "id": "database_slow_queries",
+      "name": "Slow Database Queries",
+      "metric": "slow_queries",
+      "threshold": 5,
+      "operator": "greaterThan",
+      "duration": 60,
+      "level": "warning",
+      "enabled": true
+    },
+    {
+      "id": "websocket_connections_failed",
+      "name": "WebSocket Connection Failures",
+      "metric": "ws_failures_per_minute",
+      "threshold": 5,
+      "operator": "greaterThan",
+      "duration": 180,
+      "level": "warning",
+      "enabled": true
+    },
+    {
+      "id": "api_timeout_threshold",
+      "name": "API Timeouts Exceeded",
+      "metric": "api_timeouts_per_minute",
+      "threshold": 3,
+      "operator": "greaterThan",
+      "duration": 120,
+      "level": "error",
+      "enabled": true
+    },
+    {
+      "id": "circuit_breaker_open",
+      "name": "Circuit Breaker Open",
+      "metric": "circuit_breakers_open",
+      "threshold": 1,
+      "operator": "greaterThan",
+      "duration": 1,
+      "level": "error",
+      "enabled": true
+    },
+    {
+      "id": "upload_failures_high",
+      "name": "High Upload Failure Rate",
+      "metric": "upload_failures_percent",
+      "threshold": 10,
+      "operator": "greaterThan",
+      "duration": 300,
+      "level": "warning",
+      "enabled": true
+    }
+  ],
+  "silencing": {
+    "enabled": true,
+    "rules": [
+      {
+        "alertId": "high_memory",
+        "duration": 600,
+        "reason": "Normal after deploy"
+      }
+    ]
+  },
+  "escalation": {
+    "enabled": false,
+    "rules": [
+      {
+        "afterOccurrences": 3,
+        "escalateTo": "on_call_engineer"
+      },
+      {
+        "afterOccurrences": 5,
+        "escalateTo": "manager"
+      }
+    ]
+  }
+}
