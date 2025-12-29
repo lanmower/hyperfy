@@ -5,8 +5,6 @@ import moment from 'moment'
 import { BaseEntity } from './BaseEntity.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 import { NullSafetyHelper } from '../utils/safety/NullSafetyHelper.js'
-
-const logger = new ComponentLogger('App')
 import { createNode } from '../extras/createNode.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
@@ -22,7 +20,6 @@ import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
 import { RigidBody } from '../nodes/RigidBody.js'
 import { Collider } from '../nodes/Collider.js'
 import { InputSanitizer } from '../security/InputSanitizer.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('App')
 

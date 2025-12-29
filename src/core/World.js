@@ -1,6 +1,8 @@
 import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
 import { ServiceContainer } from './di/ServiceContainer.js'
+import { ServiceLocator } from './di/ServiceLocator.js'
+import { SystemRegistry as SystemRegistryImpl } from './di/SystemRegistry.js'
 import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
@@ -16,14 +18,17 @@ export class World extends EventEmitter {
     this.frame = 0
     this.time = 0
     this.accumulator = 0
-    this.systems = []
-    this.networkRate = 1 / 8 // 8Hz
+    this.networkRate = 1 / 8
     this.assetsUrl = null
     this.assetsDir = null
     this.hot = new Set()
 
     this.di = new ServiceContainer()
     this.di.registerSingleton('world', this)
+
+    this.systemRegistry = new SystemRegistryImpl()
+    this.serviceLocator = new ServiceLocator(this.di)
+    ServiceLocator.setGlobal(this.serviceLocator)
 
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
@@ -32,10 +37,8 @@ export class World extends EventEmitter {
     this.loadSystemsFromRegistry()
   }
 
-  
   loadSystemsFromRegistry() {
     const systems = systemRegistry.getCurrentPlatformSystems()
-
     for (const { name, class: SystemClass } of systems) {
       this.register(name, SystemClass)
     }
@@ -43,39 +46,30 @@ export class World extends EventEmitter {
 
   register(key, System) {
     const system = new System(this)
-    this.systems.push(system)
-    this[key] = system
+    this.systemRegistry.register(key, system)
     this.di.registerSingleton(key, system)
+    this[key] = system
     return system
   }
 
   getService(name) {
-    try {
-      return this.di.get(name)
-    } catch (err) {
-      logger.error('Failed to get service', { name, error: err.message })
-      return null
-    }
+    return this.serviceLocator.get(name)
   }
 
   hasService(name) {
-    return this.di.has(name)
+    return this.serviceLocator.has(name)
   }
 
   async init(options) {
     this.storage = options.storage
     this.assetsDir = options.assetsDir
     this.assetsUrl = options.assetsUrl
-    for (const system of this.systems) {
-      await system.init(options)
-    }
+    await this.systemRegistry.init(options)
     await this.start()
   }
 
   async start() {
-    for (const system of this.systems) {
-      await system.start?.()
-    }
+    await this.systemRegistry.start()
   }
 
   tick = time => {
@@ -107,81 +101,59 @@ export class World extends EventEmitter {
   }
 
   preTick() {
-    for (const system of this.systems) {
-      system.preTick()
-    }
+    this.systemRegistry.preTick()
   }
 
   preFixedUpdate(willFixedStep) {
-    for (const system of this.systems) {
-      system.preFixedUpdate(willFixedStep)
-    }
+    this.systemRegistry.preFixedUpdate(willFixedStep)
   }
 
   fixedUpdate(delta) {
     for (const item of this.hot) {
       item.fixedUpdate?.(delta)
     }
-    for (const system of this.systems) {
-      system.fixedUpdate(delta)
-    }
+    this.systemRegistry.fixedUpdate(delta)
   }
 
   postFixedUpdate(delta) {
-    for (const system of this.systems) {
-      system.postFixedUpdate(delta)
-    }
+    this.systemRegistry.postFixedUpdate(delta)
   }
 
   preUpdate(alpha) {
-    for (const system of this.systems) {
-      system.preUpdate(alpha)
-    }
+    this.systemRegistry.preUpdate(alpha)
   }
 
   update(delta) {
     for (const item of this.hot) {
       item.update?.(delta)
     }
-    for (const system of this.systems) {
-      system.update(delta)
-    }
+    this.systemRegistry.update(delta)
   }
 
   postUpdate(delta) {
-    for (const system of this.systems) {
-      system.postUpdate(delta)
-    }
+    this.systemRegistry.postUpdate(delta)
   }
 
   lateUpdate(delta) {
     for (const item of this.hot) {
       item.lateUpdate?.(delta)
     }
-    for (const system of this.systems) {
-      system.lateUpdate(delta)
-    }
+    this.systemRegistry.lateUpdate(delta)
   }
 
   postLateUpdate(delta) {
     for (const item of this.hot) {
       item.postLateUpdate?.(delta)
     }
-    for (const system of this.systems) {
-      system.postLateUpdate(delta)
-    }
+    this.systemRegistry.postLateUpdate(delta)
   }
 
   commit() {
-    for (const system of this.systems) {
-      system.commit()
-    }
+    this.systemRegistry.commit()
   }
 
   postTick() {
-    for (const system of this.systems) {
-      system.postTick()
-    }
+    this.systemRegistry.postTick()
   }
 
   setupMaterial = material => {
@@ -229,8 +201,6 @@ export class World extends EventEmitter {
   }
 
   destroy() {
-    for (const system of this.systems) {
-      system.destroy()
-    }
+    this.systemRegistry.destroy()
   }
 }
