@@ -4,13 +4,27 @@ import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('ScriptOperationOrchestrator')
 
-const PREFIX = `app.remove(app.get('Block'))
-`
+const PREFIX = `app.remove(app.get('Block'))\n`
 
 export class ScriptOperationOrchestrator {
   constructor(world, aiCaller) {
     this.world = world
     this.aiCaller = aiCaller
+  }
+
+  async _loadBlueprintScript(blueprintId) {
+    const blueprint = this.world.blueprints.get(blueprintId)
+    if (!blueprint) {
+      logger.error('Blueprint not found', { blueprintId })
+      return null
+    }
+
+    let script = this.world.loader.get('script', blueprint.script)
+    if (!script) {
+      script = await this.world.loader.load('script', blueprint.script)
+    }
+
+    return { blueprint, script }
   }
 
   async create(blueprintId, prompt) {
@@ -30,18 +44,10 @@ export class ScriptOperationOrchestrator {
   async edit(blueprintId, prompt) {
     logger.info('Script edit operation started', { blueprintId })
 
-    const blueprint = this.world.blueprints.get(blueprintId)
-    if (!blueprint) {
-      logger.error('Blueprint not found', { blueprintId })
-      return
-    }
+    const result = await this._loadBlueprintScript(blueprintId)
+    if (!result) return
 
-    let script = this.world.loader.get('script', blueprint.script)
-    if (!script) {
-      script = await this.world.loader.load('script', blueprint.script)
-    }
-
-    const code = script.code.replace(PREFIX, '')
+    const code = result.script.code.replace(PREFIX, '')
     const changelog = readChangelog(code)
     changelog.push(`edit: ${prompt}`)
 
@@ -56,18 +62,10 @@ export class ScriptOperationOrchestrator {
   async fix(blueprintId, error) {
     logger.info('Script fix operation started', { blueprintId })
 
-    const blueprint = this.world.blueprints.get(blueprintId)
-    if (!blueprint) {
-      logger.error('Blueprint not found', { blueprintId })
-      return
-    }
+    const result = await this._loadBlueprintScript(blueprintId)
+    if (!result) return
 
-    let script = this.world.loader.get('script', blueprint.script)
-    if (!script) {
-      script = await this.world.loader.load('script', blueprint.script)
-    }
-
-    const code = script.code.replace(PREFIX, '')
+    const code = result.script.code.replace(PREFIX, '')
     const changelog = readChangelog(code)
 
     const aiResponse = await this.aiCaller.fix(code, error)
