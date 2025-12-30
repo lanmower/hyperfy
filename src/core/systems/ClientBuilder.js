@@ -1,6 +1,8 @@
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { BuilderComposer } from './builder/BuilderComposer.js'
+import { BuilderCore } from './builder/BuilderCore.js'
+import { BuilderCommandBus } from './builder/BuilderCommandBus.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { EVENT } from '../constants/EventNames.js'
 import { BuilderConfig } from '../config/SystemConfig.js'
@@ -33,6 +35,8 @@ export class ClientBuilder extends System {
     this.target.rotation.reorder('YXZ')
     this.target.limit = BuilderConfig.TRANSFORM_LIMIT
 
+    this.core = new BuilderCore()
+    this.commandBus = new BuilderCommandBus(this, world)
     this.composer = new BuilderComposer(this)
   }
 
@@ -108,10 +112,12 @@ export class ClientBuilder extends System {
   }
 
   addUndo(action) {
+    this.core.pushUndo(action)
     this.composer.addUndo(action)
   }
 
   undo() {
+    this.core.undo()
     this.composer.executeUndo()
   }
 
@@ -120,14 +126,17 @@ export class ClientBuilder extends System {
   }
 
   select(app) {
+    if (app) this.core.select(app)
+    else this.core.clearSelection()
     this.composer.select(app)
   }
 
   getMode() {
-    return this.composer.getMode()
+    return this.core.mode
   }
 
   setMode(mode) {
+    this.core.setMode(mode)
     this.composer.setMode(mode)
   }
 
@@ -140,10 +149,12 @@ export class ClientBuilder extends System {
   }
 
   attachGizmo(app, mode) {
+    this.core.setGizmo(app)
     this.composer.attachGizmo(app, mode)
   }
 
   detachGizmo() {
+    this.core.setGizmo(null)
     this.composer.detachGizmo()
   }
 
@@ -182,5 +193,6 @@ export class ClientBuilder extends System {
   destroy() {
     this.composer.destroy()
     this.composer.detachGizmo()
+    this.commandBus.destroy()
   }
 }

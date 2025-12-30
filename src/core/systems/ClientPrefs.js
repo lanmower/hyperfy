@@ -1,7 +1,7 @@
 import { isBoolean, isNumber } from 'lodash-es'
 
 import { System } from './System.js'
-import { StateManager } from '../state/StateManager.js'
+import { StateStore } from '../state/StateStore.js'
 import { storage } from '../storage.js'
 import { isTouch } from '../../client/utils.js'
 
@@ -28,20 +28,19 @@ export class ClientPrefs extends System {
       data.shadows = null
     }
 
-    this.state = new StateManager({
-      ui: isNumber(data.ui) ? data.ui : isTouch ? 0.9 : 1,
-      actions: isBoolean(data.actions) ? data.actions : true,
-      stats: isBoolean(data.stats) ? data.stats : false,
-      dpr: isNumber(data.dpr) ? data.dpr : 1,
-      shadows: data.shadows ? data.shadows : isTouch ? 'low' : 'med',
-      postprocessing: isBoolean(data.postprocessing) ? data.postprocessing : true,
-      bloom: isBoolean(data.bloom) ? data.bloom : true,
-      ao: isBoolean(data.ao) ? data.ao : true,
-      music: isNumber(data.music) ? data.music : 1,
-      sfx: isNumber(data.sfx) ? data.sfx : 1,
-      voice: isNumber(data.voice) ? data.voice : 1,
-      v: data.v
-    })
+    this.state = new StateStore()
+    this.state.set('ui', isNumber(data.ui) ? data.ui : isTouch ? 0.9 : 1)
+    this.state.set('actions', isBoolean(data.actions) ? data.actions : true)
+    this.state.set('stats', isBoolean(data.stats) ? data.stats : false)
+    this.state.set('dpr', isNumber(data.dpr) ? data.dpr : 1)
+    this.state.set('shadows', data.shadows ? data.shadows : isTouch ? 'low' : 'med')
+    this.state.set('postprocessing', isBoolean(data.postprocessing) ? data.postprocessing : true)
+    this.state.set('bloom', isBoolean(data.bloom) ? data.bloom : true)
+    this.state.set('ao', isBoolean(data.ao) ? data.ao : true)
+    this.state.set('music', isNumber(data.music) ? data.music : 1)
+    this.state.set('sfx', isNumber(data.sfx) ? data.sfx : 1)
+    this.state.set('voice', isNumber(data.voice) ? data.voice : 1)
+    this.state.set('v', data.v)
   }
 
   modify(key, value) {

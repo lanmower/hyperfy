@@ -1,7 +1,7 @@
 import moment from 'moment'
 import { uuid } from '../utils.js'
 import { System } from './System.js'
-import { StateManager } from '../state/StateManager.js'
+import { StateStore } from '../state/StateStore.js'
 import { normalizeMessage, serializeForNetwork, deserializeFromNetwork } from '../schemas/ChatMessage.schema.js'
 
 export class Chat extends System {
@@ -14,7 +14,8 @@ export class Chat extends System {
 
   constructor(world) {
     super(world)
-    this.state = new StateManager({ messages: [] })
+    this.state = new StateStore()
+    this.state.set('messages', [])
   }
 
   add(msg, broadcast) {

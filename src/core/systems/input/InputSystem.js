@@ -2,10 +2,10 @@ import * as THREE from '../../extras/three.js'
 import { System } from '../System.js'
 import { buttons } from '../../extras/buttons.js'
 import { bindRotations } from '../../extras/bindRotations.js'
+import { InputDispatcher } from './InputDispatcher.js'
 import { PointerInputHandler } from './PointerInputHandler.js'
 import { KeyboardInputHandler } from './KeyboardInputHandler.js'
 import { XRInputHandler } from './XRInputHandler.js'
-import { TouchInputHandler } from './TouchInputHandler.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('InputSystem')
@@ -73,10 +73,10 @@ export class InputSystem extends System {
     this.screen = { width: 0, height: 0 }
     this.scroll = { delta: 0 }
     this.xrSession = null
-    this.pointerHandler = new PointerInputHandler(this)
-    this.keyboardHandler = new KeyboardInputHandler(this)
-    this.xrHandler = new XRInputHandler(this)
-    this.touchHandler = new TouchInputHandler(this)
+    this.dispatcher = new InputDispatcher()
+    this.dispatcher.registerHandler('pointer', new PointerInputHandler(this))
+    this.dispatcher.registerHandler('keyboard', new KeyboardInputHandler(this))
+    this.dispatcher.registerHandler('xr', new XRInputHandler(this))
     this.controlTypes = {
       mouseLeft: createButton, mouseRight: createButton, touchStick: createVector, scrollDelta: createValue,
       pointer: createPointer, screen: createScreen, camera: createCamera, xrLeftStick: createVector,
@@ -94,7 +94,10 @@ export class InputSystem extends System {
         if (control.entries.scrollDelta.capture) break
       }
     }
-    if (this.xrSession) this.xrHandler.processInputSources(this.xrSession.inputSources)
+    if (this.xrSession) {
+      const xrHandler = this.dispatcher.handlers.get('xr')
+      if (xrHandler) xrHandler.processInputSources(this.xrSession.inputSources)
+    }
   }
 
   postLateUpdate() {
@@ -120,7 +123,8 @@ export class InputSystem extends System {
         camera.zoom = this.camera.position.z
       }
     }
-    this.touchHandler.resetDeltas()
+    const pointerHandler = this.dispatcher.handlers.get('pointer')
+    if (pointerHandler) pointerHandler.resetDeltas?.()
   }
 
   async init({ viewport }) {
@@ -128,8 +132,10 @@ export class InputSystem extends System {
     this.viewport = viewport
     this.screen.width = this.viewport.offsetWidth
     this.screen.height = this.viewport.offsetHeight
-    this.keyboardHandler.init()
-    this.pointerHandler.init()
+    const keyboardHandler = this.dispatcher.handlers.get('keyboard')
+    const pointerHandler = this.dispatcher.handlers.get('pointer')
+    if (keyboardHandler) keyboardHandler.init?.()
+    if (pointerHandler) pointerHandler.init?.()
   }
 
   bind(options = {}) {
@@ -280,7 +286,9 @@ export class InputSystem extends System {
 
   destroy() {
     if (!isBrowser) return
-    this.keyboardHandler.destroy()
-    this.pointerHandler.destroy()
+    const keyboardHandler = this.dispatcher.handlers.get('keyboard')
+    const pointerHandler = this.dispatcher.handlers.get('pointer')
+    if (keyboardHandler) keyboardHandler.destroy?.()
+    if (pointerHandler) pointerHandler.destroy?.()
   }
 }

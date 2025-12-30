@@ -1,5 +1,5 @@
 import { System } from './System.js'
-import { StateManager } from '../state/StateManager.js'
+import { StateStore } from '../state/StateStore.js'
 import { Ranks } from '../extras/ranks.js'
 
 const DEFAULT_CONFIG = {
@@ -23,7 +23,10 @@ export class Settings extends System {
 
   constructor(world) {
     super(world)
-    this.state = new StateManager({ ...DEFAULT_CONFIG })
+    this.state = new StateStore()
+    for (const [k, v] of Object.entries(DEFAULT_CONFIG)) {
+      this.state.set(k, v)
+    }
   }
 
   get(key) { return this.state.get(key) }
