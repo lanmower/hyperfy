@@ -1,13 +1,10 @@
 import { codeToProp } from '../../extras/buttons.js'
+import { BaseInputHandler } from './BaseInputHandler.js'
 
-export class KeyboardInputHandler {
-  constructor(inputSystem) {
-    this.inputSystem = inputSystem
-  }
-
+export class KeyboardInputHandler extends BaseInputHandler {
   init() {
-    window.addEventListener('keydown', this.onKeyDown)
-    window.addEventListener('keyup', this.onKeyUp)
+    this.addEventListener(window, 'keydown', this.onKeyDown)
+    this.addEventListener(window, 'keyup', this.onKeyUp)
   }
 
   onKeyDown = e => {
@@ -40,10 +37,5 @@ export class KeyboardInputHandler {
       const capture = control.options.onKeyUp?.(e)
       if (capture) break
     }
-  }
-
-  destroy() {
-    window.removeEventListener('keydown', this.onKeyDown)
-    window.removeEventListener('keyup', this.onKeyUp)
   }
 }

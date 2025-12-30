@@ -1,10 +1,6 @@
-export class XRInputHandler {
-  constructor(inputSystem) {
-    this.inputSystem = inputSystem
-  }
+import { BaseInputHandler } from './BaseInputHandler.js'
 
-  init() {}
-
+export class XRInputHandler extends BaseInputHandler {
   processInputSources(inputSources) {
     if (!inputSources) return
     inputSources.forEach(src => {
@@ -48,6 +44,4 @@ export class XRInputHandler {
     if (!down && button.down) { button.released = true; button.onRelease?.() }
     button.down = down
   }
-
-  destroy() {}
 }

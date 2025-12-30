@@ -1,27 +1,29 @@
+import { BaseInputHandler } from './BaseInputHandler.js'
+
 const LMB = 1
 const RMB = 2
 const MouseLeft = 'mouseLeft'
 const MouseRight = 'mouseRight'
 
-export class PointerInputHandler {
+export class PointerInputHandler extends BaseInputHandler {
   constructor(inputSystem) {
-    this.inputSystem = inputSystem
+    super(inputSystem)
     this.lmbDown = false
     this.rmbDown = false
     this.isMac = /Mac/.test(navigator.platform)
   }
 
   init() {
-    document.addEventListener('pointerlockchange', this.onPointerLockChange)
-    this.inputSystem.viewport.addEventListener('pointerdown', this.onPointerDown)
-    window.addEventListener('pointermove', this.onPointerMove)
-    this.inputSystem.viewport.addEventListener('pointerup', this.onPointerUp)
-    this.inputSystem.viewport.addEventListener('pointercancel', this.onPointerUp)
-    this.inputSystem.viewport.addEventListener('wheel', this.onScroll, { passive: false })
-    document.body.addEventListener('contextmenu', this.onContextMenu)
-    window.addEventListener('focus', this.onFocus)
-    window.addEventListener('blur', this.onBlur)
-    window.addEventListener('resize', this.onResize)
+    this.addEventListener(document, 'pointerlockchange', this.onPointerLockChange)
+    this.addEventListener(this.inputSystem.viewport, 'pointerdown', this.onPointerDown)
+    this.addEventListener(window, 'pointermove', this.onPointerMove)
+    this.addEventListener(this.inputSystem.viewport, 'pointerup', this.onPointerUp)
+    this.addEventListener(this.inputSystem.viewport, 'pointercancel', this.onPointerUp)
+    this.addEventListener(this.inputSystem.viewport, 'wheel', this.onScroll, { passive: false })
+    this.addEventListener(document.body, 'contextmenu', this.onContextMenu)
+    this.addEventListener(window, 'focus', this.onFocus)
+    this.addEventListener(window, 'blur', this.onBlur)
+    this.addEventListener(window, 'resize', this.onResize)
   }
 
   onPointerLockChange = () => {
@@ -132,16 +134,4 @@ export class PointerInputHandler {
     }
   }
 
-  destroy() {
-    document.removeEventListener('pointerlockchange', this.onPointerLockChange)
-    this.inputSystem.viewport.removeEventListener('pointerdown', this.onPointerDown)
-    window.removeEventListener('pointermove', this.onPointerMove)
-    this.inputSystem.viewport.removeEventListener('pointerup', this.onPointerUp)
-    this.inputSystem.viewport.removeEventListener('pointercancel', this.onPointerUp)
-    this.inputSystem.viewport.removeEventListener('wheel', this.onScroll, { passive: false })
-    document.body.removeEventListener('contextmenu', this.onContextMenu)
-    window.removeEventListener('focus', this.onFocus)
-    window.removeEventListener('blur', this.onBlur)
-    window.removeEventListener('resize', this.onResize)
-  }
 }
