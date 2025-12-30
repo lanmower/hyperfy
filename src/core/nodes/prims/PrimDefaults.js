@@ -36,4 +36,4 @@ export const defaultSizes = {
   plane: [1, 1],
 }
 
-export const types = ['box', 'sphere', 'cylinder', 'cone', 'torus', 'plane']
+export const types = Object.keys(defaultSizes)
