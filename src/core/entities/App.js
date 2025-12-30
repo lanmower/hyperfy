@@ -10,11 +10,8 @@ import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
 import { createPlayerProxy } from '../extras/createPlayerProxy.js'
-import { BlueprintLoader } from './app/BlueprintLoader.js'
 import { ScriptExecutor } from './app/ScriptExecutor.js'
-import { EventManager } from './app/EventManager.js'
 import { ProxyFactory } from './app/ProxyFactory.js'
-import { AppNodeManager } from './app/AppNodeManager.js'
 import { AppNetworkSync } from './app/AppNetworkSync.js'
 import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
 import { RigidBody } from '../nodes/RigidBody.js'
@@ -45,15 +42,16 @@ export class App extends BaseEntity {
     this.hitResults = []
     this.deadHook = { dead: false }
     this.abortController = new AbortController()
-    this.blueprintLoader = new BlueprintLoader(this)
     this.scriptExecutor = new ScriptExecutor(this)
-    this.eventManager = new EventManager(this)
+    this.eventListeners = {}
+    this.worldListeners = new Map()
+    this.eventQueue = []
+    this.hotEvents = 0
     this.proxyFactory = new ProxyFactory(this)
-    this.nodeManager = new AppNodeManager(this)
+    this.worldNodes = new Set()
+    this.snaps = []
     this.networkSync = new AppNetworkSync(this)
     this.propertyHandlers = new AppPropertyHandlers(this)
-    this.worldNodes = this.nodeManager.worldNodes
-    this.snaps = this.nodeManager.snaps
     this.build().catch(err => {
       logger.error('Failed to build app', { appId: this.data.id, blueprint: this.data.blueprint, error: err.message })
     })
@@ -94,7 +92,7 @@ export class App extends BaseEntity {
         root.height = 1
         root.depth = 1
       } else {
-        const result = await this.blueprintLoader.load(crashed)
+        const result = await this.world.blueprints.loadBlueprint(this, crashed)
         if (result) {
           root = result.root
           scene = result.scene
@@ -145,10 +143,10 @@ export class App extends BaseEntity {
       }
       if (this.mode === Modes.MOVING) {
         this.world.setHot(this, true)
-        this.nodeManager.collectSnapPoints()
+        this.collectSnapPoints()
       }
       this.networkSync.initialize(this.root, this.world.networkRate)
-      this.eventManager.flushEventQueue()
+      this.flushEventQueue()
     } finally {
       this.building = false
     }
@@ -189,16 +187,35 @@ export class App extends BaseEntity {
     }
   }
 
+  collectSnapPoints() {
+    this.snaps = []
+    if (this.root) {
+      this.root.traverse(node => {
+        if (node.name === 'snap') {
+          this.snaps.push(node.worldPosition)
+        }
+      })
+    }
+  }
+
+  deactivateAllNodes() {
+    this.root?.deactivate()
+    for (const node of this.worldNodes) {
+      node.deactivate()
+    }
+    this.worldNodes.clear()
+  }
+
   unbuild() {
     this.emit('destroy')
     this.control?.release()
     this.control = null
-    this.nodeManager.deactivateAllNodes()
+    this.deactivateAllNodes()
     if (this.threeScene && this.world.stage) {
       this.world.stage.scene.remove(this.threeScene)
     }
     this.threeScene = null
-    this.eventManager.clearEventListeners()
+    this.clearEventListeners()
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()
     this.proxyFactory.clear()
@@ -245,9 +262,7 @@ export class App extends BaseEntity {
 
     this.blueprintLoader = null
     this.scriptExecutor = null
-    this.eventManager = null
     this.proxyFactory = null
-    this.nodeManager = null
     this.networkSync = null
     this.propertyHandlers = null
     this.world.entities.remove(this.data.id)
@@ -257,27 +272,60 @@ export class App extends BaseEntity {
   }
 
   on(name, callback) {
-    return this.eventManager.on(name, callback)
+    if (!this.eventListeners[name]) this.eventListeners[name] = new Set()
+    if (this.eventListeners[name].has(callback)) return
+    this.eventListeners[name].add(callback)
+    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
+    if (hotEventNames.includes(name)) {
+      this.hotEvents++
+      this.world.setHot(this, this.hotEvents > 0)
+    }
   }
 
   off(name, callback) {
-    return this.eventManager.off(name, callback)
+    if (!this.eventListeners[name]) return
+    if (!this.eventListeners[name].has(callback)) return
+    this.eventListeners[name].delete(callback)
+    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
+    if (hotEventNames.includes(name)) {
+      this.hotEvents--
+      this.world.setHot(this, this.hotEvents > 0)
+    }
   }
 
   emit(name, a1, a2) {
-    return this.eventManager.emit(name, a1, a2)
+    if (!this.eventListeners[name]) return
+    for (const callback of this.eventListeners[name]) {
+      callback(a1, a2)
+    }
   }
 
   onWorldEvent(name, callback) {
-    return this.eventManager.onWorldEvent(name, callback)
+    this.worldListeners.set(callback, name)
+    this.world.events.on(name, callback)
   }
 
   offWorldEvent(name, callback) {
-    return this.eventManager.offWorldEvent(name, callback)
+    this.worldListeners.delete(callback)
+    this.world.events.off(name, callback)
   }
 
   onEvent(version, name, data, networkId) {
-    return this.eventManager.onEvent(version, name, data, networkId)
+    this.eventQueue.push({ version, name, data, networkId })
+    this.emit(name, data)
+  }
+
+  flushEventQueue() {
+    this.eventQueue = []
+  }
+
+  clearEventListeners() {
+    this.eventListeners = {}
+    this.worldListeners.forEach((eventName, callback) => {
+      this.world.events.off(eventName, callback)
+    })
+    this.worldListeners.clear()
+    this.hotEvents = 0
   }
 
   fetch = async (url, options = {}) => {
@@ -327,7 +375,11 @@ export class App extends BaseEntity {
   }
 
   getNodes() {
-    return this.nodeManager.getNodes()
+    if (!this.blueprint || !this.blueprint.model) return
+    const type = this.blueprint.model.endsWith('vrm') ? 'avatar' : 'model'
+    let glb = this.world.loader.get(type, this.blueprint.model)
+    if (!glb) return
+    return glb.toNodes()
   }
 
   getPlayerProxy(playerId) {
