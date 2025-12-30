@@ -31,9 +31,13 @@ export const ACTION_CONFIGS = {
   ],
 }
 
-export const MODE_LABELS = {
-  grab: 'Grab',
-  translate: 'Translate',
-  rotate: 'Rotate',
-  scale: 'Scale',
+export const MODE_CONFIGS = {
+  grab: { label: 'Grab', space: null },
+  translate: { label: 'Translate', space: 'world' },
+  rotate: { label: 'Rotate', space: 'world' },
+  scale: { label: 'Scale', space: 'world' },
 }
+
+export const MODE_LABELS = Object.fromEntries(
+  Object.entries(MODE_CONFIGS).map(([mode, config]) => [mode, config.label])
+)

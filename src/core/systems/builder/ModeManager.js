@@ -1,9 +1,4 @@
-export const MODE_CONFIGS = {
-  grab: { label: 'Grab', space: null },
-  translate: { label: 'Translate', space: 'world' },
-  rotate: { label: 'Rotate', space: 'world' },
-  scale: { label: 'Scale', space: 'world' },
-}
+import { MODE_CONFIGS } from './ActionConfigs.js'
 
 export class ModeManager {
   constructor() {
