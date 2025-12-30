@@ -99,17 +99,17 @@ export class PointerInputHandler {
   onBlur = () => this.inputSystem.releaseAllButtons()
 
   checkPointerChanges(e) {
-    this.checkLeftMouseButton(e)
-    this.checkRightMouseButton(e)
+    this.checkMouseButton(e, LMB, MouseLeft, 'lmbDown')
+    this.checkMouseButton(e, RMB, MouseRight, 'rmbDown')
   }
 
-  checkLeftMouseButton(e) {
-    const lmb = !!(e.buttons & LMB)
-    if (!this.lmbDown && lmb) {
-      this.lmbDown = true
-      this.inputSystem.buttonsDown.add(MouseLeft)
+  checkMouseButton(e, mask, buttonKey, stateKey) {
+    const pressed = !!(e.buttons & mask)
+    if (!this[stateKey] && pressed) {
+      this[stateKey] = true
+      this.inputSystem.buttonsDown.add(buttonKey)
       for (const control of this.inputSystem.controls) {
-        const button = control.entries.mouseLeft
+        const button = control.entries[buttonKey]
         if (button) {
           button.down = true
           button.pressed = true
@@ -118,40 +118,11 @@ export class PointerInputHandler {
         }
       }
     }
-    if (this.lmbDown && !lmb) {
-      this.lmbDown = false
-      this.inputSystem.buttonsDown.delete(MouseLeft)
+    if (this[stateKey] && !pressed) {
+      this[stateKey] = false
+      this.inputSystem.buttonsDown.delete(buttonKey)
       for (const control of this.inputSystem.controls) {
-        const button = control.entries.mouseLeft
-        if (button) {
-          button.down = false
-          button.released = true
-          button.onRelease?.()
-        }
-      }
-    }
-  }
-
-  checkRightMouseButton(e) {
-    const rmb = !!(e.buttons & RMB)
-    if (!this.rmbDown && rmb) {
-      this.rmbDown = true
-      this.inputSystem.buttonsDown.add(MouseRight)
-      for (const control of this.inputSystem.controls) {
-        const button = control.entries.mouseRight
-        if (button) {
-          button.down = true
-          button.pressed = true
-          const capture = button.onPress?.()
-          if (capture || button.capture) break
-        }
-      }
-    }
-    if (this.rmbDown && !rmb) {
-      this.rmbDown = false
-      this.inputSystem.buttonsDown.delete(MouseRight)
-      for (const control of this.inputSystem.controls) {
-        const button = control.entries.mouseRight
+        const button = control.entries[buttonKey]
         if (button) {
           button.down = false
           button.released = true
