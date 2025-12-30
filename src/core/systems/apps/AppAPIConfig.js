@@ -5,43 +5,14 @@ import * as NodeClasses from '../../nodes/index.js'
 import { APIMethodWrapper } from '../../utils/api/APIMethodWrapper.js'
 import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { FILE_TYPES } from './FieldTypeConstants.js'
 
 const logger = new ComponentLogger('AppAPIConfig')
 
-const fileRemaps = {
-  avatar: field => {
-    field.type = 'file'
-    field.kind = 'avatar'
-  },
-  emote: field => {
-    field.type = 'file'
-    field.kind = 'emote'
-  },
-  model: field => {
-    field.type = 'file'
-    field.kind = 'model'
-  },
-  texture: field => {
-    field.type = 'file'
-    field.kind = 'texture'
-  },
-  image: field => {
-    field.type = 'file'
-    field.kind = 'image'
-  },
-  video: field => {
-    field.type = 'file'
-    field.kind = 'video'
-  },
-  hdr: field => {
-    field.type = 'file'
-    field.kind = 'hdr'
-  },
-  audio: field => {
-    field.type = 'file'
-    field.kind = 'audio'
-  },
-}
+const fileRemaps = Object.fromEntries(FILE_TYPES.map(type => [
+  type,
+  field => { field.type = 'file'; field.kind = type }
+]))
 
 export const AppAPIConfig = {
   getters: {
