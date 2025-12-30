@@ -1,4 +1,4 @@
-// Base manager pattern for common initialization and lifecycle patterns
+// Base manager pattern with template method for initialization and lifecycle
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 export class BaseManager {
@@ -12,22 +12,31 @@ export class BaseManager {
 
   async init() {
     try {
-      this.logger.info(`${this.name} initialized`)
+      this.logger.info(`Initializing ${this.name}`)
+      await this.initInternal()
       this.initialized = true
+      this.logger.info(`${this.name} initialized`)
     } catch (err) {
       this.logger.error(`Failed to initialize`, { error: err.message })
       throw err
     }
   }
 
+  async initInternal() {
+  }
+
   async destroy() {
     try {
+      await this.destroyInternal()
       this.cleanupResources()
       this.initialized = false
       this.logger.info(`${this.name} destroyed`)
     } catch (err) {
       this.logger.error(`Failed to destroy`, { error: err.message })
     }
+  }
+
+  async destroyInternal() {
   }
 
   registerResource(resource) {
