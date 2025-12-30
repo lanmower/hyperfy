@@ -2,10 +2,10 @@ import * as THREE from '../../extras/three.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
-import { createNode } from '../../extras/createNode.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 import { createVideoFactory } from './VideoFactory.js'
+import { AssetResults } from './AssetResults.js'
 
 const logger = new ComponentLogger('AssetHandlers')
 
@@ -97,7 +97,7 @@ export class AssetHandlers {
     )
     this.insertRegistry.register('model', (localUrl, url, file, key) =>
       this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const model = this.createModelResult(glbToNodes(glb, this.world), file, glb.scene)
+        const model = AssetResults.createModel(glbToNodes(glb, this.world), file, glb.scene)
         this.results.set(key, model)
         return model
       })
@@ -111,7 +111,7 @@ export class AssetHandlers {
     )
     this.insertRegistry.register('avatar', (localUrl, url, file, key) =>
       this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const avatar = this.createAvatarResult(AvatarFactory.createVRM(glb, this.setupMaterial), file)
+        const avatar = AssetResults.createAvatar(AvatarFactory.createVRM(glb, this.setupMaterial), file, this.vrmHooks)
         this.results.set(key, avatar)
         return avatar
       })
@@ -180,7 +180,7 @@ export class AssetHandlers {
   handleModel(url, file, key) {
     return this.withFallback('model', url, key, file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const model = this.createModelResult(glbToNodes(glb, this.world), file, glb.scene)
+      const model = AssetResults.createModel(glbToNodes(glb, this.world), file, glb.scene)
       this.results.set(key, model)
       return model
     }))
@@ -198,7 +198,7 @@ export class AssetHandlers {
   handleAvatar(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const avatar = this.createAvatarResult(AvatarFactory.createVRM(glb, this.setupMaterial), file)
+      const avatar = AssetResults.createAvatar(AvatarFactory.createVRM(glb, this.setupMaterial), file, this.vrmHooks)
       this.results.set(key, avatar)
       return avatar
     })
@@ -219,37 +219,6 @@ export class AssetHandlers {
       this.results.set(key, audioBuffer)
       return audioBuffer
     }))
-  }
-
-  createModelResult(node, file, glbScene = null) {
-    return {
-      toNodes() { return node.clone(true) },
-      getScene() { return glbScene?.clone() },
-      getStats() {
-        const stats = node.getStats(true)
-        stats.fileBytes = file.size
-        return stats
-      },
-    }
-  }
-
-  createAvatarResult(factory, file) {
-    const node = createNode('group', { id: '$root' })
-    node.add(createNode('avatar', { id: 'avatar', factory, hooks: this.vrmHooks }))
-    return {
-      factory,
-      hooks: this.vrmHooks,
-      toNodes(customHooks) {
-        const clone = node.clone(true)
-        if (customHooks) clone.get('avatar').hooks = customHooks
-        return clone
-      },
-      getStats() {
-        const stats = node.getStats(true)
-        stats.fileBytes = file.size
-        return stats
-      },
-    }
   }
 
 }
