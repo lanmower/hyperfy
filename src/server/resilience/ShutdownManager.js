@@ -1,6 +1,8 @@
-export class ShutdownManager {
-  constructor(logger, options = {}) {
-    this.logger = logger
+import { BaseManager } from '../../core/patterns/BaseManager.js'
+
+export class ShutdownManager extends BaseManager {
+  constructor(options = {}) {
+    super(null, 'ShutdownManager')
     this.gracefulTimeout = options.gracefulTimeout || 30000
     this.forceTimeout = options.forceTimeout || 5000
     this.handlers = []
@@ -15,8 +17,8 @@ export class ShutdownManager {
   }
 
   async shutdown() {
-    this.logger.info('ShutdownManager: Starting graceful shutdown')
+    this.logger.info('Starting graceful shutdown')
     await Promise.all(this.handlers.map(h => h()))
-    this.logger.info('ShutdownManager: Shutdown complete')
+    this.logger.info('Shutdown complete')
   }
 }

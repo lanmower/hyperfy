@@ -1,5 +1,8 @@
-export class TimeoutManager {
+import { BaseManager } from '../../core/patterns/BaseManager.js'
+
+export class TimeoutManager extends BaseManager {
   constructor() {
+    super(null, 'TimeoutManager')
     this.timeouts = {
       http: 30000,
       websocket: 60000,

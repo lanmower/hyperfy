@@ -1,3 +1,5 @@
+import { BaseManager } from '../../core/patterns/BaseManager.js'
+
 class LRUNode {
   constructor(key, value, ttl) {
     this.key = key
@@ -12,8 +14,9 @@ class LRUNode {
   }
 }
 
-export class CacheManager {
+export class CacheManager extends BaseManager {
   constructor(maxSize = 1000, defaultTTL = null) {
+    super(null, 'CacheManager')
     this.maxSize = maxSize
     this.defaultTTL = defaultTTL
     this.cache = new Map()
@@ -29,7 +32,19 @@ export class CacheManager {
       deletes: 0,
     }
     this.invalidationCallbacks = new Map()
-    this.memoryMonitor()
+    this._startMemoryMonitor()
+  }
+
+  _startMemoryMonitor() {
+    const interval = setInterval(() => {
+      const stats = this.getStats()
+      const memMatch = stats.memoryUsage.match(/(\d+\.\d+)/)
+      const mb = parseFloat(memMatch?.[1] || 0)
+      if (mb > 100) {
+        this.logger.warn(`Memory usage high: ${mb}MB`)
+      }
+    }, 30000)
+    this.registerResource({ dispose: () => clearInterval(interval) })
   }
 
   get(key) {
@@ -158,16 +173,6 @@ export class CacheManager {
     return `${mb}MB`
   }
 
-  memoryMonitor() {
-    setInterval(() => {
-      const stats = this.getStats()
-      const memMatch = stats.memoryUsage.match(/(\d+\.\d+)/)
-      const mb = parseFloat(memMatch?.[1] || 0)
-      if (mb > 100) {
-        console.warn(`[CacheManager] Memory usage high: ${mb}MB`)
-      }
-    }, 30000)
-  }
 }
 
 export default CacheManager

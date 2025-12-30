@@ -1,22 +1,21 @@
 import { CircuitBreaker } from './CircuitBreaker.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { BaseManager } from '../../core/patterns/BaseManager.js'
 
-const logger = new ComponentLogger('CircuitBreakerManager')
-
-export class CircuitBreakerManager {
+export class CircuitBreakerManager extends BaseManager {
   constructor() {
+    super(null, 'CircuitBreakerManager')
     this.breakers = new Map()
   }
 
   register(name, options = {}) {
     if (this.breakers.has(name)) {
-      logger.warn('Circuit breaker already registered', { name })
+      this.logger.warn('Circuit breaker already registered', { name })
       return this.breakers.get(name)
     }
 
     const breaker = new CircuitBreaker(name, options)
     this.breakers.set(name, breaker)
-    logger.info('Circuit breaker registered', { name, options })
+    this.logger.info('Circuit breaker registered', { name, options })
     return breaker
   }
 
@@ -41,12 +40,12 @@ export class CircuitBreakerManager {
     if (name) {
       const breaker = this.get(name)
       breaker.reset()
-      logger.info('Circuit breaker reset', { name })
+      this.logger.info('Circuit breaker reset', { name })
     } else {
       for (const [breakerName, breaker] of this.breakers) {
         breaker.reset()
       }
-      logger.info('All circuit breakers reset', { count: this.breakers.size })
+      this.logger.info('All circuit breakers reset', { count: this.breakers.size })
     }
   }
 
