@@ -1,5 +1,5 @@
 import { isBoolean, isString } from 'lodash-es'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { Node } from './Node.js'
@@ -17,8 +17,7 @@ const propertySchema = schema('src', 'emote', 'visible', 'onLoad')
 export class Avatar extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'avatar'
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'avatar', propertySchema, {}, data)
 
     this.factory = data.factory
     this.hooks = data.hooks

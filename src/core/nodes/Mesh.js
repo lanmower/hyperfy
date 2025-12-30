@@ -4,7 +4,8 @@ import { Node, getRef, secureRef } from './Node.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'
-import { defineProps, onSetRebuildIf } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
+import { onSetRebuildIf } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { geometryCache } from '../utils/GeometryCache.js'
@@ -25,8 +26,7 @@ const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'lin
 export class Mesh extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'mesh'
-    defineProps(this, propertySchema, defaults, data)
+    initializeNode(this, 'mesh', propertySchema, {}, data)
   }
 
   mount() {

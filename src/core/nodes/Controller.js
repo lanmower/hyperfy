@@ -6,7 +6,8 @@ import { DEG2RAD } from '../extras/general.js'
 
 import { Node } from './Node.js'
 import { Layers } from '../extras/Layers.js'
-import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
+import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
@@ -36,8 +37,7 @@ const propertySchema = schema('radius', 'height', 'visible', 'layer', 'tag', 'on
 export class Controller extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'controller'
-    defineProps(this, propertySchema, defaults, data)
+    initializeNode(this, 'controller', propertySchema, {}, data)
   }
 
   mount() {

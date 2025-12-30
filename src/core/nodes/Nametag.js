@@ -1,6 +1,7 @@
 import { isNumber, isString } from 'lodash-es'
 import { Node } from './Node.js'
-import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
+import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 

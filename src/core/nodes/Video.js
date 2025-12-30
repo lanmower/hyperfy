@@ -2,7 +2,7 @@ import { isBoolean, isNumber, isString } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { VideoRenderer } from './video/VideoRenderer.js'
@@ -44,9 +44,7 @@ const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'c
 export class Video extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'video'
-
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'video', propertySchema, {}, data)
     this._geometry = getRef(data.geometry)
 
     this.n = 0

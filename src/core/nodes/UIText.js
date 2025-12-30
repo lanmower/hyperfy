@@ -2,7 +2,7 @@ import Yoga from 'yoga-layout'
 import { isArray, isNumber, isString } from 'lodash-es'
 import { UIChildNode, uiChildDefaults, createYogaPropertyHandlers } from './base/UINodeBase.js'
 import { fillRoundRect } from '../extras/roundRect.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
@@ -75,8 +75,7 @@ function wrapText(ctx, text, maxWidth) {
 export class UIText extends UIChildNode {
   constructor(data = {}) {
     super(data)
-    this.name = 'uitext'
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'uitext', propertySchema, {}, data)
   }
 
   createYogaNode() {

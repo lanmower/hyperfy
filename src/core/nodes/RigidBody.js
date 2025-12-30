@@ -2,7 +2,7 @@ import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
 import { v, q, m } from '../utils/TempVectors.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { PhysicsForces } from './physics/PhysicsForces.js'
@@ -28,8 +28,7 @@ const defaults = {}
 export class RigidBody extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'rigidbody'
-    defineProps(this, propertySchema, defaults, data)
+    initializeNode(this, 'rigidbody', propertySchema, {}, data)
 
     this.shapes = new Set()
 

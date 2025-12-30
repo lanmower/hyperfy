@@ -1,6 +1,7 @@
 import * as THREE from '../extras/three.js'
 import { isFunction, isNumber, isString } from 'lodash-es'
-import { defineProps, validators } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
+import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { Node } from './Node.js'
@@ -19,8 +20,7 @@ const propertySchema = schema('label', 'distance', 'duration', 'onStart', 'onTri
 export class Action extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'action'
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'action', propertySchema, {}, data)
 
     this.worldPos = new THREE.Vector3()
     this.progress = 0

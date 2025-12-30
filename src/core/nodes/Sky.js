@@ -1,5 +1,5 @@
 import { Node } from './Node.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import * as THREE from '../extras/three.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
@@ -25,8 +25,7 @@ const propertySchema = schema('bg', 'hdr', 'rotationY', 'sunDirection', 'sunInte
 export class Sky extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'sky'
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'sky', propertySchema, {}, data)
   }
 
   mount() {

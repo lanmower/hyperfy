@@ -1,7 +1,8 @@
 import * as THREE from '../extras/three.js'
 
 import { getRef, Node, secureRef } from './Node.js'
-import { defineProps, onSetRebuildIf } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
+import { onSetRebuildIf  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
@@ -32,8 +33,7 @@ const defaults = {}
 export class Collider extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'collider'
-    defineProps(this, propertySchema, defaults, data)
+    initializeNode(this, 'collider', propertySchema, {}, data)
   }
 
   mount() {

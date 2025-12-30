@@ -2,7 +2,7 @@ import * as THREE from '../extras/three.js'
 import { every, isArray, isBoolean, isFunction, isNumber, isString } from 'lodash-es'
 
 import { Node } from './Node.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
@@ -97,9 +97,7 @@ const propertySchema = schema('emitting', 'shape', 'direction', 'rate', 'bursts'
 export class Particles extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'particles'
-
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'particles', propertySchema, {}, data)
   }
 
   mount() {

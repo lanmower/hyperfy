@@ -6,7 +6,7 @@ import { Node } from './Node.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('UI')
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import {
@@ -89,9 +89,7 @@ const propertySchema = schema('space', 'width', 'height', 'size', 'res', 'lit', 
 export class UI extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'ui'
-
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'ui', propertySchema, {}, data)
     this._offset = new THREE.Vector3().fromArray(data.offset || defaults.offset)
 
     this.ui = this

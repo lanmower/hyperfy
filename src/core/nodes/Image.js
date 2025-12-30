@@ -1,5 +1,5 @@
 import { Node } from './Node.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { createImageSchema } from '../utils/validation/createNodeSchema.js'
 import { ImageRenderer } from './image/ImageRenderer.js'
@@ -9,8 +9,7 @@ const propertySchema = createImageSchema()
 export class Image extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'image'
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'image', propertySchema, {}, data)
     this.renderer = new ImageRenderer(this)
   }
 

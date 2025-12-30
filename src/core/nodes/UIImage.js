@@ -2,7 +2,7 @@ import Yoga from 'yoga-layout'
 import { isArray, isNumber } from 'lodash-es'
 import { UIChildNode, uiChildDefaults, createYogaPropertyHandlers } from './base/UINodeBase.js'
 import { fillRoundRect, imageRoundRect } from '../extras/roundRect.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 
@@ -39,8 +39,7 @@ const propertySchema = schema('display', 'src', 'width', 'height', 'absolute', '
 export class UIImage extends UIChildNode {
   constructor(data = {}) {
     super(data)
-    this.name = 'uiimage'
-    defineProps(this, propertySchema, data)
+    initializeNode(this, 'uiimage', propertySchema, {}, data)
     this.img = null
   }
 
