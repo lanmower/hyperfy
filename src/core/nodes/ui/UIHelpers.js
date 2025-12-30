@@ -1,6 +1,7 @@
 import * as THREE from '../../extras/three.js'
-import { pivots } from '../../utils/collections/NodeConstants.js'
-import { isNumber, isArray, every } from 'lodash-es'
+import { isBillboard, isPivot, isSpace, isEdge, isScaler } from '../../validation/TypeValidators.js'
+
+export { isBillboard, isPivot, isSpace, isEdge, isScaler }
 
 export function pivotGeometry(pivot, geometry, width, height) {
   const halfWidth = width / 2
@@ -115,30 +116,4 @@ export function getPivotOffset(pivot, width, height) {
   }
 
   return new THREE.Vector2(-halfW + tx, +halfH + ty)
-}
-
-export function isBillboard(value) {
-  return ['none', 'full', 'y'].includes(value)
-}
-
-export function isPivot(value) {
-  return pivots.includes(value)
-}
-
-export function isSpace(value) {
-  return ['world', 'screen'].includes(value)
-}
-
-export function isEdge(value) {
-  if (isNumber(value)) {
-    return true
-  }
-  if (isArray(value)) {
-    return value.length === 4 && every(value, n => isNumber(n))
-  }
-  return false
-}
-
-export function isScaler(value) {
-  return isArray(value) && isNumber(value[0]) && isNumber(value[1])
 }

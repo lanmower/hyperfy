@@ -1,4 +1,5 @@
 /* Centralized type validators extracted from 20+ node and handler files */
+import { isNumber, isArray, every } from 'lodash-es'
 
 export const isDistanceModel = (v) => ['linear', 'inverse', 'exponential'].includes(v)
 export const isFit = (v) => ['fill', 'fit', 'cover', 'stretch'].includes(v)
@@ -15,3 +16,12 @@ export const isTextAlign = (v) => ['auto', 'left', 'center', 'right', 'justify']
 export const isVerticalAlign = (v) => ['auto', 'top', 'center', 'bottom'].includes(v)
 export const isPhysicsShape = (v) => ['box', 'sphere', 'cylinder', 'capsule', 'trimesh'].includes(v)
 export const isPhysicsType = (v) => ['static', 'dynamic', 'kinematic'].includes(v)
+export const isBillboard = (v) => ['none', 'full', 'y'].includes(v)
+export const isSpace = (v) => ['world', 'screen'].includes(v)
+export const isGroup = (v) => v === 'group'
+export const isEdge = (v) => {
+  if (isNumber(v)) return true
+  if (isArray(v)) return v.length === 4 && every(v, n => isNumber(n))
+  return false
+}
+export const isScaler = (v) => isArray(v) && isNumber(v[0]) && isNumber(v[1])

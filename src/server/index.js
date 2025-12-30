@@ -6,7 +6,6 @@ import './bootstrap'
 import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { pipeline } from 'stream/promises'
 
 let __filename = fileURLToPath(import.meta.url)
 if (__filename.startsWith('/') && __filename[2] === ':') {
@@ -14,11 +13,6 @@ if (__filename.startsWith('/') && __filename[2] === ':') {
 }
 const __dirname = path.dirname(__filename)
 import Fastify from 'fastify'
-import ws from '@fastify/websocket'
-import cors from '@fastify/cors'
-import compress from '@fastify/compress'
-import statics from '@fastify/static'
-import multipart from '@fastify/multipart'
 
 import { World } from '../core/World.js'
 import { getDB } from './db.js'
@@ -29,18 +23,18 @@ import { createDbProxy } from "../core/services/DatabaseProxy.js"
 import { Telemetry } from './telemetry/Telemetry.js'
 import { Metrics } from './services/Metrics.js'
 import { TimeoutManager } from './services/TimeoutManager.js'
-import { createTimeoutMiddleware } from './middleware/TimeoutMiddleware.js'
 import { CircuitBreakerManager } from './resilience/CircuitBreakerManager.js'
 import { DegradationManager } from './resilience/DegradationManager.js'
 import { DegradationStrategies } from './resilience/DegradationStrategies.js'
 import { ShutdownManager } from './resilience/ShutdownManager.js'
 import { StatusPageData } from './services/StatusPageData.js'
 import { CORSConfig } from './config/CORSConfig.js'
-
-import { AIProviderConfig } from './config/AIProviderConfig.js'
 import { Logger, ConsoleSink, FileSink } from './logging/Logger.js'
 import { ErrorTracker } from './services/ErrorTracker.js'
-import { createRequestIdMiddleware, createErrorHandler } from './middleware/RequestTracking.js'
+import { registerMiddleware } from './middleware/ServerMiddleware.js'
+import { registerWorldNetwork } from './plugins/WorldNetworkPlugin.js'
+import { registerStaticAssets, registerEnvEndpoint } from './routes/StaticAssets.js'
+import { startServer, registerSignalHandlers } from './services/ServerLifecycle.js'
 global.SERVER_START_TIME = Date.now()
 
 const rootDir = path.join(__dirname, '../')
@@ -201,229 +195,12 @@ fastify.statusPageData = statusPageData
 fastify.corsConfig = corsConfig
 fastify.shutdownManager = shutdownManager
 
-async function worldNetwork(fastify) {
-  fastify.get('/ws', { websocket: true }, (ws, req) => {
-    if (!shutdownManager.isAcceptingConnections()) {
-      logger.warn('WS Connection rejected: server shutting down')
-      ws.close(1001, 'Server shutting down')
-      return
-    }
-
-    logger.info('WS Connection received')
-    errorTracker.addBreadcrumb('WebSocket Connection', { query: req.query })
-    shutdownManager.registerWebSocket(ws)
-
-    ws.on('close', () => {
-      shutdownManager.unregisterWebSocket(ws)
-    })
-
-    world.network.onConnection(ws, req.query)
-  })
-}
-
-fastify.register(createRequestIdMiddleware())
-fastify.register(createErrorHandler(logger, errorTracker))
-fastify.register(createTimeoutMiddleware(timeoutManager))
-
-fastify.addHook('onSend', async (request, reply) => {
-  reply.header('X-Content-Type-Options', 'nosniff')
-  reply.header('X-Frame-Options', 'SAMEORIGIN')
-  reply.header('X-XSS-Protection', '1; mode=block')
-  reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
-  reply.header('Permissions-Policy', 'microphone=(), camera=(), geolocation=()')
-})
-
-const corsOptions = corsConfig.getCORSOptions()
-fastify.register(cors, corsOptions)
-logger.info('[CORS] CORS configuration registered', {
-  origins: corsConfig.allowedOrigins.length,
-  methods: corsConfig.allowedMethods.length,
-  environment: env,
-})
-
-fastify.addHook('onRequest', async (request, reply) => {
-  if (shutdownManager.isShuttingDown) {
-    const isHealthEndpoint = request.url.startsWith('/health') || request.url === '/metrics'
-    if (!isHealthEndpoint) {
-      return reply.code(503).send({
-        error: 'Service Unavailable',
-        message: 'Server is shutting down',
-        statusCode: 503,
-      })
-    }
-  }
-
-  const origin = request.headers.origin
-  if (origin && !corsConfig.isOriginAllowed(origin)) {
-    const isHealthEndpoint = request.url.startsWith('/health') || request.url === '/metrics'
-    if (!isHealthEndpoint) {
-      logger.warn(`[CORS] Blocked request from non-whitelisted origin: ${origin}`, {
-        url: request.url,
-        method: request.method,
-      })
-      corsConfig.logRejectedRequest(origin)
-      reply.code(403).send({
-        error: 'Forbidden',
-        message: `CORS policy: Origin ${origin} is not allowed`,
-        statusCode: 403,
-      })
-    }
-  }
-})
-
-fastify.register(compress)
-fastify.register(multipart, {
-  limits: {
-    fileSize: 200 * 1024 * 1024,
-  },
-})
-fastify.register(ws)
-fastify.register(worldNetwork)
+registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager)
+await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker)
 
 registerRoutes(fastify, world, assetsDir)
+registerStaticAssets(fastify, __dirname, assetsDir, world)
+registerEnvEndpoint(fastify)
 
-fastify.get('/', async (req, reply) => {
-  const title = world.settings.title || 'World'
-  const desc = world.settings.desc || ''
-  const image = world.resolveURL(world.settings.image?.url) || ''
-  const url = process.env.PUBLIC_ASSETS_URL
-  const filePath = path.join(__dirname, '../build/public', 'index.html')
-  let html = fs.readFileSync(filePath, 'utf-8')
-
-  const buildDir = path.join(__dirname, '../build/public')
-  const files = fs.readdirSync(buildDir)
-  const jsFile = files.find(f => f.startsWith('index-') && f.endsWith('.js'))
-  const particlesFile = files.find(f => f.startsWith('particles-') && f.endsWith('.js'))
-
-  html = html.replace('{jsPath}', jsFile ? '/' + jsFile : '/index.js')
-  html = html.replace('{particlesPath}', particlesFile ? '/' + particlesFile : '/particles.js')
-  html = html.replaceAll('{buildId}', Date.now())
-  html = html.replaceAll('{url}', url)
-  html = html.replaceAll('{title}', title)
-  html = html.replaceAll('{desc}', desc)
-  html = html.replaceAll('{image}', image)
-  reply.type('text/html').send(html)
-})
-fastify.register(statics, {
-  root: path.join(__dirname, '../build/public'),
-  prefix: '/',
-  decorateReply: false,
-  setHeaders: res => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-    res.setHeader('Pragma', 'no-cache')
-    res.setHeader('Expires', '0')
-  },
-})
-fastify.register(statics, {
-  root: assetsDir,
-  prefix: '/assets/',
-  decorateReply: false,
-  setHeaders: res => {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year
-    res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString()) // older browsers
-  },
-})
-
-const publicEnvs = {}
-for (const key in process.env) {
-  if (key.startsWith('PUBLIC_')) {
-    const value = process.env[key]
-    publicEnvs[key] = value
-  }
-}
-const envsCode = `
-  if (!globalThis.env) globalThis.env = {}
-  globalThis.env = ${JSON.stringify(publicEnvs)}
-`
-fastify.get('/env.js', async (req, reply) => {
-  reply.type('application/javascript').send(envsCode)
-})
-
-async function startServer(retries = 10) {
-  try {
-    await fastify.listen({ port, host: '0.0.0.0', exclusive: false })
-    logger.info(`Server running on port ${port}`, { port, env })
-    metrics.gauge('server.port', port)
-    telemetry.start()
-
-    shutdownManager.addShutdownHandler('cache', async () => {
-      if (world?.db?.cache) {
-        logger.info('[SHUTDOWN] Closing cache')
-        if (world.db.cache.cache && typeof world.db.cache.cache.close === 'function') {
-          await world.db.cache.cache.close()
-        }
-      }
-    }, 90)
-
-    shutdownManager.addShutdownHandler('database', async () => {
-      if (world?.db) {
-        logger.info('[SHUTDOWN] Closing database')
-      }
-    }, 80)
-
-    shutdownManager.addShutdownHandler('storage', async () => {
-      if (world?.storage) {
-        logger.info('[SHUTDOWN] Persisting storage')
-        await world.storage.persist()
-      }
-    }, 70)
-
-    shutdownManager.addShutdownHandler('telemetry', async () => {
-      logger.info('[SHUTDOWN] Stopping telemetry')
-      telemetry.stop()
-    }, 60)
-
-    shutdownManager.addShutdownHandler('degradationManager', async () => {
-      logger.info('[SHUTDOWN] Shutting down degradation manager')
-      degradationManager.shutdown()
-    }, 40)
-
-    shutdownManager.addShutdownHandler('fastify', async () => {
-      logger.info('[SHUTDOWN] Closing Fastify server')
-      if (fastify.server) {
-        fastify.server.close()
-      }
-      await fastify.close()
-    }, 30)
-
-    shutdownManager.addShutdownHandler('logger', async () => {
-      logger.info('[SHUTDOWN] Flushing logs')
-      await logger.flush()
-    }, 10)
-
-    logger.info('AI provider health checks and telemetry started')
-  } catch (err) {
-    if (err.code === 'EADDRINUSE' && retries > 0) {
-      logger.warn(`Port ${port} in use, retrying in 2s...`)
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      return startServer(retries - 1)
-    }
-    logger.critical(`Failed to launch on port ${port}: ${err.message}`)
-    errorTracker.captureException(err, { category: 'ServerStartup', module: 'Server', port })
-    process.exit(1)
-  }
-}
-
-await startServer()
-
-async function shutdown(signal) {
-  errorTracker.addBreadcrumb('Server Shutdown', { signal })
-  const result = await shutdownManager.shutdown(signal)
-  process.exit(result.code)
-}
-
-process.on('SIGINT', () => shutdown('SIGINT'))
-process.on('SIGTERM', () => shutdown('SIGTERM'))
-
-process.on('uncaughtException', (err) => {
-  logger.critical(`Uncaught Exception: ${err.message}`, { stack: err.stack })
-  errorTracker.captureException(err, { category: 'UncaughtException', module: 'Server' })
-  process.exit(1)
-})
-
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error(`Unhandled Rejection: ${String(reason)}`, { promise: String(promise) })
-  if (reason instanceof Error) {
-    errorTracker.captureException(reason, { category: 'UnhandledRejection', module: 'Server' })
-  }
-})
+await startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker)
+registerSignalHandlers(shutdownManager, errorTracker, logger)

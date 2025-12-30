@@ -1,20 +1,6 @@
-import { distanceModels, audioGroups, imageFits } from '../../utils/collections/NodeConstants.js'
+import { isDistanceModel, isGroup, isFit, isPivot } from '../../validation/TypeValidators.js'
 
-export function isDistanceModel(value) {
-  return distanceModels.includes(value)
-}
-
-export function isGroup(value) {
-  return audioGroups.includes(value)
-}
-
-export function isFit(value) {
-  return imageFits.includes(value)
-}
-
-export function isPivot(value) {
-  return ['top-left', 'top-center', 'top-right', 'center-left', 'center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'].includes(value)
-}
+export { isDistanceModel, isGroup, isFit, isPivot }
 
 export function applyPivot(geometry, width, height, pivot) {
   if (pivot === 'center') return
