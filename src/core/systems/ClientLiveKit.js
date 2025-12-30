@@ -83,18 +83,14 @@ export class ClientLiveKit extends System {
         screenShareSimulcastLayers: [ScreenSharePresets.h1080fps30],
       },
     })
-    room.on(RoomEvent.TrackMuted, track => {
+    const handleMicStatus = (track, isMuted) => {
       if (track.isLocal && track.source === 'microphone') {
-        this.status.mic = false
+        this.status.mic = !isMuted
         this.events.emit(EVENT.livekit, this.status)
       }
-    })
-    room.on(RoomEvent.TrackUnmuted, track => {
-      if (track.isLocal && track.source === 'microphone') {
-        this.status.mic = true
-        this.events.emit(EVENT.livekit, this.status)
-      }
-    })
+    }
+    room.on(RoomEvent.TrackMuted, track => handleMicStatus(track, true))
+    room.on(RoomEvent.TrackUnmuted, track => handleMicStatus(track, false))
     const handleLocalTrack = (pub, isPublish) => {
       if (pub.source === 'microphone') {
         this.status.mic = isPublish
@@ -234,25 +230,24 @@ export class ClientLiveKit extends System {
     return { playerId, targetId, track, publication, texture, elem }
   }
 
-  addScreen(screen) {
-    this.screens.push(screen)
+  markScreenNodesDirty(targetId) {
     for (const node of this.screenNodes) {
-      if (node._screenId === screen.targetId) {
+      if (node._screenId === targetId) {
         node.needsRebuild = true
         node.setDirty()
       }
     }
   }
 
+  addScreen(screen) {
+    this.screens.push(screen)
+    this.markScreenNodesDirty(screen.targetId)
+  }
+
   removeScreen(screen) {
     screen.destroy()
     this.screens = this.screens.filter(s => s !== screen)
-    for (const node of this.screenNodes) {
-      if (node._screenId === screen.targetId) {
-        node.needsRebuild = true
-        node.setDirty()
-      }
-    }
+    this.markScreenNodesDirty(screen.targetId)
   }
 
   setMuted(playerId, muted) {

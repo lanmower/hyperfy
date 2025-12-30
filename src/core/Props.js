@@ -130,6 +130,14 @@ const properties = {
   renderLayer: { type: 'string', default: 'default' },
 }
 
+function buildSchema(keys) {
+  const schema = {}
+  for (const key of keys) {
+    if (properties[key]) schema[key] = properties[key]
+  }
+  return schema
+}
+
 export class Props {
   static get(key) {
     return properties[key]
@@ -140,12 +148,7 @@ export class Props {
   }
 
   static schema(keys = null) {
-    if (!keys) return properties
-    const schema = {}
-    for (const key of keys) {
-      if (properties[key]) schema[key] = properties[key]
-    }
-    return schema
+    return keys ? buildSchema(keys) : properties
   }
 
   static validate(data, schema) {
@@ -163,9 +166,5 @@ export function prop(key, override = {}) {
 }
 
 export function propSchema(keys) {
-  const schema = {}
-  for (const key of keys) {
-    if (properties[key]) schema[key] = properties[key]
-  }
-  return schema
+  return buildSchema(keys)
 }
