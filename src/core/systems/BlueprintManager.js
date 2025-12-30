@@ -52,8 +52,7 @@ export class BlueprintManager extends System {
       }
     }
 
-    this.validate(data)
-    const normalized = this.normalize(data)
+    const normalized = this.normalize(data); this.validate(normalized)
     this.store(normalized)
 
     if (local) {
