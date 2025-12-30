@@ -1,5 +1,5 @@
 import { Node } from './Node.js'
-import { defineProps } from '../utils/helpers/defineProperty.js'
+import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/createNodeSchema.js'
 import { AudioPlaybackController } from './audio/AudioPlaybackController.js'
@@ -19,8 +19,7 @@ const propertySchema = schema('src', 'volume', 'loop', 'group', 'spatial', 'dist
 export class Audio extends Node {
   constructor(data = {}) {
     super(data)
-    this.name = 'audio'
-    defineProps(this, propertySchema, defaults, data)
+    initializeNode(this, 'audio', propertySchema, {}, data)
 
     this.n = 0
     this.source = null
