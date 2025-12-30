@@ -1,3 +1,4 @@
+// Type-aware environment variable loader: Auto-detects type from default value
 export class ConfigLoader {
   static get(path, defaultValue, type = 'auto') {
     const envVarName = `HYPERFY_${path.split('.').join('_').toUpperCase()}`
@@ -8,24 +9,7 @@ export class ConfigLoader {
     }
 
     const targetType = type === 'auto' ? typeof defaultValue : type
-
     return this.cast(envValue, targetType, defaultValue)
-  }
-
-  static getNumber(path, defaultValue) {
-    return this.get(path, defaultValue, 'number')
-  }
-
-  static getString(path, defaultValue) {
-    return this.get(path, defaultValue, 'string')
-  }
-
-  static getBoolean(path, defaultValue) {
-    return this.get(path, defaultValue, 'boolean')
-  }
-
-  static loadWithEnvOverrides(config) {
-    return this.merge(config, {}, '')
   }
 
   static cast(value, type, defaultValue) {
