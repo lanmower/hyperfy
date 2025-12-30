@@ -55,7 +55,7 @@ const defaults = {
   onEnd: null,
 }
 
-const rebuild = function() { this.needsRebuild = true; this.setDirty() }
+const rebuild = function() { this.markRebuild(); this.setDirty() }
 const propertySchema = schema('emitting', 'shape', 'direction', 'rate', 'bursts', 'duration', 'loop', 'max', 'timescale', 'life', 'speed', 'size', 'rotate', 'color', 'alpha', 'emissive', 'image', 'spritesheet', 'blending', 'lit', 'billboard', 'space', 'force', 'velocityLinear', 'velocityOrbital', 'velocityRadial', 'rateOverDistance', 'sizeOverLife', 'rotateOverLife', 'colorOverLife', 'alphaOverLife', 'emissiveOverLife', 'onEnd')
   .override('emitting', { default: defaults.emitting, onSet: function() { this.emitter?.setEmitting(this._emitting) } })
   .overrideAll({

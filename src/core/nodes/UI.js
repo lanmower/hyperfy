@@ -154,7 +154,7 @@ export class UI extends Node {
   }
 
   rebuild() {
-    this.needsRebuild = true
+    this.markRebuild()
     this.needsRedraw = true
     this.setDirty()
   }

@@ -14,23 +14,23 @@ import { isDistanceModel, isGroup, isFit, isPivot, applyPivot } from './video/Vi
 
 const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'color', 'lit', 'doubleside', 'castShadow', 'receiveShadow', 'aspect', 'fit', 'width', 'height', 'pivot', 'volume', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
   .overrideAll({
-    src: { onSet() { this._loading = true; this.needsRebuild = true; this.setDirty() } },
-    linked: { onSet() { this.needsRebuild = true; this.setDirty() } },
+    src: { onSet() { this._loading = true; this.markRebuild(); this.setDirty() } },
+    linked: { onSet() { this.markRebuild(); this.setDirty() } },
     loop: { onSet(v) { if (this.instance) this.instance.loop = v } },
-    visible: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    color: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    lit: { onSet() { this.needsRebuild = true; this.setDirty() } },
+    visible: { onSet() { this.markRebuild(); this.setDirty() } },
+    color: { onSet() { this.markRebuild(); this.setDirty() } },
+    lit: { onSet() { this.markRebuild(); this.setDirty() } },
     doubleside: { onSet(v) { if (this.mesh) { this.mesh.material.side = v ? THREE.DoubleSide : THREE.FrontSide; this.mesh.material.needsUpdate = true } } },
     castShadow: { onSet(v) { if (this.mesh) this.mesh.castShadow = v } },
     receiveShadow: { onSet(v) { if (this.mesh) this.mesh.receiveShadow = v } },
-    aspect: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    fit: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    width: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    height: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    pivot: { onSet() { this.needsRebuild = true; this.setDirty() } },
+    aspect: { onSet() { this.markRebuild(); this.setDirty() } },
+    fit: { onSet() { this.markRebuild(); this.setDirty() } },
+    width: { onSet() { this.markRebuild(); this.setDirty() } },
+    height: { onSet() { this.markRebuild(); this.setDirty() } },
+    pivot: { onSet() { this.markRebuild(); this.setDirty() } },
     volume: { onSet(v) { if (this.gain) this.gain.gain.value = v } },
-    group: { onSet() { this.needsRebuild = true; this.setDirty() } },
-    spatial: { onSet() { this.needsRebuild = true; this.setDirty() } },
+    group: { onSet() { this.markRebuild(); this.setDirty() } },
+    spatial: { onSet() { this.markRebuild(); this.setDirty() } },
     distanceModel: { onSet(v) { if (this.pannerNode) this.pannerNode.distanceModel = v } },
     refDistance: { onSet(v) { if (this.pannerNode) this.pannerNode.refDistance = v } },
     maxDistance: { onSet(v) { if (this.pannerNode) this.pannerNode.maxDistance = v } },
@@ -170,7 +170,7 @@ export class Video extends Node {
 
   set geometry(value = defaults.geometry) {
     this._geometry = getRef(value)
-    this.needsRebuild = true
+    this.markRebuild()
     this.setDirty()
   }
 

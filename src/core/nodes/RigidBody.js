@@ -11,16 +11,16 @@ import { PhysicsProperties } from './physics/PhysicsProperties.js'
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 
 const propertySchema = schema('mass', 'damping', 'angularDamping', 'friction', 'restitution', 'tag', 'trigger', 'convex')
-  .add('type', { default: 'static', onSet() { this.needsRebuild = true } })
-  .add('linearDamping', { default: 0, onSet() { this.needsRebuild = true } })
+  .add('type', { default: 'static', onSet() { this.markRebuild() } })
+  .add('linearDamping', { default: 0, onSet() { this.markRebuild() } })
   .add('onContactStart', { default: null })
   .add('onContactEnd', { default: null })
   .add('onTriggerEnter', { default: null })
   .add('onTriggerLeave', { default: null })
   .override('tag', { onSet(v) { if (typeof v === 'number') this._tag = v + '' } })
-  .override('mass', { onSet() { this.needsRebuild = true } })
-  .override('damping', { default: 0, onSet() { this.needsRebuild = true } })
-  .override('angularDamping', { default: 0.05, onSet() { this.needsRebuild = true } })
+  .override('mass', { onSet() { this.markRebuild() } })
+  .override('damping', { default: 0, onSet() { this.markRebuild() } })
+  .override('angularDamping', { default: 0.05, onSet() { this.markRebuild() } })
   .build()
 
 const defaults = {}
@@ -215,7 +215,7 @@ export class RigidBody extends Node {
   setCenterOfMass(pos) {
     if (!pos?.isVector3) throw new Error('[rigidbody] setCenterOfMass pos must be Vector3')
     this._centerOfMass = pos.clone()
-    this.needsRebuild = true
+    this.markRebuild()
     this.setDirty()
   }
 

@@ -19,7 +19,7 @@ const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'con
   .add('layer', { default: 'environment' })
   .add('staticFriction', { default: 0.6, onSet: rebuildIfShape })
   .add('dynamicFriction', { default: 0.6, onSet: rebuildIfShape })
-  .override('type', { onSet() { this.needsRebuild = true } })
+  .override('type', { onSet() { this.markRebuild() } })
   .override('width', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }) })
   .override('height', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }) })
   .override('depth', { onSet: onSetRebuildIf(function() { return this.shape && this._type === 'box' }) })
@@ -126,7 +126,7 @@ export class Collider extends Node {
 
   set geometry(value = defaults.geometry) {
     this._geometry = getRef(value)
-    this.needsRebuild = true
+    this.markRebuild()
     this.setDirty()
   }
 
@@ -137,7 +137,7 @@ export class Collider extends Node {
   }
 
   requestRebuild() {
-    this.needsRebuild = true
+    this.markRebuild()
     this.setDirty()
   }
 

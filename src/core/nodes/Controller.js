@@ -21,7 +21,7 @@ const defaults = {
   onContactEnd: null,
 }
 
-const rebuild = function() { this.needsRebuild = true; this.setDirty() }
+const rebuild = function() { this.markRebuild(); this.setDirty() }
 const propertySchema = schema('radius', 'height', 'visible', 'layer', 'tag', 'onContactStart', 'onContactEnd')
   .overrideAll({
     radius: { default: defaults.radius, onSet: rebuild },

@@ -15,8 +15,8 @@ const defaultStopOpts = { fade: 0.15 }
 
 const propertySchema = schema('castShadow', 'receiveShadow')
   .overrideAll({
-    castShadow: { default: true, onSet: function() { if (this.handle) { this.needsRebuild = true; this.setDirty() } } },
-    receiveShadow: { default: true, onSet: function() { if (this.handle) { this.needsRebuild = true; this.setDirty() } } },
+    castShadow: { default: true, onSet: function() { if (this.handle) { this.markRebuild(); this.setDirty() } } },
+    receiveShadow: { default: true, onSet: function() { if (this.handle) { this.markRebuild(); this.setDirty() } } },
   })
   .build()
 

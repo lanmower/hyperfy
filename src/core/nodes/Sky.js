@@ -7,7 +7,7 @@ import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('Sky')
 
-const rebuild = () => function() { this.needsRebuild = true; this.setDirty() }
+const rebuild = () => function() { this.markRebuild(); this.setDirty() }
 const propertySchema = schema('bg', 'hdr', 'rotationY', 'sunDirection', 'sunIntensity', 'fogNear', 'fogFar', 'fogColor')
   .add('sunColor', { default: null, onSet: rebuild() })
   .overrideAll({

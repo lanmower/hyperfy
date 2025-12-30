@@ -10,7 +10,7 @@ import { schema } from '../utils/validation/createNodeSchema.js'
 import { q } from '../utils/TempVectors.js'
 import { isNumber } from 'lodash-es'
 
-const rebuild = function() { this.needsRebuild = true; this.setDirty() }
+const rebuild = function() { this.markRebuild(); this.setDirty() }
 
 const propertySchema = schema('limits', 'stiffness', 'damping', 'collide', 'breakForce', 'breakTorque')
   .add('type', { default: 'fixed', onSet: rebuild })

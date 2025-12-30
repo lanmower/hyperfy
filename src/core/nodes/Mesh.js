@@ -11,12 +11,12 @@ import { schema } from '../utils/validation/createNodeSchema.js'
 import { geometryCache } from '../utils/GeometryCache.js'
 
 const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')
-  .override('type', { onSet() { this.needsRebuild = true } })
+  .override('type', { onSet() { this.markRebuild() } })
   .override('width', { onSet: onSetRebuildIf(function() { return this._type === 'box' }) })
   .override('height', { onSet: onSetRebuildIf(function() { return this._type === 'box' }) })
   .override('depth', { onSet: onSetRebuildIf(function() { return this._type === 'box' }) })
   .override('radius', { onSet: onSetRebuildIf(function() { return this._type === 'sphere' }) })
-  .override('linked', { onSet() { this.needsRebuild = true } })
+  .override('linked', { onSet() { this.markRebuild() } })
   .override('castShadow', { onSet() { if (this.mesh) this.mesh.castShadow = this._castShadow } })
   .override('receiveShadow', { onSet() { if (this.mesh) this.mesh.receiveShadow = this._receiveShadow } })
   .override('visible', { onSet() { if (this.mesh) this.mesh.visible = this._visible } })
@@ -122,7 +122,7 @@ export class Mesh extends Node {
     }
     if (this._geometry === value) return
     this._geometry = value
-    this.needsRebuild = true
+    this.markRebuild()
     this.setDirty()
   }
 
@@ -136,7 +136,7 @@ export class Mesh extends Node {
     }
     if (this._material === value) return
     this._material = value
-    this.needsRebuild = true
+    this.markRebuild()
     this.setDirty()
   }
 
