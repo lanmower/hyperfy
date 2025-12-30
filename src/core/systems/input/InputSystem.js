@@ -6,6 +6,7 @@ import { InputDispatcher } from './InputDispatcher.js'
 import { PointerInputHandler } from './PointerInputHandler.js'
 import { KeyboardInputHandler } from './KeyboardInputHandler.js'
 import { XRInputHandler } from './XRInputHandler.js'
+import { TouchInputHandler } from '../controls/TouchInputHandler.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('InputSystem')
@@ -73,6 +74,7 @@ export class InputSystem extends System {
     this.screen = { width: 0, height: 0 }
     this.scroll = { delta: 0 }
     this.xrSession = null
+    this.touchHandler = new TouchInputHandler(this)
     this.dispatcher = new InputDispatcher()
     this.dispatcher.registerHandler('pointer', new PointerInputHandler(this))
     this.dispatcher.registerHandler('keyboard', new KeyboardInputHandler(this))
@@ -125,6 +127,7 @@ export class InputSystem extends System {
     }
     const pointerHandler = this.dispatcher.handlers.get('pointer')
     if (pointerHandler) pointerHandler.resetDeltas?.()
+    this.touchHandler.resetDeltas()
   }
 
   async init({ viewport }) {

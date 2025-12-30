@@ -335,6 +335,7 @@
       ".prettierrc",
       ".prettierrc.json",
       "ARCHITECTURE_PERFECTION_SUMMARY.md",
+      "ARCHITECTURE_REFACTOR_SUMMARY.md",
       "deployment.config.js",
       "extract-hyp.js",
       ".glootie-project-structure.json",
@@ -545,6 +546,7 @@
       "InputSanitizer.js",
       "WebSocketValidator.js",
       "ServiceBase.js",
+      "DatabaseProxy.js",
       "PersistenceBase.js",
       "Socket.js",
       "SystemStartup.js",
@@ -629,6 +631,7 @@
       "TimeoutConfig.js",
       "migrations.json",
       "db.js",
+      "db.js.bak",
       "ServerDebugAPI.js",
       "index_patch.txt",
       "IntegrationUtils.js",
@@ -637,6 +640,7 @@
       "RateLimiter.js",
       "RequestTracking.js",
       "TimeoutMiddleware.js",
+      "QueryBuilder.js",
       "CircuitBreakerManager.js",
       "DegradationManager.js",
       "DegradationStrategies.js",
@@ -732,5 +736,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767109765485
+  "lastAnalyzed": 1767115916376
 }
