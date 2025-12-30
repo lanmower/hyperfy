@@ -3,7 +3,7 @@ import fs from 'fs-extra'
 import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'
-import { createEmoteFactory } from '../../extras/createEmoteFactory.js'
+import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
@@ -87,7 +87,7 @@ export class ServerAssetHandlers {
       const arrayBuffer = await this.fetchArrayBuffer(url)
       this.gltfLoader.parse(arrayBuffer, '',
         glb => {
-          const factory = createEmoteFactory(glb, url)
+          const factory = AvatarFactory.createEmote(glb, url)
           resolve({ toClip: options => factory.toClip(options) })
         },
         err => {

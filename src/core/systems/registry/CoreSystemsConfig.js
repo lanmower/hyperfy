@@ -7,7 +7,7 @@ import { ClientBuilder } from '../ClientBuilder.js'
 import { InputSystem } from '../input/InputSystem.js'
 import { ClientEnvironment } from '../ClientEnvironment.js'
 import { ClientGraphics } from '../ClientGraphics.js'
-import { ClientLoader } from '../ClientLoader.js'
+import { UnifiedLoader } from '../UnifiedLoader.js'
 import { ClientNetwork } from '../ClientNetwork.js'
 import { ClientPrefs } from '../ClientPrefs.js'
 import { ClientUI } from '../ClientUI.js'
@@ -69,7 +69,7 @@ export const coreSystemsConfig = [
   },
   {
     name: 'loader',
-    class: ClientLoader,
+    class: UnifiedLoader,
     platforms: ['client'],
     priority: 62,
   },

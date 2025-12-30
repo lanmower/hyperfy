@@ -8,7 +8,6 @@ import { schema } from '../utils/validation/createNodeSchema.js'
 import { VideoRenderer } from './video/VideoRenderer.js'
 import { VideoAudioController } from './video/VideoAudioController.js'
 import { VideoInstanceManager } from './video/VideoInstanceManager.js'
-import { VideoGeometryHandler } from './video/VideoGeometryHandler.js'
 import { createVideoMaterialProxy } from './video/VideoMaterialProxy.js'
 import { isDistanceModel, isGroup, isFit, isPivot, applyPivot } from './video/VideoHelpers.js'
 
@@ -51,9 +50,7 @@ export class Video extends Node {
     this._loading = true
     this.renderer = new VideoRenderer(this)
     this.audioController = new VideoAudioController(this)
-    this.instanceManager = new VideoInstanceManager(this)
-    this.geometryHandler = new VideoGeometryHandler(this)
-  }
+    this.instanceManager = new VideoInstanceManager(this)  }
 
   async mount() {
     this.needsRebuild = false
@@ -69,8 +66,8 @@ export class Video extends Node {
 
       let geometry = this._geometry
       if (!geometry) {
-        const dims = this.geometryHandler.calculateDimensions(this.instance)
-        geometry = this.geometryHandler.createGeometry(dims.width, dims.height, this._pivot)
+        const dims = this.calculateDimensions(this.instance)
+        geometry = this.createGeometry(dims.width, dims.height, this._pivot)
       }
 
       this.mesh = this.renderer.createMesh(geometry, material, this._castShadow, this._receiveShadow)
@@ -95,7 +92,7 @@ export class Video extends Node {
 
     if (this._visible) {
       const material = this.mesh.material
-      const result = this.geometryHandler.updateGeometry(this.mesh.geometry, this.instance, this._width, this._height, this._pivot)
+      const result = this.updateGeometry(this.mesh.geometry, this.instance, this._width, this._height, this._pivot)
 
       material.color.set('white')
       material.uniforms.uVidAspect.value = result.vidAspect

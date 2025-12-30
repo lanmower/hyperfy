@@ -18,8 +18,6 @@ import { PlayerChatBubble } from './player/PlayerChatBubble.js'
 import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
 import { AnimationController } from './player/AnimationController.js'
 import { NetworkSynchronizer } from './player/NetworkSynchronizer.js'
-import { PlayerTeleportHandler } from './player/PlayerTeleportHandler.js'
-import { PlayerModifyHandler } from './player/PlayerModifyHandler.js'
 import { PlayerControlBinder } from './player/PlayerControlBinder.js'
 import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
 import { EVENT } from '../constants/EventNames.js'
@@ -106,9 +104,7 @@ export class PlayerLocal extends BaseEntity {
       this.inputProcessor = new PlayerInputProcessor(this)
       this.animationController = new AnimationController(this)
       this.networkSynchronizer = new NetworkSynchronizer(this)
-      this.teleportHandler = new PlayerTeleportHandler(this)
       this.effectOnEnd = null
-      this.modifyHandler = new PlayerModifyHandler(this)
       this.controlBinder = new PlayerControlBinder(this)
       this.capsuleFactory = new PlayerCapsuleFactory(this.world)
 
@@ -268,7 +264,29 @@ export class PlayerLocal extends BaseEntity {
     this.controller.syncTransform()
   }
 
-  teleport({ position, rotationY }) { this.teleportHandler.teleport({ position, rotationY }) }
+  teleport({ position: pos, rotationY }) {
+    const position = new THREE.Vector3()
+    position.copy(pos.isVector3 ? pos : new THREE.Vector3().fromArray(pos))
+    const hasRotation = isNumber(rotationY)
+    const pose = this.capsule.getGlobalPose()
+    position.toPxTransform(pose)
+    this.capsuleHandle.snap(pose)
+    this.base.position.copy(position)
+    if (hasRotation) this.base.rotation.y = rotationY
+    this.world.network.send('entityModified', {
+      id: this.data.id,
+      p: this.base.position.toArray(),
+      q: this.base.quaternion.toArray(),
+      t: true,
+    })
+    this.cam.position.copy(this.base.position)
+    this.cam.position.y += this.camHeight
+    if (hasRotation) this.cam.rotation.y = rotationY
+    if (this.control?.camera) {
+      this.control.camera.position.copy(this.cam.position)
+      this.control.camera.quaternion.copy(this.cam.quaternion)
+    }
+  }
   setEffect(effect, onEnd) {
     if (this.data.effect === effect) return
     if (this.data.effect) {
@@ -290,12 +308,53 @@ export class PlayerLocal extends BaseEntity {
     else { this.pushForce = force.clone(); this.pushForceInit = false }
   }
   setName(name) {
-    this.modifyHandler.modify({ name })
+    this.modify({ name })
     this.world.network.send('entityModified', { id: this.data.id, name })
   }
   setSessionAvatar(avatar) { return this.controller.setSessionAvatar(avatar) }
   chat(msg) { return this.chatBubble.chat(msg) }
-  modify(data) { this.modifyHandler.modify(data) }
+  modify(data) {
+    let avatarChanged
+    let changed
+    if (data.hasOwnProperty('name')) {
+      this.data.name = data.name
+      this.world.events.emit('name', { playerId: this.data.id, name: this.data.name })
+      changed = true
+    }
+    if (data.hasOwnProperty('health')) {
+      this.data.health = data.health
+      this.nametag.health = data.health
+      this.world.events.emit('health', { playerId: this.data.id, health: data.health })
+    }
+    if (data.hasOwnProperty('avatar')) {
+      this.data.avatar = data.avatar
+      avatarChanged = true
+      changed = true
+    }
+    if (data.hasOwnProperty('sessionAvatar')) {
+      this.data.sessionAvatar = data.sessionAvatar
+      avatarChanged = true
+    }
+    if (data.hasOwnProperty('ef')) {
+      if (this.data.effect) {
+        this.data.effect = null
+        this.effectOnEnd?.()
+        this.effectOnEnd = null
+      }
+      this.data.effect = data.ef
+    }
+    if (data.hasOwnProperty('rank')) {
+      this.data.rank = data.rank
+      this.world.events.emit('rank', { playerId: this.data.id, rank: this.data.rank })
+      changed = true
+    }
+    if (avatarChanged) {
+      this.applyAvatar()
+    }
+    if (changed) {
+      this.world.events.emit('player', this)
+    }
+  }
 
   destroy(local) {
     if (this.controller) {
@@ -365,9 +424,7 @@ export class PlayerLocal extends BaseEntity {
     this.inputProcessor = null
     this.animationController = null
     this.networkSynchronizer = null
-    this.teleportHandler = null
     this.effectOnEnd = null
-    this.modifyHandler = null
     this.controlBinder = null
     this.capsuleFactory = null
 

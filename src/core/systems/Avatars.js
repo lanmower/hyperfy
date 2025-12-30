@@ -1,30 +1,29 @@
-import { System } from './System.js'
+import { RegistrySystemBase } from './RegistrySystemBase.js'
 
-export class Avatars extends System {
+export class Avatars extends RegistrySystemBase {
   constructor(world) {
     super(world)
-    this.avatars = []
     this.cursor = 0
   }
 
   add(avatar) {
-    this.avatars.push(avatar)
+    const id = `avatar_${this.cursor++}`
+    this.register(id, avatar)
   }
 
   remove(avatar) {
-    const idx = this.avatars.indexOf(avatar)
-    if (idx === -1) return
-    this.avatars.splice(idx, 1)
-  }
-
-  update(delta) {
-    for (const avatar of this.avatars) {
-      avatar.updateRate()
-      avatar.update(delta)
+    for (const [id, item] of this.items.entries()) {
+      if (item === avatar) {
+        this.unregister(id)
+        return
+      }
     }
   }
 
-  destroy() {
-    this.avatars = []
+  update(delta) {
+    for (const avatar of this.items.values()) {
+      avatar.updateRate()
+      avatar.update(delta)
+    }
   }
 }

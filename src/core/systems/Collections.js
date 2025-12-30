@@ -1,24 +1,18 @@
-import { System } from './System.js'
+import { RegistrySystemBase } from './RegistrySystemBase.js'
 
-export class Collections extends System {
+export class Collections extends RegistrySystemBase {
   constructor(world) {
     super(world)
-    this.collections = []
-  }
-
-  get(id) {
-    return this.collections.find(coll => coll.id === id)
   }
 
   deserialize(data) {
-    this.collections = data
+    this.clear()
+    for (const coll of data) {
+      this.register(coll.id, coll)
+    }
   }
 
   serialize() {
-    return this.collections
-  }
-
-  destroy() {
-    this.collections = []
+    return Array.from(this.items.values())
   }
 }

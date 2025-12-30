@@ -34,8 +34,4 @@ export class Events extends System {
   clear(name) {
     return this.bus.clear(name)
   }
-
-  destroy() {
-    this.bus.clear()
-  }
 }

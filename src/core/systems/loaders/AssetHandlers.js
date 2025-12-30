@@ -2,8 +2,8 @@ import * as THREE from '../../extras/three.js'
 import Hls from 'hls.js/dist/hls.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
-import { createEmoteFactory } from '../../extras/createEmoteFactory.js'
-import { createVRMFactory } from '../../extras/createVRMFactory.js'
+import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
+
 import { createNode } from '../../extras/createNode.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
@@ -275,14 +275,14 @@ export class AssetHandlers {
     )
     this.insertRegistry.register('emote', (localUrl, url, file, key) =>
       this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const emote = { toClip: options => createEmoteFactory(glb, url).toClip(options) }
+        const emote = { toClip: options => AvatarFactory.createEmote(glb, url).toClip(options) }
         this.results.set(key, emote)
         return emote
       })
     )
     this.insertRegistry.register('avatar', (localUrl, url, file, key) =>
       this.gltfLoader.loadAsync(localUrl).then(glb => {
-        const avatar = this.createAvatarResult(createVRMFactory(glb, this.setupMaterial), file)
+        const avatar = this.createAvatarResult(AvatarFactory.createVRM(glb, this.setupMaterial), file)
         this.results.set(key, avatar)
         return avatar
       })
@@ -360,7 +360,7 @@ export class AssetHandlers {
   handleEmote(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const emote = { toClip: options => createEmoteFactory(glb, url).toClip(options) }
+      const emote = { toClip: options => AvatarFactory.createEmote(glb, url).toClip(options) }
       this.results.set(key, emote)
       return emote
     })
@@ -369,7 +369,7 @@ export class AssetHandlers {
   handleAvatar(url, file, key) {
     return file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
-      const avatar = this.createAvatarResult(createVRMFactory(glb, this.setupMaterial), file)
+      const avatar = this.createAvatarResult(AvatarFactory.createVRM(glb, this.setupMaterial), file)
       this.results.set(key, avatar)
       return avatar
     })

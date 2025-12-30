@@ -7,7 +7,6 @@ import { PlayerConnectionManager } from './server/PlayerConnectionManager.js'
 import { BuilderCommandHandler } from './server/BuilderCommandHandler.js'
 import { ServerLifecycleManager } from './server/ServerLifecycleManager.js'
 import { SocketManager } from './server/SocketManager.js'
-import { ChatManager } from './server/ChatManager.js'
 import { Compressor } from './network/Compressor.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
@@ -47,7 +46,6 @@ export class ServerNetwork extends BaseNetwork {
     this.core = new NetworkCore()
     this.lifecycleManager = new ServerLifecycleManager(this)
     this.socketManager = new SocketManager(this)
-    this.chatManager = new ChatManager(this)
     this.fileUploadHandler = new FileUploadHandler(this)
     this.worldSaveManager = new WorldSaveManager(this)
     this.playerConnectionManager = new PlayerConnectionManager(this)

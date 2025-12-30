@@ -11,7 +11,7 @@ import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
 import { createPlayerProxy } from '../extras/createPlayerProxy.js'
 import { ScriptExecutor } from './app/ScriptExecutor.js'
-import { ProxyFactory } from './app/ProxyFactory.js'
+import { ProxyRegistry } from '../proxy/ProxyRegistry.js'
 import { AppNetworkSync } from './app/AppNetworkSync.js'
 import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
 import { RigidBody } from '../nodes/RigidBody.js'
@@ -47,7 +47,7 @@ export class App extends BaseEntity {
     this.worldListeners = new Map()
     this.eventQueue = []
     this.hotEvents = 0
-    this.proxyFactory = new ProxyFactory(this)
+    this.proxyRegistry = new ProxyRegistry()
     this.worldNodes = new Set()
     this.snaps = []
     this.networkSync = new AppNetworkSync(this)
@@ -218,7 +218,7 @@ export class App extends BaseEntity {
     this.clearEventListeners()
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()
-    this.proxyFactory.clear()
+    this.proxyRegistry.clear()
     this.abortController.abort()
     this.networkSync.networkPos = null
     this.networkSync.networkQuat = null
@@ -262,7 +262,7 @@ export class App extends BaseEntity {
 
     this.blueprintLoader = null
     this.scriptExecutor = null
-    this.proxyFactory = null
+    this.proxyRegistry = null
     this.networkSync = null
     this.propertyHandlers = null
     this.world.entities.remove(this.data.id)
@@ -383,19 +383,60 @@ export class App extends BaseEntity {
   }
 
   getPlayerProxy(playerId) {
-    if (!this.playerProxies) this.playerProxies = new Map()
-    if (!this.playerProxies.has(playerId)) {
-      const proxy = this.proxyFactory.getPlayerProxy(playerId)
-      if (proxy) this.playerProxies.set(playerId, proxy)
-    }
-    return this.playerProxies.get(playerId)
+    const cached = this.proxyRegistry.getProxy(playerId)
+    if (cached) return cached
+    const player = this.world.entities.get(playerId)
+    if (!player) return null
+    const proxy = createPlayerProxy(this, player)
+    this.proxyRegistry.cache.set(playerId, proxy)
+    return proxy
   }
 
   getWorldProxy() {
-    return this.proxyFactory.getWorldProxy()
+    const cached = this.proxyRegistry.getProxy('world')
+    if (cached) return cached
+    const apps = this.world.apps
+    const proxy = {}
+    if (!apps) return proxy
+    const allKeys = new Set([...Object.keys(apps.worldGetters || {}), ...Object.keys(apps.worldSetters || {})])
+    for (const key of allKeys) {
+      try {
+        const descriptor = { enumerable: true, configurable: true }
+        if (apps.worldGetters?.[key]) descriptor.get = () => apps.worldGetters[key](apps, this)
+        if (apps.worldSetters?.[key]) descriptor.set = (value) => apps.worldSetters[key](apps, this, value)
+        Object.defineProperty(proxy, key, descriptor)
+      } catch (err) {
+        logger.warn('Failed to define property', { property: key, error: err.message })
+      }
+    }
+    for (const key in apps.worldMethods) {
+      proxy[key] = (...args) => apps.worldMethods[key](apps, this, ...args)
+    }
+    this.proxyRegistry.cache.set('world', proxy)
+    return proxy
   }
 
   getAppProxy() {
-    return this.proxyFactory.getAppProxy()
+    const cached = this.proxyRegistry.getProxy('app')
+    if (cached) return cached
+    const apps = this.world.apps
+    const proxy = {}
+    if (!apps) return proxy
+    const allKeys = new Set([...Object.keys(apps.appGetters || {}), ...Object.keys(apps.appSetters || {})])
+    for (const key of allKeys) {
+      try {
+        const descriptor = { enumerable: true, configurable: true }
+        if (apps.appGetters?.[key]) descriptor.get = () => apps.appGetters[key](apps, this)
+        if (apps.appSetters?.[key]) descriptor.set = (value) => apps.appSetters[key](apps, this, value)
+        Object.defineProperty(proxy, key, descriptor)
+      } catch (err) {
+        logger.warn('Failed to define property', { property: key, error: err.message })
+      }
+    }
+    for (const key in apps.appMethods) {
+      proxy[key] = (...args) => apps.appMethods[key](apps, this, ...args)
+    }
+    this.proxyRegistry.cache.set('app', proxy)
+    return proxy
   }
 }
