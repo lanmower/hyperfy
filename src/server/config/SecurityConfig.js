@@ -1,9 +1,12 @@
+// Consolidated: Security limits reference MasterConfig as single source of truth
+import { MasterConfig } from './MasterConfig.js'
+
 export const SecurityConfig = {
   limits: {
-    maxScriptSize: 1024 * 1024,
-    maxStringLiteral: 100 * 1024,
-    maxUrlLength: 2048,
-    maxPropertyDepth: 10,
+    maxScriptSize: MasterConfig.security.maxScriptSize,
+    maxStringLiteral: MasterConfig.security.maxStringLiteral,
+    maxUrlLength: MasterConfig.security.maxUrlLength,
+    maxPropertyDepth: MasterConfig.security.maxPropertyDepth,
   },
 
   dangerousPatterns: [

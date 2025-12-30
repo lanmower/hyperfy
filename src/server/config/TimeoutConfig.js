@@ -1,28 +1,31 @@
+// Consolidated: Re-export timeout configuration from MasterConfig
+import { MasterConfig } from './MasterConfig.js'
+
 export const TimeoutConfig = {
   websocket: {
-    requestTimeout: 30000,
-    inactivityTimeout: 300000,
-    inactivityCheckInterval: 60000,
-    maxReconnectBackoff: 30000,
-    messageQueueMax: 100,
-    maxMessageSize: 1024 * 1024,
-    invalidMessageThreshold: 10,
-    invalidMessageWindow: 60000,
+    requestTimeout: MasterConfig.network.requestTimeout,
+    inactivityTimeout: MasterConfig.network.inactivityTimeout,
+    inactivityCheckInterval: MasterConfig.network.inactivityCheckInterval,
+    maxReconnectBackoff: MasterConfig.network.maxReconnectDelay,
+    messageQueueMax: MasterConfig.network.wsMessageQueueMax,
+    maxMessageSize: MasterConfig.network.wsMaxMessageSize,
+    invalidMessageThreshold: MasterConfig.network.wsInvalidMessageThreshold,
+    invalidMessageWindow: MasterConfig.network.wsInvalidMessageWindow,
   },
 
   database: {
-    queryTimeout: 5000,
-    connectionTimeout: 10000,
+    queryTimeout: MasterConfig.network.databaseQueryTimeout,
+    connectionTimeout: MasterConfig.network.connectionTimeout,
   },
 
   api: {
-    defaultFetchTimeout: 10000,
-    healthCheckInterval: 30000,
+    defaultFetchTimeout: MasterConfig.network.fetchDefaultTimeout,
+    healthCheckInterval: MasterConfig.network.aiHealthCheckInterval,
   },
 
   deployment: {
-    portConflictRetry: 2000,
-    gracefulShutdown: 30000,
+    portConflictRetry: MasterConfig.network.deploymentRetryDelay,
+    gracefulShutdown: MasterConfig.network.gracefulShutdown,
   },
 }
 

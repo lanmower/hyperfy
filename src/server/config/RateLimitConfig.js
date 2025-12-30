@@ -1,3 +1,6 @@
+// Consolidated: Re-export rate limit configuration from MasterConfig
+import { MasterConfig } from './MasterConfig.js'
+
 const whitelistedIPs = new Set([
   '127.0.0.1',
   '::1',
@@ -6,38 +9,8 @@ const whitelistedIPs = new Set([
 
 const blacklistedIPs = new Set()
 
-export const RATE_LIMIT_PRESETS = {
-  upload: {
-    max: 10,
-    window: 60000,
-    burst: 1.3,
-    description: 'File upload rate limit',
-  },
-  admin: {
-    max: 30,
-    window: 60000,
-    burst: 1.3,
-    description: 'Admin command rate limit',
-  },
-  api: {
-    max: 100,
-    window: 60000,
-    burst: 1.3,
-    description: 'General API rate limit',
-  },
-  websocket: {
-    max: 5,
-    window: 60000,
-    burst: 1.0,
-    description: 'WebSocket connection rate limit',
-  },
-  health: {
-    max: 60,
-    window: 60000,
-    burst: 1.5,
-    description: 'Health check rate limit',
-  },
-}
+// Use MasterConfig.rateLimits as source of truth
+export const RATE_LIMIT_PRESETS = MasterConfig.rateLimits
 
 export function isWhitelisted(ip) {
   if (process.env.NODE_ENV !== 'production') {
