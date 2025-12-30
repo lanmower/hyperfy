@@ -6,4 +6,26 @@ localstorage.json
 .notes/
 node_modules/
 build/
+dist/
+out/
 /world*
+
+# Serena codebase agent cache
+.serena/
+
+# Phase documentation files (generated during development)
+PHASE*.txt
+PHASE*.md
+
+# Windows reserved names
+nul
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+*.lock
+*.tsbuildinfo
