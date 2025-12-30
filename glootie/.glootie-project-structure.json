@@ -205,6 +205,7 @@
       "build",
       "glootie",
       ".mcp-metadata",
+      "code_search_index",
       "node_modules",
       "public",
       "scripts",
@@ -337,6 +338,7 @@
       "deployment.config.js",
       "extract-hyp.js",
       ".glootie-project-structure.json",
+      ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
       "LICENSE",
       "nul",
@@ -593,7 +595,6 @@
       "Stage.js",
       "System.js",
       "SystemIntegration.js",
-      "SystemLifecycleManager.js",
       "UnifiedLoader.js",
       "Wind.js",
       "XR.js",
@@ -711,6 +712,7 @@
       ".prettierrc.json",
       "deployment.config.js",
       ".glootie-project-structure.json",
+      ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
       "package.json",
       "playwright.config.js"
@@ -731,5 +733,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767109125502
+  "lastAnalyzed": 1767109450577
 }
