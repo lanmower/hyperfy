@@ -1,4 +1,5 @@
 import { Plugin } from './Plugin.js'
+import { InputHelper } from './core/InputHelper.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('InputPlugin')
@@ -9,6 +10,7 @@ export class InputPlugin extends Plugin {
     this.name = 'Input'
     this.version = '1.0.0'
     this.system = null
+    this.inputHelper = InputHelper
   }
 
   async init() {
@@ -67,6 +69,24 @@ export class InputPlugin extends Plugin {
         return this.system.screen || null
       },
 
+      registerHandler: (eventType, handler, options) => {
+        if (!this.enabled || !this.system) return null
+        return this.inputHelper.registerInput(this.system, eventType, handler, options)
+      },
+
+      dispatchEvent: (eventType, data) => {
+        if (!this.enabled || !this.system) return false
+        return this.inputHelper.dispatchInput(this.system, eventType, data)
+      },
+
+      normalizeButton: (buttonState) => {
+        return this.inputHelper.normalizeButtonState(buttonState)
+      },
+
+      normalizeVector: (vectorState) => {
+        return this.inputHelper.normalizeVectorState(vectorState)
+      },
+
       getStatus: () => {
         if (!this.enabled || !this.system) return null
         return {
@@ -75,7 +95,9 @@ export class InputPlugin extends Plugin {
           screen: {
             width: this.system.screen?.width || 0,
             height: this.system.screen?.height || 0
-          }
+          },
+          controlsCount: this.system.controls?.length || 0,
+          actionsCount: this.system.actions?.length || 0
         }
       }
     }

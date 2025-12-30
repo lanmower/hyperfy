@@ -1,4 +1,4 @@
-import { PacketCodec } from './systems/network/PacketCodec.js'
+import { MessageHandler } from './plugins/core/MessageHandler.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 
 const MAX_MESSAGE_SIZE = 1024 * 1024
@@ -27,7 +27,7 @@ export class Socket {
   }
 
   send(name, data) {
-    const packet = PacketCodec.encode(name, data)
+    const packet = MessageHandler.encode(name, data)
     this.ws.send(packet)
   }
 
@@ -99,7 +99,7 @@ export class Socket {
       return
     }
 
-    const [method, data] = PacketCodec.decode(packet)
+    const [method, data] = MessageHandler.decode(packet)
 
     if (!method) {
       logger.error('Failed to decode packet from socket', { socketId: this.id })

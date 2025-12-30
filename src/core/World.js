@@ -1,6 +1,5 @@
 import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
-import { systemRegistry } from './systems/SystemRegistry.js'
 import { WorldConfig } from './config/SystemConfig.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
@@ -37,20 +36,10 @@ export class World extends EventEmitter {
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
     this.rig.add(this.camera)
-
-    this.loadSystemsFromRegistry()
-  }
-
-  loadSystemsFromRegistry() {
-    const systems = systemRegistry.getCurrentPlatformSystems()
-    for (const { name, class: SystemClass } of systems) {
-      this.register(name, SystemClass)
-    }
   }
 
   register(key, System) {
     const system = new System(this)
-    systemRegistry.register(key, system)
     this[key] = system
     return system
   }
@@ -87,7 +76,7 @@ export class World extends EventEmitter {
   }
 
 
-  async init(options) {
+  async init(options = {}) {
     this.storage = options.storage
     this.assetsDir = options.assetsDir
     this.assetsUrl = options.assetsUrl
@@ -97,13 +86,35 @@ export class World extends EventEmitter {
     }
 
     await this.pluginHooks.execute('world:init', this)
-    await this.systemRegistry.init(options)
-    await this.start()
+    await this.initializeSystems(options)
+    await this.startSystems()
+    await this.pluginHooks.execute('world:start', this)
   }
 
-  async start() {
-    await this.pluginHooks.execute('world:start', this)
-    await this.systemRegistry.start()
+  async initializeSystems(options = {}) {
+    for (const key in this) {
+      const system = this[key]
+      if (system && typeof system.init === 'function') {
+        try {
+          await system.init(options)
+        } catch (err) {
+          logger.error(`System ${key} init failed`, { error: err.message })
+        }
+      }
+    }
+  }
+
+  async startSystems() {
+    for (const key in this) {
+      const system = this[key]
+      if (system && typeof system.start === 'function') {
+        try {
+          await system.start()
+        } catch (err) {
+          logger.error(`System ${key} start failed`, { error: err.message })
+        }
+      }
+    }
   }
 
   tick = time => {
@@ -134,37 +145,46 @@ export class World extends EventEmitter {
     this.postTick()
   }
 
+  invokeSystemLifecycle(method, ...args) {
+    for (const key in this) {
+      const system = this[key]
+      system?.[method]?.(...args)
+    }
+  }
+
+  invokeHotLifecycle(method, ...args) {
+    for (const item of this.hot) {
+      item[method]?.(...args)
+    }
+  }
+
   preTick() {
-    this.systemRegistry.preTick()
+    this.invokeSystemLifecycle('preTick')
   }
 
   preFixedUpdate(willFixedStep) {
-    this.systemRegistry.preFixedUpdate(willFixedStep)
+    this.invokeSystemLifecycle('preFixedUpdate', willFixedStep)
   }
 
   fixedUpdate(delta) {
-    for (const item of this.hot) {
-      item.fixedUpdate?.(delta)
-    }
-    this.systemRegistry.fixedUpdate(delta)
+    this.invokeHotLifecycle('fixedUpdate', delta)
+    this.invokeSystemLifecycle('fixedUpdate', delta)
   }
 
   postFixedUpdate(delta) {
-    this.systemRegistry.postFixedUpdate(delta)
+    this.invokeSystemLifecycle('postFixedUpdate', delta)
   }
 
   preUpdate(alpha) {
-    this.systemRegistry.preUpdate(alpha)
+    this.invokeSystemLifecycle('preUpdate', alpha)
   }
 
   update(delta) {
-    for (const item of this.hot) {
-      item.update?.(delta)
-    }
+    this.invokeHotLifecycle('update', delta)
     this.pluginHooks.execute('world:update', delta)
 
     const updateStart = performance.now()
-    this.systemRegistry.update(delta)
+    this.invokeSystemLifecycle('update', delta)
     const updateDuration = performance.now() - updateStart
 
     if (this.frame % 30 === 0) {
@@ -173,16 +193,14 @@ export class World extends EventEmitter {
   }
 
   postUpdate(delta) {
-    this.systemRegistry.postUpdate(delta)
+    this.invokeSystemLifecycle('postUpdate', delta)
   }
 
   lateUpdate(delta) {
-    for (const item of this.hot) {
-      item.lateUpdate?.(delta)
-    }
+    this.invokeHotLifecycle('lateUpdate', delta)
 
     const lateUpdateStart = performance.now()
-    this.systemRegistry.lateUpdate(delta)
+    this.invokeSystemLifecycle('lateUpdate', delta)
     const lateUpdateDuration = performance.now() - lateUpdateStart
 
     if (this.frame % 30 === 0) {
@@ -192,18 +210,16 @@ export class World extends EventEmitter {
   }
 
   postLateUpdate(delta) {
-    for (const item of this.hot) {
-      item.postLateUpdate?.(delta)
-    }
-    this.systemRegistry.postLateUpdate(delta)
+    this.invokeHotLifecycle('postLateUpdate', delta)
+    this.invokeSystemLifecycle('postLateUpdate', delta)
   }
 
   commit() {
-    this.systemRegistry.commit()
+    this.invokeSystemLifecycle('commit')
   }
 
   postTick() {
-    this.systemRegistry.postTick()
+    this.invokeSystemLifecycle('postTick')
   }
 
   setupMaterial = material => {
@@ -313,6 +329,19 @@ export class World extends EventEmitter {
     this.pluginRegistry.getAllPlugins().forEach(plugin => {
       this.pluginRegistry.unregister(plugin.name)
     })
-    this.systemRegistry.destroy()
+    this.destroySystems()
+  }
+
+  destroySystems() {
+    for (const key in this) {
+      const system = this[key]
+      if (system && typeof system.destroy === 'function') {
+        try {
+          system.destroy()
+        } catch (err) {
+          logger.error(`System ${key} destroy failed`, { error: err.message })
+        }
+      }
+    }
   }
 }

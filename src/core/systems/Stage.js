@@ -141,10 +141,6 @@ export class Stage extends System {
     return this.meshInserter.insertSingle(options)
   }
 
-  createMaterial(options = {}) {
-    return this.materialFactory.create(options)
-  }
-
   raycastPointer(position, layers = this.maskNone, min = 0, max = Infinity) {
     if (!this.viewport || typeof this.viewport.getBoundingClientRect !== 'function') throw new Error('no viewport')
     const rect = this.viewport.getBoundingClientRect()

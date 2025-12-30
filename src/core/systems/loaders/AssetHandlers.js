@@ -215,6 +215,20 @@ export class AssetHandlers {
     this.vrmHooks = hooks
   }
 
+  async withFallback(type, url, key, promise) {
+    try {
+      return await promise
+    } catch (err) {
+      logger.error(`${type} error`, { url, error: err.message })
+      const fallback = this.fallbackManager.getFallback(type, url, err)
+      if (fallback) {
+        this.results.set(key, fallback)
+        return fallback
+      }
+      throw err
+    }
+  }
+
   handle(type, url, file, key) {
     return this.registry.handle(type, url, file, key)
   }
@@ -291,10 +305,7 @@ export class AssetHandlers {
   }
 
   handleVideo(url, file, key) {
-    return new Promise(resolve => {
-      const factory = createVideoFactory(this.resolveURL(url), this.world)
-      resolve(factory)
-    })
+    return Promise.resolve(createVideoFactory(this.resolveURL(url), this.world))
   }
 
   handleHDR(url, file, key) {
@@ -338,20 +349,12 @@ export class AssetHandlers {
   }
 
   handleModel(url, file, key) {
-    return file.arrayBuffer().then(async buffer => {
+    return this.withFallback('model', url, key, file.arrayBuffer().then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
       const model = this.createModelResult(glbToNodes(glb, this.world), file, glb.scene)
       this.results.set(key, model)
       return model
-    }).catch(err => {
-      logger.error('Model parse error', { url, error: err.message })
-      const fallback = this.fallbackManager.getFallback('model', url, err)
-      if (fallback) {
-        this.results.set(key, fallback)
-        return fallback
-      }
-      throw err
-    })
+    }))
   }
 
   handleEmote(url, file, key) {
@@ -373,36 +376,20 @@ export class AssetHandlers {
   }
 
   handleScript(url, file, key) {
-    return file.text().then(code => {
+    return this.withFallback('script', url, key, file.text().then(code => {
       const script = this.scripts.evaluate(code)
       this.results.set(key, script)
       return script
-    }).catch(err => {
-      logger.error('Script evaluation error', { url, error: err.message })
-      const fallback = this.fallbackManager.getFallback('script', url, err)
-      if (fallback) {
-        this.results.set(key, fallback)
-        return fallback
-      }
-      throw err
-    })
+    }))
   }
 
   handleAudio(url, file, key) {
-    return file.arrayBuffer().then(buffer =>
+    return this.withFallback('audio', url, key, file.arrayBuffer().then(buffer =>
       this.audio.ctx.decodeAudioData(buffer)
     ).then(audioBuffer => {
       this.results.set(key, audioBuffer)
       return audioBuffer
-    }).catch(err => {
-      logger.error('Audio decode error', { url, error: err.message })
-      const fallback = this.fallbackManager.getFallback('audio', url, err)
-      if (fallback) {
-        this.results.set(key, fallback)
-        return fallback
-      }
-      throw err
-    })
+    }))
   }
 
   createModelResult(node, file, glbScene = null) {

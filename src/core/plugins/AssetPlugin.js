@@ -1,4 +1,5 @@
 import { Plugin } from './Plugin.js'
+import { AssetLoader } from './core/AssetLoader.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('AssetPlugin')
@@ -9,6 +10,7 @@ export class AssetPlugin extends Plugin {
     this.name = 'Asset'
     this.version = '1.0.0'
     this.system = null
+    this.assetLoader = new AssetLoader()
   }
 
   async init() {
@@ -75,13 +77,43 @@ export class AssetPlugin extends Plugin {
         return this.system.getFile?.(url, name) || null
       },
 
+      registerHandler: (type, handler) => {
+        if (!this.enabled) return false
+        return this.assetLoader.registerHandler(type, handler)
+      },
+
+      loadAsync: async (type, url, options) => {
+        if (!this.enabled || !this.system) return null
+        return this.system.load?.(type, url, options) || null
+      },
+
+      clearCache: (type) => {
+        if (!this.enabled) return false
+        this.assetLoader.clear(type)
+        return true
+      },
+
+      cacheAsset: (type, url, data) => {
+        if (!this.enabled) return false
+        this.assetLoader.cache(type, url, data)
+        return true
+      },
+
+      getLoaderStats: () => {
+        return this.assetLoader.getStats()
+      },
+
       getStatus: () => {
         if (!this.enabled || !this.system) return null
+        const loaderStats = this.assetLoader.getStats()
         return {
           active: true,
           cached: this.system.results?.size || 0,
           pending: this.system.promises?.size || 0,
-          preloading: !!this.system.preloader
+          preloading: !!this.system.preloader,
+          loaderCache: loaderStats.cached,
+          loaderPending: loaderStats.pending,
+          loaderHandlers: loaderStats.handlers
         }
       }
     }

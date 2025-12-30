@@ -6,7 +6,7 @@ import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
 import { WebSocketManager } from './network/WebSocketManager.js'
 import { SnapshotProcessor } from './network/SnapshotProcessor.js'
 import { ClientPacketHandlers } from './network/ClientPacketHandlers.js'
-import { PacketCodec } from './network/PacketCodec.js'
+import { MessageHandler } from '../plugins/core/MessageHandler.js'
 import { storage } from '../storage.js'
 import { Compressor } from './network/Compressor.js'
 import { clientTimeoutManager } from './network/TimeoutManager.js'
@@ -87,53 +87,37 @@ export class ClientNetwork extends BaseNetwork {
       logger.debug('->', { name, data })
     }
     const compressed = this.compressor.compress(data)
-    const packet = PacketCodec.encode(name, compressed)
+    const packet = MessageHandler.encode(name, compressed)
     this.wsManager.send(packet)
   }
 
   async upload(file) {
-    try {
-      if (!file || !file.name) {
-        throw new Error('Invalid file: missing name property')
-      }
-      const hash = await hashFile(file)
-      if (!hash) {
-        throw new Error('Failed to hash file')
-      }
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      if (!ext) {
-        throw new Error('Invalid file: missing extension')
-      }
-      const filename = `${hash}.${ext}`
-      const url = `${this.apiUrl}/upload-check?filename=${filename}`
-      const resp = await this.timeoutManager.fetchWithTimeout(url, {}, TimeoutConfig.api.defaultFetchTimeout)
-      if (!resp.ok) {
-        throw new Error(`Upload check failed: ${resp.status} ${resp.statusText}`)
-      }
-      const data = await resp.json()
-      if (typeof data !== 'object' || data === null) {
-        throw new Error('Upload check returned invalid data')
-      }
-      if (data.exists) return
+    if (!file?.name) throw new Error('Invalid file: missing name property')
+    const hash = await hashFile(file)
+    if (!hash) throw new Error('Failed to hash file')
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (!ext) throw new Error('Invalid file: missing extension')
 
-      const form = new FormData()
-      form.append('file', file)
-      const uploadUrl = `${this.apiUrl}/upload`
-      const uploadResp = await this.timeoutManager.fetchWithTimeout(uploadUrl, {
-        method: 'POST',
-        body: form,
-      }, 120000)
-      if (!uploadResp.ok) {
-        throw new Error(`Upload failed: ${uploadResp.status} ${uploadResp.statusText}`)
-      }
-    } catch (err) {
-      logger.error('File upload error:', err)
-      throw err
-    }
+    const filename = `${hash}.${ext}`
+    const url = `${this.apiUrl}/upload-check?filename=${filename}`
+    const resp = await this.timeoutManager.fetchWithTimeout(url, {}, TimeoutConfig.api.defaultFetchTimeout)
+    if (!resp.ok) throw new Error(`Upload check failed: ${resp.status} ${resp.statusText}`)
+    
+    const data = await resp.json()
+    if (!data || typeof data !== 'object') throw new Error('Upload check returned invalid data')
+    if (data.exists) return
+
+    const form = new FormData()
+    form.append('file', file)
+    const uploadResp = await this.timeoutManager.fetchWithTimeout(`${this.apiUrl}/upload`, {
+      method: 'POST',
+      body: form,
+    }, 120000)
+    if (!uploadResp.ok) throw new Error(`Upload failed: ${uploadResp.status} ${uploadResp.statusText}`)
   }
 
   onPacket = e => {
-    const [method, compressedData] = PacketCodec.decode(e.data)
+    const [method, compressedData] = MessageHandler.decode(e.data)
     const data = this.compressor.decompress(compressedData)
     logger.debug('Packet decoded:', { method, dataSize: data ? JSON.stringify(data).length : 0 })
     if (method && typeof this[method] === 'function') {

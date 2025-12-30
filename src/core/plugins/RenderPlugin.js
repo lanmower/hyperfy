@@ -1,4 +1,5 @@
 import { Plugin } from './Plugin.js'
+import { RenderHelper } from './core/RenderHelper.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('RenderPlugin')
@@ -9,6 +10,7 @@ export class RenderPlugin extends Plugin {
     this.name = 'Render'
     this.version = '1.0.0'
     this.system = null
+    this.renderHelper = RenderHelper
   }
 
   async init() {
@@ -69,15 +71,67 @@ export class RenderPlugin extends Plugin {
         return this.system.renderStats || null
       },
 
+      createMaterial: (options) => {
+        if (!this.enabled) return null
+        return this.renderHelper.createMaterial(options)
+      },
+
+      cloneTextures: (material) => {
+        if (!this.enabled) return []
+        return this.renderHelper.cloneTextures(material)
+      },
+
+      setupEnvironment: (options) => {
+        if (!this.enabled || !this.system) return false
+        this.renderHelper.setupSceneEnvironment(this.system.scene, options)
+        return true
+      },
+
+      raycastFromCamera: (mouse) => {
+        if (!this.enabled || !this.system) return false
+        return this.renderHelper.raycastFromCamera(
+          this.system.raycaster,
+          this.system.camera,
+          this.system.viewport,
+          mouse
+        )
+      },
+
+      raycastFromCenter: () => {
+        if (!this.enabled || !this.system) return false
+        return this.renderHelper.raycastFromCenter(this.system.raycaster, this.system.camera)
+      },
+
+      getSceneStats: () => {
+        if (!this.enabled || !this.system) return null
+        return this.renderHelper.getSceneStats(this.system.scene)
+      },
+
+      addGridHelper: (size, divisions) => {
+        if (!this.enabled || !this.system) return null
+        const grid = this.renderHelper.createGridHelper(size, divisions)
+        this.system.scene.add(grid)
+        return grid
+      },
+
+      addAxisHelper: (size) => {
+        if (!this.enabled || !this.system) return null
+        const axis = this.renderHelper.createAxisHelper(size)
+        this.system.scene.add(axis)
+        return axis
+      },
+
       getStatus: () => {
         if (!this.enabled || !this.system) return null
+        const sceneStats = this.renderHelper.getSceneStats(this.system.scene)
         return {
           active: true,
           scene: !!this.system.scene,
           camera: !!this.system.camera,
           viewport: !!this.system.viewport,
           sceneChildren: this.system.scene?.children?.length || 0,
-          renderStats: this.system.renderStats || null
+          renderStats: this.system.renderStats || null,
+          sceneStats
         }
       }
     }

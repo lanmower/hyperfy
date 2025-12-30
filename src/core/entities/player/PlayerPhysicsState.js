@@ -1,7 +1,8 @@
 import * as THREE from '../../extras/three.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const v1 = new THREE.Vector3()
+const { v1, q1 } = SharedVectorPool('PlayerPhysicsState', 1, 1)
 const UP = new THREE.Vector3(0, 1, 0)
 
 export class PlayerPhysicsState {
@@ -80,7 +81,6 @@ export class PlayerPhysicsState {
     const moveSpeed = (this.player.running ? PhysicsConfig.RUN_SPEED : PhysicsConfig.WALK_SPEED) * this.physics.mass
     const adjustedSpeed = moveSpeed * (1 - snare)
 
-    const q1 = new THREE.Quaternion()
     const slopeRotation = q1.setFromUnitVectors(UP, this.physics.groundNormal)
     const moveForce = v1
       .copy(this.physics.moveDir)

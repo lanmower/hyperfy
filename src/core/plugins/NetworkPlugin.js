@@ -1,4 +1,5 @@
 import { Plugin } from './Plugin.js'
+import { MessageHandler } from './core/MessageHandler.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('NetworkPlugin')
@@ -9,6 +10,7 @@ export class NetworkPlugin extends Plugin {
     this.name = 'Network'
     this.version = '1.0.0'
     this.system = null
+    this.messageHandler = MessageHandler
   }
 
   async init() {
@@ -62,6 +64,31 @@ export class NetworkPlugin extends Plugin {
         return this.system.upload?.(file) || false
       },
 
+      encodeMessage: (name, data) => {
+        if (!this.enabled) return null
+        try {
+          return this.messageHandler.encode(name, data)
+        } catch (err) {
+          logger.error('Message encode error', { name, error: err.message })
+          return null
+        }
+      },
+
+      decodeMessage: (packet) => {
+        if (!this.enabled) return [null, null]
+        return this.messageHandler.decode(packet)
+      },
+
+      compressData: (data) => {
+        if (!this.enabled || !this.system) return null
+        return this.system.compressor?.compress?.(data) || null
+      },
+
+      decompressData: (payload) => {
+        if (!this.enabled || !this.system) return null
+        return this.system.compressor?.decompress?.(payload) || null
+      },
+
       getStatus: () => {
         if (!this.enabled || !this.system) return null
         return {
@@ -69,7 +96,8 @@ export class NetworkPlugin extends Plugin {
           id: this.system.id || null,
           offlineMode: this.system.offlineMode || false,
           isClient: this.system.isClient || false,
-          isServer: this.system.isServer || false
+          isServer: this.system.isServer || false,
+          compressionRatio: this.system.compressor?.getStats?.()?.ratio || '0%'
         }
       }
     }

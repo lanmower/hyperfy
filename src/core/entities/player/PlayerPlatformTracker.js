@@ -1,24 +1,9 @@
 import { PhysicsConfig } from '../../config/SystemConfig.js'
 import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
-const v4 = new THREE.Vector3()
-const v5 = new THREE.Vector3()
-const v6 = new THREE.Vector3()
-
-const q1 = new THREE.Quaternion()
-const q2 = new THREE.Quaternion()
-const q3 = new THREE.Quaternion()
-const q4 = new THREE.Quaternion()
-
-const m1 = new THREE.Matrix4()
-const m2 = new THREE.Matrix4()
-const m3 = new THREE.Matrix4()
-
-const e1 = new THREE.Euler()
+const { v1, v2, v3, v4, v5, v6, q1, q2, q3, q4, m1, m2, m3, e1 } = SharedVectorPool('PlayerPlatformTracker', 6, 4, 1, 3)
 
 const DOWN = new THREE.Vector3(0, -1, 0)
 const SCALE_IDENTITY = new THREE.Vector3(1, 1, 1)

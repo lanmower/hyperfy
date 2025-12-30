@@ -1,4 +1,4 @@
-import { PacketCodec } from '../network/PacketCodec.js'
+import { MessageHandler } from '../../plugins/core/MessageHandler.js'
 import { SnapshotCodec } from '../network/SnapshotCodec.js'
 import { Socket } from '../../Socket.js'
 import { uuid } from '../../utils.js'
@@ -21,7 +21,7 @@ export class PlayerConnectionManager {
       const playerLimit = this.serverNetwork.settings.playerLimit
       const { isNumber } = await import('lodash-es')
       if (isNumber(playerLimit) && playerLimit > 0 && this.serverNetwork.sockets.size >= playerLimit) {
-        const packet = PacketCodec.encode('kick', 'player_limit')
+        const packet = MessageHandler.encode('kick', 'player_limit')
         ws.send(packet)
         ws.disconnect()
         return
@@ -52,7 +52,7 @@ export class PlayerConnectionManager {
       }
 
       if (this.serverNetwork.sockets.has(user.id)) {
-        const packet = PacketCodec.encode('kick', 'duplicate_user')
+        const packet = MessageHandler.encode('kick', 'duplicate_user')
         ws.send(packet)
         ws.disconnect()
         return

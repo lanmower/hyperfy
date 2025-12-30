@@ -3,15 +3,14 @@ import { clamp } from '../../utils.js'
 import * as THREE from '../../extras/three.js'
 import { DEG2RAD, RAD2DEG } from '../../extras/general.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './CameraConstants.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
 const STICK_DEAD_ZONE = InputConfig.STICK_DEAD_ZONE
 
-const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
-const q1 = new THREE.Quaternion()
-const v1 = new THREE.Vector3()
+const { e1, q1, v1 } = SharedVectorPool('PlayerInputProcessor', 1, 1, 1)
 
 export class PlayerInputProcessor {
   constructor(playerLocal) {

@@ -1,10 +1,10 @@
 import { Anchors } from '../Anchors.js'
 import { Apps } from '../Apps.js'
 import { Avatars } from '../Avatars.js'
-import { Blueprints } from '../Blueprints.js'
+import { BlueprintManager } from '../BlueprintManager.js'
 import { Chat } from '../Chat.js'
 import { ClientBuilder } from '../ClientBuilder.js'
-import { ClientControls } from '../ClientControls.js'
+import { InputSystem } from '../input/InputSystem.js'
 import { ClientEnvironment } from '../ClientEnvironment.js'
 import { ClientGraphics } from '../ClientGraphics.js'
 import { ClientLoader } from '../ClientLoader.js'
@@ -75,7 +75,7 @@ export const coreSystemsConfig = [
   },
   {
     name: 'blueprints',
-    class: Blueprints,
+    class: BlueprintManager,
     platforms: ['server', 'client'],
     priority: 60,
   },
@@ -143,7 +143,7 @@ export const coreSystemsConfig = [
   },
   {
     name: 'controls',
-    class: ClientControls,
+    class: InputSystem,
     platforms: ['client'],
     priority: 21,
   },

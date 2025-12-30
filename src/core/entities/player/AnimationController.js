@@ -1,12 +1,13 @@
 import * as THREE from '../../extras/three.js'
 import { Modes } from "../../constants/AnimationModes.js"
 import { PhysicsConfig, AvatarConfig } from "../../config/SystemConfig.js"
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
 const gazeTiltAngle = Math.PI / 6
 
-const v1 = new THREE.Vector3()
+const { v1 } = SharedVectorPool('AnimationController', 1)
 
 export class AnimationController {
   constructor(player) {
