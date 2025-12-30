@@ -28,3 +28,5 @@ function SharedVectorPool(name, vectorCount = 0, quaternionCount = 0, eulerCount
   pools.set(name, pool)
   return pool
 }
+
+export { SharedVectorPool }

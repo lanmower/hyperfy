@@ -1,6 +1,7 @@
 
 export class PersistenceBase {
   constructor(db) {
+    if (!db) throw new Error('PersistenceBase requires db instance')
     this.db = db
   }
 

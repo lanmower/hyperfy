@@ -216,18 +216,6 @@ function registerStatusAPI(fastify, world) {
 }
 
 function registerStatusPageRoutes(fastify, statusPageData) {
-  fastify.get('/api/status', async (request, reply) => {
-    try {
-      const fullStatus = statusPageData.getFullStatus()
-      return reply.code(200).send(fullStatus)
-    } catch (err) {
-      fastify.logger?.error(`Status API failed: ${err.message}`)
-      return reply.code(500).send({
-        error: err.message,
-        timestamp: new Date().toISOString(),
-      })
-    }
-  })
 
   fastify.get('/api/status/summary', async (request, reply) => {
     try {
