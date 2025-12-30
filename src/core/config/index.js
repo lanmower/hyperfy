@@ -1,3 +1,3 @@
-export { SystemConfig } from './SystemConfig.js'
-export { NametagConfig } from './NametagConfig.js'
-export { HandlerRegistry } from './HandlerRegistry.js'
+export * from './SystemConfig.js'
+export * from './NametagConfig.js'
+export * from './HandlerRegistry.js'
