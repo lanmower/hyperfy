@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import { ErrorResponse } from '../utils/errors/index.js'
 
 export function createRequestIdMiddleware() {
   return (fastify, opts, done) => {

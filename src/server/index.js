@@ -39,6 +39,7 @@ import { CORSConfig } from './config/CORSConfig.js'
 import { AIProviderConfig } from './config/AIProviderConfig.js'
 import { Logger, ConsoleSink, FileSink } from './logging/Logger.js'
 import { ErrorTracker } from './services/ErrorTracker.js'
+import { createRequestIdMiddleware, createErrorHandler } from './middleware/RequestTracking.js'
 global.SERVER_START_TIME = Date.now()
 
 const rootDir = path.join(__dirname, '../')
@@ -137,12 +138,15 @@ try {
   world = new World()
   world.isServer = true
   world.assetsUrl = process.env.PUBLIC_ASSETS_URL
-  world.collections.deserialize(collections)
 
+  const { Collections } = await import('../core/systems/Collections.js')
   const { ServerNetwork } = await import('../core/systems/ServerNetwork.js')
   const { ServerLiveKit } = await import('../core/systems/ServerLiveKit.js')
+  world.register('collections', Collections)
   world.register('network', ServerNetwork)
   world.register('livekit', ServerLiveKit)
+
+  world.collections.deserialize(collections)
 
   world.init({ db, storage, assetsDir })
 
@@ -157,7 +161,7 @@ try {
     world,
     logger,
     errorTracker,
-    aiProviderHealth,
+    null,
     circuitBreakerManager,
     degradationManager,
     timeoutManager
