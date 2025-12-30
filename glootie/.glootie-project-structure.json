@@ -418,7 +418,6 @@
       "TransformDefaults.js",
       "createNodeClientWorld.js",
       "createViewerWorld.js",
-      "BaseDebugAPI.js",
       "ResourceLeakDetector.js",
       "ResourceTracker.js",
       "ASSUMPTIONS.md",
@@ -550,7 +549,6 @@
       "PersistenceBase.js",
       "Socket.js",
       "SystemStartup.js",
-      "StateManager.js",
       "StateStore.js",
       "storage.js",
       "SystemRegistry.js",
@@ -736,5 +734,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767115916376
+  "lastAnalyzed": 1767117836590
 }
