@@ -94,11 +94,3 @@ export class Audio extends Node {
     })
   }
 }
-
-function isDistanceModel(value) {
-  return distanceModels.includes(value)
-}
-
-function isGroup(value) {
-  return groups.includes(value)
-}

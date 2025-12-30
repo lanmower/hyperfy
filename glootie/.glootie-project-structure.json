@@ -475,7 +475,6 @@
       "EventBindingMixin.js",
       "HandlerRegistryMixin.js",
       "LifecycleMixin.js",
-      "ListenerMixin.js",
       "PropertyHandlerMixin.js",
       "StateManagerMixin.js",
       "DataModel.js",
@@ -733,5 +732,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767109450577
+  "lastAnalyzed": 1767109765485
 }
