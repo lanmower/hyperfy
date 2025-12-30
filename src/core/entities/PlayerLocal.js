@@ -27,6 +27,7 @@ import { TransformSyncManager } from './player/TransformSyncManager.js'
 import { EVENT } from '../constants/EventNames.js'
 import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
@@ -34,20 +35,7 @@ const FORWARD = new THREE.Vector3(0, 0, -1)
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 const SCALE_IDENTITY = new THREE.Vector3(1, 1, 1)
 
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
-const v4 = new THREE.Vector3()
-const v5 = new THREE.Vector3()
-const v6 = new THREE.Vector3()
-const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
-const q1 = new THREE.Quaternion()
-const q2 = new THREE.Quaternion()
-const q3 = new THREE.Quaternion()
-const q4 = new THREE.Quaternion()
-const m1 = new THREE.Matrix4()
-const m2 = new THREE.Matrix4()
-const m3 = new THREE.Matrix4()
+const { v1, v2, v3, v4, v5, v6, e1, q1, q2, q3, q4, m1, m2, m3 } = SharedVectorPool('PlayerLocal', 6, 4, 1, 3)
 
 const gazeTiltAngle = 10 * DEG2RAD
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
