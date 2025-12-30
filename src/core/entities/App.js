@@ -9,14 +9,14 @@ import { createNode } from '../extras/createNode.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { getRef } from '../nodes/Node.js'
 import { Layers } from '../extras/Layers.js'
-import { createPlayerProxy } from '../extras/createPlayerProxy.js'
 import { ScriptExecutor } from './app/ScriptExecutor.js'
-import { ProxyRegistry } from '../proxy/ProxyRegistry.js'
 import { AppNetworkSync } from './app/AppNetworkSync.js'
 import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
+import { AppEventManager } from './app/AppEventManager.js'
+import { AppProxyManager } from './app/AppProxyManager.js'
+import { AppUtilities } from './app/AppUtilities.js'
 import { RigidBody } from '../nodes/RigidBody.js'
 import { Collider } from '../nodes/Collider.js'
-import { InputSanitizer } from '../security/InputSanitizer.js'
 
 const logger = new ComponentLogger('App')
 
@@ -43,15 +43,13 @@ export class App extends BaseEntity {
     this.deadHook = { dead: false }
     this.abortController = new AbortController()
     this.scriptExecutor = new ScriptExecutor(this)
-    this.eventListeners = {}
-    this.worldListeners = new Map()
-    this.eventQueue = []
-    this.hotEvents = 0
-    this.proxyRegistry = new ProxyRegistry()
     this.worldNodes = new Set()
     this.snaps = []
     this.networkSync = new AppNetworkSync(this)
     this.propertyHandlers = new AppPropertyHandlers(this)
+    this.eventManager = new AppEventManager(this)
+    this.proxyManager = new AppProxyManager(this)
+    this.utilities = new AppUtilities(this)
     this.build().catch(err => {
       logger.error('Failed to build app', { appId: this.data.id, blueprint: this.data.blueprint, error: err.message })
     })
@@ -138,7 +136,15 @@ export class App extends BaseEntity {
         (this.mode === Modes.ACTIVE && script && !crashed) || (this.mode === Modes.MOVING && this.keepActive)
       if (runScript) {
         const blueprintProps = NullSafetyHelper.getBlueprintProps(this)
-        const success = this.scriptExecutor.executeScript(script, blueprint, blueprintProps, this.setTimeout, this.getWorldProxy.bind(this), this.getAppProxy.bind(this), this.fetch)
+        const success = this.scriptExecutor.executeScript(
+          script,
+          blueprint,
+          blueprintProps,
+          this.utilities.setTimeout,
+          this.proxyManager.getWorldProxy.bind(this.proxyManager),
+          this.proxyManager.getAppProxy.bind(this.proxyManager),
+          this.utilities.fetch
+        )
         if (!success) return this.crash()
       }
       if (this.mode === Modes.MOVING) {
@@ -146,7 +152,7 @@ export class App extends BaseEntity {
         this.collectSnapPoints()
       }
       this.networkSync.initialize(this.root, this.world.networkRate)
-      this.flushEventQueue()
+      this.eventManager.flushEventQueue()
     } finally {
       this.building = false
     }
@@ -207,7 +213,7 @@ export class App extends BaseEntity {
   }
 
   unbuild() {
-    this.emit('destroy')
+    this.eventManager.emit('destroy')
     this.control?.release()
     this.control = null
     this.deactivateAllNodes()
@@ -215,10 +221,10 @@ export class App extends BaseEntity {
       this.world.stage.scene.remove(this.threeScene)
     }
     this.threeScene = null
-    this.clearEventListeners()
+    this.eventManager.clearEventListeners()
     this.world.setHot(this, false)
     this.scriptExecutor.cleanup()
-    this.proxyRegistry.clear()
+    this.proxyManager.cleanup()
     this.abortController.abort()
     this.networkSync.networkPos = null
     this.networkSync.networkQuat = null
@@ -262,9 +268,11 @@ export class App extends BaseEntity {
 
     this.blueprintLoader = null
     this.scriptExecutor = null
-    this.proxyRegistry = null
+    this.eventManager = null
+    this.proxyManager = null
     this.networkSync = null
     this.propertyHandlers = null
+    this.utilities = null
     this.world.entities.remove(this.data.id)
     if (local) {
       this.world.network.send('entityRemoved', this.data.id)
@@ -272,171 +280,58 @@ export class App extends BaseEntity {
   }
 
   on(name, callback) {
-    if (!this.eventListeners[name]) this.eventListeners[name] = new Set()
-    if (this.eventListeners[name].has(callback)) return
-    this.eventListeners[name].add(callback)
-    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
-    if (hotEventNames.includes(name)) {
-      this.hotEvents++
-      this.world.setHot(this, this.hotEvents > 0)
-    }
+    return this.eventManager.on(name, callback)
   }
 
   off(name, callback) {
-    if (!this.eventListeners[name]) return
-    if (!this.eventListeners[name].has(callback)) return
-    this.eventListeners[name].delete(callback)
-    const hotEventNames = ['fixedUpdate', 'update', 'lateUpdate']
-    if (hotEventNames.includes(name)) {
-      this.hotEvents--
-      this.world.setHot(this, this.hotEvents > 0)
-    }
+    return this.eventManager.off(name, callback)
   }
 
   emit(name, a1, a2) {
-    if (!this.eventListeners[name]) return
-    for (const callback of this.eventListeners[name]) {
-      callback(a1, a2)
-    }
+    return this.eventManager.emit(name, a1, a2)
   }
 
   onWorldEvent(name, callback) {
-    this.worldListeners.set(callback, name)
-    this.world.events.on(name, callback)
+    return this.eventManager.onWorldEvent(name, callback)
   }
 
   offWorldEvent(name, callback) {
-    this.worldListeners.delete(callback)
-    this.world.events.off(name, callback)
+    return this.eventManager.offWorldEvent(name, callback)
   }
 
   onEvent(version, name, data, networkId) {
-    this.eventQueue.push({ version, name, data, networkId })
-    this.emit(name, data)
+    return this.eventManager.onEvent(version, name, data, networkId)
   }
 
   flushEventQueue() {
-    this.eventQueue = []
-  }
-
-  clearEventListeners() {
-    this.eventListeners = {}
-    this.worldListeners.forEach((eventName, callback) => {
-      this.world.events.off(eventName, callback)
-    })
-    this.worldListeners.clear()
-    this.hotEvents = 0
-  }
-
-  fetch = async (url, options = {}) => {
-    try {
-      const validation = InputSanitizer.validateURL(url)
-      if (!validation.valid) {
-        logger.error('Fetch URL validation failed', {
-          url,
-          appId: this.data.id,
-          blueprintId: this.blueprint?.id,
-          violations: validation.violations,
-        })
-        throw new Error(`URL validation failed: ${validation.violations.map(v => v.message).join(', ')}`)
-      }
-
-      const resp = await fetch(url, {
-        ...options,
-        signal: this.abortController.signal,
-      })
-      const secureResp = {
-        ok: resp.ok,
-        status: resp.status,
-        statusText: resp.statusText,
-        headers: Object.fromEntries(resp.headers.entries()),
-        json: async () => await resp.json(),
-        text: async () => await resp.text(),
-        blob: async () => await resp.blob(),
-        arrayBuffer: async () => await resp.arrayBuffer(),
-      }
-      return secureResp
-    } catch (err) {
-      logger.error('Fetch failed', { url, error: err.message })
-    }
-  }
-
-  setTimeout = (fn, ms) => {
-    const hook = this.getDeadHook()
-    const timerId = setTimeout(() => {
-      if (hook.dead) return
-      fn()
-    }, ms)
-    return timerId
-  }
-
-  getDeadHook = () => {
-    return this.deadHook
-  }
-
-  getNodes() {
-    if (!this.blueprint || !this.blueprint.model) return
-    const type = this.blueprint.model.endsWith('vrm') ? 'avatar' : 'model'
-    let glb = this.world.loader.get(type, this.blueprint.model)
-    if (!glb) return
-    return glb.toNodes()
+    return this.eventManager.flushEventQueue()
   }
 
   getPlayerProxy(playerId) {
-    const cached = this.proxyRegistry.getProxy(playerId)
-    if (cached) return cached
-    const player = this.world.entities.get(playerId)
-    if (!player) return null
-    const proxy = createPlayerProxy(this, player)
-    this.proxyRegistry.cache.set(playerId, proxy)
-    return proxy
+    return this.proxyManager.getPlayerProxy(playerId)
   }
 
   getWorldProxy() {
-    const cached = this.proxyRegistry.getProxy('world')
-    if (cached) return cached
-    const apps = this.world.apps
-    const proxy = {}
-    if (!apps) return proxy
-    const allKeys = new Set([...Object.keys(apps.worldGetters || {}), ...Object.keys(apps.worldSetters || {})])
-    for (const key of allKeys) {
-      try {
-        const descriptor = { enumerable: true, configurable: true }
-        if (apps.worldGetters?.[key]) descriptor.get = () => apps.worldGetters[key](apps, this)
-        if (apps.worldSetters?.[key]) descriptor.set = (value) => apps.worldSetters[key](apps, this, value)
-        Object.defineProperty(proxy, key, descriptor)
-      } catch (err) {
-        logger.warn('Failed to define property', { property: key, error: err.message })
-      }
-    }
-    for (const key in apps.worldMethods) {
-      proxy[key] = (...args) => apps.worldMethods[key](apps, this, ...args)
-    }
-    this.proxyRegistry.cache.set('world', proxy)
-    return proxy
+    return this.proxyManager.getWorldProxy()
   }
 
   getAppProxy() {
-    const cached = this.proxyRegistry.getProxy('app')
-    if (cached) return cached
-    const apps = this.world.apps
-    const proxy = {}
-    if (!apps) return proxy
-    const allKeys = new Set([...Object.keys(apps.appGetters || {}), ...Object.keys(apps.appSetters || {})])
-    for (const key of allKeys) {
-      try {
-        const descriptor = { enumerable: true, configurable: true }
-        if (apps.appGetters?.[key]) descriptor.get = () => apps.appGetters[key](apps, this)
-        if (apps.appSetters?.[key]) descriptor.set = (value) => apps.appSetters[key](apps, this, value)
-        Object.defineProperty(proxy, key, descriptor)
-      } catch (err) {
-        logger.warn('Failed to define property', { property: key, error: err.message })
-      }
-    }
-    for (const key in apps.appMethods) {
-      proxy[key] = (...args) => apps.appMethods[key](apps, this, ...args)
-    }
-    this.proxyRegistry.cache.set('app', proxy)
-    return proxy
+    return this.proxyManager.getAppProxy()
+  }
+
+  fetch(...args) {
+    return this.utilities.fetch(...args)
+  }
+
+  setTimeout(...args) {
+    return this.utilities.setTimeout(...args)
+  }
+
+  getDeadHook() {
+    return this.utilities.getDeadHook()
+  }
+
+  getNodes() {
+    return this.utilities.getNodes()
   }
 }
