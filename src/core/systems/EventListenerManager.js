@@ -20,42 +20,18 @@ export class EventListenerManager {
     }
   }
 
-  on(emitter, event, handler) {
-    if (!emitter || typeof emitter.on !== 'function') {
-      logger.error('Invalid emitter provided to on()', { owner: this.owner.constructor.name })
+  on(emitter, event, handler) { return this.addEmitterListener(emitter, event, handler, false) }
+  once(emitter, event, handler) { return this.addEmitterListener(emitter, event, handler, true) }
+
+  addEmitterListener(emitter, event, handler, once) {
+    const method = once ? 'once' : 'on'
+    if (!emitter || typeof emitter[method] !== 'function') {
+      logger.error(`Invalid emitter provided to ${method}()`, { owner: this.owner.constructor.name })
       return
     }
-
     const boundHandler = this.bindHandler(handler)
-    emitter.on(event, boundHandler)
-
-    this.listeners.push({
-      emitter,
-      event,
-      handler: boundHandler,
-      original: handler
-    })
-
-    return boundHandler
-  }
-
-  once(emitter, event, handler) {
-    if (!emitter || typeof emitter.once !== 'function') {
-      logger.error('Invalid emitter provided to once()', { owner: this.owner.constructor.name })
-      return
-    }
-
-    const boundHandler = this.bindHandler(handler)
-    emitter.once(event, boundHandler)
-
-    this.listeners.push({
-      emitter,
-      event,
-      handler: boundHandler,
-      original: handler,
-      once: true
-    })
-
+    emitter[method](event, boundHandler)
+    this.listeners.push({ emitter, event, handler: boundHandler, original: handler, once })
     return boundHandler
   }
 
@@ -82,11 +58,8 @@ export class EventListenerManager {
 
   off(emitter, event, handler) {
     const index = this.listeners.findIndex(l =>
-      l.emitter === emitter &&
-      l.event === event &&
-      (l.original === handler || l.handler === handler)
+      l.emitter === emitter && l.event === event && (l.original === handler || l.handler === handler)
     )
-
     if (index >= 0) {
       const listener = this.listeners[index]
       emitter.off(event, listener.handler)
@@ -96,12 +69,8 @@ export class EventListenerManager {
 
   removeEventListener(target, event, handler, options = {}) {
     const index = this.listeners.findIndex(l =>
-      l.target === target &&
-      l.event === event &&
-      (l.original === handler || l.handler === handler) &&
-      l.dom
+      l.target === target && l.event === event && (l.original === handler || l.handler === handler) && l.dom
     )
-
     if (index >= 0) {
       const listener = this.listeners[index]
       target.removeEventListener(event, listener.handler, options)
