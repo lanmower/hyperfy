@@ -33,8 +33,9 @@ export class ServerLifecycleManager {
       this.network.blueprints.add(data, true)
     }
 
-    for (const collection of this.network.world.collections.collections) {
-      for (const blueprint of collection.blueprints) {
+    const collections = this.network.world.collections.values?.() || []
+    for (const collection of collections) {
+      for (const blueprint of collection.blueprints || []) {
         const existingBlueprint = this.network.blueprints.get(blueprint.id)
         if (!existingBlueprint) {
           logger.info('Adding blueprint from collection', { blueprintId: blueprint.id })
@@ -44,7 +45,7 @@ export class ServerLifecycleManager {
     }
 
     const sceneBlueprint = this.network.blueprints.getScene()
-    const sceneEntityId = sceneBlueprint ? `scene-${Date.now()}` : null
+    const sceneEntityId = sceneBlueprint ? 'scene-' + Date.now() : null
     const sceneEntity = sceneBlueprint ? {
       id: sceneEntityId,
       type: 'app',

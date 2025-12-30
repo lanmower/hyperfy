@@ -25,6 +25,7 @@ import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
 import { registerRoutes } from './routes/index.js'
+import { createDbProxy } from "../core/services/DatabaseProxy.js"
 import { Telemetry } from './telemetry/Telemetry.js'
 import { Metrics } from './services/Metrics.js'
 import { TimeoutManager } from './services/TimeoutManager.js'
@@ -132,7 +133,8 @@ try {
     }
   }
 
-  const db = await getDB(worldDir, timeoutManager, circuitBreakerManager)
+  let db = await getDB(worldDir, timeoutManager, circuitBreakerManager)
+  db = createDbProxy(db)
   const storage = new Storage(path.join(worldDir, '/storage.json'), circuitBreakerManager)
 
   world = new World()
@@ -140,12 +142,17 @@ try {
   world.assetsUrl = process.env.PUBLIC_ASSETS_URL
 
   const { Collections } = await import('../core/systems/Collections.js')
+  const { BlueprintManager } = await import('../core/systems/BlueprintManager.js')
+  const { Entities } = await import('../core/systems/Entities.js')
   const { ServerNetwork } = await import('../core/systems/ServerNetwork.js')
+  const { Settings } = await import("../core/systems/Settings.js")
   const { ServerLiveKit } = await import('../core/systems/ServerLiveKit.js')
   world.register('collections', Collections)
+  world.register("settings", Settings)
+  world.register('blueprints', BlueprintManager)
+  world.register('entities', Entities)
   world.register('network', ServerNetwork)
   world.register('livekit', ServerLiveKit)
-
   world.collections.deserialize(collections)
 
   world.init({ db, storage, assetsDir })

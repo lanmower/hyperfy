@@ -6,8 +6,12 @@ export class ShutdownManager {
     this.handlers = []
   }
 
-  onShutdown(handler) {
+  addShutdownHandler(name, handler) {
     this.handlers.push(handler)
+  }
+
+  isAcceptingConnections() {
+    return true
   }
 
   async shutdown() {
