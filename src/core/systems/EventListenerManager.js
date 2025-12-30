@@ -8,13 +8,25 @@ export class EventListenerManager {
     this.listeners = []
   }
 
+  bindHandler(handler) {
+    return typeof handler === 'function' ? handler.bind(this.owner) : handler
+  }
+
+  removeListener(listener) {
+    if (listener.dom) {
+      listener.target.removeEventListener(listener.event, listener.handler, listener.options)
+    } else {
+      listener.emitter.off(listener.event, listener.handler)
+    }
+  }
+
   on(emitter, event, handler) {
     if (!emitter || typeof emitter.on !== 'function') {
       logger.error('Invalid emitter provided to on()', { owner: this.owner.constructor.name })
       return
     }
 
-    const boundHandler = typeof handler === 'function' ? handler.bind(this.owner) : handler
+    const boundHandler = this.bindHandler(handler)
     emitter.on(event, boundHandler)
 
     this.listeners.push({
@@ -33,7 +45,7 @@ export class EventListenerManager {
       return
     }
 
-    const boundHandler = typeof handler === 'function' ? handler.bind(this.owner) : handler
+    const boundHandler = this.bindHandler(handler)
     emitter.once(event, boundHandler)
 
     this.listeners.push({
@@ -53,7 +65,7 @@ export class EventListenerManager {
       return
     }
 
-    const boundHandler = typeof handler === 'function' ? handler.bind(this.owner) : handler
+    const boundHandler = this.bindHandler(handler)
     target.addEventListener(event, boundHandler, options)
 
     this.listeners.push({
@@ -99,26 +111,16 @@ export class EventListenerManager {
 
   removeAllListeners(emitterOrTarget) {
     const toRemove = this.listeners.filter(l => l.emitter === emitterOrTarget || l.target === emitterOrTarget)
-
     for (const listener of toRemove) {
-      if (listener.dom) {
-        listener.target.removeEventListener(listener.event, listener.handler, listener.options)
-      } else {
-        listener.emitter.off(listener.event, listener.handler)
-      }
+      this.removeListener(listener)
     }
-
     this.listeners = this.listeners.filter(l => !toRemove.includes(l))
   }
 
   clear() {
     for (const listener of this.listeners) {
       try {
-        if (listener.dom) {
-          listener.target.removeEventListener(listener.event, listener.handler, listener.options)
-        } else {
-          listener.emitter.off(listener.event, listener.handler)
-        }
+        this.removeListener(listener)
       } catch (err) {
         logger.error('Failed to remove listener during cleanup', {
           owner: this.owner.constructor.name,
@@ -127,7 +129,6 @@ export class EventListenerManager {
         })
       }
     }
-
     this.listeners = []
   }
 
