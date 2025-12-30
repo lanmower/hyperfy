@@ -1,4 +1,4 @@
-import { PacketCodec } from '../network/PacketCodec.js'
+import { MessageHandler } from '../../plugins/core/MessageHandler.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 import { WebSocketValidator } from '../../security/WebSocketValidator.js'
 
@@ -25,7 +25,7 @@ export class SocketManager {
 
     const executeSend = async () => {
       const compressed = this.network.compressor.compress(data)
-      const packet = PacketCodec.encode(name, compressed)
+      const packet = MessageHandler.encode(name, compressed)
       this.network.sockets.forEach(socket => {
         if (socket.id === ignoreSocketId) return
         socket.sendPacket(packet)

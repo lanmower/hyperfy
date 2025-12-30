@@ -52,7 +52,6 @@ async function buildClient() {
     jsx: 'automatic',
     jsxImportSource: '@firebolt-dev/jsx',
     external: ['fs', 'fs-extra', 'path', 'url', 'crypto', 'util', 'stream', 'assert', 'constants', 'module', 'jsonwebtoken', 'jws', 'jwa'],
-    inject: [path.join(dirname, 'inject-process-shim.js')],
     define: {
       'process.env.NODE_ENV': '"development"',
       'process.env.CLIENT': 'true',

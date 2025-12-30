@@ -71,11 +71,6 @@ export class RenderPlugin extends Plugin {
         return this.system.renderStats || null
       },
 
-      createMaterial: (options) => {
-        if (!this.enabled) return null
-        return this.renderHelper.createMaterial(options)
-      },
-
       cloneTextures: (material) => {
         if (!this.enabled) return []
         return this.renderHelper.cloneTextures(material)

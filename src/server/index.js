@@ -37,6 +37,8 @@ import { StatusPageData } from './services/StatusPageData.js'
 import { CORSConfig } from './config/CORSConfig.js'
 
 import { AIProviderConfig } from './config/AIProviderConfig.js'
+import { Logger } from './logging/Logger.js'
+import { ConsoleSink, FileSink } from './logging/Sinks.js'
 global.SERVER_START_TIME = Date.now()
 
 const rootDir = path.join(__dirname, '../')

@@ -4,7 +4,7 @@ import { UserIcon, XIcon } from 'lucide-react'
 
 import { usePane } from './usePane.js'
 import { AvatarPreview } from '../AvatarPreview.js'
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('AvatarPane')
 

@@ -1,5 +1,5 @@
 import SecurityConfig from '../../server/config/SecurityConfig.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('InputSanitizer')
 
