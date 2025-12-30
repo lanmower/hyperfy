@@ -2,6 +2,7 @@ import * as THREE from '../../extras/three.js'
 import { DEG2RAD } from '../../extras/general.js'
 import { BuilderConfig } from '../../config/SystemConfig.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
+import { copyTransform } from './BuilderTransformUtils.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const PROJECT_SPEED = 10
@@ -46,14 +47,10 @@ export class GrabModeHandler {
       if (target.rotation) target.rotation.y += this.parent.clientBuilder.control.scrollDelta.value * 0.1 * delta
     }
 
-    if (app.root.position) app.root.position.copy(target.position)
-    if (app.root.quaternion) app.root.quaternion.copy(target.quaternion)
-    if (app.root.scale) app.root.scale.copy(target.scale)
+    copyTransform(target, app.root)
 
     if (app.threeScene && !app.blueprint?.scene) {
-      if (app.root.position) app.threeScene.position.copy(app.root.position)
-      if (app.root.quaternion) app.threeScene.quaternion.copy(app.root.quaternion)
-      if (app.root.scale) app.threeScene.scale.copy(app.root.scale)
+      copyTransform(app.root, app.threeScene)
     }
 
     if (!this.parent.clientBuilder.control.controlLeft.down) {

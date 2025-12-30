@@ -2,6 +2,7 @@ import * as THREE from '../../extras/three.js'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 import { DEG2RAD } from '../../extras/general.js'
 import { BuilderConfig } from '../../config/SystemConfig.js'
+import { copyTransform } from './BuilderTransformUtils.js'
 
 export class GizmoManager {
   constructor(world, viewport) {
@@ -34,9 +35,7 @@ export class GizmoManager {
     this.gizmoTarget = new THREE.Object3D()
     this.gizmoHelper = this.gizmo.getHelper()
 
-    this.gizmoTarget.position.copy(app.root.position)
-    this.gizmoTarget.quaternion.copy(app.root.quaternion)
-    this.gizmoTarget.scale.copy(app.root.scale)
+    copyTransform(app.root, this.gizmoTarget)
 
     this.world.stage.scene.add(this.gizmoTarget)
     this.world.stage.scene.add(this.gizmoHelper)

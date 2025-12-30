@@ -6,6 +6,12 @@ export function serializeTransform(node) {
   }
 }
 
+export function copyTransform(source, target) {
+  target.position.copy(source.position)
+  target.quaternion.copy(source.quaternion)
+  target.scale.copy(source.scale)
+}
+
 export function serializeEntityData(entity, blueprintId, networkId) {
   return {
     id: entity.id,

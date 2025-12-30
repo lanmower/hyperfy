@@ -1,4 +1,4 @@
-import { serializeTransform } from './BuilderTransformUtils.js'
+import { serializeTransform, copyTransform } from './BuilderTransformUtils.js'
 
 const PROJECT_MAX = 50
 
@@ -40,9 +40,7 @@ export class StateTransitionHandler {
       if (this.parent.selected) {
         this.parent.control.keyC.capture = true
         this.parent.control.scrollDelta.capture = true
-        this.parent.target.position.copy(this.parent.selected.root.position)
-        this.parent.target.quaternion.copy(this.parent.selected.root.quaternion)
-        this.parent.target.scale.copy(this.parent.selected.root.scale)
+        copyTransform(this.parent.selected.root, this.parent.target)
         this.parent.target.limit = PROJECT_MAX
       }
     }
@@ -110,9 +108,7 @@ export class StateTransitionHandler {
         if (mode === 'grab') {
           this.parent.control.keyC.capture = true
           this.parent.control.scrollDelta.capture = true
-          this.parent.target.position.copy(app.root.position)
-          this.parent.target.quaternion.copy(app.root.quaternion)
-          this.parent.target.scale.copy(app.root.scale)
+          copyTransform(app.root, this.parent.target)
           this.parent.target.limit = PROJECT_MAX
         }
         if (mode === 'translate' || mode === 'rotate' || mode === 'scale') {
