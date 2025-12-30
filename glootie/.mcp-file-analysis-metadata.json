@@ -1,0 +1,5703 @@
+{
+  "version": "1.0",
+  "lastUpdated": 1767109309769,
+  "workingDirectory": "C:\\dev\\hyperfy",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "firstSeen": 1767084965635,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742294705,
+      "lastUpdated": 1767084965635
+    },
+    {
+      "path": ".env.example",
+      "firstSeen": 1767084965635,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742304290,
+      "lastUpdated": 1767084965635
+    },
+    {
+      "path": ".eslintignore",
+      "firstSeen": 1767084965635,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742304307,
+      "lastUpdated": 1767084965635
+    },
+    {
+      "path": ".eslintrc",
+      "firstSeen": 1767084965635,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742295862,
+      "lastUpdated": 1767084965635
+    },
+    {
+      "path": ".eslintrc.json",
+      "firstSeen": 1767084965635,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766953654699,
+      "lastUpdated": 1767084965635
+    },
+    {
+      "path": ".github/workflows/deploy.yml",
+      "firstSeen": 1767084965635,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766836307173,
+      "lastUpdated": 1767084965635
+    },
+    {
+      "path": ".github/workflows/manual-deploy.yml",
+      "firstSeen": 1767084965636,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766836335990,
+      "lastUpdated": 1767084965636
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "firstSeen": 1767084965636,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766836321020,
+      "lastUpdated": 1767084965636
+    },
+    {
+      "path": ".gitignore",
+      "firstSeen": 1767084965636,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767080697143,
+      "lastUpdated": 1767084965636
+    },
+    {
+      "path": ".npmrc",
+      "firstSeen": 1767084965636,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742270676,
+      "lastUpdated": 1767084965636
+    },
+    {
+      "path": ".nvmrc",
+      "firstSeen": 1767084965636,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742295867,
+      "lastUpdated": 1767084965636
+    },
+    {
+      "path": ".prettierignore",
+      "firstSeen": 1767084965638,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742294710,
+      "lastUpdated": 1767084965638
+    },
+    {
+      "path": ".prettierrc",
+      "firstSeen": 1767084965638,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742270682,
+      "lastUpdated": 1767084965638
+    },
+    {
+      "path": ".prettierrc.json",
+      "firstSeen": 1767084965638,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766953670782,
+      "lastUpdated": 1767084965638
+    },
+    {
+      "path": ".vscode/settings.json",
+      "firstSeen": 1767084965638,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742294699,
+      "lastUpdated": 1767084965638
+    },
+    {
+      "path": "LICENSE",
+      "firstSeen": 1767084965640,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742270669,
+      "lastUpdated": 1767084965640
+    },
+    {
+      "path": "deployment.config.js",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766836349911,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "extract-hyp.js",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766439765234,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "package-lock.json",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766835543981,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "package.json",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766987434352,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "performance-baseline.json",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766823793922,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "playwright.config.js",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766823160836,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "public/status.html",
+      "firstSeen": 1767084965641,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766909943549,
+      "lastUpdated": 1767084965641
+    },
+    {
+      "path": "src/client/AppFields.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766073571453,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/AvatarPreview.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766958224856,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/CurvePane.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765960251911,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/CurvePreview.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765960253260,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/Portal.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765960250524,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/avatar/AvatarCamera.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136471967,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/avatar/AvatarStats.js",
+      "firstSeen": 1767084965642,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766958235888,
+      "lastUpdated": 1767084965642
+    },
+    {
+      "path": "src/client/canvas/NametagRenderer.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156785550,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsList.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959416698,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsListComponents/AppActions.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986054733,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsListComponents/Content.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133764690,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsListComponents/ContentStyles.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766131472691,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsListComponents/EntityTargeting.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986602415,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsListComponents/TableHeader.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133707394,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AppsListComponents/TableRow.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133729921,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/AvatarPane.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986665037,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/CoreUI.js",
+      "firstSeen": 1767084965643,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766415813077,
+      "lastUpdated": 1767084965643
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/ActionIcon.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959417637,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/ActionPill.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959417710,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Actions.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959417782,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/ActionsBlock.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766416052740,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Chat.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766132146656,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/ChatStyles.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766132121845,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Confirm.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418013,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Disconnected.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418083,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/KickedOverlay.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418223,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/LoadingOverlay.js",
+      "firstSeen": 1767084965644,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418296,
+      "lastUpdated": 1767084965644
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Message.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418367,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Messages.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418435,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/MiniMessages.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418512,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Reticle.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766248646477,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/Toast.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418662,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/ToastMsg.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418738,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/TouchBtns.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418807,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/TouchStick.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418888,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CoreUIComponents/getActionIcon.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791992,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CurvePane.js",
+      "firstSeen": 1767084965645,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959418975,
+      "lastUpdated": 1767084965645
+    },
+    {
+      "path": "src/client/components/CurvePreview.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959419051,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/Fields.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791992,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldBtn.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959419194,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldCurve.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791993,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldFile.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791994,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldNumber.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791995,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldRange.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791996,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldSwitch.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791997,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldText.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791998,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldTextarea.js",
+      "firstSeen": 1767084965646,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046791999,
+      "lastUpdated": 1767084965646
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldToggle.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792000,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/FieldsComponents/FieldVec3.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792001,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/Hint.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959419983,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/Icons.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959420060,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputDropdown.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959420202,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputFile.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792001,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputNumber.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792002,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputRange.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959420440,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputSwitch.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959420519,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputText.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792002,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/InputsComponents/InputTextarea.js",
+      "firstSeen": 1767084965647,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959420657,
+      "lastUpdated": 1767084965647
+    },
+    {
+      "path": "src/client/components/Menu.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792003,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuApp.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959421039,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuAppComponents/MenuAppFlags.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792004,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuAppComponents/MenuAppIndex.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986660285,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuAppComponents/MenuAppMetadata.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792005,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuAppComponents/MenuItemField.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792005,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuAppComponents/Pages.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792007,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuComponents/Menu.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959421203,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemBack.js",
+      "firstSeen": 1767084965648,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792007,
+      "lastUpdated": 1767084965648
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemBtn.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792007,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemCurve.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792008,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemFile.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792009,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemFileBtn.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959421597,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemNumber.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792011,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemRange.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792012,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemSwitch.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792013,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemText.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792014,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemTextarea.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792014,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuItemToggle.js",
+      "firstSeen": 1767084965649,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792015,
+      "lastUpdated": 1767084965649
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuLine.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422147,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuComponents/MenuSection.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422217,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMain.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422284,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMainComponents/MenuMainAudio.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792015,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMainComponents/MenuMainGraphics.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792016,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMainComponents/MenuMainIndex.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792016,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMainComponents/MenuMainUI.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792017,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMainComponents/MenuMainWorld.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792017,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MenuMainComponents/Pages.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792018,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MouseLeftIcon.js",
+      "firstSeen": 1767084965650,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422439,
+      "lastUpdated": 1767084965650
+    },
+    {
+      "path": "src/client/components/MouseRightIcon.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422510,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/MouseWheelIcon.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422581,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/NodeHierarchy.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766579975891,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/NodeHierarchyComponents/Details.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422736,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/NodeHierarchyComponents/Tree.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766579967591,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/PaneManager.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765980404933,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/Portal.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959422964,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/ScriptEditor.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959423035,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/ScriptEditorComponents/Editor.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959423102,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/Sidebar.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766595688294,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/SidebarButtonGroups/AppSection.js",
+      "firstSeen": 1767084965651,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133655903,
+      "lastUpdated": 1767084965651
+    },
+    {
+      "path": "src/client/components/SidebarButtonGroups/BuilderSection.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133628663,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarButtonGroups/UserSection.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766595676321,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarButtonStyles.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766132008497,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarButtons.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133681138,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766595646719,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Add.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766561493374,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes/App.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766140339267,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes/AppModelBtn.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792019,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes/AppTransformFields.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792019,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Apps.js",
+      "firstSeen": 1767084965652,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766139758427,
+      "lastUpdated": 1767084965652
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Controls.js",
+      "firstSeen": 1767084965653,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766595631297,
+      "lastUpdated": 1767084965653
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Group.js",
+      "firstSeen": 1767084965653,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959423553,
+      "lastUpdated": 1767084965653
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Meta.js",
+      "firstSeen": 1767084965653,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959423611,
+      "lastUpdated": 1767084965653
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Nodes.js",
+      "firstSeen": 1767084965653,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959423687,
+      "lastUpdated": 1767084965653
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Pane.js",
+      "firstSeen": 1767084965653,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959423762,
+      "lastUpdated": 1767084965653
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Players.js",
+      "firstSeen": 1767084965654,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766140433230,
+      "lastUpdated": 1767084965654
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Prefs.js",
+      "firstSeen": 1767084965654,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766139762116,
+      "lastUpdated": 1767084965654
+    },
+    {
+      "path": "src/client/components/SidebarPanes/PrefsAudio.js",
+      "firstSeen": 1767084965654,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133542515,
+      "lastUpdated": 1767084965654
+    },
+    {
+      "path": "src/client/components/SidebarPanes/PrefsGraphics.js",
+      "firstSeen": 1767084965654,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133533490,
+      "lastUpdated": 1767084965654
+    },
+    {
+      "path": "src/client/components/SidebarPanes/PrefsInterface.js",
+      "firstSeen": 1767084965654,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766133521700,
+      "lastUpdated": 1767084965654
+    },
+    {
+      "path": "src/client/components/SidebarPanes/Script.js",
+      "firstSeen": 1767084965654,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766139765698,
+      "lastUpdated": 1767084965654
+    },
+    {
+      "path": "src/client/components/SidebarPanes/SidebarStyles.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766579938902,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/SidebarPanes/World.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766139763890,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/cls.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959417090,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/hooks/fieldStyles.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128313022,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/hooks/index.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766140478422,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/hooks/useAppLogic.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986606862,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/hooks/useAppStats.js",
+      "firstSeen": 1767084965655,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792023,
+      "lastUpdated": 1767084965655
+    },
+    {
+      "path": "src/client/components/hooks/useAppTransforms.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792023,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldCurve.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128311111,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldHint.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128298722,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldInput.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128335202,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldNumber.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128301722,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldRange.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128305170,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldSwitch.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128307261,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldText.js",
+      "firstSeen": 1767084965656,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128300250,
+      "lastUpdated": 1767084965656
+    },
+    {
+      "path": "src/client/components/hooks/useFieldTextarea.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128309244,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/useFieldVec3.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128303431,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/useFileUpload.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986059875,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/useGraphicsOptions.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792024,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/useMenuHint.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128297182,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/usePlayerActions.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766140394296,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/usePlayerList.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792025,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/useSyncedState.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792025,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/hooks/useWorldEvent.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792025,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/useElemSize.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959424203,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/useFullscreen.js",
+      "firstSeen": 1767084965657,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959424281,
+      "lastUpdated": 1767084965657
+    },
+    {
+      "path": "src/client/components/usePane.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959424360,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/components/useRank.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959424437,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/components/useUpdate.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959424514,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/config/AvatarConfig.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766958213777,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/debug/ConsoleCapture.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766997129959,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/debug/DebugAPI.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767042880774,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/debugUtils.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766997166217,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/index.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766216163881,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/particles.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766130989468,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/particles/CurveInterpolators.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986616217,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/particles/EmitterFactory.js",
+      "firstSeen": 1767084965658,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766130977829,
+      "lastUpdated": 1767084965658
+    },
+    {
+      "path": "src/client/particles/ParticleDataAssembler.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766119952001,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/ParticlePool.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766119933424,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/SpritesheetManager.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766095994473,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/ValueStarters.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986611428,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/VelocityApplier.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766119943439,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/BoxShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766096100909,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/CircleShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766096109469,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/ConeShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766096091660,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/HemisphereShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766096135846,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/PointShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766095821255,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/RectangleShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766096105092,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/SphereShape.js",
+      "firstSeen": 1767084965659,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766096125491,
+      "lastUpdated": 1767084965659
+    },
+    {
+      "path": "src/client/particles/shapes/index.js",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986656073,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/Clear_08_4pm_LDR.hdr",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271062,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/ai-docs.md",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766815449563,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/base-environment.glb",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271038,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/day2.hdr",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271049,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/dusk3.hdr",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271096,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/favicon.svg",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766248849273,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/index.css",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271073,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/index.html",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766248862225,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/particle.png",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271129,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/rubik.woff2",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271083,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/public/tiny.mp4",
+      "firstSeen": 1767084965660,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271118,
+      "lastUpdated": 1767084965660
+    },
+    {
+      "path": "src/client/useUpdate.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766426332756,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766416866577,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/Monaco.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043228247,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/MonacoConfig.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003751871,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/MonacoErrorHandler.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003790292,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/MonacoModuleLoader.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043228363,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/MonacoTheme.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003770083,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/MonacoWorkerInit.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043228475,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monaco/index.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003816582,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/utils/monacoLoader.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003849262,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/client/world-client.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983456979,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/core/Events.js",
+      "firstSeen": 1767084965661,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986527387,
+      "lastUpdated": 1767084965661
+    },
+    {
+      "path": "src/core/FeatureDetector.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986120972,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/NodeBuilder.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977116491,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/Props.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071994742,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/Request.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977118540,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/Schema.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977118584,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/ServiceBase.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977118788,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/Socket.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767047449401,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/SystemRegistry.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985515866,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/World.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767048987832,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/config/HandlerRegistry.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985819204,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/config/NametagConfig.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156562705,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/config/SystemConfig.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766829013713,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/constants/AnimationModes.js",
+      "firstSeen": 1767084965662,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766828710665,
+      "lastUpdated": 1767084965662
+    },
+    {
+      "path": "src/core/constants/EventNames.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977110924,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/constants/TransformDefaults.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977111007,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/createNodeClientWorld.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049048046,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/createViewerWorld.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049055292,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/debug/ResourceLeakDetector.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767002501735,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/debug/ResourceTracker.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767002512365,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/debug/index.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767002520042,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/docs/ASSUMPTIONS.md",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767015205517,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/docs/BLOCKCHAIN_VALIDATION.md",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767015242668,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/entities/App.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767048071711,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/entities/BaseEntity.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982057508,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/entities/PlayerLocal.js",
+      "firstSeen": 1767084965663,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071008435,
+      "lastUpdated": 1767084965663
+    },
+    {
+      "path": "src/core/entities/PlayerRemote.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766423710758,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/PlayerRemote/AvatarSynchronizer.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766423540442,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/PlayerRemote/RemoteAnimationController.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766421017356,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/app/AppNetworkSync.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129582707,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/app/AppNodeManager.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129581297,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/app/AppPropertyHandlers.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766829585308,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/app/EventManager.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766833116219,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/app/ProxyFactory.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044583062,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/app/ScriptExecutor.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043227683,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/player/AnimationController.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049400357,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/player/CameraConstants.js",
+      "firstSeen": 1767084965664,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766068570759,
+      "lastUpdated": 1767084965664
+    },
+    {
+      "path": "src/core/entities/player/NetworkSynchronizer.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766127113202,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerAvatarManager.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982307719,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerCameraManager.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766829172208,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerCapsuleFactory.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049408019,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerChatBubble.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766116922230,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerControlBinder.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767042764391,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerInputProcessor.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049390049,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerModifyHandler.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766127039303,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerPermissions.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977111733,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerPhysics.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766862971948,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerPhysicsState.js",
+      "firstSeen": 1767084965665,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049421836,
+      "lastUpdated": 1767084965665
+    },
+    {
+      "path": "src/core/entities/player/PlayerPlatformTracker.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049384910,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/PlayerTeleportHandler.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766421704111,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/PlayerUIManager.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765979424169,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/TransformSyncManager.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998411184,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/input/InputStrategy.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766068552701,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/input/PointerLockInputStrategy.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766501288823,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/input/ScrollZoomStrategy.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766068747869,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/input/TouchPanInputStrategy.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766501619249,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/entities/player/input/XRInputStrategy.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766501631263,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/events/EventAudit.js",
+      "firstSeen": 1767084965666,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014652062,
+      "lastUpdated": 1767084965666
+    },
+    {
+      "path": "src/core/events/EventRegistry.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014668525,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/events/index.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014679623,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/BufferedLerpQuaternion.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977112785,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/BufferedLerpVector3.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977112831,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/ButtonDefinitions.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766131023293,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/ButtonMappings.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766138758609,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/ControlPriorities.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792027,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/Curve.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792029,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/Layers.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766215241224,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/LooseOctree.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977113447,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/SnapOctree.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766168738700,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/appTools.js",
+      "firstSeen": 1767084965667,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792031,
+      "lastUpdated": 1767084965667
+    },
+    {
+      "path": "src/core/extras/avatar/AvatarHelpers.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766069136291,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/BoneNameMappings.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765981455279,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/VRMControllers.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069274798,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/VRMFactoryConfig.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766168588411,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/VRMUtilities.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766120058295,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/createEmoteFactory.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069300084,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/createPlayerProxy.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984256237,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/createVRMFactory.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069257446,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/index.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977112579,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/avatar/playerEmotes.js",
+      "firstSeen": 1767084965668,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977112617,
+      "lastUpdated": 1767084965668
+    },
+    {
+      "path": "src/core/extras/bindRotations.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977112665,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/borderRoundRect.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792033,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/buttons.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766131054564,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/createEmoteFactory.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792034,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/createNode.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766588031644,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/createPlayerProxy.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977112990,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/createVRMFactory.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792034,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/downloadFile.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977113072,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/extendThreePhysX.js",
+      "firstSeen": 1767084965669,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766489864791,
+      "lastUpdated": 1767084965669
+    },
+    {
+      "path": "src/core/extras/formatBytes.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977113156,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/general.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792035,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/geometryToPxMesh.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984533369,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/getTextureBytesFromMaterial.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792036,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/getTrianglesFromGeometry.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792037,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/glb/SplatmapSetup.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766127226259,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/glb/WindShaderSetup.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766127224697,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/glbToNodes.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766127275291,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/index.js",
+      "firstSeen": 1767084965670,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792038,
+      "lastUpdated": 1767084965670
+    },
+    {
+      "path": "src/core/extras/playerEmotes.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977113774,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/extras/prng.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792039,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/extras/ranks.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792039,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/extras/roundRect.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792040,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/extras/simpleCamLerp.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069290009,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/extras/three.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792041,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/extras/yoga.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792042,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/graphics/GraphicsAPI.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767000903451,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/graphics/index.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767000911617,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/libs/csm/CSM.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115527,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/libs/gltfloader/GLTFLoader.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115578,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/libs/stats-gl/index.js",
+      "firstSeen": 1767084965671,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115640,
+      "lastUpdated": 1767084965671
+    },
+    {
+      "path": "src/core/libs/stats-gl/panel.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115686,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/libs/three-custom-shader-material/index.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115732,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/libs/three-vrm/index.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115788,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/lifecycle/CleanupChecklist.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003463685,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/lifecycle/CleanupTracker.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003481836,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/lifecycle/DisposableResource.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003411997,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/lifecycle/LifecycleCoordinator.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003421086,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/lifecycle/index.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767012611458,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/loadPhysX.js",
+      "firstSeen": 1767084965672,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766978370799,
+      "lastUpdated": 1767084965672
+    },
+    {
+      "path": "src/core/lockdown.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977115930,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/memory/MemoryAnalyzer.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013580387,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/memory/MemorySnapshot.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013559959,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/memory/index.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013586536,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/mixins/HandlerRegistryMixin.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984165952,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/mixins/ListenerMixin.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985830461,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/mixins/PropertyHandlerMixin.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766068424816,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/mixins/StateManagerMixin.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977116141,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/mixins/index.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977116064,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/models/DataModel.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977116188,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/network/BaseNetwork.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982044479,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/network/NetworkPacket.js",
+      "firstSeen": 1767084965673,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013131897,
+      "lastUpdated": 1767084965673
+    },
+    {
+      "path": "src/core/network/StateSync.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995798038,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/network/protocol/PacketDefinition.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013117414,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/network/protocol/ProtocolVersion.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013284180,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/network/protocol/index.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013318206,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Action.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143798597,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Anchor.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143801756,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Audio.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143595234,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Avatar.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143577670,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Collider.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766981986036,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Controller.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766828534013,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Group.js",
+      "firstSeen": 1767084965674,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143844581,
+      "lastUpdated": 1767084965674
+    },
+    {
+      "path": "src/core/nodes/Image.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143539716,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Joint.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143838315,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/LOD.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143808124,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Mesh.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156581636,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Nametag.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143811304,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Node.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117169,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Particles.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143814417,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Prim.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766997053029,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/RigidBody.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766816299350,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/SkinnedMesh.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982274358,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Sky.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766981523860,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/Snap.js",
+      "firstSeen": 1767084965675,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766816303699,
+      "lastUpdated": 1767084965675
+    },
+    {
+      "path": "src/core/nodes/UI.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986124246,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/UIImage.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143820381,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/UIText.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143823325,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/UIView.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143826372,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/Video.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143832309,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/audio/AudioPannerController.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766134647425,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/audio/AudioPlaybackController.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982291784,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/base/LifecycleManager.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982248624,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/base/ProxyFactory.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044728352,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/base/TransformSystem.js",
+      "firstSeen": 1767084965676,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982416614,
+      "lastUpdated": 1767084965676
+    },
+    {
+      "path": "src/core/nodes/base/UINodeBase.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986127710,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/image/ImageRenderer.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766134417819,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/index.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766816319311,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/physics/PhysicsForces.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766120349913,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/physics/PhysicsProperties.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766120360763,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/prims/Prim.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069317797,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/prims/PrimDefaults.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767070763357,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/prims/PrimGeometry.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766996908815,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/prims/PrimMaterial.js",
+      "firstSeen": 1767084965677,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766996916794,
+      "lastUpdated": 1767084965677
+    },
+    {
+      "path": "src/core/nodes/prims/PrimPhysics.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069328165,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/prims/PrimProxy.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766996946004,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/ui/LayoutCalculator.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117376,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/ui/UIBillboardController.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129349674,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/ui/UIHelpers.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117422,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/ui/UIInteractionHandler.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129351223,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/ui/UILayoutManager.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129348149,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/ui/UIRenderer.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117470,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/video/VideoAudioController.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117831,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/video/VideoGeometryHandler.js",
+      "firstSeen": 1767084965678,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129470495,
+      "lastUpdated": 1767084965678
+    },
+    {
+      "path": "src/core/nodes/video/VideoHelpers.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117858,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/nodes/video/VideoInstanceManager.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129469053,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/nodes/video/VideoMaterialProxy.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129471930,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/nodes/video/VideoRenderer.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117902,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/packets.constants.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977117978,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/packets.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985826715,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/patterns/AsyncInitializer.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013197626,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/patterns/SystemInitializer.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013218850,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/patterns/index.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013228802,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/performance/Constants.js",
+      "firstSeen": 1767084965679,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014136378,
+      "lastUpdated": 1767084965679
+    },
+    {
+      "path": "src/core/performance/PerformanceBudget.js",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767011896336,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/performance/PerformanceMonitor.js",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767011912954,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/performance/index.js",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767011921153,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/physx-js-webidl.js",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977118088,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/physx-js-webidl.wasm",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742272727,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/plugin/PluginSystem.js",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766979509758,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/plugins/AssetPlugin.js",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767046945098,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/plugins/CORE_SYSTEM_PLUGINS.md",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767046284850,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/plugins/IMPLEMENTATION_GUIDE.md",
+      "firstSeen": 1767084965680,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045086391,
+      "lastUpdated": 1767084965680
+    },
+    {
+      "path": "src/core/plugins/InputPlugin.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767046930033,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/NetworkPlugin.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767046913349,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/PHASE7_EXPANSION.md",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045657547,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/PLUGIN_GUIDE.md",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045058506,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/Plugin.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044948632,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/PluginAPI.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044996968,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/PluginHooks.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045014221,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/PluginRegistry.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045006293,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/RenderPlugin.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767046962258,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/defaultPlugins.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767046207934,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/examples/AIClientPlugin.js",
+      "firstSeen": 1767084965681,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044976251,
+      "lastUpdated": 1767084965681
+    },
+    {
+      "path": "src/core/plugins/examples/AssetLoaderPlugin.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044966964,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/plugins/examples/InputHandlerPlugin.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044957400,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/plugins/examples/NetworkTransportPlugin.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045588472,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/plugins/examples/index.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767045598476,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/plugins/index.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767047534440,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/resilience/CircuitBreaker.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003028879,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/resilience/RollbackManager.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003077543,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/resilience/index.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767012583942,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/schemas/AppBlueprint.schema.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766559416613,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/schemas/ChatMessage.schema.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977118685,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/security/FileUploadValidator.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767002970408,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/security/InputSanitizer.js",
+      "firstSeen": 1767084965682,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766980462937,
+      "lastUpdated": 1767084965682
+    },
+    {
+      "path": "src/core/security/WebSocketValidator.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003146815,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/services/PersistenceBase.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977118831,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/startup/SystemStartup.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767025301474,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/state/StateManager.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985557368,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/storage.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985612422,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/Anchors.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977119116,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/Animation.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069043293,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/Apps.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136444747,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/Avatars.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766499742543,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/BaseLoader.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982134195,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/BaseSystem.js",
+      "firstSeen": 1767084965683,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767042776971,
+      "lastUpdated": 1767084965683
+    },
+    {
+      "path": "src/core/systems/Chat.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977119634,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/Client.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043286745,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientAI.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766978753067,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientActions.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767068977546,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientAudio.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766980282695,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientBuilder.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156894177,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientEnvironment.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766423368958,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientGraphics.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766424828679,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientLiveKit.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767072026992,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientLoader.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766979579858,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientNetwork.js",
+      "firstSeen": 1767084965684,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049460410,
+      "lastUpdated": 1767084965684
+    },
+    {
+      "path": "src/core/systems/ClientPointer.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982010957,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/ClientPrefs.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977120194,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/ClientStats.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136486073,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/ClientTarget.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766568264921,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/ClientUI.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977120351,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/Collections.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977120470,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/Entities.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136324743,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/ErrorSystem.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043067957,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/EventListenerManager.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767072067907,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/Events.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977121058,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/LODs.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766157135671,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/Nametags.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766977846131,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/NodeClient.js",
+      "firstSeen": 1767084965685,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977121687,
+      "lastUpdated": 1767084965685
+    },
+    {
+      "path": "src/core/systems/NodeEnvironment.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977121731,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/Particles.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071970153,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/Physics.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998123234,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/Scripts.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766980742979,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/Server.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977122376,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/ServerAI.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766996719803,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/ServerLiveKit.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982029181,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/ServerLoader.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043339683,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/ServerMonitor.js",
+      "firstSeen": 1767084965686,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977122567,
+      "lastUpdated": 1767084965686
+    },
+    {
+      "path": "src/core/systems/ServerNetwork.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043264742,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/Settings.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977122660,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/Snaps.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977122706,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/Stage.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049429289,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/System.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767042770847,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/SystemIntegration.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767025084725,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/SystemLifecycleManager.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995329897,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/SystemRegistry.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128615730,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/Wind.js",
+      "firstSeen": 1767084965687,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977122957,
+      "lastUpdated": 1767084965687
+    },
+    {
+      "path": "src/core/systems/XR.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767069012491,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/actions/CanvasDrawUtils.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766139265779,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/ai/AIClientFactory.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767050299410,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/ai/AIFunctionCaller.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766996631098,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/ai/PromptBuilder.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766996622829,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/ai/ScriptOperationOrchestrator.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767050604515,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/apps/AppAPIConfig.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767070709747,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/apps/AppRegistry.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136381597,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/apps/FieldTypeConstants.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767070702503,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/apps/WorldAPIConfig.js",
+      "firstSeen": 1767084965688,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043400519,
+      "lastUpdated": 1767084965688
+    },
+    {
+      "path": "src/core/systems/apps/fileRemaps.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767070716055,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/audio/AudioManager.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766997734401,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/ActionConfigs.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767070885572,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/BuilderActions.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766251527973,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/BuilderComposer.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766825433748,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/BuilderTransformUtils.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071693259,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/EntityCommandHandler.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071631502,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/EntitySpawner.js",
+      "firstSeen": 1767084965689,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766128925645,
+      "lastUpdated": 1767084965689
+    },
+    {
+      "path": "src/core/systems/builder/FileDropHandler.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982161205,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/FileExtractor.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984687884,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/GizmoManager.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071767642,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/GrabModeHandler.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071750611,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/ModeManager.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767070889212,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/SelectionManager.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766825424515,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/StateTransitionHandler.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071713550,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/TransformHandler.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071731887,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/UndoManager.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136203786,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/spawners/AppSpawner.js",
+      "firstSeen": 1767084965690,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984646665,
+      "lastUpdated": 1767084965690
+    },
+    {
+      "path": "src/core/systems/builder/spawners/AvatarSpawner.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984605316,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/builder/spawners/ModelSpawner.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766597070665,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/controls/ButtonStateTracker.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766138731643,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/controls/TouchInputHandler.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766138729739,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/controls/XRControllerManager.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766138726766,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/entities/Constants.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014199147,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/entities/EntityLifecycle.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982170974,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/entities/EntitySpawner.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766978418251,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/environment/ShadowManager.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766138774030,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/environment/SkyManager.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766418072676,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/environment/csmConfig.js",
+      "firstSeen": 1767084965691,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792056,
+      "lastUpdated": 1767084965691
+    },
+    {
+      "path": "src/core/systems/environment/shaderPatches.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792056,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/graphics/Constants.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014168153,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/graphics/GraphicsConfiguration.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136374481,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/graphics/PostProcessingSetup.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766120648941,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/graphics/RenderStateManager.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136250597,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/graphics/ViewportResizer.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136277496,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/graphics/XRGraphicsAdapter.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982199504,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/input/InputManager.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995614224,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/input/InputSystem.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983705845,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/input/KeyboardInputHandler.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766495646462,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/input/PointerInputHandler.js",
+      "firstSeen": 1767084965692,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156789255,
+      "lastUpdated": 1767084965692
+    },
+    {
+      "path": "src/core/systems/input/XRInputHandler.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156839931,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/AssetHandlerRegistry.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767047416774,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/AssetHandlers.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049485494,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/Constants.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014185188,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/FallbackManager.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983351607,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/FallbackManager.test.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766864191881,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/FileManager.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983621779,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/ResourceManager.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998149576,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/loaders/ServerAssetHandlers.js",
+      "firstSeen": 1767084965693,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043320872,
+      "lastUpdated": 1767084965693
+    },
+    {
+      "path": "src/core/systems/network/ClientPacketHandlers.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982941740,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/Compressor.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982745245,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/Constants.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014145793,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/DeltaCodec.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766157178663,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/SnapshotCodec.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766214788039,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/SnapshotProcessor.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998104176,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/TimeoutManager.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982209324,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/network/WebSocketManager.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766975365943,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/particles/EmitterController.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071956914,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/particles/ParticleGeometryBuilder.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767071938296,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/particles/ParticleMaterialFactory.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766070019299,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/particles/ParticleWorkerCoordinator.js",
+      "firstSeen": 1767084965694,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984774190,
+      "lastUpdated": 1767084965694
+    },
+    {
+      "path": "src/core/systems/performance/InstrumentationHooks.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766823823913,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/performance/LoadTestFramework.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766977738016,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/performance/PerformanceDisplay.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766823779546,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/performance/PerformanceMetrics.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766823748708,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/performance/RegressionDetector.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766823841468,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/physics/Constants.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014155973,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/physics/PhysicsActorManager.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766117627932,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/physics/PhysicsCallbackManager.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984118119,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/physics/PhysicsInterpolationManager.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766127673539,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/physics/PhysicsQueries.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766494947982,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/physics/PhysicsSimulationEvents.js",
+      "firstSeen": 1767084965695,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766984730671,
+      "lastUpdated": 1767084965695
+    },
+    {
+      "path": "src/core/systems/registry/CoreSystemsConfig.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767048051750,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/registry/PlatformDetection.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766225866207,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/BuilderCommandHandler.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766978547610,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/ChatManager.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136243863,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/FileUploadHandler.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767002989089,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/PlayerConnectionManager.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767047467670,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/ServerLifecycleManager.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766981411545,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/SocketManager.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767003184581,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/server/WorldSaveManager.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982903529,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/stage/InstancedMeshManager.js",
+      "firstSeen": 1767084965696,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766418141016,
+      "lastUpdated": 1767084965696
+    },
+    {
+      "path": "src/core/systems/stage/MaterialProxy.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766119296158,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/systems/stage/MeshInserter.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766129002776,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/systems/stage/ObjectPool.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766862988004,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/systems/stage/StageRaycaster.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766568294165,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/systems/stats/StatsCollector.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136418395,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/systems/stats/StatsDisplay.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766136450442,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils-client.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143095021,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils-server.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766168817597,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792062,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils/BatchProcessor.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156785602,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils/GeometryCache.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156521151,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils/ProxyBuilder.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765980190486,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils/SharedVectorPool.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767049379971,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils/TempVectors.js",
+      "firstSeen": 1767084965697,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792063,
+      "lastUpdated": 1767084965697
+    },
+    {
+      "path": "src/core/utils/api/APIMethodWrapper.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043412879,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/collections/NodeConstants.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977123562,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/collections/collections.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977123477,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/collections/index.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977123522,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/events/EventBus.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985697953,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/events/EventConstants.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766956404870,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/events/index.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792063,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/helpers/NodeSchemaHelper.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766143530317,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/helpers/crypto.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766211179659,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/helpers/defineProperty.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766476522477,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/helpers/index.js",
+      "firstSeen": 1767084965698,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766070941892,
+      "lastUpdated": 1767084965698
+    },
+    {
+      "path": "src/core/utils/helpers/misc.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977124030,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/index.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766156794385,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/logging/ComponentLogger.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995407650,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/logging/LogLevels.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995365454,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/logging/StructuredLogger.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995384018,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/metrics/MetricCounter.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998189444,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/metrics/MetricsManager.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998200650,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/metrics/PerformanceMetrics.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998212498,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/metrics/index.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998219830,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/pool/ObjectPool.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995886585,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/pool/ResourcePoolManager.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766995897768,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/resilience/CircuitBreakerUtils.js",
+      "firstSeen": 1767084965699,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766955263296,
+      "lastUpdated": 1767084965699
+    },
+    {
+      "path": "src/core/utils/safety/NullSafetyHelper.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998756226,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/safety/index.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998764956,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/serialization.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766216191913,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/serialization/index.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977124118,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/serialization/serialization.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977124156,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/tracing/TraceSpan.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998029161,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/tracing/TracingContext.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998037016,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/tracing/TracingManager.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998046491,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/tracing/index.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998051858,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/validation/createNodeSchema.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977142262,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/validation/index.js",
+      "firstSeen": 1767084965700,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765978171375,
+      "lastUpdated": 1767084965700
+    },
+    {
+      "path": "src/core/utils/validation/validation.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765977124440,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/core/validators/AppValidator.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766985822689,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/node-client/index.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959443157,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/scripts/rollback.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766836399878,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/scripts/validate-ci-config.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766836799637,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/scripts/verify-deploy.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766978703729,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/Storage.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766980655155,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/api/SchemaValidator.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767025037858,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/api/index.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767025046719,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/bootstrap.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765959443231,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/cache/CacheManager.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766838206335,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/cache/verify-optimizations.js",
+      "firstSeen": 1767084965701,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044157597,
+      "lastUpdated": 1767084965701
+    },
+    {
+      "path": "src/server/collections.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766046792066,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/AIProviderConfig.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766957899998,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/AlertingConfig.json",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766953870718,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/AutoScalingConfig.json",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766953848870,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/CORSConfig.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766910234812,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/ConfigLoader.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766955460781,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/ConfigSchema.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766955530500,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/Constants.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767014214131,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/MasterConfig.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766955413707,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/RateLimitConfig.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766865593704,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/SecurityConfig.js",
+      "firstSeen": 1767084965702,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766956585086,
+      "lastUpdated": 1767084965702
+    },
+    {
+      "path": "src/server/config/TimeoutConfig.js",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766975290117,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/db.js",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044043280,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/db/migrations.json",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766953639408,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/debug/ServerDebugAPI.js",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043357241,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/debug/index.js",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766998332174,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/index.js",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043689026,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/index_patch.txt",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766867784099,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/logging/IntegrationUtils.js",
+      "firstSeen": 1767084965703,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766834577208,
+      "lastUpdated": 1767084965703
+    },
+    {
+      "path": "src/server/logging/Logger.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766987587812,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/middleware/RateLimiter.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983218244,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/middleware/RequestTracking.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043228009,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/middleware/TimeoutMiddleware.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766982543004,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/middleware/authMiddleware.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766833976348,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/resilience/CircuitBreaker.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983277022,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/resilience/CircuitBreakerManager.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766981227611,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/routes/index.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043559195,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/security/ScriptValidator.js",
+      "firstSeen": 1767084965704,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766980177359,
+      "lastUpdated": 1767084965704
+    },
+    {
+      "path": "src/server/services/CommandHandler.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766980554870,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/FileStorage.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766866173802,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/FileUploader.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766225569757,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/HealthMonitor.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766094663283,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/Metrics.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766094649454,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/StatusPageData.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767044207225,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/TimeoutManager.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766908327891,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/WorldPersistence.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766983076987,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/uploader/BatchUploader.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766986532256,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/uploader/FormatUtils.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766130564972,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/services/uploader/UploadStats.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766130563250,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/telemetry/Telemetry.js",
+      "firstSeen": 1767084965705,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766867202589,
+      "lastUpdated": 1767084965705
+    },
+    {
+      "path": "src/server/utils/StderrLogger.js",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766214072574,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/server/utils/api/APIMethodWrapper.js",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767043228134,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/server/utils/errors/index.js",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767013941052,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/server/utils/logging/ComponentLogger.js",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766974517138,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/server/webhooks/coolify-deploy.js",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1766978470130,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/avatar.vrm",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271415,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/crash-block.glb",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271333,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/emote-fall.glb",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271228,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/emote-flip.glb",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271293,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/emote-float.glb",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271345,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/emote-jump.glb",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271273,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/emote-talk.glb",
+      "firstSeen": 1767084965706,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271426,
+      "lastUpdated": 1767084965706
+    },
+    {
+      "path": "src/world/assets/mp-idle.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271304,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-jog-back.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271283,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-jog-left.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271314,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-jog-right.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271217,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-jog.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271324,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-walk-back.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271239,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-walk-left.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271252,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-walk-right.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271355,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/assets/mp-walk.glb",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271263,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/collections/default/Image.hyp",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271466,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/collections/default/Model.hyp",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271456,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/collections/default/Text.hyp",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271488,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/collections/default/Video.hyp",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271445,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/collections/default/manifest.json",
+      "firstSeen": 1767084965707,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271477,
+      "lastUpdated": 1767084965707
+    },
+    {
+      "path": "src/world/scene.hyp",
+      "firstSeen": 1767084965708,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1765742271203,
+      "lastUpdated": 1767084965708
+    },
+    {
+      "path": "src/core/entities/player/PlayerController.js",
+      "firstSeen": 1767109309760,
+      "lastReported": 1767109263802,
+      "reportedDates": {},
+      "lastModified": 1767109263802,
+      "lastUpdated": 1767109309760
+    }
+  ]
+}
