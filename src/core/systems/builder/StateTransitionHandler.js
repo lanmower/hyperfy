@@ -1,3 +1,5 @@
+import { serializeTransform } from './BuilderTransformUtils.js'
+
 const PROJECT_MAX = 50
 
 export class StateTransitionHandler {
@@ -64,9 +66,10 @@ export class StateTransitionHandler {
         if (!this.parent.selected.dead && this.parent.selected.data.mover === this.parent.network.id) {
           const selected = this.parent.selected
           selected.data.mover = null
-          selected.data.position = selected.root.position.toArray()
-          selected.data.quaternion = selected.root.quaternion.toArray()
-          selected.data.scale = selected.root.scale.toArray()
+          const transform = serializeTransform(selected.root)
+          selected.data.position = transform.position
+          selected.data.quaternion = transform.quaternion
+          selected.data.scale = transform.scale
           selected.data.state = {}
           this.parent.network.send('entityModified', {
             id: selected.data.id,

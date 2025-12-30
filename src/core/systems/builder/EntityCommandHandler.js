@@ -1,4 +1,5 @@
 import { uuid } from '../../utils-client.js'
+import { serializeTransform } from './BuilderTransformUtils.js'
 
 export class EntityCommandHandler {
   constructor(parent) {
@@ -90,9 +91,7 @@ export class EntityCommandHandler {
           id: uuid(),
           type: 'app',
           blueprint: blueprintId,
-          position: entity.root.position.toArray(),
-          quaternion: entity.root.quaternion.toArray(),
-          scale: entity.root.scale.toArray(),
+          ...serializeTransform(entity.root),
           mover: this.parent.clientBuilder.network.id,
           uploader: null,
           pinned: false,

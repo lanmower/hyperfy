@@ -1,5 +1,6 @@
 import { GizmoController } from './GizmoController.js'
 import { GrabModeHandler } from './GrabModeHandler.js'
+import { serializeTransform } from './BuilderTransformUtils.js'
 
 export class TransformHandler {
   constructor(clientBuilder) {
@@ -97,9 +98,7 @@ export class TransformHandler {
     if (this.lastMoveSendTime > this.clientBuilder.networkRate) {
       this.clientBuilder.network.send('entityModified', {
         id: app.data.id,
-        position: app.root.position.toArray(),
-        quaternion: app.root.quaternion.toArray(),
-        scale: app.root.scale.toArray(),
+        ...serializeTransform(app.root),
       })
       this.lastMoveSendTime = 0
     }
