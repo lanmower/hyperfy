@@ -107,8 +107,6 @@ circuitBreakerManager.register('upload', {
   timeout: parseInt(process.env.UPLOAD_CIRCUIT_TIMEOUT) || 90000,
 })
 
-setupGlobalErrorTracking(logger, errorTracker)
-
 let world
 let degradationManager
 let statusPageData

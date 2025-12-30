@@ -9,6 +9,10 @@ export class ErrorTracker {
     this.logger?.error('Error tracked', { error: error.message, stack: error.stack })
   }
 
+  captureException(error) {
+    this.track(error)
+  }
+
   getStats() {
     return { total: 0, recent: [] }
   }
