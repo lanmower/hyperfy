@@ -1,2 +1,5 @@
 export { AsyncInitializer, AsyncInitializationStrategy } from './AsyncInitializer.js'
 export { SystemInitializer, withAsyncInit } from './SystemInitializer.js'
+export { BaseManager } from './BaseManager.js'
+export { BaseFactory } from './BaseFactory.js'
+export { BaseHandler } from './BaseHandler.js'
