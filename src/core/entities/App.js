@@ -12,7 +12,7 @@ import { Layers } from '../extras/Layers.js'
 import { ScriptExecutor } from './app/ScriptExecutor.js'
 import { AppNetworkSync } from './app/AppNetworkSync.js'
 import { AppPropertyHandlers } from './app/AppPropertyHandlers.js'
-import { AppEventManager } from './app/AppEventManager.js'
+import { EventManager } from './app/EventManager.js'
 import { AppProxyManager } from './app/AppProxyManager.js'
 import { AppUtilities } from './app/AppUtilities.js'
 import { RigidBody } from '../nodes/RigidBody.js'
@@ -47,7 +47,7 @@ export class App extends BaseEntity {
     this.snaps = []
     this.networkSync = new AppNetworkSync(this)
     this.propertyHandlers = new AppPropertyHandlers(this)
-    this.eventManager = new AppEventManager(this)
+    this.eventManager = new EventManager(this)
     this.proxyManager = new AppProxyManager(this)
     this.utilities = new AppUtilities(this)
     this.build().catch(err => {

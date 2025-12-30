@@ -63,4 +63,8 @@ export class EventManager {
     this.worldListeners.clear()
     this.hotEvents = 0
   }
+
+  cleanup() {
+    this.clearEventListeners()
+  }
 }
