@@ -1,39 +1,69 @@
 /* Unified environment management for sky and shadows */
 
+import { SkyManager } from './SkyManager.js'
+import { ShadowManager } from './ShadowManager.js'
+
 export class EnvironmentController {
-  constructor() {
-    this.sky = null
-    this.shadows = null
-    this.lighting = null
+  constructor(environment) {
+    this.environment = environment
+    this.shadowManager = new ShadowManager(environment)
+    this.skyManager = new SkyManager(environment)
+  }
+
+  async buildCSM(shadowLevel) {
+    return this.shadowManager.build(shadowLevel)
+  }
+
+  updateCSM(shadowLevel, sunDirection, sunIntensity, sunColor) {
+    return this.shadowManager.update(shadowLevel, sunDirection, sunIntensity, sunColor)
+  }
+
+  addSky(node) {
+    return this.skyManager.addSky(node)
+  }
+
+  async updateSky(sunDirection, sunIntensity, sunColor) {
+    return this.skyManager.update(sunDirection, sunIntensity, sunColor)
+  }
+
+  updateSkyPosition(rigPosition) {
+    return this.skyManager.updatePosition(rigPosition)
+  }
+
+  get skyInfo() {
+    return this.skyManager.skyInfo
+  }
+
+  tick() {
+    this.shadowManager.tick()
+  }
+
+  updateFrustums() {
+    this.shadowManager.updateFrustums()
   }
 
   setSky(sky) {
-    this.sky = sky
+    this.skyManager = sky
   }
 
   setShadows(shadows) {
-    this.shadows = shadows
-  }
-
-  setLighting(lighting) {
-    this.lighting = lighting
+    this.shadowManager = shadows
   }
 
   update(deltaTime) {
-    if (this.sky) this.sky.update(deltaTime)
-    if (this.shadows) this.shadows.update(deltaTime)
-    if (this.lighting) this.lighting.update(deltaTime)
+    if (this.skyManager) this.skyManager.update(deltaTime)
+    if (this.shadowManager) this.shadowManager.update(deltaTime)
   }
 
   getSkyIntensity() {
-    return this.sky?.intensity || 1
+    return this.skyManager?.intensity || 1
   }
 
   getShadowMapSize() {
-    return this.shadows?.mapSize || 1024
+    return this.shadowManager?.mapSize || 1024
   }
 
   setAmbientLight(intensity) {
-    if (this.lighting) this.lighting.setAmbient(intensity)
+    if (this.shadowManager) this.shadowManager.setAmbient(intensity)
   }
 }

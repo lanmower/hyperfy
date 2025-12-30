@@ -2,10 +2,8 @@ import { extendThreePhysX } from '../extras/extendThreePhysX.js'
 import { System } from './System.js'
 import { loadPhysX } from '../loadPhysX.js'
 import { PhysicsQueries } from './physics/PhysicsQueries.js'
-import { PhysicsActorManager } from './physics/PhysicsActorManager.js'
+import { PhysicsCoordinator } from './physics/PhysicsCoordinator.js'
 import { PhysicsSimulationEvents } from './physics/PhysicsSimulationEvents.js'
-import { PhysicsCallbackManager } from './physics/PhysicsCallbackManager.js'
-import { PhysicsInterpolationManager } from './physics/PhysicsInterpolationManager.js'
 import { Layers } from '../extras/Layers.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 import { tracer } from '../utils/tracing/index.js'
@@ -20,8 +18,7 @@ export class Physics extends System {
   constructor(world) {
     super(world)
     this.scene = null
-    this.callbackManager = new PhysicsCallbackManager()
-    this.interpolationManager = new PhysicsInterpolationManager(this)
+    this.coordinator = new PhysicsCoordinator(this)
     this.active = new Set()
   }
 
@@ -62,14 +59,14 @@ export class Physics extends System {
     this.handles = new Map()
     this.materials = {}
 
-    this.callbackManager.initializeCallbacks()
-    this.getContactCallback = this.callbackManager.getContactCallback
-    this.getTriggerCallback = this.callbackManager.getTriggerCallback
-    this.contactCallbacks = this.callbackManager.contactCallbacks
-    this.triggerCallbacks = this.callbackManager.triggerCallbacks
+    this.coordinator.initializeCallbacks()
+    this.getContactCallback = this.coordinator.getContactCallback
+    this.getTriggerCallback = this.coordinator.getTriggerCallback
+    this.contactCallbacks = this.coordinator.contactCallbacks
+    this.triggerCallbacks = this.coordinator.triggerCallbacks
 
     this.queries = new PhysicsQueries(this)
-    this.actorManager = new PhysicsActorManager(this)
+    this.coordinator.setQueries(this.queries)
     const events = new PhysicsSimulationEvents(this)
 
     const sceneDesc = new PHYSX.PxSceneDesc(this.tolerances)

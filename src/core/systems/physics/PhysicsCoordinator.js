@@ -1,20 +1,55 @@
 /* Unified physics coordination for actors, callbacks, and interpolation */
 
+import { PhysicsActorManager } from './PhysicsActorManager.js'
+import { PhysicsCallbackManager } from './PhysicsCallbackManager.js'
+import { PhysicsInterpolationManager } from './PhysicsInterpolationManager.js'
+
 export class PhysicsCoordinator {
-  constructor() {
+  constructor(physics) {
+    this.physics = physics
     this.actors = new Map()
     this.callbacks = new Map()
     this.interpolations = new Map()
+    this.actorManager = new PhysicsActorManager(physics)
+    this.callbackManager = new PhysicsCallbackManager()
+    this.interpolationManager = new PhysicsInterpolationManager(physics)
+  }
+
+  initializeCallbacks() {
+    this.callbackManager.initializeCallbacks()
+  }
+
+  get getContactCallback() {
+    return this.callbackManager.getContactCallback
+  }
+
+  get getTriggerCallback() {
+    return this.callbackManager.getTriggerCallback
+  }
+
+  get contactCallbacks() {
+    return this.callbackManager.contactCallbacks
+  }
+
+  get triggerCallbacks() {
+    return this.callbackManager.triggerCallbacks
+  }
+
+  setQueries(queries) {
+    this.queries = queries
+    this.actorManager.setQueries(queries)
   }
 
   registerActor(id, actor) {
     this.actors.set(id, actor)
+    this.actorManager.register(id, actor)
   }
 
   unregisterActor(id) {
     this.actors.delete(id)
     this.callbacks.delete(id)
     this.interpolations.delete(id)
+    this.actorManager.unregister(id)
   }
 
   registerCallback(id, event, callback) {
