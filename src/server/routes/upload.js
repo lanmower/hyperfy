@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import { hashFile } from '../../core/utils.js'
 import { createRateLimiter } from '../middleware/RateLimiter.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('Routes.Upload')
 

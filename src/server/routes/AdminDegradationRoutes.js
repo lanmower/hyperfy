@@ -1,5 +1,5 @@
 import { adminOnlyMiddleware } from '../middleware/authMiddleware.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { APIMethodWrapper } from '../utils/api/APIMethodWrapper.js'
 
 const logger = new ComponentLogger('Routes.Admin.Degradation')

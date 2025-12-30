@@ -1,6 +1,6 @@
 import { addToWhitelist, removeFromWhitelist, addToBlacklist, removeFromBlacklist, getWhitelist, getBlacklist } from '../config/RateLimitConfig.js'
 import { adminOnlyMiddleware } from '../middleware/authMiddleware.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { APIMethodWrapper } from '../utils/api/APIMethodWrapper.js'
 import { getRateLimitStats, clearRateLimitForIP } from '../middleware/RateLimiter.js'
 

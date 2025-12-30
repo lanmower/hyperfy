@@ -1,5 +1,5 @@
 import { performance } from 'perf_hooks'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('Routes.Health')
 

@@ -1,5 +1,5 @@
 import { RATE_LIMIT_PRESETS } from '../config/RateLimitConfig.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('RateLimiter')
 const rateLimitStore = new Map()
