@@ -1,5 +1,6 @@
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { serverNetworkHandlers } from '../config/HandlerRegistry.js'
+import { NetworkCore } from '../network/NetworkCore.js'
 import { FileUploadHandler } from './server/FileUploadHandler.js'
 import { WorldSaveManager } from './server/WorldSaveManager.js'
 import { PlayerConnectionManager } from './server/PlayerConnectionManager.js'
@@ -43,6 +44,7 @@ export class ServerNetwork extends BaseNetwork {
     this.protocol.isConnected = true
     this.protocol.flushTarget = this
     this.compressor = new Compressor()
+    this.core = new NetworkCore()
     this.lifecycleManager = new ServerLifecycleManager(this)
     this.socketManager = new SocketManager(this)
     this.chatManager = new ChatManager(this)
@@ -98,101 +100,41 @@ export class ServerNetwork extends BaseNetwork {
   saveSettings = () => this.worldSaveManager.saveSettings()
 
   async onConnection(ws, params) {
-    return this.playerConnectionManager.onConnection(ws, params)
-  }
-
-  onChatAdded = (socket, msg) => this.chatManager.handleChatAdded(socket, msg)
-
-  onCommand = (socket, args) => this.chatManager.handleCommand(socket, args)
-
-  onModifyRank = (socket, data) => {
-    return this.playerConnectionManager.onModifyRank(socket, data)
-  }
-
-  onKick = (socket, playerId) => {
-    return this.playerConnectionManager.onKick(socket, playerId)
-  }
-
-  onMute = (socket, data) => {
-    return this.playerConnectionManager.onMute(socket, data)
-  }
-
-  onBlueprintAdded = (socket, blueprint) => {
-    return this.builderCommandHandler.onBlueprintAdded(socket, blueprint)
-  }
-
-  onBlueprintModified = (socket, data) => {
-    return this.builderCommandHandler.onBlueprintModified(socket, data)
-  }
-
-  onEntityAdded = (socket, data) => {
-    return this.builderCommandHandler.onEntityAdded(socket, data)
-  }
-
-  onEntityModified = async (socket, data) => {
-    return this.builderCommandHandler.onEntityModified(socket, data)
-  }
-
-  onEntityEvent = (socket, event) => {
-    return this.builderCommandHandler.onEntityEvent(socket, event)
-  }
-
-  onEntityRemoved = (socket, id) => {
-    return this.builderCommandHandler.onEntityRemoved(socket, id)
-  }
-
-  onSettingsModified = (socket, data) => {
-    return this.builderCommandHandler.onSettingsModified(socket, data)
-  }
-
-  onSpawnModified = async (socket, op) => {
-    return this.builderCommandHandler.onSpawnModified(socket, op)
-  }
-
-  onPlayerTeleport = (socket, data) => {
-    return this.playerConnectionManager.onPlayerTeleport(socket, data)
-  }
-
-  onPlayerPush = (socket, data) => {
-    return this.playerConnectionManager.onPlayerPush(socket, data)
-  }
-
-  onPlayerSessionAvatar = (socket, data) => {
-    return this.playerConnectionManager.onPlayerSessionAvatar(socket, data)
-  }
-
-  onPing = (socket, time) => {
-    socket.send('pong', time)
-  }
-
-  onErrorEvent = (socket, errorEvent) => this.errorHandlingService.onErrorEvent(socket, errorEvent)
-
-  onErrorReport = (socket, data) => this.errorHandlingService.onErrorReport(socket, data)
-
-  onClientError = (socket, errorData) => {
-    if (this.errors) {
-      this.errors.receiveClientError({
-        error: errorData.error,
-        clientId: errorData.clientId,
-        context: errorData.context,
-        timestamp: errorData.timestamp
-      })
+    logger.info('Player connecting', { params })
+    const playerId = this.playerConnectionManager.createPlayerId()
+    const connConfig = {
+      id: playerId,
+      ws,
+      params,
+      protocol: this.protocol,
+      handlers: serverNetworkHandlers,
     }
+    return await this.playerConnectionManager.handleConnection(connConfig)
   }
 
-  onMcpSubscribeErrors = (socket, options = {}) => this.errorHandlingService.onMcpSubscribeErrors(socket, options)
+  onDisconnection(playerId) {
+    logger.info('Player disconnecting', { playerId })
+    this.playerConnectionManager.handleDisconnection(playerId)
+  }
 
-  onGetErrors = (socket, options = {}) => this.errorHandlingService.onGetErrors(socket, options)
+  async onMessage(ws, name, data) {
+    await this.socketManager.onMessage(ws, name, data)
+  }
 
-  onClearErrors = (socket) => this.errorHandlingService.onClearErrors(socket)
+  registerSocket(playerId, ws) {
+    this.sockets.set(playerId, ws)
+    this.core.registerSocket(playerId, ws)
+  }
 
-  onFileUpload = (socket, data) => this.fileUploadHandler.onFileUpload(socket, data)
+  unregisterSocket(playerId) {
+    this.sockets.delete(playerId)
+    this.core.unregisterSocket(playerId)
+  }
 
-  onFileUploadCheck = (socket, data) => this.fileUploadHandler.onFileUploadCheck(socket, data)
-
-  onFileUploadStats = (socket) => this.fileUploadHandler.onFileUploadStats(socket)
-
-  onDisconnect = (socket, code) => {
-    return this.playerConnectionManager.onDisconnect(socket, code)
+  destroy() {
+    if (this.socketIntervalId) clearInterval(this.socketIntervalId)
+    this.socketManager?.destroy?.()
+    this.lifecycleManager?.destroy?.()
+    this.core = null
   }
 }

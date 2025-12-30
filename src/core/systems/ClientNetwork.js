@@ -3,6 +3,7 @@ import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
+import { NetworkCore } from '../network/NetworkCore.js'
 import { WebSocketManager } from './network/WebSocketManager.js'
 import { SnapshotProcessor } from './network/SnapshotProcessor.js'
 import { ClientPacketHandlers } from './network/ClientPacketHandlers.js'
@@ -39,6 +40,7 @@ export class ClientNetwork extends BaseNetwork {
     this.protocol.flushTarget = this
     this.assetsUrl = world.assetsUrl
     this.compressor = new Compressor()
+    this.core = new NetworkCore()
     this.wsManager = new WebSocketManager(this)
     this.snapshotProcessor = new SnapshotProcessor(this)
     this.packetHandlers = new ClientPacketHandlers(this)
@@ -48,186 +50,100 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   init({ wsUrl, name, avatar }) {
-    logger.info('init() called', { wsUrl, name, avatar })
     if (!wsUrl) {
-      logger.error('init() ERROR: wsUrl is missing!')
-      this.enterOfflineMode('No WebSocket URL provided')
+      logger.warn('No WebSocket URL provided, running in offline mode', {})
+      this.offlineMode = true
       return
     }
 
-    const capabilities = this.world.capabilities
-    if (capabilities && !capabilities.canUseWebSocket) {
-      logger.warn('WebSocket not available - entering offline mode')
-      this.enterOfflineMode('WebSocket not supported')
-      return
-    }
-
-    this.wsManager.init(wsUrl, name, avatar)
+    this.wsManager.connect(wsUrl, { name, avatar })
   }
 
-  enterOfflineMode(reason) {
-    this.offlineMode = true
-    logger.info(`Offline mode activated: ${reason}`)
-    this.events.emit('offlineMode', { active: true, reason })
+  send(method, data) {
+    if (this.offlineMode) return
+    this.protocol.send(this.wsManager.socket, method, data)
   }
 
-  exitOfflineMode() {
-    this.offlineMode = false
-    logger.info('Offline mode deactivated')
-    this.events.emit('offlineMode', { active: false })
-  }
-
-  send(name, data) {
+  sendReliable(method, data, onAck) {
+    if (this.offlineMode) return
     if (this.offlineMode) {
-      logger.warn('Cannot send in offline mode:', name)
+      onAck?.()
       return
     }
-    const ignore = ['ping']
-    if (!ignore.includes(name) && data.id != this.id) {
-      logger.debug('->', { name, data })
-    }
-    const compressed = this.compressor.compress(data)
-    const packet = MessageHandler.encode(name, compressed)
-    this.wsManager.send(packet)
+    const promise = this.protocol.sendReliable(this.wsManager.socket, method, data)
+    if (onAck) promise.then(onAck)
+    return promise
   }
 
-  async upload(file) {
-    if (!file?.name) throw new Error('Invalid file: missing name property')
+  async uploadFile(file, type) {
     const hash = await hashFile(file)
-    if (!hash) throw new Error('Failed to hash file')
-    const ext = file.name.split('.').pop()?.toLowerCase()
-    if (!ext) throw new Error('Invalid file: missing extension')
+    const isNew = !await this.checkHash(hash)
 
-    const filename = `${hash}.${ext}`
-    const url = `${this.apiUrl}/upload-check?filename=${filename}`
-    const resp = await this.timeoutManager.fetchWithTimeout(url, {}, TimeoutConfig.api.defaultFetchTimeout)
-    if (!resp.ok) throw new Error(`Upload check failed: ${resp.status} ${resp.statusText}`)
-    
-    const data = await resp.json()
-    if (!data || typeof data !== 'object') throw new Error('Upload check returned invalid data')
-    if (data.exists) return
+    if (isNew) {
+      const toBuffer = buf => Buffer.from(buf)
+      const data = new FormData()
+      data.append('file', file)
+      data.append('hash', hash)
+      data.append('type', type)
 
-    const form = new FormData()
-    form.append('file', file)
-    const uploadResp = await this.timeoutManager.fetchWithTimeout(`${this.apiUrl}/upload`, {
-      method: 'POST',
-      body: form,
-    }, 120000)
-    if (!uploadResp.ok) throw new Error(`Upload failed: ${uploadResp.status} ${uploadResp.statusText}`)
+      const response = await fetch(`${this.apiUrl}/upload`, {
+        method: 'POST',
+        body: data,
+      })
+
+      if (!response.ok) {
+        logger.error('Upload failed', { status: response.status, statusText: response.statusText })
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+      }
+    }
+
+    return hash
   }
 
-  onPacket = e => {
-    const [method, compressedData] = MessageHandler.decode(e.data)
-    const data = this.compressor.decompress(compressedData)
-    logger.debug('Packet decoded:', { method, dataSize: data ? JSON.stringify(data).length : 0 })
-    if (method && typeof this[method] === 'function') {
-      logger.debug('Executing:', method)
-      this[method](data)
+  async checkHash(hash) {
+    try {
+      const response = await fetch(`${this.apiUrl}/hash/${hash}`)
+      return response.ok
+    } catch (err) {
+      logger.error('Check hash failed', { error: err.message })
+      return false
     }
   }
 
-  onClose = code => {
-    const codeMsg = code === 1000 ? 'gracefully' : `(code: ${code})`
-    this.chat.add({
-      id: uuid(),
-      from: null,
-      fromId: null,
-      body: `Connection lost. Entering offline mode. Your changes will not be saved.`,
-      createdAt: moment().toISOString(),
-    })
-    this.enterOfflineMode(`Connection closed ${codeMsg}`)
-    this.events.emit('disconnect', code || true)
-    logger.info('disconnect', code)
+  simulateLag(amount) {
+    this.wsManager.simulateLag(amount)
   }
 
-  onReconnect = () => {
-    logger.info('Reconnected to server, clearing stale entities and requesting full snapshot')
-    this.exitOfflineMode()
-    this.clearStaleEntities()
-    this.chat.add({
-      id: uuid(),
-      from: null,
-      fromId: null,
-      body: `Connection restored. Syncing with server...`,
-      createdAt: moment().toISOString(),
-    })
-    this.events.emit('reconnect')
-    this.requestFullSnapshot()
-  }
-
-  clearStaleEntities() {
-    const entities = this.world?.entities
-    if (!entities) return
-
-    const before = entities.items.size
-    const toRemove = []
-
-    entities.items.forEach((entity, id) => {
-      if (entity && typeof entity.destroy === 'function') {
-        toRemove.push(id)
-      }
-    })
-
-    toRemove.forEach(id => {
-      entities.remove(id)
-    })
-
-    logger.info('Cleared stale entities:', { before, after: entities.items.size, removed: toRemove.length })
-  }
-
-  requestFullSnapshot() {
-    this.send('getSnapshot', { force: true })
-  }
-
-  enqueue(method, data) {
-    this.protocol.enqueue(method, data)
+  setServerTime(t) {
+    this.serverTimeOffset = moment.now() - t
   }
 
   getTime() {
-    return (performance.now() + this.serverTimeOffset) / 1000
+    return moment.now() - this.serverTimeOffset
   }
 
-  onSnapshot(data) {
-    logger.info('onSnapshot called', { id: data.id, entityCount: data.entities?.length })
-    this.id = data.id
-    this.serverTimeOffset = data.serverTime - performance.now()
-    this.apiUrl = data.apiUrl
-    this.maxUploadSize = data.maxUploadSize
-    this.assetsUrl = data.assetsUrl
-    this.lastKnownState = data
-    logger.debug('Calling snapshotProcessor.process()')
-    this.snapshotProcessor.process(data)
-    logger.debug('snapshotProcessor.process() completed')
+  onSnapshot = (snapshot) => {
+    this.snapshotProcessor.process(snapshot)
   }
 
-  onSettingsModified = data => this.packetHandlers.handleSettingsModified(data)
-  onChatAdded = msg => this.packetHandlers.handleChatAdded(msg)
-  onChatCleared = () => this.packetHandlers.handleChatCleared()
-  onBlueprintAdded = blueprint => this.packetHandlers.handleBlueprintAdded(blueprint)
-  onBlueprintModified = change => this.packetHandlers.handleBlueprintModified(change)
-  onEntityAdded = data => this.packetHandlers.handleEntityAdded(data)
-  onEntityModified = data => this.packetHandlers.handleEntityModified(data)
-  onEntityEvent = event => this.packetHandlers.handleEntityEvent(event)
-  onEntityRemoved = id => this.packetHandlers.handleEntityRemoved(id)
-  onPlayerTeleport = data => this.packetHandlers.handlePlayerTeleport(data)
-  onPlayerPush = data => this.packetHandlers.handlePlayerPush(data)
-  onPlayerSessionAvatar = data => this.packetHandlers.handlePlayerSessionAvatar(data)
-  onLiveKitLevel = data => this.packetHandlers.handleLiveKitLevel(data)
-  onMute = data => this.packetHandlers.handleMute(data)
-  onPong = time => this.packetHandlers.handlePong(time)
-  onKick = code => this.packetHandlers.handleKick(code)
-  onHotReload = data => this.packetHandlers.handleHotReload(data)
-  onErrors = data => this.packetHandlers.handleErrors(data)
-
-  requestErrors(options = {}) {
-    this.send('getErrors', options)
+  onMessage = (data) => {
+    this.packetHandlers.handle(data)
   }
 
-  clearErrors() {
-    this.send('clearErrors')
+  onConnect = () => {
+    logger.info('Connected to server', { id: this.id })
+  }
+
+  onDisconnect = () => {
+    logger.info('Disconnected from server', {})
+  }
+
+  onError = (error) => {
+    logger.error('Network error', { error: error.message })
   }
 
   destroy() {
-    this.wsManager.destroy()
+    this.wsManager.disconnect()
+    this.core = null
   }
 }
