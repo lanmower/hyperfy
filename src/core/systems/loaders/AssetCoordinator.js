@@ -1,15 +1,48 @@
 /* Unified asset coordination for loading, caching, fallback, and URL resolution */
 
+import { FileManager } from './FileManager.js'
+import { FallbackManager } from './FallbackManager.js'
+
 export class AssetCoordinator {
-  constructor() {
+  constructor(resolveURL) {
     this.cache = new Map()
     this.loaders = new Map()
     this.fallbacks = []
     this.maxCacheSize = 1000
+    this.fileManager = new FileManager(resolveURL)
+    this.fallbackManager = new FallbackManager()
+  }
+
+  setFile(url, file) {
+    this.fileManager.set(url, file)
+  }
+
+  hasFile(url) {
+    return this.fileManager.has(url)
+  }
+
+  getFile(url, name) {
+    return this.fileManager.get(url, name)
   }
 
   registerLoader(type, loader) {
     this.loaders.set(type, loader)
+  }
+
+  addFallback(fn) {
+    this.fallbacks.push(fn)
+  }
+
+  getFallback(type, url, err) {
+    return this.fallbackManager.getFallback(type, url, err)
+  }
+
+  getUsageLog() {
+    return this.fallbackManager.getUsageLog()
+  }
+
+  async loadFile(url) {
+    return this.fileManager.load(url)
   }
 
   async load(url, type) {
@@ -36,10 +69,6 @@ export class AssetCoordinator {
     }
   }
 
-  addFallback(fn) {
-    this.fallbacks.push(fn)
-  }
-
   pruneCache() {
     if (this.cache.size > this.maxCacheSize) {
       const entries = Array.from(this.cache.entries())
@@ -51,5 +80,6 @@ export class AssetCoordinator {
 
   clear() {
     this.cache.clear()
+    this.fileManager.clear()
   }
 }

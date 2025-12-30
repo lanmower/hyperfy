@@ -13,8 +13,7 @@ import { hasRank, Ranks } from '../extras/ranks.js'
 import { PhysicsConfig } from '../config/SystemConfig.js'
 import { Modes } from '../constants/AnimationModes.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
-import { PlayerCameraManager } from './player/PlayerCameraManager.js'
-import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
+import { PlayerController } from './player/PlayerController.js'
 import { PlayerChatBubble } from './player/PlayerChatBubble.js'
 import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
 import { AnimationController } from './player/AnimationController.js'
@@ -23,9 +22,7 @@ import { PlayerTeleportHandler } from './player/PlayerTeleportHandler.js'
 import { PlayerModifyHandler } from './player/PlayerModifyHandler.js'
 import { PlayerControlBinder } from './player/PlayerControlBinder.js'
 import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
-import { TransformSyncManager } from './player/TransformSyncManager.js'
 import { EVENT } from '../constants/EventNames.js'
-import { POINTER_LOOK_SPEED, PAN_LOOK_SPEED, ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM } from './player/CameraConstants.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
@@ -104,8 +101,7 @@ export class PlayerLocal extends BaseEntity {
       this.avatar = null
       this.avatarUrl = null
 
-      this.cam = new PlayerCameraManager(this, this.base)
-      this.avatarManager = new PlayerAvatarManager(this)
+      this.controller = new PlayerController(this)
       this.chatBubble = new PlayerChatBubble(this)
       this.inputProcessor = new PlayerInputProcessor(this)
       this.animationController = new AnimationController(this)
@@ -124,7 +120,7 @@ export class PlayerLocal extends BaseEntity {
 
       if (this.world.loader) {
         logger.info('Applying avatar')
-        await this.avatarManager.applyAvatar()
+        await this.controller.applyAvatar()
         logger.info('Avatar applied')
       } else {
         logger.info('Loader not available, skipping avatar')
@@ -136,9 +132,6 @@ export class PlayerLocal extends BaseEntity {
 
       this.controlBinder.initControl()
       logger.info('Control binding initialized')
-
-      this.transformSync = new TransformSyncManager(this)
-      logger.info('Transform sync manager initialized')
 
       this.world.setHot(this, true)
       logger.info('Player marked as hot, emitting ready event')
@@ -152,8 +145,8 @@ export class PlayerLocal extends BaseEntity {
     }
   }
 
-  getAvatarUrl() { return this.avatarManager.getAvatarUrl() }
-  async applyAvatar() { return this.avatarManager.applyAvatar() }
+  getAvatarUrl() { return this.controller.getAvatarUrl() }
+  async applyAvatar() { return this.controller.applyAvatar() }
 
   initCapsule() {
     const { capsule, capsuleHandle, material } = this.capsuleFactory.createCapsule(this)
@@ -164,6 +157,10 @@ export class PlayerLocal extends BaseEntity {
       this.physics = new PlayerPhysics(this.world, this)
     }
   }
+
+  get cam() { return this.controller.camera }
+  get camHeight() { return this.controller.camera.camHeight }
+  set camHeight(value) { this.controller.camera.camHeight = value }
 
   get stick() { return this.controlBinder.stick }
   set stick(value) { this.controlBinder.stick = value }
@@ -268,7 +265,7 @@ export class PlayerLocal extends BaseEntity {
       window.__DEBUG__.cameraZoom = this.control.camera.zoom
     }
 
-    this.transformSync?.sync()
+    this.controller.syncTransform()
   }
 
   teleport({ position, rotationY }) { this.teleportHandler.teleport({ position, rotationY }) }
@@ -296,14 +293,15 @@ export class PlayerLocal extends BaseEntity {
     this.modifyHandler.modify({ name })
     this.world.network.send('entityModified', { id: this.data.id, name })
   }
-  setSessionAvatar(avatar) { return this.avatarManager.setSessionAvatar(avatar) }
+  setSessionAvatar(avatar) { return this.controller.setSessionAvatar(avatar) }
   chat(msg) { return this.chatBubble.chat(msg) }
   modify(data) { this.modifyHandler.modify(data) }
 
   destroy(local) {
-    if (this.transformSync) {
-      this.transformSync.clear()
-      this.transformSync = null
+    if (this.controller) {
+      this.controller.clear()
+      this.controller.destroy()
+      this.controller = null
     }
 
     if (this.avatar?.destroy) {
@@ -363,8 +361,6 @@ export class PlayerLocal extends BaseEntity {
     this.avatarUrl = null
 
     this.physics = null
-    this.cam = null
-    this.avatarManager = null
     this.chatBubble = null
     this.inputProcessor = null
     this.animationController = null

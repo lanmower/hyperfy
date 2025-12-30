@@ -3,8 +3,7 @@ import { VRMLoaderPlugin } from '@pixiv/three-vrm'
 
 import { BaseLoader } from './BaseLoader.js'
 import { AssetHandlers } from './loaders/AssetHandlers.js'
-import { FileManager } from './loaders/FileManager.js'
-import { FallbackManager } from './loaders/FallbackManager.js'
+import { AssetCoordinator } from './loaders/AssetCoordinator.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('ClientLoader')
@@ -24,9 +23,8 @@ export class ClientLoader extends BaseLoader {
     this.isServer = false
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(parser => new VRMLoaderPlugin(parser))
-    this.fileManager = new FileManager(world.resolveURL.bind(world))
+    this.coordinator = new AssetCoordinator(world.resolveURL.bind(world))
     this.assetHandlers = new AssetHandlers(this, world)
-    this.fallbackManager = new FallbackManager()
   }
 
   start() {
@@ -61,9 +59,9 @@ export class ClientLoader extends BaseLoader {
     }
   }
 
-  setFile(url, file) { this.fileManager.set(url, file) }
-  hasFile(url) { return this.fileManager.has(url) }
-  getFile(url, name) { return this.fileManager.get(url, name) }
+  setFile(url, file) { this.coordinator.setFile(url, file) }
+  hasFile(url) { return this.coordinator.hasFile(url) }
+  getFile(url, name) { return this.coordinator.getFile(url, name) }
 
   async load(type, url) {
     try {
@@ -74,10 +72,10 @@ export class ClientLoader extends BaseLoader {
       let file = null
       if (type !== 'video') {
         try {
-          file = await this.fileManager.load(url)
+          file = await this.coordinator.loadFile(url)
         } catch (fileErr) {
           logger.error('Error loading file', { url, error: fileErr.message })
-          const fallback = this.fallbackManager.getFallback(type, url, fileErr)
+          const fallback = this.coordinator.getFallback(type, url, fileErr)
           if (fallback) {
             this.results.set(key, fallback)
             return fallback
@@ -89,7 +87,7 @@ export class ClientLoader extends BaseLoader {
       const promise = this.assetHandlers.handle(type, url, file, key)
       if (!promise) {
         logger.warn('No handler for asset type', { type })
-        const fallback = this.fallbackManager.getFallback(type, url, new Error('No handler'))
+        const fallback = this.coordinator.getFallback(type, url, new Error('No handler'))
         if (fallback) {
           this.results.set(key, fallback)
           return fallback
@@ -101,7 +99,7 @@ export class ClientLoader extends BaseLoader {
       return result
     } catch (err) {
       logger.error('Error loading asset', { type, url, error: err.message })
-      const fallback = this.fallbackManager.getFallback(type, url, err)
+      const fallback = this.coordinator.getFallback(type, url, err)
       if (fallback) {
         const key = `${type}/${url}`
         this.results.set(key, fallback)
@@ -130,11 +128,11 @@ export class ClientLoader extends BaseLoader {
   }
 
   getFallbackLog() {
-    return this.fallbackManager.getUsageLog()
+    return this.coordinator.getUsageLog()
   }
 
   destroy() {
-    this.fileManager.clear()
+    this.coordinator.clear()
     this.promises.clear()
     this.results.clear()
     this.preloadItems = []

@@ -1,50 +1,48 @@
 /* Unified player management coordinator consolidating avatar, camera, UI, and transform sync */
 
+import { PlayerCameraManager } from './PlayerCameraManager.js'
+import { PlayerAvatarManager } from './PlayerAvatarManager.js'
+import { TransformSyncManager } from './TransformSyncManager.js'
+
 export class PlayerController {
   constructor(player) {
     this.player = player
-    this.avatar = null
-    this.camera = null
-    this.ui = null
-    this.transformSync = null
+    this.avatar = new PlayerAvatarManager(player)
+    this.camera = new PlayerCameraManager(player, player.base)
+    this.transformSync = new TransformSyncManager(player)
   }
 
-  setAvatarManager(avatar) {
-    this.avatar = avatar
+  getAvatarUrl() {
+    return this.avatar.getAvatarUrl()
   }
 
-  setCameraManager(camera) {
-    this.camera = camera
+  async applyAvatar() {
+    return this.avatar.applyAvatar()
   }
 
-  setUIManager(ui) {
-    this.ui = ui
+  setSessionAvatar(avatar) {
+    return this.avatar.setSessionAvatar(avatar)
   }
 
-  setTransformSync(sync) {
-    this.transformSync = sync
+  updateCameraForAvatar(avatar) {
+    this.camera.updateForAvatar(avatar)
   }
 
-  updateAvatar(data) {
-    if (this.avatar) this.avatar.update(data)
-  }
-
-  updateCamera(position, quaternion) {
-    if (this.camera) this.camera.update(position, quaternion)
-  }
-
-  updateUI(state) {
-    if (this.ui) this.ui.update(state)
+  updateCameraLook(delta, isXR, control, pan) {
+    this.camera.updateLook(delta, isXR, control, pan)
   }
 
   syncTransform() {
-    if (this.transformSync) this.transformSync.sync()
+    this.transformSync.sync()
+  }
+
+  clear() {
+    this.transformSync.clear()
   }
 
   destroy() {
     this.avatar = null
     this.camera = null
-    this.ui = null
     this.transformSync = null
   }
 }
