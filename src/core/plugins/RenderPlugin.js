@@ -1,5 +1,5 @@
 import { Plugin } from './Plugin.js'
-import { RenderHelper } from './core/RenderHelper.js'
+import { RenderHelper } from '../utils/helpers/Helpers.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('RenderPlugin')

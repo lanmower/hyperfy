@@ -9,7 +9,9 @@ import { VideoRenderer } from './video/VideoRenderer.js'
 import { VideoAudioController } from './video/VideoAudioController.js'
 import { VideoInstanceManager } from './video/VideoInstanceManager.js'
 import { createVideoMaterialProxy } from './video/VideoMaterialProxy.js'
-import { isDistanceModel, isGroup, isFit, isPivot, applyPivot } from './video/VideoHelpers.js'
+import { isDistanceModel, isGroup, isFit, isPivot } from '../validation/TypeValidators.js'
+import { VideoHelper } from '../utils/helpers/Helpers.js'
+const { applyPivot } = VideoHelper
 
 const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'color', 'lit', 'doubleside', 'castShadow', 'receiveShadow', 'aspect', 'fit', 'width', 'height', 'pivot', 'volume', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
   .overrideAll({

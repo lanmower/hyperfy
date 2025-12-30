@@ -1,5 +1,5 @@
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
-import { FileUploadValidator } from '../../security/FileUploadValidator.js'
+import { FileUploadValidator } from '../../validation/Validators.js'
 
 const logger = new ComponentLogger('FileUploadHandler')
 

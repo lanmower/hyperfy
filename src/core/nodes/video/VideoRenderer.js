@@ -1,6 +1,6 @@
 import * as THREE from '../../extras/three.js'
 import CustomShaderMaterial from '../../libs/three-custom-shader-material/index.js'
-import { applyPivot } from './VideoHelpers.js'
+import { VideoHelper } from '../../utils/helpers/Helpers.js'
 
 export class VideoRenderer {
   constructor(video) {
@@ -100,7 +100,7 @@ export class VideoRenderer {
     const geometry = new THREE.PlaneGeometry(width, height)
     geometry._oWidth = width
     geometry._oHeight = height
-    applyPivot(geometry, width, height, pivot)
+    VideoHelper.applyPivot(geometry, width, height, pivot)
     return geometry
   }
 
@@ -131,7 +131,7 @@ export class VideoRenderer {
       }
       if (currentGeometry._oWidth !== width || currentGeometry._oHeight !== height) {
         const newGeometry = new THREE.PlaneGeometry(width, height)
-        applyPivot(newGeometry, width, height, pivot)
+        VideoHelper.applyPivot(newGeometry, width, height, pivot)
         if (this.video.mesh) {
           this.video.mesh.geometry = newGeometry
         }

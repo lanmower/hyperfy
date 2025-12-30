@@ -2,7 +2,8 @@ import * as THREE from '../../extras/three.js'
 import { fillRoundRect } from '../../extras/roundRect.js'
 import { borderRoundRect } from '../../extras/borderRoundRect.js'
 import Yoga from 'yoga-layout'
-import { pivotGeometry, getPivotOffset, pivotCanvas } from './UIHelpers.js'
+import { UIHelper } from '../../utils/helpers/Helpers.js'
+const { pivotGeometry, getPivotOffset, pivotCanvas } = UIHelper
 
 export class UIRenderer {
   constructor(ui) {

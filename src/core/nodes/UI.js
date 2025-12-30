@@ -17,7 +17,9 @@ import {
   isJustifyContent,
 } from '../extras/yoga.js'
 import { UIRenderer } from './ui/UIRenderer.js'
-import { getPivotOffset, isBillboard, isPivot, isSpace, isEdge, isScaler } from './ui/UIHelpers.js'
+import { isBillboard, isPivot, isSpace, isEdge, isScaler } from '../validation/TypeValidators.js'
+import { UIHelper } from '../utils/helpers/Helpers.js'
+const { getPivotOffset } = UIHelper
 import { UILayoutManager } from './ui/UILayoutManager.js'
 import { UIBillboardController } from './ui/UIBillboardController.js'
 

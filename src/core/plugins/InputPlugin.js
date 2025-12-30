@@ -1,5 +1,5 @@
 import { Plugin } from './Plugin.js'
-import { InputHelper } from './core/InputHelper.js'
+import { InputHelper } from '../utils/helpers/Helpers.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('InputPlugin')

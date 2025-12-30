@@ -1,6 +1,6 @@
 import { MessageHandler } from '../../plugins/core/MessageHandler.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
-import { WebSocketValidator } from '../../security/WebSocketValidator.js'
+import { WebSocketValidator } from '../../validation/Validators.js'
 
 const logger = new ComponentLogger('SocketManager')
 
