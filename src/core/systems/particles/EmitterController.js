@@ -1,5 +1,6 @@
 import * as THREE from '../../extras/three.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
+import { PARTICLE_ATTRIBUTES } from './ParticleGeometryBuilder.js'
 
 const { v1, v2 } = SharedVectorPool('EmitterController', 2)
 const arr1 = []
@@ -32,42 +33,13 @@ export class EmitterController {
   onMessage(msg) {
     if (msg.op === 'update') {
       const n = msg.n
-      const { aPosition, aRotation, aDirection, aSize, aColor, aAlpha, aEmissive, aUV } = this.attributes
-
-      this.next.aPosition = aPosition.array
-      this.next.aRotation = aRotation.array
-      this.next.aDirection = aDirection.array
-      this.next.aSize = aSize.array
-      this.next.aColor = aColor.array
-      this.next.aAlpha = aAlpha.array
-      this.next.aEmissive = aEmissive.array
-      this.next.aUV = aUV.array
-
-      aPosition.array = msg.aPosition
-      aPosition.addUpdateRange(0, n * 3)
-      aPosition.needsUpdate = true
-      aRotation.array = msg.aRotation
-      aRotation.addUpdateRange(0, n * 1)
-      aRotation.needsUpdate = true
-      aDirection.array = msg.aDirection
-      aDirection.addUpdateRange(0, n * 3)
-      aDirection.needsUpdate = true
-      aSize.array = msg.aSize
-      aSize.addUpdateRange(0, n * 1)
-      aSize.needsUpdate = true
-      aColor.array = msg.aColor
-      aColor.addUpdateRange(0, n * 3)
-      aColor.needsUpdate = true
-      aAlpha.array = msg.aAlpha
-      aAlpha.addUpdateRange(0, n * 1)
-      aAlpha.needsUpdate = true
-      aEmissive.array = msg.aEmissive
-      aEmissive.addUpdateRange(0, n * 1)
-      aEmissive.needsUpdate = true
-      aUV.array = msg.aUV
-      aUV.addUpdateRange(0, n * 4)
-      aUV.needsUpdate = true
-
+      for (const [name, size] of Object.entries(PARTICLE_ATTRIBUTES)) {
+        const attr = this.attributes[name]
+        this.next[name] = attr.array
+        attr.array = msg[name]
+        attr.addUpdateRange(0, n * size)
+        attr.needsUpdate = true
+      }
       this.mesh.count = n
       this.pending = false
     }
@@ -88,41 +60,20 @@ export class EmitterController {
     } else {
       delta += this.skippedDelta
       this.skippedDelta = 0
-      const aPosition = this.next.aPosition
-      const aRotation = this.next.aRotation
-      const aDirection = this.next.aDirection
-      const aSize = this.next.aSize
-      const aColor = this.next.aColor
-      const aAlpha = this.next.aAlpha
-      const aEmissive = this.next.aEmissive
-      const aUV = this.next.aUV
+      const msgData = {
+        op: 'update',
+        delta,
+        camPosition: camPosition.toArray(arr1),
+        matrixWorld: this.matrixWorld.toArray(arr2),
+      }
+      const transfers = []
+      for (const name of Object.keys(PARTICLE_ATTRIBUTES)) {
+        const array = this.next[name]
+        msgData[name] = array
+        transfers.push(array.buffer)
+      }
       this.pending = true
-      this.send(
-        {
-          op: 'update',
-          delta,
-          camPosition: camPosition.toArray(arr1),
-          matrixWorld: this.matrixWorld.toArray(arr2),
-          aPosition,
-          aRotation,
-          aDirection,
-          aSize,
-          aColor,
-          aAlpha,
-          aEmissive,
-          aUV,
-        },
-        [
-          aPosition.buffer,
-          aRotation.buffer,
-          aDirection.buffer,
-          aSize.buffer,
-          aColor.buffer,
-          aAlpha.buffer,
-          aEmissive.buffer,
-          aUV.buffer,
-        ]
-      )
+      this.send(msgData, transfers)
     }
   }
 

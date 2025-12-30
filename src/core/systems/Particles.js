@@ -53,7 +53,6 @@ export class Particles extends System {
     const id = uuid()
     const config = node.getConfig()
     const { geometry, attributes } = ParticleGeometryBuilder.create(node._max)
-    const { aPosition, aRotation, aDirection, aSize, aColor, aAlpha, aEmissive, aUV } = attributes
     const next = ParticleGeometryBuilder.createNextBuffers(node._max)
     const uniforms = {
       uTexture: { value: new THREE.Texture() },

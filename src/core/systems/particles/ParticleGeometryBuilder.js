@@ -1,18 +1,8 @@
-import * as THREE from '../../extras/three.js'
-
-export class ParticleGeometryBuilder {
+$1\n\nexport const PARTICLE_ATTRIBUTES = {\n  aPosition: 3,\n  aRotation: 1,\n  aDirection: 3,\n  aSize: 1,\n  aColor: 3,\n  aAlpha: 1,\n  aEmissive: 1,\n  aUV: 4,\n}\n\nexport class ParticleGeometryBuilder {
   static create(maxParticles) {
     const geometry = new THREE.PlaneGeometry(1, 1)
 
-    const attributes = {
-      aPosition: { size: 3, stride: maxParticles * 3 },
-      aRotation: { size: 1, stride: maxParticles * 1 },
-      aDirection: { size: 3, stride: maxParticles * 3 },
-      aSize: { size: 1, stride: maxParticles * 1 },
-      aColor: { size: 3, stride: maxParticles * 3 },
-      aAlpha: { size: 1, stride: maxParticles * 1 },
-      aEmissive: { size: 1, stride: maxParticles * 1 },
-      aUV: { size: 4, stride: maxParticles * 4 },
+    const attributes = Object.fromEntries(\n      Object.entries(PARTICLE_ATTRIBUTES).map(([name, size]) => [\n        name,\n        { size, stride: maxParticles * size }\n      ])\n    ),
     }
 
     const buffers = {}
