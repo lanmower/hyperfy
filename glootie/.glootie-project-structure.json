@@ -631,6 +631,7 @@
       "db.js",
       "db.js.bak",
       "ServerDebugAPI.js",
+      "ServerDebugHelpers.js",
       "index_patch.txt",
       "IntegrationUtils.js",
       "Logger.js",
@@ -644,6 +645,10 @@
       "DegradationStrategies.js",
       "ShutdownManager.js",
       "admin.js",
+      "AdminCircuitBreakerRoutes.js",
+      "AdminCorsRoutes.js",
+      "AdminDegradationRoutes.js",
+      "AdminRateLimitRoutes.js",
       "health.js",
       "upload.js",
       "ScriptValidator.js",
@@ -734,5 +739,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767117836590
+  "lastAnalyzed": 1767118256311
 }
