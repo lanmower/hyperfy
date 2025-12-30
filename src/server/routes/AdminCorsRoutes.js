@@ -1,59 +1,40 @@
-import { adminOnlyMiddleware } from '../middleware/authMiddleware.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
-import { APIMethodWrapper } from '../utils/api/APIMethodWrapper.js'
+/* AdminCorsRoutes: Admin endpoints for CORS configuration */
+import { AdminRouteBuilder } from '../utils/api/AdminRouteBuilder.js'
 
-const logger = new ComponentLogger('Routes.Admin.Cors')
+const builder = new AdminRouteBuilder('Routes.Admin.Cors')
 
 export function registerAdminCorsRoutes(fastify) {
-  fastify.get('/api/admin/cors', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
-        logger.info('Get CORS config')
-        return reply.code(200).send({
-          success: true,
-          config: fastify.corsConfig.getConfig(),
-          stats: fastify.corsConfig.getStats(),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to get CORS config' }
-    )
-  })
+  builder.createGetRoute(fastify, '/api/admin/cors', async (request, reply, fastify) => {
+    if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
+    builder.logInfo('Get CORS config')
+    return reply.code(200).send({
+      success: true,
+      config: fastify.corsConfig.getConfig(),
+      stats: fastify.corsConfig.getStats(),
+    })
+  }, 'get CORS config')
 
-  fastify.post('/api/admin/cors/origin', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { origin } = req.body
-        if (!origin) return reply.code(400).send({ error: 'Origin is required' })
-        if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
-        logger.info('Add CORS origin', { origin })
-        return reply.code(200).send({
-          success: true,
-          origin,
-          added: fastify.corsConfig.addOrigin(origin),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to add CORS origin' }
-    )
-  })
+  builder.createPostRoute(fastify, '/api/admin/cors/origin', async (request, reply, fastify) => {
+    const { origin } = request.body
+    if (!origin) return reply.code(400).send({ error: 'Origin is required' })
+    if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
+    builder.logInfo('Add CORS origin', { origin })
+    return reply.code(200).send({
+      success: true,
+      origin,
+      added: fastify.corsConfig.addOrigin(origin),
+    })
+  }, 'add CORS origin')
 
-  fastify.delete('/api/admin/cors/origin', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { origin } = req.body
-        if (!origin) return reply.code(400).send({ error: 'Origin is required' })
-        if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
-        logger.info('Remove CORS origin', { origin })
-        return reply.code(200).send({
-          success: true,
-          origin,
-          removed: fastify.corsConfig.removeOrigin(origin),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to remove CORS origin' }
-    )
-  })
+  builder.createDeleteRoute(fastify, '/api/admin/cors/origin', async (request, reply, fastify) => {
+    const { origin } = request.body
+    if (!origin) return reply.code(400).send({ error: 'Origin is required' })
+    if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
+    builder.logInfo('Remove CORS origin', { origin })
+    return reply.code(200).send({
+      success: true,
+      origin,
+      removed: fastify.corsConfig.removeOrigin(origin),
+    })
+  }, 'remove CORS origin')
 }

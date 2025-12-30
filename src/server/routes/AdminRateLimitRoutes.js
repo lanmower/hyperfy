@@ -1,107 +1,70 @@
+/* AdminRateLimitRoutes: Admin endpoints for rate limit management */
 import { addToWhitelist, removeFromWhitelist, addToBlacklist, removeFromBlacklist, getWhitelist, getBlacklist } from '../config/RateLimitConfig.js'
-import { adminOnlyMiddleware } from '../middleware/authMiddleware.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
-import { APIMethodWrapper } from '../utils/api/APIMethodWrapper.js'
+import { AdminRouteBuilder } from '../utils/api/AdminRouteBuilder.js'
 import { getRateLimitStats, clearRateLimitForIP } from '../middleware/RateLimiter.js'
 
-const logger = new ComponentLogger('Routes.Admin.RateLimit')
+const builder = new AdminRouteBuilder('Routes.Admin.RateLimit')
 
 export function registerAdminRateLimitRoutes(fastify) {
-  fastify.get('/api/admin/rate-limits', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        logger.info('Get rate limit stats')
-        return reply.code(200).send({
-          success: true,
-          stats: getRateLimitStats(),
-          whitelist: getWhitelist(),
-          blacklist: getBlacklist(),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to get rate limit stats' }
-    )
-  })
+  builder.createGetRoute(fastify, '/api/admin/rate-limits', async (request, reply, fastify) => {
+    builder.logInfo('Get rate limit stats')
+    return reply.code(200).send({
+      success: true,
+      stats: getRateLimitStats(),
+      whitelist: getWhitelist(),
+      blacklist: getBlacklist(),
+    })
+  }, 'get rate limit stats')
 
-  fastify.post('/api/admin/rate-limits/clear/:ip', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { ip } = req.params
-        logger.info('Clear rate limit', { ip })
-        return reply.code(200).send({
-          success: true,
-          ip,
-          cleared: clearRateLimitForIP(ip),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to clear rate limit' }
-    )
-  })
+  builder.createPostRoute(fastify, '/api/admin/rate-limits/clear/:ip', async (request, reply, fastify) => {
+    const { ip } = request.params
+    builder.logInfo('Clear rate limit', { ip })
+    return reply.code(200).send({
+      success: true,
+      ip,
+      cleared: clearRateLimitForIP(ip),
+    })
+  }, 'clear rate limit')
 
-  fastify.post('/api/admin/rate-limits/whitelist', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { ip } = req.body
-        if (!ip) return reply.code(400).send({ error: 'IP address required' })
-        logger.info('Add to whitelist', { ip })
-        return reply.code(200).send({
-          success: true,
-          ip,
-          added: addToWhitelist(ip),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to add to whitelist' }
-    )
-  })
+  builder.createPostRoute(fastify, '/api/admin/rate-limits/whitelist', async (request, reply, fastify) => {
+    const { ip } = request.body
+    if (!ip) return reply.code(400).send({ error: 'IP address required' })
+    builder.logInfo('Add to whitelist', { ip })
+    return reply.code(200).send({
+      success: true,
+      ip,
+      added: addToWhitelist(ip),
+    })
+  }, 'add to whitelist')
 
-  fastify.delete('/api/admin/rate-limits/whitelist/:ip', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { ip } = req.params
-        logger.info('Remove from whitelist', { ip })
-        return reply.code(200).send({
-          success: true,
-          ip,
-          removed: removeFromWhitelist(ip),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to remove from whitelist' }
-    )
-  })
+  builder.createDeleteRoute(fastify, '/api/admin/rate-limits/whitelist/:ip', async (request, reply, fastify) => {
+    const { ip } = request.params
+    builder.logInfo('Remove from whitelist', { ip })
+    return reply.code(200).send({
+      success: true,
+      ip,
+      removed: removeFromWhitelist(ip),
+    })
+  }, 'remove from whitelist')
 
-  fastify.post('/api/admin/rate-limits/blacklist', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { ip } = req.body
-        if (!ip) return reply.code(400).send({ error: 'IP address required' })
-        logger.info('Add to blacklist', { ip })
-        return reply.code(200).send({
-          success: true,
-          ip,
-          added: addToBlacklist(ip),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to add to blacklist' }
-    )
-  })
+  builder.createPostRoute(fastify, '/api/admin/rate-limits/blacklist', async (request, reply, fastify) => {
+    const { ip } = request.body
+    if (!ip) return reply.code(400).send({ error: 'IP address required' })
+    builder.logInfo('Add to blacklist', { ip })
+    return reply.code(200).send({
+      success: true,
+      ip,
+      added: addToBlacklist(ip),
+    })
+  }, 'add to blacklist')
 
-  fastify.delete('/api/admin/rate-limits/blacklist/:ip', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { ip } = req.params
-        logger.info('Remove from blacklist', { ip })
-        return reply.code(200).send({
-          success: true,
-          ip,
-          removed: removeFromBlacklist(ip),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to remove from blacklist' }
-    )
-  })
+  builder.createDeleteRoute(fastify, '/api/admin/rate-limits/blacklist/:ip', async (request, reply, fastify) => {
+    const { ip } = request.params
+    builder.logInfo('Remove from blacklist', { ip })
+    return reply.code(200).send({
+      success: true,
+      ip,
+      removed: removeFromBlacklist(ip),
+    })
+  }, 'remove from blacklist')
 }

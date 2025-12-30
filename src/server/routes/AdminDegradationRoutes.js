@@ -1,57 +1,38 @@
-import { adminOnlyMiddleware } from '../middleware/authMiddleware.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
-import { APIMethodWrapper } from '../utils/api/APIMethodWrapper.js'
+/* AdminDegradationRoutes: Admin endpoints for service degradation management */
+import { AdminRouteBuilder } from '../utils/api/AdminRouteBuilder.js'
 
-const logger = new ComponentLogger('Routes.Admin.Degradation')
+const builder = new AdminRouteBuilder('Routes.Admin.Degradation')
 
 export function registerAdminDegradationRoutes(fastify) {
-  fastify.get('/api/admin/degradation', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
-        logger.info('Get degradation status')
-        return reply.code(200).send({
-          success: true,
-          ...fastify.degradationManager.getAllStatus(),
-          stats: fastify.degradationManager.getStats(),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to get degradation status' }
-    )
-  })
+  builder.createGetRoute(fastify, '/api/admin/degradation', async (request, reply, fastify) => {
+    if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
+    builder.logInfo('Get degradation status')
+    return reply.code(200).send({
+      success: true,
+      ...fastify.degradationManager.getAllStatus(),
+      stats: fastify.degradationManager.getStats(),
+    })
+  }, 'get degradation status')
 
-  fastify.get('/api/admin/degradation/:service', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { service } = req.params
-        if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
-        logger.info('Get service degradation status', { service })
-        return reply.code(200).send({
-          success: true,
-          service: fastify.degradationManager.getServiceStatus(service),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to get service degradation status' }
-    )
-  })
+  builder.createGetRoute(fastify, '/api/admin/degradation/:service', async (request, reply, fastify) => {
+    const { service } = request.params
+    if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
+    builder.logInfo('Get service degradation status', { service })
+    return reply.code(200).send({
+      success: true,
+      service: fastify.degradationManager.getServiceStatus(service),
+    })
+  }, 'get service degradation status')
 
-  fastify.post('/api/admin/degradation/force-mode', { preHandler: adminOnlyMiddleware }, async (req, reply) => {
-    return await APIMethodWrapper.wrapFastifyMethod(
-      async () => {
-        const { mode, reason } = req.body
-        if (!mode) return reply.code(400).send({ error: 'Mode is required' })
-        if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
-        logger.info('Force degradation mode', { mode })
-        return reply.code(200).send({
-          success: true,
-          ...fastify.degradationManager.forceMode(mode, reason || 'Admin override'),
-          status: fastify.degradationManager.getAllStatus(),
-        })
-      },
-      reply,
-      { logger, defaultStatusCode: 500, defaultMessage: 'Failed to force degradation mode' }
-    )
-  })
+  builder.createPostRoute(fastify, '/api/admin/degradation/force-mode', async (request, reply, fastify) => {
+    const { mode, reason } = request.body
+    if (!mode) return reply.code(400).send({ error: 'Mode is required' })
+    if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
+    builder.logInfo('Force degradation mode', { mode })
+    return reply.code(200).send({
+      success: true,
+      ...fastify.degradationManager.forceMode(mode, reason || 'Admin override'),
+      status: fastify.degradationManager.getAllStatus(),
+    })
+  }, 'force degradation mode')
 }
