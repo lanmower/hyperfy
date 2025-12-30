@@ -1,10 +1,11 @@
-import fp from 'fastify-plugin'
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { createFastifyPlugin } from './PluginFactory.js'
+import { ErrorResponses } from './ErrorResponses.js'
 
 const logger = new ComponentLogger('TimeoutMiddleware')
 
 export function createTimeoutMiddleware(timeoutManager) {
-  async function timeoutMiddleware(fastify, opts) {
+  async function timeoutMiddleware(fastify) {
     fastify.addHook('onRequest', async (request, reply) => {
       const timeout = timeoutManager.getTimeout('http')
       const path = request.url
@@ -13,11 +14,7 @@ export function createTimeoutMiddleware(timeoutManager) {
         if (!reply.sent) {
           timeoutManager.recordTimeout('http', path)
           logger.error('HTTP request timeout', { method: request.method, path, timeout })
-          reply.code(408).send({
-            error: 'Request timeout',
-            message: `Request exceeded ${timeout}ms timeout`,
-            path,
-          })
+          reply.code(408).send(ErrorResponses.timeout(timeout, path, request.method))
         }
       }, timeout)
     })
@@ -37,8 +34,5 @@ export function createTimeoutMiddleware(timeoutManager) {
     })
   }
 
-  return fp(timeoutMiddleware, {
-    name: 'timeout-middleware',
-    fastify: '>=4.x',
-  })
+  return createFastifyPlugin(timeoutMiddleware, 'timeout-middleware')
 }

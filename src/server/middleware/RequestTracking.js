@@ -1,8 +1,9 @@
 import { nanoid } from 'nanoid'
 import { ErrorResponse } from '../utils/errors/index.js'
+import { createFastifyPlugin } from './PluginFactory.js'
 
-export function createRequestIdMiddleware() {
-  return (fastify, opts, done) => {
+function createRequestIdMiddlewareHook() {
+  async function requestIdHook(fastify) {
     fastify.addHook('onRequest', async (request, reply) => {
       request.id = request.headers['x-request-id'] || nanoid(12)
       request.startTime = performance.now()
@@ -10,14 +11,6 @@ export function createRequestIdMiddleware() {
 
     fastify.addHook('onResponse', async (request, reply) => {
       const duration = performance.now() - request.startTime
-      const metrics = {
-        requestId: request.id,
-        method: request.method,
-        path: request.url,
-        status: reply.statusCode,
-        duration: Math.round(duration),
-        timestamp: new Date().toISOString(),
-      }
 
       if (fastify.errorTracker) {
         fastify.errorTracker.addBreadcrumb('HTTP Request', {
@@ -34,13 +27,13 @@ export function createRequestIdMiddleware() {
         fastify.metrics.sample('http.response_time_ms', duration)
       }
     })
-
-    done()
   }
+
+  return createFastifyPlugin(requestIdHook, 'request-id-middleware')
 }
 
-export function createErrorHandler(logger, errorTracker) {
-  return (fastify, opts, done) => {
+function createErrorHandlerHook(logger, errorTracker) {
+  async function errorHandlerHook(fastify) {
     fastify.setErrorHandler(async (err, request, reply) => {
       const requestId = request.id || 'unknown'
 
@@ -70,7 +63,15 @@ export function createErrorHandler(logger, errorTracker) {
 
       reply.code(response.statusCode).send(response.toJSON())
     })
-
-    done()
   }
+
+  return createFastifyPlugin(errorHandlerHook, 'error-handler-middleware')
+}
+
+export function createRequestIdMiddleware() {
+  return createRequestIdMiddlewareHook()
+}
+
+export function createErrorHandler(logger, errorTracker) {
+  return createErrorHandlerHook(logger, errorTracker)
 }

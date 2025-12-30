@@ -2,8 +2,12 @@ import cors from '@fastify/cors'
 import compress from '@fastify/compress'
 import multipart from '@fastify/multipart'
 import ws from '@fastify/websocket'
+import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { createRequestIdMiddleware, createErrorHandler } from './RequestTracking.js'
 import { createTimeoutMiddleware } from './TimeoutMiddleware.js'
+import { ErrorResponses } from './ErrorResponses.js'
+
+const logger = new ComponentLogger('ServerMiddleware')
 
 export function registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager) {
   fastify.register(createRequestIdMiddleware())
@@ -29,11 +33,7 @@ export function registerMiddleware(fastify, timeoutManager, logger, errorTracker
     if (shutdownManager.isShuttingDown) {
       const isHealthEndpoint = request.url.startsWith('/health') || request.url === '/metrics'
       if (!isHealthEndpoint) {
-        return reply.code(503).send({
-          error: 'Service Unavailable',
-          message: 'Server is shutting down',
-          statusCode: 503,
-        })
+        return reply.code(503).send(ErrorResponses.serviceUnavailable('Server is shutting down'))
       }
     }
 
@@ -46,11 +46,7 @@ export function registerMiddleware(fastify, timeoutManager, logger, errorTracker
           method: request.method,
         })
         corsConfig.logRejectedRequest(origin)
-        reply.code(403).send({
-          error: 'Forbidden',
-          message: `CORS policy: Origin ${origin} is not allowed`,
-          statusCode: 403,
-        })
+        reply.code(403).send(ErrorResponses.corsBlocked(origin))
       }
     }
   })
