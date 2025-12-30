@@ -1,9 +1,10 @@
 import * as THREE from './three.js'
 import { Layers } from './Layers.js'
+import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 
-const v1 = new THREE.Vector3()
+const { v1 } = SharedVectorPool('simpleCamLerp', 1)
 
 let sweepGeometry
 

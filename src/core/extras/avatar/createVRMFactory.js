@@ -6,10 +6,10 @@ import { MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
 import { cloneGLB, getSkinnedMeshes, createCapsule } from './VRMUtilities.js'
 import { createAnimationSystem, createAimSystem } from './VRMControllers.js'
 import { Emotes } from '../playerEmotes.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const v1 = new THREE.Vector3()
+const { v1, v2 } = SharedVectorPool('createVRMFactory', 2)
 const material = new THREE.MeshBasicMaterial()
-const v2 = new THREE.Vector3()
 
 export function createVRMFactory(glb, setupMaterial) {
   glb.scene.matrixAutoUpdate = false

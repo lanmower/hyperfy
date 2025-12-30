@@ -4,12 +4,11 @@ import { isBoolean } from 'lodash-es'
 import { Room, RoomEvent, ParticipantEvent, ScreenSharePresets } from 'livekit-client'
 import { EVENT } from '../constants/EventNames.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
 const logger = new ComponentLogger('ClientLiveKit')
 
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
+const { v1, v2, q1 } = SharedVectorPool('ClientLiveKit', 2, 1)
 
 export class ClientLiveKit extends System {
   static DEPS = {

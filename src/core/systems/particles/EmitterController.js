@@ -1,7 +1,7 @@
 import * as THREE from '../../extras/three.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
+const { v1, v2 } = SharedVectorPool('EmitterController', 2)
 const arr1 = []
 const arr2 = []
 

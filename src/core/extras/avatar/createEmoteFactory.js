@@ -1,9 +1,8 @@
 import * as THREE from 'three'
 import { normalizedBoneNames } from './BoneNameMappings.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const q1 = new THREE.Quaternion()
-const restRotationInverse = new THREE.Quaternion()
-const parentRestWorldRotation = new THREE.Quaternion()
+const { q1, q2: restRotationInverse, q3: parentRestWorldRotation } = SharedVectorPool('createEmoteFactory', 0, 3)
 
 export function createEmoteFactory(glb, url) {
   const clip = glb.animations[0]

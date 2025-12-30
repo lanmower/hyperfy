@@ -2,12 +2,12 @@ import { System } from './System.js'
 import * as THREE from '../extras/three.js'
 import { XRControllerModelFactory } from 'three/addons'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
 const logger = new ComponentLogger('XR')
 const UP = new THREE.Vector3(0, 1, 0)
 
-const v1 = new THREE.Vector3()
-const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
+const { v1, e1 } = SharedVectorPool('XR', 1, 0, 1)
 
 export class XR extends System {
   static DEPS = {

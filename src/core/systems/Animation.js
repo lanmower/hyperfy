@@ -1,7 +1,8 @@
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
+import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
-const v1 = new THREE.Vector3()
+const { v1 } = SharedVectorPool('Animation', 1)
 
 const BATCH_SIZE = 10
 

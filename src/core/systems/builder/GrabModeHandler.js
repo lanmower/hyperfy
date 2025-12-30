@@ -1,12 +1,13 @@
 import * as THREE from '../../extras/three.js'
 import { DEG2RAD } from '../../extras/general.js'
 import { BuilderConfig } from '../../config/SystemConfig.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const FORWARD = new THREE.Vector3(0, 0, -1)
 const PROJECT_SPEED = 10
 const PROJECT_MIN = 3
 
-const v1 = new THREE.Vector3()
+const { v1 } = SharedVectorPool('GrabModeHandler', 1)
 
 export class GrabModeHandler {
   constructor(parent) {

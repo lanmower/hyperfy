@@ -7,15 +7,11 @@ import { getGeometry, getGeometryConfig } from './PrimGeometry.js'
 import { getMaterial, applyTexture, quantizeOpacity } from './PrimMaterial.js'
 import { mountPhysics, unmountPhysics, getColliderSize } from './PrimPhysics.js'
 import { createPrimProxy } from './PrimProxy.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const logger = new ComponentLogger('Prim')
 
-const _v1 = new THREE.Vector3()
-const _v2 = new THREE.Vector3()
-const _q1 = new THREE.Quaternion()
-const _m1 = new THREE.Matrix4()
-const _m2 = new THREE.Matrix4()
-const _m3 = new THREE.Matrix4()
+const { v1: _v1, v2: _v2, q1: _q1, m1: _m1, m2: _m2, m3: _m3 } = SharedVectorPool('Prim', 2, 1, 0, 3)
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 
 let count = 0

@@ -7,18 +7,14 @@ import { clamp, BatchProcessor } from '../utils.js'
 import { CanvasDrawUtils } from './actions/CanvasDrawUtils.js'
 import { RenderConfig } from '../config/SystemConfig.js'
 import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
 const logger = new ComponentLogger('ClientActions')
 
 const BATCH_SIZE = RenderConfig.ACTION_BATCH_SIZE
 const sizes = [128, 256, 512, 2048, 4096]
 const FORWARD = new THREE.Vector3(0, 0, 1)
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const v3 = new THREE.Vector3()
-const v4 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
-const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
+const { v1, v2, v3, v4, q1, e1 } = SharedVectorPool('ClientActions', 4, 1, 1)
 
 export class ClientActions extends System {
   static DEPS = { rig: 'rig', events: 'events', controls: 'controls' }

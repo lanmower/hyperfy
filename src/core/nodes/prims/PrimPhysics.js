@@ -3,12 +3,11 @@ import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 import { geometryToPxMesh } from '../../extras/geometryToPxMesh.js'
 import { Layers } from '../../extras/Layers.js'
 import { getGeometry, isUniformScale } from './PrimGeometry.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const logger = new ComponentLogger('PrimPhysics')
 
-const _v1 = new THREE.Vector3()
-const _v2 = new THREE.Vector3()
-const _q1 = new THREE.Quaternion()
+const { v1: _v1, v2: _v2, q1: _q1 } = SharedVectorPool('PrimPhysics', 2, 1)
 
 export function mountPhysics(prim) {
   if (!PHYSX) return

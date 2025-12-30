@@ -3,12 +3,11 @@ import { AimAxis, UpAxis, DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_
 import { getQueryParams } from './VRMUtilities.js'
 import { Modes } from '../../constants/AnimationModes.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const logger = new ComponentLogger('VRMControllers')
 
-const v1 = new THREE.Vector3()
-const v2 = new THREE.Vector3()
-const q1 = new THREE.Quaternion()
+const { v1, v2, q1 } = SharedVectorPool('VRMControllers', 2, 1)
 
 function createAimSystem(vrmSceneOrMatrix, glbVrm, skeleton) {
   const smoothedRotations = new Map()
