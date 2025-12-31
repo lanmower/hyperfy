@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Menu } from './Menu.js'
-import { MenuAppIndex, MenuAppFlags, MenuAppMetadata } from './MenuAppComponents/Pages.js'
+import { MenuAppIndex } from './MenuAppComponents/MenuAppIndex.js'
+import { MenuAppFlags } from './MenuAppComponents/MenuAppFlags.js'
+import { MenuAppMetadata } from './MenuAppComponents/MenuAppMetadata.js'
 
 export function MenuApp({ world, app, blur }) {
   const [pages, setPages] = useState(() => ['index'])

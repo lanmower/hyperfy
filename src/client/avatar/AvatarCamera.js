@@ -1,11 +1,9 @@
 import * as THREE from '../../core/extras/three.js'
+import { FOV, DEG2RAD, PLANE_ASPECT_RATIO } from '../../core/constants/MathConstants.js'
 
 const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
 const v3 = new THREE.Vector3()
-const DEG2RAD = THREE.MathUtils.DEG2RAD
-const FOV = 70
-const PLANE_ASPECT_RATIO = 16 / 9
 
 export class AvatarCamera {
   constructor(camera, size) {

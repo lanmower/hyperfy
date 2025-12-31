@@ -1,5 +1,0 @@
-export { MenuMainIndex } from './MenuMainIndex.js'
-export { MenuMainUI } from './MenuMainUI.js'
-export { MenuMainGraphics } from './MenuMainGraphics.js'
-export { MenuMainAudio } from './MenuMainAudio.js'
-export { MenuMainWorld } from './MenuMainWorld.js'

@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { MenuMainIndex, MenuMainUI, MenuMainGraphics, MenuMainAudio, MenuMainWorld } from './MenuMainComponents/Pages.js'
+import { MenuMainIndex } from './MenuMainComponents/MenuMainIndex.js'
+import { MenuMainUI } from './MenuMainComponents/MenuMainUI.js'
+import { MenuMainGraphics } from './MenuMainComponents/MenuMainGraphics.js'
+import { MenuMainAudio } from './MenuMainComponents/MenuMainAudio.js'
+import { MenuMainWorld } from './MenuMainComponents/MenuMainWorld.js'
 
 export function MenuMain({ world }) {
   const [pages, setPages] = useState(() => ['index'])

@@ -3,13 +3,11 @@ import { isString } from 'lodash'
 import { Emotes } from '../core/extras/playerEmotes.js'
 import { Ranks } from '../core/extras/ranks.js'
 import { AvatarConfig } from './config/AvatarConfig.js'
+import { FOV, DEG2RAD, PLANE_ASPECT_RATIO } from '../core/constants/MathConstants.js'
 
 const MAX_UPLOAD_SIZE = 1000000000000
 const MAX_UPLOAD_SIZE_LABEL = '1LOLS'
 const HDR_URL = '/day2.hdr'
-const DEG2RAD = THREE.MathUtils.DEG2RAD
-const FOV = 70
-const PLANE_ASPECT_RATIO = 16 / 9
 const materialSlots = [
   'alphaMap',
   'aoMap',
