@@ -1,22 +1,21 @@
 import * as THREE from '../../extras/three.js'
-import { StructuredLogger } from '../../utils/logging/index.js'
+import { BaseManager } from '../../patterns/index.js'
 
-const logger = new StructuredLogger('PhysicsCallbackManager')
-
-function createPool(factory) {
+function createPool(factory, logger) {
   const pool = []
   return () => {
     if (pool.length) {
       return pool.pop()
     }
-    const item = factory()
+    const item = factory(logger)
     item.release = () => pool.push(item)
     return item
   }
 }
 
-export class PhysicsCallbackManager {
+export class PhysicsCallbackManager extends BaseManager {
   constructor() {
+    super(null, 'PhysicsCallbackManager')
     this.contactCallbacks = []
     this.triggerCallbacks = []
     this.getContactCallback = null
@@ -24,7 +23,7 @@ export class PhysicsCallbackManager {
   }
 
   initializeCallbacks() {
-    this.getContactCallback = createPool(() => {
+    this.getContactCallback = createPool((logger) => {
       const contactPool = []
       const contacts = []
       let idx = 0
@@ -83,9 +82,9 @@ export class PhysicsCallbackManager {
           this.release()
         },
       }
-    })
+    }, this.logger)
 
-    this.getTriggerCallback = createPool(() => {
+    this.getTriggerCallback = createPool((logger) => {
       return {
         fn: null,
         event: {
@@ -101,7 +100,7 @@ export class PhysicsCallbackManager {
           this.release()
         },
       }
-    })
+    }, this.logger)
   }
 
   queueContactCallback(cb) {

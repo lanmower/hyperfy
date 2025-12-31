@@ -2,11 +2,8 @@ import { isEqual } from 'lodash-es'
 import { System } from './System.js'
 import { InputSanitizer } from '../security/InputSanitizer.js'
 import { AppValidator } from '../validators/AppValidator.js'
-import { StructuredLogger } from '../utils/logging/index.js'
 import { tracer } from '../utils/tracing/index.js'
 import { PerformanceMetrics } from '../utils/metrics/PerformanceMetrics.js'
-
-const logger = new StructuredLogger('BlueprintManager')
 
 export class BlueprintManager extends System {
   static DEPS = {
@@ -18,7 +15,11 @@ export class BlueprintManager extends System {
 
   constructor(world) {
     super(world)
+    this.logger = this.world.logger || { info: () => {}, warn: () => {}, error: () => {} }
     this.items = new Map()
+  }
+
+  async initInternal() {
   }
 
   get(id) {
@@ -357,7 +358,7 @@ export class BlueprintManager extends System {
     })
   }
 
-  destroy() {
+  async destroyInternal() {
     this.items.clear()
   }
 }

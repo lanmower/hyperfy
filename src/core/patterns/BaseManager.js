@@ -1,11 +1,13 @@
 // Base manager pattern with template method for initialization and lifecycle
 import { StructuredLogger } from '../utils/logging/index.js'
+import { UnifiedEventEmitter } from './UnifiedEventEmitter.js'
 
 export class BaseManager {
   constructor(world, name) {
     this.world = world
     this.name = name
     this.logger = new StructuredLogger(name)
+    this.emitter = new UnifiedEventEmitter(name)
     this.initialized = false
     this._resources = []
   }
@@ -60,5 +62,25 @@ export class BaseManager {
     if (!this.initialized) {
       throw new Error(`${this.name} not initialized`)
     }
+  }
+
+  emit(eventName, ...args) {
+    return this.emitter.emit(eventName, ...args)
+  }
+
+  on(eventName, handler, options = {}) {
+    return this.emitter.on(eventName, handler, options)
+  }
+
+  once(eventName, handler, options = {}) {
+    return this.emitter.once(eventName, handler, options)
+  }
+
+  off(eventName, handler) {
+    return this.emitter.off(eventName, handler)
+  }
+
+  getResources() {
+    return this._resources
   }
 }

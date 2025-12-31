@@ -1,10 +1,8 @@
-import { StructuredLogger } from '../../utils/logging/index.js'
+import { BaseManager } from '../../patterns/index.js'
 
-const logger = new StructuredLogger('AudioManager')
-
-export class AudioManager {
+export class AudioManager extends BaseManager {
   constructor(world) {
-    this.world = world
+    super(world, 'AudioManager')
     this.audio = null
     this.livekit = null
     this.degraded = false
@@ -16,6 +14,9 @@ export class AudioManager {
     }
   }
 
+  async initInternal() {
+  }
+
   initialize(audio, livekit) {
     this.audio = audio
     this.livekit = livekit
@@ -25,12 +26,12 @@ export class AudioManager {
     if (!this.degraded) {
       this.status.audioReady = !!this.audio && !this.audio.degraded
       this.status.voiceChatReady = !!this.livekit && !this.livekit.degraded
-      logger.info('AudioManager initialized', {
+      this.logger.info('AudioManager initialized', {
         audioReady: this.status.audioReady,
         voiceChatReady: this.status.voiceChatReady,
       })
     } else {
-      logger.warn('AudioManager operating in degraded mode', {
+      this.logger.warn('AudioManager operating in degraded mode', {
         audioDegraded: audio?.degraded,
         livekitDegraded: livekit?.degraded,
       })
@@ -139,7 +140,7 @@ export class AudioManager {
     }
   }
 
-  destroy() {
+  async destroyInternal() {
     this.audio = null
     this.livekit = null
     this.degraded = true

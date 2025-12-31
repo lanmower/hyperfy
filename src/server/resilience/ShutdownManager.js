@@ -8,6 +8,9 @@ export class ShutdownManager extends BaseManager {
     this.handlers = []
   }
 
+  async initInternal() {
+  }
+
   addShutdownHandler(name, handler) {
     this.handlers.push(handler)
   }
@@ -20,5 +23,9 @@ export class ShutdownManager extends BaseManager {
     this.logger.info('Starting graceful shutdown')
     await Promise.all(this.handlers.map(h => h()))
     this.logger.info('Shutdown complete')
+  }
+
+  async destroyInternal() {
+    this.handlers = []
   }
 }

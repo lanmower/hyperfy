@@ -1,9 +1,8 @@
-import { StructuredLogger } from '../utils/logging/index.js'
+import { BaseManager } from '../patterns/index.js'
 
-const logger = new StructuredLogger('PluginManager')
-
-export class PluginManager {
+export class PluginManager extends BaseManager {
   constructor() {
+    super(null, 'PluginManager')
     this.plugins = new Map()
     this.hooks = new Map()
     this.assetHandlers = new Map()
@@ -14,12 +13,12 @@ export class PluginManager {
 
   register(name, plugin) {
     if (this.plugins.has(name)) {
-      logger.warn('Plugin already registered', { name })
+      this.logger.warn('Plugin already registered', { name })
       return false
     }
 
     if (!plugin || typeof plugin !== 'object') {
-      logger.error('Invalid plugin object', { name })
+      this.logger.error('Invalid plugin object', { name })
       return false
     }
 
@@ -32,7 +31,7 @@ export class PluginManager {
       api: plugin.api || null,
     })
 
-    logger.info('Plugin registered', { name, version: plugin.version })
+    this.logger.info('Plugin registered', { name, version: plugin.version })
     return true
   }
 
@@ -67,7 +66,7 @@ export class PluginManager {
       }
     })
 
-    logger.info('Plugin unregistered', { name })
+    this.logger.info('Plugin unregistered', { name })
     return true
   }
 
@@ -81,7 +80,7 @@ export class PluginManager {
 
   registerAssetHandler(pluginName, type, handler) {
     if (!this.plugins.has(pluginName)) {
-      logger.error('Plugin not registered', { pluginName })
+      this.logger.error('Plugin not registered', { pluginName })
       return false
     }
 
@@ -90,7 +89,7 @@ export class PluginManager {
     }
 
     this.assetHandlers.get(type).set(pluginName, handler)
-    logger.info('Asset handler registered', { pluginName, type })
+    this.logger.info('Asset handler registered', { pluginName, type })
     return true
   }
 
@@ -102,7 +101,7 @@ export class PluginManager {
 
   registerNetworkHandler(pluginName, messageType, handler) {
     if (!this.plugins.has(pluginName)) {
-      logger.error('Plugin not registered', { pluginName })
+      this.logger.error('Plugin not registered', { pluginName })
       return false
     }
 
@@ -111,7 +110,7 @@ export class PluginManager {
     }
 
     this.networkHandlers.get(messageType).set(pluginName, handler)
-    logger.info('Network handler registered', { pluginName, messageType })
+    this.logger.info('Network handler registered', { pluginName, messageType })
     return true
   }
 
@@ -123,7 +122,7 @@ export class PluginManager {
 
   registerScriptGlobal(pluginName, name, value) {
     if (!this.plugins.has(pluginName)) {
-      logger.error('Plugin not registered', { pluginName })
+      this.logger.error('Plugin not registered', { pluginName })
       return false
     }
 
@@ -134,7 +133,7 @@ export class PluginManager {
       plugin: pluginName,
     })
 
-    logger.info('Script global registered', { pluginName, name })
+    this.logger.info('Script global registered', { pluginName, name })
     return true
   }
 
@@ -148,7 +147,7 @@ export class PluginManager {
 
   registerServerRoute(pluginName, path, method, handler) {
     if (!this.plugins.has(pluginName)) {
-      logger.error('Plugin not registered', { pluginName })
+      this.logger.error('Plugin not registered', { pluginName })
       return false
     }
 
@@ -160,7 +159,7 @@ export class PluginManager {
       plugin: pluginName,
     })
 
-    logger.info('Server route registered', { pluginName, path, method })
+    this.logger.info('Server route registered', { pluginName, path, method })
     return true
   }
 
@@ -170,7 +169,7 @@ export class PluginManager {
 
   registerHook(name, type = 'action') {
     if (this.hooks.has(name)) {
-      logger.warn('Hook already registered', { name })
+      this.logger.warn('Hook already registered', { name })
       return
     }
 
@@ -187,7 +186,7 @@ export class PluginManager {
   before(hook, fn) {
     const hookData = this.hooks.get(hook)
     if (!hookData) {
-      logger.warn('Hook does not exist', { hook })
+      this.logger.warn('Hook does not exist', { hook })
       return
     }
 
@@ -202,7 +201,7 @@ export class PluginManager {
   after(hook, fn) {
     const hookData = this.hooks.get(hook)
     if (!hookData) {
-      logger.warn('Hook does not exist', { hook })
+      this.logger.warn('Hook does not exist', { hook })
       return
     }
 
@@ -217,7 +216,7 @@ export class PluginManager {
   filter(hook, fn) {
     const hookData = this.hooks.get(hook)
     if (!hookData) {
-      logger.warn('Hook does not exist', { hook })
+      this.logger.warn('Hook does not exist', { hook })
       return
     }
 
@@ -232,7 +231,7 @@ export class PluginManager {
   action(hook, fn) {
     const hookData = this.hooks.get(hook)
     if (!hookData) {
-      logger.warn('Hook does not exist', { hook })
+      this.logger.warn('Hook does not exist', { hook })
       return
     }
 
@@ -247,7 +246,7 @@ export class PluginManager {
   async executeHook(hook, ...args) {
     const hookData = this.hooks.get(hook)
     if (!hookData) {
-      logger.warn('Hook does not exist', { hook })
+      this.logger.warn('Hook does not exist', { hook })
       return args[0]
     }
 
@@ -271,7 +270,7 @@ export class PluginManager {
 
       return result
     } catch (error) {
-      logger.error('Hook execution error', { hook, error: error.message })
+      this.logger.error('Hook execution error', { hook, error: error.message })
       throw error
     }
   }
@@ -303,7 +302,7 @@ export class PluginManager {
       try {
         await Promise.resolve(fn(...args))
       } catch (error) {
-        logger.error('Hook execution error', { hook: name, error: error.message })
+        this.logger.error('Hook execution error', { hook: name, error: error.message })
       }
     }
   }
@@ -385,6 +384,21 @@ export class PluginManager {
 
   hasHook(name) {
     return this.hooks.has(name)
+  }
+
+  async initInternal() {
+  }
+
+  async destroyInternal() {
+    for (const plugin of this.plugins.values()) {
+      plugin.destroy?.()
+    }
+    this.plugins.clear()
+    this.hooks.clear()
+    this.assetHandlers.clear()
+    this.networkHandlers.clear()
+    this.scriptGlobals.clear()
+    this.serverRoutes.clear()
   }
 }
 

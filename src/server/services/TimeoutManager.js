@@ -16,6 +16,9 @@ export class TimeoutManager extends BaseManager {
     }
   }
 
+  async initInternal() {
+  }
+
   setTimeouts(config) {
     Object.assign(this.timeouts, config)
   }
@@ -75,6 +78,10 @@ export class TimeoutManager extends BaseManager {
 
   async withTimeout(fn, timeout, type = 'http', operation = 'unknown') {
     return this.wrapPromise(fn(), timeout, type, operation)
+  }
+
+  async destroyInternal() {
+    this.resetStats()
   }
 }
 

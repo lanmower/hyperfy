@@ -1,11 +1,9 @@
-import { StructuredLogger } from '../../utils/logging/index.js'
 import { tracer } from '../../utils/tracing/index.js'
+import { BaseManager } from '../../patterns/index.js'
 
-const logger = new StructuredLogger('ResourceManager')
-
-export class ResourceManager {
+export class ResourceManager extends BaseManager {
   constructor(world) {
-    this.world = world
+    super(world, 'ResourceManager')
     this.loader = null
     this.assetHandlers = null
     this.videoFactory = null
@@ -18,12 +16,15 @@ export class ResourceManager {
     }
   }
 
+  async initInternal() {
+  }
+
   initialize(loader, assetHandlers, videoFactory) {
     this.loader = loader
     this.assetHandlers = assetHandlers
     this.videoFactory = videoFactory
 
-    logger.info('ResourceManager initialized', {
+    this.logger.info('ResourceManager initialized', {
       hasLoader: !!loader,
       hasAssetHandlers: !!assetHandlers,
       hasVideoFactory: !!videoFactory,
@@ -32,7 +33,7 @@ export class ResourceManager {
 
   async load(type, url) {
     if (!this.loader) {
-      logger.warn('ResourceManager not initialized')
+      this.logger.warn('ResourceManager not initialized')
       return null
     }
 
@@ -56,7 +57,7 @@ export class ResourceManager {
         })
         .catch(err => {
           this.stats.failed++
-          logger.error('Resource load failed', { type, url, error: err.message })
+          this.logger.error('Resource load failed', { type, url, error: err.message })
           this.loading.delete(key)
           span?.setAttribute('status', 'error')
           span?.setAttribute('error', err.message)
@@ -99,7 +100,7 @@ export class ResourceManager {
             span?.addEvent('preload_item_completed', { type: item.type, url: item.url })
           })
           .catch(err => {
-            logger.error('Preload item failed', { type: item.type, url: item.url })
+            this.logger.error('Preload item failed', { type: item.type, url: item.url })
             this.stats.preloading--
             span?.addEvent('preload_item_failed', { type: item.type, url: item.url, error: err.message })
           })
@@ -115,7 +116,7 @@ export class ResourceManager {
 
   registerAssetHandler(type, handler) {
     if (!this.assetHandlers) {
-      logger.warn('AssetHandlers not initialized')
+      this.logger.warn('AssetHandlers not initialized')
       return
     }
 
@@ -124,7 +125,7 @@ export class ResourceManager {
 
   registerInsertHandler(type, handler) {
     if (!this.assetHandlers) {
-      logger.warn('AssetHandlers not initialized')
+      this.logger.warn('AssetHandlers not initialized')
       return
     }
 
@@ -133,7 +134,7 @@ export class ResourceManager {
 
   setVRMHooks(hooks) {
     if (!this.assetHandlers) {
-      logger.warn('AssetHandlers not initialized')
+      this.logger.warn('AssetHandlers not initialized')
       return
     }
 
@@ -142,7 +143,7 @@ export class ResourceManager {
 
   createVideo(url) {
     if (!this.videoFactory) {
-      logger.warn('VideoFactory not initialized')
+      this.logger.warn('VideoFactory not initialized')
       return null
     }
 
@@ -178,7 +179,7 @@ export class ResourceManager {
     }
   }
 
-  destroy() {
+  async destroyInternal() {
     this.clear()
     this.loader = null
     this.assetHandlers = null

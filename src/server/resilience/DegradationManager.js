@@ -7,11 +7,18 @@ export class DegradationManager extends BaseManager {
     this.strategies = strategies || []
   }
 
+  async initInternal() {
+  }
+
   getStatus() {
     return { degraded: false, strategies: [] }
   }
 
   checkAndApply() {
     return false
+  }
+
+  async destroyInternal() {
+    this.strategies = []
   }
 }

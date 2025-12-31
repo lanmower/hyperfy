@@ -1,7 +1,9 @@
 import { EntityCommandHandler } from './EntityCommandHandler.js'
+import { BaseManager } from '../../patterns/index.js'
 
-export class SelectionManager {
+export class SelectionManager extends BaseManager {
   constructor(clientBuilder) {
+    super(null, 'SelectionManager')
     this.clientBuilder = clientBuilder
     this.selected = null
     this.entityCommandHandler = new EntityCommandHandler(this)
@@ -92,5 +94,10 @@ export class SelectionManager {
 
   handleDelete() {
     this.entityCommandHandler.handleDelete()
+  }
+
+  async destroyInternal() {
+    this.selected = null
+    this.entityCommandHandler = null
   }
 }

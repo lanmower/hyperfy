@@ -84,6 +84,16 @@ export class CircuitBreakerManager extends BaseManager {
 
     return stats
   }
+
+  async initInternal() {
+  }
+
+  async destroyInternal() {
+    for (const breaker of this.breakers.values()) {
+      breaker.reset()
+    }
+    this.breakers.clear()
+  }
 }
 
 export const globalCircuitBreakerManager = new CircuitBreakerManager()

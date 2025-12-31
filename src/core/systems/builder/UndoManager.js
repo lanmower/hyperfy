@@ -1,5 +1,8 @@
-export class UndoManager {
+import { BaseManager } from '../../patterns/index.js'
+
+export class UndoManager extends BaseManager {
   constructor(builder) {
+    super(null, 'UndoManager')
     this.builder = builder
     this.undos = []
   }
@@ -62,5 +65,10 @@ export class UndoManager {
 
   clear() {
     this.undos = []
+  }
+
+  async destroyInternal() {
+    this.clear()
+    this.builder = null
   }
 }

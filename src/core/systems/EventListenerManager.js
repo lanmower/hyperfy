@@ -1,9 +1,8 @@
-import { StructuredLogger } from '../utils/logging/index.js'
+import { BaseManager } from '../patterns/index.js'
 
-const logger = new StructuredLogger('EventListenerManager')
-
-export class EventListenerManager {
+export class EventListenerManager extends BaseManager {
   constructor(owner) {
+    super(null, 'EventListenerManager')
     this.owner = owner
     this.listeners = []
   }
@@ -26,7 +25,7 @@ export class EventListenerManager {
   addEmitterListener(emitter, event, handler, once) {
     const method = once ? 'once' : 'on'
     if (!emitter || typeof emitter[method] !== 'function') {
-      logger.error(`Invalid emitter provided to ${method}()`, { owner: this.owner.constructor.name })
+      this.logger.error(`Invalid emitter provided to ${method}()`, { owner: this.owner.constructor.name })
       return
     }
     const boundHandler = this.bindHandler(handler)
@@ -37,7 +36,7 @@ export class EventListenerManager {
 
   addEventListener(target, event, handler, options = {}) {
     if (!target || typeof target.addEventListener !== 'function') {
-      logger.error('Invalid target provided to addEventListener()', { owner: this.owner.constructor.name })
+      this.logger.error('Invalid target provided to addEventListener()', { owner: this.owner.constructor.name })
       return
     }
 
@@ -91,7 +90,7 @@ export class EventListenerManager {
       try {
         this.removeListener(listener)
       } catch (err) {
-        logger.error('Failed to remove listener during cleanup', {
+        this.logger.error('Failed to remove listener during cleanup', {
           owner: this.owner.constructor.name,
           event: listener.event,
           error: err.message
@@ -122,7 +121,7 @@ export class EventListenerManager {
     return byEvent
   }
 
-  destroy() {
+  async destroyInternal() {
     this.clear()
     this.owner = null
   }

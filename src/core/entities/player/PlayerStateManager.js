@@ -1,8 +1,10 @@
 import { isNumber } from 'lodash-es'
 import * as THREE from '../../extras/three.js'
+import { BaseManager } from '../../patterns/index.js'
 
-export class PlayerStateManager {
+export class PlayerStateManager extends BaseManager {
   constructor(player) {
+    super(null, 'PlayerStateManager')
     this.player = player
   }
 
@@ -109,5 +111,12 @@ export class PlayerStateManager {
     if (changed) {
       this.player.world.events.emit('player', this.player)
     }
+  }
+
+  async initInternal() {
+  }
+
+  async destroyInternal() {
+    this.player = null
   }
 }

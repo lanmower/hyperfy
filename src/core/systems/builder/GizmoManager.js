@@ -3,10 +3,11 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { DEG2RAD } from '../../extras/general.js'
 import { BuilderConfig } from '../../config/SystemConfig.js'
 import { copyTransform } from './BuilderTransformUtils.js'
+import { BaseManager } from '../../patterns/index.js'
 
-export class GizmoManager {
+export class GizmoManager extends BaseManager {
   constructor(world, viewport) {
-    this.world = world
+    super(world, 'GizmoManager')
     this.viewport = viewport
     this.gizmo = null
     this.gizmoTarget = null
@@ -88,5 +89,9 @@ export class GizmoManager {
 
   hasGizmo() {
     return this.gizmo !== null
+  }
+
+  async destroyInternal() {
+    this.detachGizmo()
   }
 }

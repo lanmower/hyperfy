@@ -173,6 +173,13 @@ export class CacheManager extends BaseManager {
     return `${mb}MB`
   }
 
+  async initInternal() {
+  }
+
+  async destroyInternal() {
+    this.clear()
+    this.invalidationCallbacks.clear()
+  }
 }
 
 export default CacheManager
