@@ -1,10 +1,11 @@
+import { BaseBuilderHandler } from './BaseBuilderHandler.js'
 import { GizmoController } from './GizmoController.js'
 import { GrabModeHandler } from './GrabModeHandler.js'
 import { serializeTransform, copyTransform } from './BuilderTransformUtils.js'
 
-export class TransformHandler {
+export class TransformHandler extends BaseBuilderHandler {
   constructor(clientBuilder) {
-    this.clientBuilder = clientBuilder
+    super(clientBuilder, 'TransformHandler')
     this.gizmoController = new GizmoController(this)
     this.grabModeHandler = new GrabModeHandler(this)
     this.lastMoveSendTime = 0
@@ -39,60 +40,65 @@ export class TransformHandler {
   }
 
   handleModeUpdates(delta, mode) {
-    const app = this.clientBuilder.selected
-    if (!app) return
+    try {
+      const app = this.parent.selected
+      if (!app || !this.gizmoController.gizmo) return
 
-    if (!this.gizmoController.gizmo) return
-
-    if (mode === 'translate') {
-      if (this.gizmoController.gizmoTarget) {
-        copyTransform(this.gizmoController.gizmoTarget, app.root)
-        if (app.threeScene && !app.blueprint?.scene) {
-          copyTransform(app.root, app.threeScene)
-        }
+      if (mode === 'translate') {
+        this.applyGizmoTransform(app)
+      } else if (mode === 'rotate') {
+        this.handleRotateMode()
+        this.applyGizmoTransform(app)
+      } else if (mode === 'scale') {
+        this.applyScaleTransform(app)
+      } else if (mode === 'grab') {
+        this.grabModeHandler.handle(delta)
       }
-    }
-
-    if (mode === 'rotate') {
-      if (this.clientBuilder.control.controlLeft.pressed) {
-        this.disableRotationSnap()
-      }
-      if (this.clientBuilder.control.controlLeft.released) {
-        this.enableRotationSnap()
-      }
-      if (this.gizmoController.gizmoTarget) {
-        copyTransform(this.gizmoController.gizmoTarget, app.root)
-        if (app.threeScene && !app.blueprint?.scene) {
-          copyTransform(app.root, app.threeScene)
-        }
-      }
-    }
-
-    if (mode === 'scale') {
-      if (this.gizmoController.gizmoTarget) {
-        app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
-        if (app.threeScene && !app.blueprint?.scene) {
-          app.threeScene.scale.copy(app.root.scale)
-        }
-      }
-    }
-
-    if (mode === 'grab') {
-      this.grabModeHandler.handle(delta)
+    } catch (err) {
+      this.logger.error('Mode update failed', { mode })
     }
   }
 
   sendSelectedUpdates(delta) {
-    const app = this.clientBuilder.selected
-    if (!app) return
+    try {
+      const app = this.parent.selected
+      if (!app) return
 
-    this.lastMoveSendTime += delta
-    if (this.lastMoveSendTime > this.clientBuilder.networkRate) {
-      this.clientBuilder.network.send('entityModified', {
-        id: app.data.id,
-        ...serializeTransform(app.root),
-      })
-      this.lastMoveSendTime = 0
+      this.lastMoveSendTime += delta
+      if (this.lastMoveSendTime > this.parent.networkRate) {
+        this.sendNetwork('entityModified', {
+          id: app.data.id,
+          ...serializeTransform(app.root),
+        })
+        this.lastMoveSendTime = 0
+      }
+    } catch (err) {
+      this.logger.error('Send updates failed', { appId: app?.data.id })
+    }
+  }
+
+  applyGizmoTransform(app) {
+    if (!this.gizmoController.gizmoTarget) return
+    copyTransform(this.gizmoController.gizmoTarget, app.root)
+    if (app.threeScene && !app.blueprint?.scene) {
+      copyTransform(app.root, app.threeScene)
+    }
+  }
+
+  applyScaleTransform(app) {
+    if (!this.gizmoController.gizmoTarget) return
+    app.root.scale.copy(this.gizmoController.gizmoTarget.scale)
+    if (app.threeScene && !app.blueprint?.scene) {
+      app.threeScene.scale.copy(app.root.scale)
+    }
+  }
+
+  handleRotateMode() {
+    if (this.parent.control.controlLeft.pressed) {
+      this.disableRotationSnap()
+    }
+    if (this.parent.control.controlLeft.released) {
+      this.enableRotationSnap()
     }
   }
 }

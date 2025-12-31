@@ -1,17 +1,14 @@
 import moment from 'moment'
 import { uuid } from '../../utils-client.js'
+import { BaseBuilderHandler } from './BaseBuilderHandler.js'
 import { FileExtractor } from './FileExtractor.js'
 import { EntitySpawner } from './EntitySpawner.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
-const logger = new ComponentLogger('FileDropHandler')
-
-export class FileDropHandler {
+export class FileDropHandler extends BaseBuilderHandler {
   constructor(clientBuilder) {
-    this.clientBuilder = clientBuilder
+    super(clientBuilder, 'FileDropHandler')
     this.dropTarget = null
     this.dropping = false
-    this.dropFile = null
     this.fileExtractor = new FileExtractor()
     this.entitySpawner = new EntitySpawner(clientBuilder)
   }
@@ -23,7 +20,6 @@ export class FileDropHandler {
   onDragEnter = e => {
     this.dropTarget = e.target
     this.dropping = true
-    this.dropFile = null
   }
 
   onDragLeave = e => {
@@ -36,55 +32,68 @@ export class FileDropHandler {
     e.preventDefault()
     this.dropping = false
 
-    let file = await this.fileExtractor.extractFromDrop(e)
-    if (!file) return
+    try {
+      const file = await this.fileExtractor.extractFromDrop(e)
+      if (!file) return
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 100))
+      const ext = file.name.split('.').pop().toLowerCase()
 
-    const ext = file.name.split('.').pop().toLowerCase()
+      if (!this.validateFileAccess(ext, file)) return
+      if (!this.validateFileSize(ext, file)) return
 
-    if (ext === 'vrm' && !this.clientBuilder.canBuild() && !this.clientBuilder.world.settings.customAvatars) {
-      return
+      if (ext !== 'vrm') {
+        this.parent.toggle(true)
+      }
+
+      const transform = this.parent.getSpawnTransform()
+      await this.spawnFileEntity(ext, file, transform)
+    } catch (err) {
+      this.logger.error('File drop failed', { error: err.message })
+      this.addChatMessage(`Error: ${err.message}`)
     }
+  }
 
-    const maxUploadSize = this.clientBuilder.network.maxUploadSize
+  validateFileAccess(ext, file) {
+    if (ext === 'vrm' && !this.parent.canBuild() && !this.parent.world.settings.customAvatars) {
+      return false
+    }
+    if (ext !== 'vrm' && !this.parent.canBuild()) {
+      this.addChatMessage(`You don't have permission to do that.`)
+      return false
+    }
+    return true
+  }
+
+  validateFileSize(ext, file) {
+    const maxUploadSize = this.parent.network.maxUploadSize
     const maxSize = maxUploadSize * 1024 * 1024
     if (file.size > maxSize) {
-      this.clientBuilder.world.chat.add({
-        id: uuid(),
-        from: null,
-        fromId: null,
-        body: `File size too large (>${maxUploadSize}mb)`,
-        createdAt: moment().toISOString(),
-      })
-      logger.error('File too large for upload', { fileName: file.name, fileSize: file.size, maxSize, maxUploadSize })
-      return
+      this.addChatMessage(`File size too large (>${maxUploadSize}mb)`)
+      this.logger.error('File too large for upload', { fileName: file.name, fileSize: file.size, maxSize })
+      return false
     }
+    return true
+  }
 
-    if (ext !== 'vrm' && !this.clientBuilder.canBuild()) {
-      this.clientBuilder.world.chat.add({
-        id: uuid(),
-        from: null,
-        fromId: null,
-        body: `You don't have permission to do that.`,
-        createdAt: moment().toISOString(),
-      })
-      return
-    }
-
-    if (ext !== 'vrm') {
-      this.clientBuilder.toggle(true)
-    }
-
-    const transform = this.clientBuilder.getSpawnTransform()
-
+  async spawnFileEntity(ext, file, transform) {
     if (ext === 'hyp') {
       await this.entitySpawner.addApp(file, transform)
     } else if (ext === 'glb') {
       await this.entitySpawner.addModel(file, transform)
     } else if (ext === 'vrm') {
-      const canPlace = this.clientBuilder.canBuild()
+      const canPlace = this.parent.canBuild()
       await this.entitySpawner.addAvatar(file, transform, canPlace)
     }
+  }
+
+  addChatMessage(body) {
+    this.parent.world.chat.add({
+      id: uuid(),
+      from: null,
+      fromId: null,
+      body,
+      createdAt: moment().toISOString(),
+    })
   }
 }
