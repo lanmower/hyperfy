@@ -3,9 +3,7 @@ import { System } from '../System.js'
 import { buttons } from '../../extras/buttons.js'
 import { bindRotations } from '../../extras/bindRotations.js'
 import { InputDispatcher } from './InputDispatcher.js'
-import { PointerInputHandler } from './PointerInputHandler.js'
-import { KeyboardInputHandler } from './KeyboardInputHandler.js'
-import { XRInputHandler } from './XRInputHandler.js'
+import { ComposableInputHandler } from './ComposableInputHandler.js'
 import { TouchInputHandler } from '../controls/TouchInputHandler.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
@@ -76,9 +74,9 @@ export class InputSystem extends System {
     this.xrSession = null
     this.touchHandler = new TouchInputHandler(this)
     this.dispatcher = new InputDispatcher()
-    this.dispatcher.registerHandler('pointer', new PointerInputHandler(this))
-    this.dispatcher.registerHandler('keyboard', new KeyboardInputHandler(this))
-    this.dispatcher.registerHandler('xr', new XRInputHandler(this))
+    this.dispatcher.registerHandler('pointer', ComposableInputHandler.createPointerHandler(this))
+    this.dispatcher.registerHandler('keyboard', ComposableInputHandler.createKeyboardHandler(this))
+    this.dispatcher.registerHandler('xr', ComposableInputHandler.createXRHandler(this))
     this.controlTypes = {
       mouseLeft: createButton, mouseRight: createButton, touchStick: createVector, scrollDelta: createValue,
       pointer: createPointer, screen: createScreen, camera: createCamera, xrLeftStick: createVector,
