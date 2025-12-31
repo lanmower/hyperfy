@@ -4,7 +4,7 @@ import { every, isArray, isBoolean, isFunction, isNumber, isString } from 'lodas
 import { Node } from './Node.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
-import { schema } from '../utils/validation/createNodeSchema.js'
+import { schema } from '../utils/validation/index.js'
 
 const shapeTypes = ['point', 'sphere', 'hemisphere', 'cone', 'box', 'circle', 'rectangle']
 const spaces = ['local', 'world']

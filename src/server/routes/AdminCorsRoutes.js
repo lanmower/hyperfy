@@ -1,17 +1,16 @@
 /* AdminCorsRoutes: Admin endpoints for CORS configuration */
-import { AdminRouteBuilder } from '../utils/api/AdminRouteBuilder.js'
+import { AdminRouteBuilder } from '../utils/api/index.js'
 
 const builder = new AdminRouteBuilder('Routes.Admin.Cors')
 
 export function registerAdminCorsRoutes(fastify) {
-  builder.createGetRoute(fastify, '/api/admin/cors', async (request, reply, fastify) => {
-    if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
+  builder.createStatsRoute(fastify, '/api/admin/cors', async (fastify) => {
+    if (!fastify.corsConfig) throw new Error('CORS config not available')
     builder.logInfo('Get CORS config')
-    return reply.code(200).send({
-      success: true,
+    return {
       config: fastify.corsConfig.getConfig(),
       stats: fastify.corsConfig.getStats(),
-    })
+    }
   }, 'get CORS config')
 
   builder.createPostRoute(fastify, '/api/admin/cors/origin', async (request, reply, fastify) => {

@@ -1,13 +1,9 @@
-import { uuid } from '../../../utils-client.js'
+import { BaseSpawner } from './BaseSpawner.js'
 import { importApp } from '../../../extras/appTools.js'
-import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
 
-const logger = new ComponentLogger('AppSpawner')
-
-export class AppSpawner {
+export class AppSpawner extends BaseSpawner {
   constructor(entitySpawner) {
-    this.entitySpawner = entitySpawner
-    this.clientBuilder = entitySpawner.clientBuilder
+    super(entitySpawner)
   }
 
   async spawn(file, transform) {
@@ -63,49 +59,13 @@ export class AppSpawner {
   }
 
   async createApp(info, transform) {
-    const blueprint = {
-      id: uuid(),
-      version: 0,
-      name: info.blueprint.name,
-      image: info.blueprint.image,
-      author: info.blueprint.author,
-      url: info.blueprint.url,
-      desc: info.blueprint.desc,
-      model: info.blueprint.model,
-      script: info.blueprint.script,
-      props: info.blueprint.props,
-      preload: info.blueprint.preload,
-      public: info.blueprint.public,
-      locked: info.blueprint.locked,
-      frozen: info.blueprint.frozen,
-      unique: info.blueprint.unique,
-      scene: info.blueprint.scene,
-      disabled: info.blueprint.disabled,
-    }
-
-    const data = {
-      id: uuid(),
-      type: 'app',
-      blueprint: blueprint.id,
-      position: transform.position,
-      quaternion: transform.quaternion,
-      scale: [1, 1, 1],
-      mover: null,
-      uploader: this.clientBuilder.network.id,
-      pinned: false,
-      state: {},
-    }
+    const blueprint = this.createBlueprint(info.blueprint)
+    const data = this.createEntityData(blueprint.id, transform)
 
     this.clientBuilder.blueprints.add(blueprint, true)
     const app = this.clientBuilder.entities.add(data, true)
 
-    const promises = info.assets.map(asset => this.clientBuilder.network.upload(asset.file))
-    try {
-      await Promise.all(promises)
-      app.onUploaded()
-    } catch (err) {
-      logger.error('Asset upload failed', { error: err.message })
-      app.destroy()
-    }
+    const files = info.assets.map(asset => asset.file)
+    await this.handleUploadWithRollback(files, app)
   }
 }

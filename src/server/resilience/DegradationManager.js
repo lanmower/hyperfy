@@ -1,4 +1,4 @@
-import { BaseManager } from '../../core/patterns/BaseManager.js'
+import { BaseManager } from '../../core/patterns/index.js'
 
 export class DegradationManager extends BaseManager {
   constructor(circuitBreakerManager, strategies) {

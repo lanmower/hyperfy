@@ -1,37 +1,14 @@
-import { useEffect, useState, useRef } from 'react'
+import { useFieldBase } from './useFieldBase.js'
 
 export function useFieldTextarea(value, onChange) {
-  const textareaRef = useRef()
-  const [localValue, setLocalValue] = useState(value)
-
-  useEffect(() => {
-    if (localValue !== value) setLocalValue(value)
-  }, [value])
-
-  useEffect(() => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-    function update() {
-      textarea.style.height = 'auto'
-      textarea.style.height = textarea.scrollHeight + 'px'
-    }
-    update()
-    textarea.addEventListener('input', update)
-    return () => textarea.removeEventListener('input', update)
-  }, [])
+  const { value: localValue, ref, handlers } = useFieldBase(value, onChange, { selectOnFocus: true, multiline: true, autoHeight: true })
 
   return {
-    ref: textareaRef,
+    ref,
     value: localValue || '',
-    onChange: e => setLocalValue(e.target.value),
-    onFocus: e => e.target.select(),
-    onKeyDown: e => {
-      if (e.metaKey && e.code === 'Enter') {
-        e.preventDefault()
-        onChange(localValue)
-        e.target.blur()
-      }
-    },
-    onBlur: () => onChange(localValue),
+    onChange: handlers.onChange,
+    onFocus: handlers.onFocus,
+    onBlur: handlers.onBlur,
+    onKeyDown: handlers.onKeyDown,
   }
 }

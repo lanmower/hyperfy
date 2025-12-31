@@ -1,6 +1,7 @@
 import { uuid } from '../../utils-client.js'
 import { BaseBuilderHandler } from './BaseBuilderHandler.js'
 import { serializeTransform } from './BuilderTransformUtils.js'
+import { BlueprintFactory } from '../../core/factories/BlueprintFactory.js'
 
 export class EntityCommandHandler extends BaseBuilderHandler {
   constructor(parent) {
@@ -104,25 +105,12 @@ export class EntityCommandHandler extends BaseBuilderHandler {
   }
 
   createBlueprintCopy(blueprint) {
-    return {
-      id: uuid(),
+    return BlueprintFactory.createBlueprint('app', {
+      ...blueprint,
+      id: undefined,
       version: 0,
-      name: blueprint.name,
-      image: blueprint.image,
-      author: blueprint.author,
-      url: blueprint.url,
-      desc: blueprint.desc,
-      model: blueprint.model,
-      script: blueprint.script,
-      props: JSON.parse(JSON.stringify(blueprint.props)),
-      preload: blueprint.preload,
-      public: blueprint.public,
-      locked: blueprint.locked,
-      frozen: blueprint.frozen,
-      unique: blueprint.unique,
-      scene: blueprint.scene,
-      disabled: blueprint.disabled,
-    }
+      props: JSON.parse(JSON.stringify(blueprint.props || {})),
+    })
   }
 
   canExecuteCommand(controlKey) {

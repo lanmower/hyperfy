@@ -238,6 +238,7 @@
       "events",
       "extras",
       "glb",
+      "factories",
       "graphics",
       "initialization",
       "libs",
@@ -292,7 +293,6 @@
       "stats",
       "api",
       "collections",
-      "factories",
       "logging",
       "metrics",
       "pool",
@@ -320,6 +320,7 @@
       ".gitignore",
       ".npmrc",
       ".nvmrc",
+      "build-output.log",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       "LICENSE",
@@ -443,6 +444,7 @@
       "SnapOctree.js",
       "three.js",
       "yoga.js",
+      "BlueprintFactory.js",
       "FeatureDetector.js",
       "GraphicsAPI.js",
       "InitializationHelper.js",
@@ -494,6 +496,7 @@
       "packets.constants.js",
       "packets.js",
       "AsyncInitializer.js",
+      "BaseController.js",
       "BaseFactory.js",
       "BaseHandler.js",
       "BaseManager.js",
@@ -674,7 +677,12 @@
       "mp-walk-left.glb",
       "mp-walk-right.glb",
       "mp-walk.glb",
-      "scene.hyp"
+      "scene.hyp",
+      "test-blueprint-factory.mjs",
+      "test-debug.mjs",
+      "test-debug2.mjs",
+      "test-debug3.mjs",
+      "test-debug4.mjs"
     ],
     "configFiles": [
       ".env.example",
@@ -701,5 +709,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767154904523
+  "lastAnalyzed": 1767171575183
 }

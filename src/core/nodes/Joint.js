@@ -6,7 +6,7 @@ import { bindRotations } from '../extras/bindRotations.js'
 import { DEG2RAD, RAD2DEG } from '../extras/general.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
-import { schema } from '../utils/validation/createNodeSchema.js'
+import { schema } from '../utils/validation/index.js'
 import { q } from '../utils/TempVectors.js'
 import { isNumber } from 'lodash-es'
 

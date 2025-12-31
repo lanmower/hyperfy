@@ -1,12 +1,9 @@
-import { uuid, hashFile } from '../../../utils-client.js'
-import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
+import { hashFile } from '../../../utils-client.js'
+import { BaseSpawner } from './BaseSpawner.js'
 
-const logger = new ComponentLogger('AvatarSpawner')
-
-export class AvatarSpawner {
+export class AvatarSpawner extends BaseSpawner {
   constructor(entitySpawner) {
-    this.entitySpawner = entitySpawner
-    this.clientBuilder = entitySpawner.clientBuilder
+    super(entitySpawner)
   }
 
   async initiate(file, transform, canPlace) {
@@ -33,43 +30,16 @@ export class AvatarSpawner {
   }
 
   async place(file, url, transform) {
-    const blueprint = {
-      id: uuid(),
-      version: 0,
+    const blueprint = this.createBlueprint({
       name: file.name,
-      image: null,
-      author: null,
-      url: null,
-      desc: null,
       model: url,
-      script: null,
-      props: {},
-      preload: false,
-      public: false,
-      locked: false,
-      unique: false,
-      scene: false,
-      disabled: false,
-    }
+    })
 
     this.clientBuilder.blueprints.add(blueprint, true)
 
-    const data = {
-      id: uuid(),
-      type: 'app',
-      blueprint: blueprint.id,
-      position: transform.position,
-      quaternion: transform.quaternion,
-      scale: [1, 1, 1],
-      mover: null,
-      uploader: this.clientBuilder.network.id,
-      pinned: false,
-      state: {},
-    }
-
+    const data = this.createEntityData(blueprint.id, transform)
     const app = this.clientBuilder.entities.add(data, true)
-    await this.clientBuilder.network.upload(file)
-    app.onUploaded()
+    await this.handleUploadWithRollback([file], app)
   }
 
   async equip(file, url) {
@@ -81,7 +51,7 @@ export class AvatarSpawner {
     try {
       await this.clientBuilder.network.upload(file)
     } catch (err) {
-      logger.error('Avatar upload failed', { error: err.message })
+      this.logger.error('Avatar upload failed', { error: err.message })
       player.modify({ avatar: prevUrl })
       return
     }

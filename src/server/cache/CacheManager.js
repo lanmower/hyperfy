@@ -1,4 +1,4 @@
-import { BaseManager } from '../../core/patterns/BaseManager.js'
+import { BaseManager } from '../../core/patterns/index.js'
 
 class LRUNode {
   constructor(key, value, ttl) {

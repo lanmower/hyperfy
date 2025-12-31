@@ -1,5 +1,5 @@
 import { CircuitBreaker } from './CircuitBreaker.js'
-import { BaseManager } from '../../core/patterns/BaseManager.js'
+import { BaseManager } from '../../core/patterns/index.js'
 
 export class CircuitBreakerManager extends BaseManager {
   constructor() {

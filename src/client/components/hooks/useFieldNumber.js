@@ -1,38 +1,45 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback } from 'react'
+import { useFieldBase } from './useFieldBase.js'
 import { parseNumberInput } from './parseNumber.js'
 
 export function useFieldNumber(value, onChange, { dp = 0, min = -Infinity, max = Infinity, step = 1, bigStep = 2 } = {}) {
   const safeValue = value ?? 0
-  const [local, setLocal] = useState(safeValue.toFixed(dp))
-  const [focused, setFocused] = useState(false)
+  const coerce = useCallback(v => {
+    const str = typeof v === 'number' ? v.toFixed(dp) : v
+    return str === '' ? safeValue.toFixed(dp) : str
+  }, [safeValue, dp])
 
-  useEffect(() => {
-    if (!focused && local !== safeValue.toFixed(dp)) setLocal(safeValue.toFixed(dp))
-  }, [focused, safeValue, dp])
+  const { value: local, handlers } = useFieldBase(value, onChange, { coerce, selectOnFocus: true })
 
-  const setTo = useCallback(str => {
-    const num = parseNumberInput(str, safeValue, { min, max })
-    setLocal(num.toFixed(dp))
+  const handleBlur = useCallback(() => {
+    if (local === '') return
+    const num = parseNumberInput(local, safeValue, { min, max })
     onChange(+num.toFixed(dp))
-  }, [safeValue, min, max, dp, onChange])
+  }, [local, safeValue, min, max, dp, onChange])
 
-  const handleChange = e => setLocal(e.target.value)
-  const handleFocus = e => { setFocused(true); e.target.select() }
-  const handleBlur = () => {
-    setFocused(false)
-    if (local === '') { setLocal(safeValue.toFixed(dp)); return }
-    setTo(local)
-  }
-  const handleKeyDown = e => {
-    if (e.code === 'Enter') { e.preventDefault(); e.target.blur() }
-    if (e.code === 'ArrowUp') setTo(safeValue + (e.shiftKey ? bigStep : step))
-    if (e.code === 'ArrowDown') setTo(safeValue - (e.shiftKey ? bigStep : step))
-  }
+  const handleArrowKeys = useCallback(e => {
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+      const amount = e.shiftKey ? bigStep : step
+      const newNum = safeValue + (e.code === 'ArrowUp' ? amount : -amount)
+      const clamped = Math.max(min, Math.min(max, newNum))
+      onChange(clamped)
+    }
+  }, [safeValue, min, max, step, bigStep, onChange])
+
+  const handleKeyDown = useCallback(e => {
+    if (e.code === 'Enter') {
+      e.preventDefault()
+      handleBlur()
+      e.target.blur()
+    } else {
+      handleArrowKeys(e)
+    }
+  }, [handleBlur, handleArrowKeys])
 
   return {
     value: local,
-    onChange: handleChange,
-    onFocus: handleFocus,
+    onChange: handlers.onChange,
+    onFocus: handlers.onFocus,
     onBlur: handleBlur,
     onKeyDown: handleKeyDown,
   }

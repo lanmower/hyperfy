@@ -4,7 +4,7 @@ import { UIChildNode, uiChildDefaults, createYogaPropertyHandlers } from './base
 import { fillRoundRect, imageRoundRect } from '../extras/roundRect.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
-import { schema } from '../utils/validation/createNodeSchema.js'
+import { schema } from '../utils/validation/index.js'
 
 const defaults = {
   ...uiChildDefaults,

@@ -1,0 +1,7 @@
+
+> hyperfy@0.15.0 build
+> node scripts/build.mjs
+
+[dotenv-flow@4.1.0]: ".env*" files loading failed: no ".env*" files matching pattern ".env[.node_env][.local]" in "C:\dev\hyperfy" dir undefined
+(node:5132) [DEP0180] DeprecationWarning: fs.Stats constructor is deprecated.
+(Use `node --trace-deprecation ...` to show where the warning was created)

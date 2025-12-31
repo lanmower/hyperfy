@@ -8,7 +8,7 @@ import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
 const logger = new ComponentLogger('UI')
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
-import { schema } from '../utils/validation/createNodeSchema.js'
+import { schema } from '../utils/validation/index.js'
 import {
   isAlignContent,
   isAlignItem,

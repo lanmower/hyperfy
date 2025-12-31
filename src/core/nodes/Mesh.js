@@ -7,7 +7,7 @@ import { v } from '../utils/TempVectors.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { onSetRebuildIf } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
-import { schema } from '../utils/validation/createNodeSchema.js'
+import { schema } from '../utils/validation/index.js'
 import { geometryCache } from '../utils/GeometryCache.js'
 
 const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')

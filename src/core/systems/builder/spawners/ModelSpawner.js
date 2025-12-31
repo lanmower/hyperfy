@@ -1,9 +1,9 @@
-import { uuid, hashFile } from '../../../utils-client.js'
+import { hashFile } from '../../../utils-client.js'
+import { BaseSpawner } from './BaseSpawner.js'
 
-export class ModelSpawner {
+export class ModelSpawner extends BaseSpawner {
   constructor(entitySpawner) {
-    this.entitySpawner = entitySpawner
-    this.clientBuilder = entitySpawner.clientBuilder
+    super(entitySpawner)
   }
 
   async spawn(file, transform) {
@@ -13,24 +13,10 @@ export class ModelSpawner {
 
     this.clientBuilder.world.loader.insert('model', url, file)
 
-    const blueprint = {
-      id: uuid(),
-      version: 0,
+    const blueprint = this.createBlueprint({
       name: file.name.split('.')[0],
-      image: null,
-      author: null,
-      url: null,
-      desc: null,
       model: url,
-      script: null,
-      props: {},
-      preload: false,
-      public: false,
-      locked: false,
-      unique: false,
-      scene: false,
-      disabled: false,
-    }
+    })
 
     this.clientBuilder.blueprints.add(blueprint, true)
 
@@ -45,22 +31,9 @@ export class ModelSpawner {
     const distance = 1
     const spawnPos = [camPos.x + dir.x * distance, camPos.y + dir.y * distance, camPos.z + dir.z * distance]
 
-    const data = {
-      id: uuid(),
-      type: 'app',
-      blueprint: blueprint.id,
-      position: spawnPos,
-      quaternion: [0, 0, 0, 1],
-      scale: [1, 1, 1],
-      mover: null,
-      uploader: this.clientBuilder.network.id,
-      pinned: false,
-      state: {},
-    }
-
+    const data = this.createEntityData(blueprint.id, { position: spawnPos, quaternion: [0, 0, 0, 1] })
     const app = this.clientBuilder.entities.add(data, true)
 
-    await this.clientBuilder.network.upload(file)
-    app.onUploaded()
+    await this.handleUploadWithRollback([file], app)
   }
 }

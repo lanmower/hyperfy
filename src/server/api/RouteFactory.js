@@ -1,5 +1,5 @@
 // Factory pattern for creating standardized API routes with consistent error handling and logging
-import { APIMethodWrapper } from '../utils/api/APIMethodWrapper.js'
+import { APIMethodWrapper } from '../utils/api/index.js'
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 
 export class RouteFactory {

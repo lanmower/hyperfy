@@ -1,5 +1,6 @@
 import { cloneDeep } from 'lodash-es'
 import { uuid } from '../../../core/utils.js'
+import { BlueprintFactory } from '../../../core/factories/BlueprintFactory.js'
 import { Pane } from './Pane.js'
 import { addStyles, addItemImageStyles } from './SidebarStyles.js'
 
@@ -9,9 +10,7 @@ export function Add({ world, hidden }) {
   const gap = '0.5rem'
 
   const add = blueprint => {
-    blueprint = cloneDeep(blueprint)
-    blueprint.id = uuid()
-    blueprint.version = '0'
+    blueprint = BlueprintFactory.createBlueprint('app', cloneDeep(blueprint))
     world.blueprints.add(blueprint, true)
     const transform = world.builder.getSpawnTransform(true)
     world.builder.toggle(true)

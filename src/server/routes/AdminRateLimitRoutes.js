@@ -1,19 +1,18 @@
 /* AdminRateLimitRoutes: Admin endpoints for rate limit management */
 import { addToWhitelist, removeFromWhitelist, addToBlacklist, removeFromBlacklist, getWhitelist, getBlacklist } from '../config/RateLimitConfig.js'
-import { AdminRouteBuilder } from '../utils/api/AdminRouteBuilder.js'
+import { AdminRouteBuilder } from '../utils/api/index.js'
 import { getRateLimitStats, clearRateLimitForIP } from '../middleware/RateLimiter.js'
 
 const builder = new AdminRouteBuilder('Routes.Admin.RateLimit')
 
 export function registerAdminRateLimitRoutes(fastify) {
-  builder.createGetRoute(fastify, '/api/admin/rate-limits', async (request, reply, fastify) => {
+  builder.createStatsRoute(fastify, '/api/admin/rate-limits', async (fastify) => {
     builder.logInfo('Get rate limit stats')
-    return reply.code(200).send({
-      success: true,
+    return {
       stats: getRateLimitStats(),
       whitelist: getWhitelist(),
       blacklist: getBlacklist(),
-    })
+    }
   }, 'get rate limit stats')
 
   builder.createPostRoute(fastify, '/api/admin/rate-limits/clear/:ip', async (request, reply, fastify) => {

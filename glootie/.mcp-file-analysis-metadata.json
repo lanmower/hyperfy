@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": 1767154904630,
+  "lastUpdated": 1767171303691,
   "workingDirectory": "C:\\dev\\hyperfy",
   "files": [
     {
@@ -1038,10 +1038,10 @@
     {
       "path": "src/client/components/SidebarPanes/Add.js",
       "firstSeen": 1767152647034,
-      "lastReported": null,
+      "lastReported": 1767171273600,
       "reportedDates": {},
-      "lastModified": 1766561493374,
-      "lastUpdated": 1767152647034
+      "lastModified": 1767171273600,
+      "lastUpdated": 1767171303687
     },
     {
       "path": "src/client/components/SidebarPanes/App.js",
@@ -1198,10 +1198,10 @@
     {
       "path": "src/client/components/hooks/index.js",
       "firstSeen": 1767152647035,
-      "lastReported": 1767154875785,
+      "lastReported": 1767170782487,
       "reportedDates": {},
-      "lastModified": 1767154875785,
-      "lastUpdated": 1767154904623
+      "lastModified": 1767170782487,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/client/components/hooks/useAppLogic.js",
@@ -1254,10 +1254,10 @@
     {
       "path": "src/client/components/hooks/useFieldNumber.js",
       "firstSeen": 1767152647036,
-      "lastReported": 1767154857555,
+      "lastReported": 1767171055896,
       "reportedDates": {},
-      "lastModified": 1767154857555,
-      "lastUpdated": 1767154904623
+      "lastModified": 1767171055896,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/client/components/hooks/useFieldRange.js",
@@ -1278,26 +1278,26 @@
     {
       "path": "src/client/components/hooks/useFieldText.js",
       "firstSeen": 1767152647036,
-      "lastReported": null,
+      "lastReported": 1767170749362,
       "reportedDates": {},
-      "lastModified": 1766128300250,
-      "lastUpdated": 1767152647036
+      "lastModified": 1767170749362,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/client/components/hooks/useFieldTextarea.js",
       "firstSeen": 1767152647036,
-      "lastReported": null,
+      "lastReported": 1767170777136,
       "reportedDates": {},
-      "lastModified": 1766128309244,
-      "lastUpdated": 1767152647036
+      "lastModified": 1767170777136,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/client/components/hooks/useFieldVec3.js",
       "firstSeen": 1767152647036,
-      "lastReported": 1767154866085,
+      "lastReported": 1767170770450,
       "reportedDates": {},
-      "lastModified": 1767154866085,
-      "lastUpdated": 1767154904624
+      "lastModified": 1767170770450,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/client/components/hooks/useFileUpload.js",
@@ -2958,10 +2958,10 @@
     {
       "path": "src/core/nodes/Action.js",
       "firstSeen": 1767152647066,
-      "lastReported": null,
+      "lastReported": 1767169436092,
       "reportedDates": {},
-      "lastModified": 1767105563772,
-      "lastUpdated": 1767152647066
+      "lastModified": 1767169436092,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Anchor.js",
@@ -2974,34 +2974,34 @@
     {
       "path": "src/core/nodes/Audio.js",
       "firstSeen": 1767152647066,
-      "lastReported": null,
+      "lastReported": 1767169436092,
       "reportedDates": {},
-      "lastModified": 1767112505740,
-      "lastUpdated": 1767152647066
+      "lastModified": 1767169436092,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Avatar.js",
       "firstSeen": 1767152647066,
-      "lastReported": null,
+      "lastReported": 1767169436092,
       "reportedDates": {},
-      "lastModified": 1767105503742,
-      "lastUpdated": 1767152647066
+      "lastModified": 1767169436092,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Collider.js",
       "firstSeen": 1767152647067,
-      "lastReported": null,
+      "lastReported": 1767169436092,
       "reportedDates": {},
-      "lastModified": 1767105707944,
-      "lastUpdated": 1767152647067
+      "lastModified": 1767169436092,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Controller.js",
       "firstSeen": 1767152647067,
-      "lastReported": null,
+      "lastReported": 1767169436092,
       "reportedDates": {},
-      "lastModified": 1767105707947,
-      "lastUpdated": 1767152647067
+      "lastModified": 1767169436092,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Group.js",
@@ -3014,42 +3014,42 @@
     {
       "path": "src/core/nodes/Image.js",
       "firstSeen": 1767152647067,
-      "lastReported": null,
+      "lastReported": 1767169436094,
       "reportedDates": {},
-      "lastModified": 1767105503732,
-      "lastUpdated": 1767152647067
+      "lastModified": 1767169436094,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Joint.js",
       "firstSeen": 1767152647068,
-      "lastReported": null,
+      "lastReported": 1767169436094,
       "reportedDates": {},
-      "lastModified": 1767105707946,
-      "lastUpdated": 1767152647068
+      "lastModified": 1767169436094,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/LOD.js",
       "firstSeen": 1767152647068,
-      "lastReported": null,
+      "lastReported": 1767169436094,
       "reportedDates": {},
-      "lastModified": 1767105563772,
-      "lastUpdated": 1767152647068
+      "lastModified": 1767169436094,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Mesh.js",
       "firstSeen": 1767152647068,
-      "lastReported": null,
+      "lastReported": 1767169436094,
       "reportedDates": {},
-      "lastModified": 1767105707940,
-      "lastUpdated": 1767152647068
+      "lastModified": 1767169436094,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Nametag.js",
       "firstSeen": 1767152647068,
-      "lastReported": null,
+      "lastReported": 1767169436094,
       "reportedDates": {},
-      "lastModified": 1767105563772,
-      "lastUpdated": 1767152647068
+      "lastModified": 1767169436094,
+      "lastUpdated": 1767171303688
     },
     {
       "path": "src/core/nodes/Node.js",
@@ -3062,10 +3062,10 @@
     {
       "path": "src/core/nodes/Particles.js",
       "firstSeen": 1767152647069,
-      "lastReported": null,
+      "lastReported": 1767169436096,
       "reportedDates": {},
-      "lastModified": 1767105707944,
-      "lastUpdated": 1767152647069
+      "lastModified": 1767169436096,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/Prim.js",
@@ -3078,26 +3078,26 @@
     {
       "path": "src/core/nodes/RigidBody.js",
       "firstSeen": 1767152647069,
-      "lastReported": null,
+      "lastReported": 1767169436096,
       "reportedDates": {},
-      "lastModified": 1767105707944,
-      "lastUpdated": 1767152647069
+      "lastModified": 1767169436096,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/SkinnedMesh.js",
       "firstSeen": 1767152647069,
-      "lastReported": null,
+      "lastReported": 1767169436097,
       "reportedDates": {},
-      "lastModified": 1767105707947,
-      "lastUpdated": 1767152647069
+      "lastModified": 1767169436097,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/Sky.js",
       "firstSeen": 1767152647069,
-      "lastReported": null,
+      "lastReported": 1767169436097,
       "reportedDates": {},
-      "lastModified": 1767105707948,
-      "lastUpdated": 1767152647069
+      "lastModified": 1767169436097,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/Snap.js",
@@ -3110,42 +3110,42 @@
     {
       "path": "src/core/nodes/UI.js",
       "firstSeen": 1767152647070,
-      "lastReported": null,
+      "lastReported": 1767169436097,
       "reportedDates": {},
-      "lastModified": 1767123066228,
-      "lastUpdated": 1767152647070
+      "lastModified": 1767169436097,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/UIImage.js",
       "firstSeen": 1767152647070,
-      "lastReported": null,
+      "lastReported": 1767169436097,
       "reportedDates": {},
-      "lastModified": 1767105563771,
-      "lastUpdated": 1767152647070
+      "lastModified": 1767169436097,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/UIText.js",
       "firstSeen": 1767152647070,
-      "lastReported": null,
+      "lastReported": 1767169436097,
       "reportedDates": {},
-      "lastModified": 1767105563771,
-      "lastUpdated": 1767152647070
+      "lastModified": 1767169436097,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/UIView.js",
       "firstSeen": 1767152647071,
-      "lastReported": null,
+      "lastReported": 1767169436097,
       "reportedDates": {},
-      "lastModified": 1767105563771,
-      "lastUpdated": 1767152647071
+      "lastModified": 1767169436097,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/Video.js",
       "firstSeen": 1767152647071,
-      "lastReported": null,
+      "lastReported": 1767169436099,
       "reportedDates": {},
-      "lastModified": 1767123054749,
-      "lastUpdated": 1767152647071
+      "lastModified": 1767169436099,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/nodes/audio/AudioPannerController.js",
@@ -4278,10 +4278,10 @@
     {
       "path": "src/core/systems/apps/AppAPIConfig.js",
       "firstSeen": 1767152647099,
-      "lastReported": null,
+      "lastReported": 1767169436099,
       "reportedDates": {},
-      "lastModified": 1767070709747,
-      "lastUpdated": 1767152647099
+      "lastModified": 1767169436099,
+      "lastUpdated": 1767169932362
     },
     {
       "path": "src/core/systems/apps/AppRegistry.js",
@@ -4302,10 +4302,10 @@
     {
       "path": "src/core/systems/apps/WorldAPIConfig.js",
       "firstSeen": 1767152647100,
-      "lastReported": null,
+      "lastReported": 1767169436100,
       "reportedDates": {},
-      "lastModified": 1767043400519,
-      "lastUpdated": 1767152647100
+      "lastModified": 1767169436100,
+      "lastUpdated": 1767169932362
     },
     {
       "path": "src/core/systems/apps/fileRemaps.js",
@@ -4390,10 +4390,10 @@
     {
       "path": "src/core/systems/builder/EntityCommandHandler.js",
       "firstSeen": 1767152647102,
-      "lastReported": null,
+      "lastReported": 1767171234910,
       "reportedDates": {},
-      "lastModified": 1767071631502,
-      "lastUpdated": 1767152647102
+      "lastModified": 1767171234910,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/systems/builder/EntitySpawner.js",
@@ -4470,26 +4470,26 @@
     {
       "path": "src/core/systems/builder/spawners/AppSpawner.js",
       "firstSeen": 1767152647105,
-      "lastReported": null,
+      "lastReported": 1767169563142,
       "reportedDates": {},
-      "lastModified": 1766984646665,
-      "lastUpdated": 1767152647105
+      "lastModified": 1767169563142,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/systems/builder/spawners/AvatarSpawner.js",
       "firstSeen": 1767152647106,
-      "lastReported": null,
+      "lastReported": 1767169580653,
       "reportedDates": {},
-      "lastModified": 1766984605316,
-      "lastUpdated": 1767152647106
+      "lastModified": 1767169580653,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/systems/builder/spawners/ModelSpawner.js",
       "firstSeen": 1767152647106,
-      "lastReported": null,
+      "lastReported": 1767169595697,
       "reportedDates": {},
-      "lastModified": 1766597070665,
-      "lastUpdated": 1767152647106
+      "lastModified": 1767169595697,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/core/systems/controls/TouchInputHandler.js",
@@ -5494,10 +5494,10 @@
     {
       "path": "src/server/api/RouteFactory.js",
       "firstSeen": 1767152647128,
-      "lastReported": null,
+      "lastReported": 1767169436100,
       "reportedDates": {},
-      "lastModified": 1767123805909,
-      "lastUpdated": 1767152647128
+      "lastModified": 1767169436100,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/api/SchemaValidator.js",
@@ -5534,10 +5534,10 @@
     {
       "path": "src/server/cache/CacheManager.js",
       "firstSeen": 1767152647129,
-      "lastReported": null,
+      "lastReported": 1767169452992,
       "reportedDates": {},
-      "lastModified": 1767123559624,
-      "lastUpdated": 1767152647129
+      "lastModified": 1767169452992,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/cache/verify-optimizations.js",
@@ -5814,18 +5814,18 @@
     {
       "path": "src/server/resilience/CircuitBreakerManager.js",
       "firstSeen": 1767152647134,
-      "lastReported": null,
+      "lastReported": 1767169452997,
       "reportedDates": {},
-      "lastModified": 1767123580596,
-      "lastUpdated": 1767152647134
+      "lastModified": 1767169452997,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/resilience/DegradationManager.js",
       "firstSeen": 1767152647134,
-      "lastReported": null,
+      "lastReported": 1767169452997,
       "reportedDates": {},
-      "lastModified": 1767123603560,
-      "lastUpdated": 1767152647134
+      "lastModified": 1767169452997,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/resilience/DegradationStrategies.js",
@@ -5838,42 +5838,42 @@
     {
       "path": "src/server/resilience/ShutdownManager.js",
       "firstSeen": 1767152647134,
-      "lastReported": null,
+      "lastReported": 1767169453000,
       "reportedDates": {},
-      "lastModified": 1767123610883,
-      "lastUpdated": 1767152647134
+      "lastModified": 1767169453000,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/routes/AdminCircuitBreakerRoutes.js",
       "firstSeen": 1767152647134,
-      "lastReported": null,
+      "lastReported": 1767169436100,
       "reportedDates": {},
-      "lastModified": 1767131115089,
-      "lastUpdated": 1767152647134
+      "lastModified": 1767169436100,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/routes/AdminCorsRoutes.js",
       "firstSeen": 1767152647134,
-      "lastReported": null,
+      "lastReported": 1767169436100,
       "reportedDates": {},
-      "lastModified": 1767131125905,
-      "lastUpdated": 1767152647134
+      "lastModified": 1767169436100,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/routes/AdminDegradationRoutes.js",
       "firstSeen": 1767152647135,
-      "lastReported": null,
+      "lastReported": 1767169436100,
       "reportedDates": {},
-      "lastModified": 1767131136889,
-      "lastUpdated": 1767152647135
+      "lastModified": 1767169436100,
+      "lastUpdated": 1767171303689
     },
     {
       "path": "src/server/routes/AdminRateLimitRoutes.js",
       "firstSeen": 1767152647135,
-      "lastReported": null,
+      "lastReported": 1767169436100,
       "reportedDates": {},
-      "lastModified": 1767131150159,
-      "lastUpdated": 1767152647135
+      "lastModified": 1767169436100,
+      "lastUpdated": 1767171303690
     },
     {
       "path": "src/server/routes/StaticAssets.js",
@@ -5998,10 +5998,10 @@
     {
       "path": "src/server/services/TimeoutManager.js",
       "firstSeen": 1767152647136,
-      "lastReported": null,
+      "lastReported": 1767169453000,
       "reportedDates": {},
-      "lastModified": 1767123587470,
-      "lastUpdated": 1767152647136
+      "lastModified": 1767169453000,
+      "lastUpdated": 1767171303690
     },
     {
       "path": "src/server/services/WorldPersistence.js",
@@ -6274,6 +6274,14 @@
       "reportedDates": {},
       "lastModified": 1765742271203,
       "lastUpdated": 1767152647138
+    },
+    {
+      "path": "glootie/.mcp-file-analysis-metadata.json",
+      "firstSeen": 1767154916528,
+      "lastReported": null,
+      "reportedDates": {},
+      "lastModified": 1767171256121,
+      "lastUpdated": 1767171303687
     }
   ]
 }
