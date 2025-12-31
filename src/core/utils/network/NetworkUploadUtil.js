@@ -1,4 +1,5 @@
 import { StructuredLogger } from '../logging/index.js'
+import asyncRetry from 'async-retry'
 
 const logger = new StructuredLogger('NetworkUploadUtil')
 
@@ -12,36 +13,39 @@ export class NetworkUploadUtil {
       onRetry
     } = options
 
-    let lastError
-    let delay = initialDelay
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        if (onProgress) onProgress(attempt === 0 ? 0 : 50)
-        const result = await network.uploadFile(file)
-        if (onProgress) onProgress(100)
-        return { success: true, file, hash: result }
-      } catch (err) {
-        lastError = err
-        const shouldRetry = this.shouldRetryError(err) && attempt < maxRetries
-
-        if (shouldRetry) {
-          onRetry?.(file, attempt + 1, err.message)
-          logger.warn('Upload retry', { filename: file.name, attempt: attempt + 1, error: err.message })
-          await new Promise(resolve => setTimeout(resolve, delay))
-          delay = Math.min(delay * 2, maxDelay)
-        } else {
-          logger.error('Upload failed', {
-            filename: file.name,
-            attempt: attempt + 1,
-            error: err.message,
-            shouldRetry
-          })
+    try {
+      if (onProgress) onProgress(0)
+      const result = await asyncRetry(
+        async (bail) => {
+          try {
+            const hash = await network.uploadFile(file)
+            if (onProgress) onProgress(100)
+            return hash
+          } catch (err) {
+            if (!this.shouldRetryError(err)) {
+              bail(err)
+            }
+            throw err
+          }
+        },
+        {
+          retries: maxRetries,
+          minTimeout: initialDelay,
+          maxTimeout: maxDelay,
+          onRetry: (err, attempt) => {
+            onRetry?.(file, attempt, err.message)
+            logger.warn('Upload retry', { filename: file.name, attempt, error: err.message })
+          }
         }
-      }
+      )
+      return { success: true, file, hash: result }
+    } catch (err) {
+      logger.error('Upload failed', {
+        filename: file.name,
+        error: err.message
+      })
+      throw new Error(`Upload failed after ${maxRetries} retries: ${err.message}`)
     }
-
-    throw new Error(`Upload failed after ${maxRetries} retries: ${lastError.message}`)
   }
 
   static async uploadBatch(network, files, options = {}) {

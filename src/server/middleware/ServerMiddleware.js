@@ -2,13 +2,13 @@ import cors from '@fastify/cors'
 import compress from '@fastify/compress'
 import multipart from '@fastify/multipart'
 import ws from '@fastify/websocket'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { createRequestIdMiddleware, createErrorHandler } from './RequestTracking.js'
 import { createTimeoutMiddleware } from './TimeoutMiddleware.js'
 import { ErrorResponses } from './ErrorResponses.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
-const logger = new StructuredLogger('ServerMiddleware')
+const logger = LoggerFactory.get('ServerMiddleware')
 
 export function registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager) {
   fastify.register(createRequestIdMiddleware())

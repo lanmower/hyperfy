@@ -1,7 +1,7 @@
 import { performance } from 'perf_hooks'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 
-const logger = new StructuredLogger('Routes.Health')
+const logger = LoggerFactory.get('Routes.Health')
 
 export function registerStatusAPI(fastify, world) {
   fastify.get('/api/status', async (request, reply) => {

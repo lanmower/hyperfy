@@ -1,36 +1,13 @@
 import { BaseManager } from '../../core/patterns/index.js'
-
-class LRUNode {
-  constructor(key, value, ttl) {
-    this.key = key
-    this.value = value
-    this.expiry = ttl ? Date.now() + ttl : null
-    this.prev = null
-    this.next = null
-  }
-
-  isExpired() {
-    return this.expiry && Date.now() > this.expiry
-  }
-}
+import LRU from 'lru-cache'
 
 export class CacheManager extends BaseManager {
   constructor(maxSize = 1000, defaultTTL = null) {
     super(null, 'CacheManager')
     this.maxSize = maxSize
     this.defaultTTL = defaultTTL
-    this.cache = new Map()
-    this.head = new LRUNode(null, null)
-    this.tail = new LRUNode(null, null)
-    this.head.next = this.tail
-    this.tail.prev = this.head
-    this.stats = {
-      hits: 0,
-      misses: 0,
-      evictions: 0,
-      sets: 0,
-      deletes: 0,
-    }
+    this.cache = new LRU({ max: maxSize, ttl: defaultTTL })
+    this.stats = { hits: 0, misses: 0, evictions: 0, sets: 0, deletes: 0 }
     this.invalidationCallbacks = new Map()
     this._startMemoryMonitor()
   }
@@ -48,66 +25,35 @@ export class CacheManager extends BaseManager {
   }
 
   get(key) {
-    const node = this.cache.get(key)
-    if (!node) {
+    const value = this.cache.get(key)
+    if (value === undefined) {
       this.stats.misses++
-      return undefined
+    } else {
+      this.stats.hits++
     }
-
-    if (node.isExpired()) {
-      this._removeNode(node)
-      this.cache.delete(key)
-      this.stats.misses++
-      return undefined
-    }
-
-    this._moveToFront(node)
-    this.stats.hits++
-    return node.value
+    return value
   }
 
   set(key, value, ttl = this.defaultTTL) {
-    let node = this.cache.get(key)
-
-    if (node) {
-      node.value = value
-      node.expiry = ttl ? Date.now() + ttl : null
-      this._moveToFront(node)
-    } else {
-      node = new LRUNode(key, value, ttl)
-      this._addToFront(node)
-      this.cache.set(key, node)
-
-      if (this.cache.size > this.maxSize) {
-        const removed = this.tail.prev
-        this._removeNode(removed)
-        this.cache.delete(removed.key)
-        this.stats.evictions++
-      }
-    }
-
+    this.cache.set(key, value, { ttl })
     this.stats.sets++
     return value
   }
 
   delete(key) {
-    const node = this.cache.get(key)
-    if (node) {
-      this._removeNode(node)
+    if (this.cache.has(key)) {
       this.cache.delete(key)
       this.stats.deletes++
     }
   }
 
   invalidate(pattern) {
-    const keys = Array.from(this.cache.keys())
     const regex = new RegExp(pattern)
-    for (const key of keys) {
+    for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.delete(key)
       }
     }
-
     const callbacks = this.invalidationCallbacks.get(pattern) || []
     for (const cb of callbacks) {
       cb()
@@ -123,8 +69,6 @@ export class CacheManager extends BaseManager {
 
   clear() {
     this.cache.clear()
-    this.head.next = this.tail
-    this.tail.prev = this.head
   }
 
   getStats() {
@@ -140,31 +84,15 @@ export class CacheManager extends BaseManager {
     }
   }
 
-  _moveToFront(node) {
-    this._removeNode(node)
-    this._addToFront(node)
-  }
-
-  _addToFront(node) {
-    node.prev = this.head
-    node.next = this.head.next
-    this.head.next.prev = node
-    this.head.next = node
-  }
-
-  _removeNode(node) {
-    node.prev.next = node.next
-    node.next.prev = node.prev
-  }
-
   _estimateMemory() {
     let bytes = 0
-    for (const [key, node] of this.cache) {
+    for (const key of this.cache.keys()) {
+      const value = this.cache.get(key)
       bytes += key.length * 2
-      if (typeof node.value === 'string') {
-        bytes += node.value.length * 2
-      } else if (typeof node.value === 'object') {
-        bytes += JSON.stringify(node.value).length * 2
+      if (typeof value === 'string') {
+        bytes += value.length * 2
+      } else if (typeof value === 'object') {
+        bytes += JSON.stringify(value).length * 2
       } else {
         bytes += 8
       }

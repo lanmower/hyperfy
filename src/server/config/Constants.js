@@ -47,6 +47,7 @@ export const ServerConstants = {
     MAX_LOG_FILES: 10,
     LOG_RETENTION_DAYS: 30,
     REQUEST_LOG_SAMPLE_RATE: 0.1,
+    REQUEST_ID_LENGTH: 12,
   },
 
   MONITORING: {

@@ -1,8 +1,8 @@
 import fs from 'fs-extra'
 import { cloneDeep, throttle } from 'lodash-es'
-import { StructuredLogger } from '../core/utils/logging/index.js'
+import { LoggerFactory } from '../core/utils/logging/index.js'
 
-const logger = new StructuredLogger('Storage')
+const logger = LoggerFactory.get('Storage')
 
 export class Storage {
   constructor(file, circuitBreakerManager = null) {

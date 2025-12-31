@@ -1,11 +1,12 @@
 import { nanoid } from 'nanoid'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 import { createFastifyPlugin } from './PluginFactory.js'
+import { ServerConstants } from '../config/Constants.js'
 
 function createRequestIdMiddlewareHook() {
   async function requestIdHook(fastify) {
     fastify.addHook('onRequest', async (request, reply) => {
-      request.id = request.headers['x-request-id'] || nanoid(12)
+      request.id = request.headers['x-request-id'] || nanoid(ServerConstants.LOGGING.REQUEST_ID_LENGTH)
       request.startTime = performance.now()
     })
 

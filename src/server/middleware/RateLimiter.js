@@ -1,10 +1,11 @@
 import { RATE_LIMIT_PRESETS } from '../config/RateLimitConfig.js'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { ErrorResponses } from './ErrorResponses.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
+import { TTLMap } from '../utils/collections/TTLMap.js'
 
-const logger = new StructuredLogger('RateLimiter')
-const rateLimitStore = new Map()
+const logger = LoggerFactory.get('RateLimiter')
+const rateLimitStore = new TTLMap(60000)
 const violationLog = []
 
 function getClientIP(req) {
@@ -14,29 +15,13 @@ function getClientIP(req) {
     'unknown'
 }
 
-function cleanupExpiredRequests() {
-  const now = Date.now()
-  for (const [key, data] of rateLimitStore.entries()) {
-    const cutoff = now - data.config.window
-    data.requests = data.requests.filter(ts => ts > cutoff)
-    if (data.requests.length === 0) {
-      rateLimitStore.delete(key)
-    }
-  }
-}
-
-setInterval(cleanupExpiredRequests, 60000)
-
 function checkRateLimit(clientIP, endpoint, config) {
   const now = Date.now()
   const key = `${clientIP}:${endpoint}`
   const cutoff = now - config.window
 
   if (!rateLimitStore.has(key)) {
-    rateLimitStore.set(key, {
-      requests: [],
-      config,
-    })
+    rateLimitStore.set(key, { requests: [], config }, config.window)
   }
 
   const data = rateLimitStore.get(key)

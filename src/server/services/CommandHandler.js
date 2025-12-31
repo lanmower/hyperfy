@@ -2,19 +2,20 @@ import { uuid } from '../../core/utils.js'
 import { Ranks } from '../../core/extras/ranks.js'
 import moment from 'moment'
 import { serializeForNetwork } from '../../core/schemas/ChatMessage.schema.js'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { MasterConfig } from '../config/MasterConfig.js'
+import { TTLMap } from '../utils/collections/TTLMap.js'
 
-const logger = new StructuredLogger('CommandHandler')
+const logger = LoggerFactory.get('CommandHandler')
 
 const MAX_ADMIN_ATTEMPTS = MasterConfig.security.maxAdminAttempts
 const ADMIN_LOCKOUT_TIME = MasterConfig.security.adminLockoutTime
-const adminAttempts = new Map()
+const adminAttempts = new TTLMap(ADMIN_LOCKOUT_TIME)
 
 function checkAdminAttempts(clientIP) {
   const now = Date.now()
   if (!adminAttempts.has(clientIP)) {
-    adminAttempts.set(clientIP, { attempts: 0, lockedUntil: 0 })
+    adminAttempts.set(clientIP, { attempts: 0, lockedUntil: 0 }, ADMIN_LOCKOUT_TIME)
   }
 
   const record = adminAttempts.get(clientIP)
@@ -148,7 +149,7 @@ export class CommandHandler {
     player.data.name = name
     player.modify({ name })
     this.world.network.send('entityModified', { id, name })
-    this.sendChat(socket, `Name set to ${name}!`)
+    this.sendChat(socket, 'Name set to ' + name + '!')
     await this.db('users').where('id', userId).update({ name })
   }
 
@@ -161,8 +162,9 @@ export class CommandHandler {
   async server(socket, op) {
     if (op === 'stats') {
       const stats = await this.world.monitor.getStats()
-      this.sendChat(socket, `CPU: ${stats.currentCPU.toFixed(3)}%`)
-      this.sendChat(socket, `Memory: ${stats.currentMemory} / ${stats.maxMemory} MB (${((stats.currentMemory / stats.maxMemory) * 100).toFixed(1)}%)`)
+      this.sendChat(socket, 'CPU: ' + stats.currentCPU.toFixed(3) + '%')
+      const percent = ((stats.currentMemory / stats.maxMemory) * 100).toFixed(1)
+      this.sendChat(socket, 'Memory: ' + stats.currentMemory + ' / ' + stats.maxMemory + ' MB (' + percent + '%)')
     }
   }
 

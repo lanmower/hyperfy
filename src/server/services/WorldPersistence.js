@@ -1,9 +1,9 @@
 
 import { PersistenceBase } from '../../core/services/PersistenceBase.js'
 import { ScriptValidator } from '../security/ScriptValidator.js'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 
-const logger = new StructuredLogger('WorldPersistence')
+const logger = LoggerFactory.get('WorldPersistence')
 
 export class WorldPersistence extends PersistenceBase {
   constructor(db, fileUploader = null) {

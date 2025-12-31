@@ -1,9 +1,9 @@
-import { StructuredLogger } from '../../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../../core/utils/logging/index.js'
 import { ErrorResponseBuilder } from './ErrorResponseBuilder.js'
 import { HyperfyError } from '../errors/HyperfyError.js'
 import { OperationError } from '../errors/OperationError.js'
 
-const logger = new StructuredLogger('APIMethodWrapper')
+const logger = LoggerFactory.get('APIMethodWrapper')
 
 export class APIMethodWrapper {
   static async wrapMethod(fn, options = {}) {

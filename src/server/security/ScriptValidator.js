@@ -1,7 +1,7 @@
 import { InputSanitizer } from '../../core/security/InputSanitizer.js'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 
-const logger = new StructuredLogger('ScriptValidator')
+const logger = LoggerFactory.get('ScriptValidator')
 
 export class ScriptValidator {
   static validateBlueprint(blueprint, context = {}) {

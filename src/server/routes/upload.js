@@ -2,11 +2,11 @@ import path from 'path'
 import fs from 'fs-extra'
 import { hashFile } from '../../core/utils.js'
 import { createRateLimiter } from '../middleware/RateLimiter.js'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 import { MasterConfig } from '../config/MasterConfig.js'
 
-const logger = new StructuredLogger('Routes.Upload')
+const logger = LoggerFactory.get('Routes.Upload')
 
 const BLOCKED_EXTENSIONS = new Set(['exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'js'])
 

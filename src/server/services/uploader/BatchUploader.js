@@ -1,6 +1,6 @@
-import { StructuredLogger } from '../../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../../core/utils/logging/index.js'
 
-const logger = new StructuredLogger('BatchUploader')
+const logger = LoggerFactory.get('BatchUploader')
 
 export class BatchUploader {
   constructor(fileUploader) {

@@ -1,6 +1,6 @@
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 
-const logger = new StructuredLogger('CircuitBreaker')
+const logger = LoggerFactory.get('CircuitBreaker')
 
 const STATE = {
   CLOSED: 'CLOSED',

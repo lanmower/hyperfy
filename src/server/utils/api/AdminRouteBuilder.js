@@ -1,12 +1,12 @@
 /* AdminRouteBuilder: Consolidates admin route patterns */
 import { adminOnlyMiddleware } from '../../middleware/authMiddleware.js'
-import { StructuredLogger } from '../../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../../core/utils/logging/index.js'
 import { APIMethodWrapper } from './APIMethodWrapper.js'
 import { ErrorResponseBuilder } from './ErrorResponseBuilder.js'
 
 export class AdminRouteBuilder {
   constructor(loggerName) {
-    this.logger = new StructuredLogger(loggerName)
+    this.logger = LoggerFactory.get(loggerName)
   }
 
   createRoute(fastify, method, path, handler, description) {

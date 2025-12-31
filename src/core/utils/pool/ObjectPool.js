@@ -1,4 +1,5 @@
 import { StructuredLogger } from '../logging/index.js'
+import GenericPool from 'generic-pool'
 
 const logger = new StructuredLogger('ObjectPool')
 
@@ -6,67 +7,58 @@ export class ObjectPool {
   constructor(Factory, initialSize = 10, name = 'ObjectPool') {
     this.Factory = Factory
     this.name = name
-    this.available = []
-    this.inUse = new Set()
     this.created = 0
     this.reused = 0
     this.returned = 0
 
+    this.pool = GenericPool.createPool({
+      create: async () => {
+        this.created++
+        return new Factory()
+      },
+      destroy: async (item) => {
+        if (item.dispose) {
+          item.dispose()
+        }
+      }
+    }, { max: initialSize * 2 })
+
     for (let i = 0; i < initialSize; i++) {
-      this.available.push(new Factory())
-      this.created++
+      this.pool.acquire().then(item => {
+        this.reused++
+        this.pool.release(item)
+      })
     }
 
     logger.debug(`${name} created`, { initialSize, factoryName: Factory.name })
   }
 
   acquire() {
-    let item
-    if (this.available.length > 0) {
-      item = this.available.pop()
+    return this.pool.acquire().then(item => {
       this.reused++
-    } else {
-      item = new this.Factory()
-      this.created++
-    }
-    this.inUse.add(item)
-    return item
+      return item
+    })
   }
 
   release(item) {
-    if (!this.inUse.has(item)) {
-      logger.warn('Attempt to release item not from pool', { name: this.name })
-      return false
+    if (item) {
+      this.returned++
+      return this.pool.release(item).then(() => true).catch(() => false)
     }
-    this.inUse.delete(item)
-    this.available.push(item)
-    this.returned++
-    return true
+    return Promise.resolve(false)
   }
 
-  clear() {
-    for (const item of this.inUse) {
-      if (item.dispose) {
-        item.dispose()
-      }
-    }
-    this.inUse.clear()
-
-    for (const item of this.available) {
-      if (item.dispose) {
-        item.dispose()
-      }
-    }
-    this.available = []
-
+  async clear() {
+    await this.pool.drain()
+    await this.pool.clear()
     logger.debug(`${this.name} cleared`)
   }
 
   getStats() {
     return {
       name: this.name,
-      available: this.available.length,
-      inUse: this.inUse.size,
+      available: this.pool.availableObjectsCount(),
+      inUse: this.pool.waitingClientsCount(),
       created: this.created,
       reused: this.reused,
       returned: this.returned,
@@ -74,8 +66,8 @@ export class ObjectPool {
     }
   }
 
-  destroy() {
-    this.clear()
+  async destroy() {
+    await this.clear()
     this.Factory = null
   }
 }
@@ -102,12 +94,12 @@ export class VectorPool {
     return this.pool.getStats()
   }
 
-  clear() {
-    this.pool.clear()
+  async clear() {
+    return this.pool.clear()
   }
 
-  destroy() {
-    this.pool.destroy()
+  async destroy() {
+    return this.pool.destroy()
   }
 }
 
@@ -134,12 +126,12 @@ export class QuaternionPool {
     return this.pool.getStats()
   }
 
-  clear() {
-    this.pool.clear()
+  async clear() {
+    return this.pool.clear()
   }
 
-  destroy() {
-    this.pool.destroy()
+  async destroy() {
+    return this.pool.destroy()
   }
 }
 
@@ -160,11 +152,11 @@ export class Matrix4Pool {
     return this.pool.getStats()
   }
 
-  clear() {
-    this.pool.clear()
+  async clear() {
+    return this.pool.clear()
   }
 
-  destroy() {
-    this.pool.destroy()
+  async destroy() {
+    return this.pool.destroy()
   }
 }

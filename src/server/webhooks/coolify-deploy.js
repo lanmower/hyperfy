@@ -2,11 +2,11 @@ import { execSync } from 'child_process'
 import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { LoggerFactory } from '../../core/utils/logging/index.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.join(dirname, '../../../')
-const logger = new StructuredLogger('CoolifyDeploy')
+const logger = LoggerFactory.get('CoolifyDeploy')
 
 const deploymentStates = new Map()
 
