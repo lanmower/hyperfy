@@ -62,7 +62,7 @@ export class CommandHandler {
       return { valid: false, error: 'Invalid command structure' }
     }
 
-    if (args.length === 0) {
+    if (!args.length) {
       logger.error('Empty command received', {})
       return { valid: false, error: 'Empty command' }
     }

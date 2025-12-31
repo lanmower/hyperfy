@@ -56,7 +56,7 @@ export class ScriptExecutor {
       let evaluated
       try {
         if (typeof scriptCode === 'string') {
-          if (scriptCode.trim().length === 0) {
+          if (!scriptCode.trim().length) {
             logger.warn('Empty script code provided')
             return true
           }

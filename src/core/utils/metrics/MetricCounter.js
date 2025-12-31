@@ -25,7 +25,7 @@ export class MetricCounter {
   }
 
   getMedian() {
-    if (this.values.length === 0) return 0
+    if (!this.values.length) return 0
     const sorted = [...this.values].sort((a, b) => a - b)
     const mid = Math.floor(sorted.length / 2)
     return sorted.length % 2 === 0
@@ -34,7 +34,7 @@ export class MetricCounter {
   }
 
   getPercentile(p) {
-    if (this.values.length === 0) return 0
+    if (!this.values.length) return 0
     const sorted = [...this.values].sort((a, b) => a - b)
     const index = Math.ceil((p / 100) * sorted.length) - 1
     return sorted[Math.max(0, index)]

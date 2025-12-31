@@ -67,7 +67,7 @@ class AnthropicClient extends BaseAIClient {
   }
 
   validateResponse(resp, operation) {
-    if (!resp.content || !Array.isArray(resp.content) || resp.content.length === 0) {
+    if (!Array.isArray(resp.content)?.length) {
       throw new Error(`${operation}: API returned empty content array`)
     }
     if (!resp.content[0].text) {
@@ -104,7 +104,7 @@ class XAIClient extends BaseAIClient {
   }
 
   validateResponse(data, operation) {
-    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+    if (!Array.isArray(data.choices)?.length) {
       throw new Error(`${operation}: API returned empty choices array`)
     }
     if (!data.choices[0].message || !data.choices[0].message.content) {
@@ -145,10 +145,10 @@ class GoogleClient extends BaseAIClient {
   }
 
   validateResponse(data, operation) {
-    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+    if (!Array.isArray(data.candidates)?.length) {
       throw new Error(`${operation}: API returned empty candidates array`)
     }
-    if (!data.candidates[0].content || !data.candidates[0].content.parts || data.candidates[0].content.parts.length === 0) {
+    if (!Array.isArray(data.candidates[0].content?.parts)?.length) {
       throw new Error(`${operation}: API response missing content.parts field`)
     }
   }

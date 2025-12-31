@@ -11,6 +11,11 @@ export class CleanupTracker {
       failed: 0,
       pending: 0
     }
+    this._pendingCount = 0
+  }
+
+  _calculatePendingCount() {
+    return Array.from(this.cleanups.values()).reduce((sum, arr) => sum + arr.filter(c => !c.executed).length, 0)
   }
 
   registerCleanup(name, cleanupFn, priority = 0) {
@@ -27,7 +32,7 @@ export class CleanupTracker {
       duration: null
     })
 
-    this.cleanupStats.pending = Array.from(this.cleanups.values()).reduce((sum, arr) => sum + arr.filter(c => !c.executed).length, 0)
+    this.cleanupStats.pending = this._calculatePendingCount()
 
     return () => {
       this.deregisterCleanup(name, cleanupFn)
@@ -43,7 +48,7 @@ export class CleanupTracker {
       items.splice(index, 1)
     }
 
-    this.cleanupStats.pending = Array.from(this.cleanups.values()).reduce((sum, arr) => sum + arr.filter(c => !c.executed).length, 0)
+    this.cleanupStats.pending = this._calculatePendingCount()
   }
 
   async executeCleanups(filter = null) {
@@ -85,7 +90,7 @@ export class CleanupTracker {
     }
 
     this.cleanupStats.total = this.cleanupStats.successful + this.cleanupStats.failed
-    this.cleanupStats.pending = Array.from(this.cleanups.values()).reduce((sum, arr) => sum + arr.filter(c => !c.executed).length, 0)
+    this.cleanupStats.pending = this._calculatePendingCount()
 
     return results
   }
@@ -112,7 +117,7 @@ export class CleanupTracker {
       .flat()
       .filter(c => c.executed && c.duration)
 
-    if (executed.length === 0) return 0
+    if (!executed.length) return 0
     const total = executed.reduce((sum, c) => sum + c.duration, 0)
     return Math.round(total / executed.length)
   }

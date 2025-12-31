@@ -139,7 +139,7 @@ async function recordRollback(fromTag, toTag) {
 }
 
 async function promptForVersion(versions) {
-  if (versions.length === 0) {
+  if (!versions.length) {
     await log('fail', 'No previous versions found')
     return null
   }
@@ -169,7 +169,7 @@ async function rollback() {
   }
 
   const versions = await getReleaseHistory()
-  if (versions.length === 0) {
+  if (!versions.length) {
     await log('fail', 'No release history available')
     process.exit(1)
   }

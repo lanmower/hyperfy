@@ -87,7 +87,7 @@ export class NullSafetyHelper {
     if (!blueprint.name) errors.push('Blueprint missing name')
 
     return {
-      valid: errors.length === 0,
+      valid: !errors.length,
       errors,
     }
   }
@@ -100,7 +100,7 @@ export class NullSafetyHelper {
     if (!entity.data?.type) errors.push('Entity missing data.type')
 
     return {
-      valid: errors.length === 0,
+      valid: !errors.length,
       errors,
     }
   }

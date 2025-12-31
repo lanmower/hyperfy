@@ -4,6 +4,24 @@ import { pluginHooks } from './PluginHooks.js'
 
 const logger = new StructuredLogger('PluginAPI')
 
+function validateHandler(fn, name = 'handler') {
+  if (typeof fn !== 'function') {
+    throw new Error(`${name} must be a function`)
+  }
+}
+
+function validateRoute(path, method, handler) {
+  if (typeof path !== 'string' || typeof method !== 'string' || typeof handler !== 'function') {
+    throw new Error('Invalid route configuration')
+  }
+}
+
+function validateMessageHandler(type, fn) {
+  if (typeof type !== 'string' || typeof fn !== 'function') {
+    throw new Error('Invalid message handler')
+  }
+}
+
 export class PluginAPI {
   constructor(world, pluginName) {
     this.world = world
@@ -11,8 +29,10 @@ export class PluginAPI {
   }
 
   registerAssetHandler(type, handler) {
-    if (typeof handler !== 'function') {
-      logger.error('Invalid asset handler', { plugin: this.pluginName, type })
+    try {
+      validateHandler(handler, 'asset handler')
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName, type })
       return false
     }
 
@@ -20,8 +40,10 @@ export class PluginAPI {
   }
 
   registerNetworkMessage(messageType, handler) {
-    if (typeof handler !== 'function') {
-      logger.error('Invalid network handler', { plugin: this.pluginName, messageType })
+    try {
+      validateMessageHandler(messageType, handler)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName, messageType })
       return false
     }
 
@@ -38,8 +60,10 @@ export class PluginAPI {
   }
 
   registerServerRoute(path, method, handler) {
-    if (typeof path !== 'string' || typeof method !== 'string' || typeof handler !== 'function') {
-      logger.error('Invalid server route', { plugin: this.pluginName, path, method })
+    try {
+      validateRoute(path, method, handler)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName, path, method })
       return false
     }
 
@@ -47,8 +71,10 @@ export class PluginAPI {
   }
 
   onWorldInit(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -56,8 +82,10 @@ export class PluginAPI {
   }
 
   onWorldStart(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -65,8 +93,10 @@ export class PluginAPI {
   }
 
   onWorldUpdate(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -74,8 +104,10 @@ export class PluginAPI {
   }
 
   onEntityCreated(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -83,8 +115,10 @@ export class PluginAPI {
   }
 
   onEntityDestroyed(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -92,8 +126,10 @@ export class PluginAPI {
   }
 
   onScriptError(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -101,8 +137,10 @@ export class PluginAPI {
   }
 
   onNetworkMessage(messageType, fn) {
-    if (typeof messageType !== 'string' || typeof fn !== 'function') {
-      logger.error('Invalid network hook', { plugin: this.pluginName, messageType })
+    try {
+      validateMessageHandler(messageType, fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName, messageType })
       return
     }
 
@@ -110,8 +148,10 @@ export class PluginAPI {
   }
 
   filterAssetURL(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid filter handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn, 'filter handler')
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -134,8 +174,10 @@ export class PluginAPI {
   }
 
   registerGlobalFunction(name, fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid function', { plugin: this.pluginName, name })
+    try {
+      validateHandler(fn, 'global function')
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName, name })
       return false
     }
 
@@ -144,8 +186,10 @@ export class PluginAPI {
   }
 
   onAssetResolve(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid asset resolver', { plugin: this.pluginName })
+    try {
+      validateHandler(fn, 'asset resolver')
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 
@@ -153,8 +197,10 @@ export class PluginAPI {
   }
 
   onWorldDestroy(fn) {
-    if (typeof fn !== 'function') {
-      logger.error('Invalid hook handler', { plugin: this.pluginName })
+    try {
+      validateHandler(fn)
+    } catch (err) {
+      logger.error(err.message, { plugin: this.pluginName })
       return
     }
 

@@ -49,7 +49,7 @@ export function createColorCurve(str) {
   }
   points.sort((a, b) => a.alpha - b.alpha)
   return function (alpha) {
-    if (points.length === 0) return [1, 1, 1]
+    if (!points.length) return [1, 1, 1]
     if (alpha <= points[0].alpha) return [...points[0].color]
     if (alpha >= points[points.length - 1].alpha) return [...points[points.length - 1].color]
     let i = 0

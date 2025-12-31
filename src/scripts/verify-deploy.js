@@ -38,7 +38,7 @@ async function checkBuildDirectory() {
     }
 
     const files = await fs.readdir(buildDir)
-    if (files.length === 0) {
+    if (!files.length) {
       checks.failed.push('Build directory is empty')
       await log('fail', 'Build directory is empty')
       return false
@@ -276,7 +276,7 @@ async function checkSourceMaps() {
     const jsFiles = files.filter(f => f.endsWith('.js'))
     const mapFiles = files.filter(f => f.endsWith('.js.map'))
 
-    if (jsFiles.length === 0) {
+    if (!jsFiles.length) {
       checks.failed.push('No JavaScript files found in build')
       await log('fail', 'No JavaScript files found in build')
       return false

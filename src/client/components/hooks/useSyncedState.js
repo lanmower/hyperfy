@@ -15,7 +15,7 @@ export function useSyncedState(manager, keys, initialValues = {}) {
         for (const key of keysArray) {
           if (changes[key]) updates[key] = changes[key].value
         }
-        if (Object.keys(updates).length > 0) {
+        if (Object.keys(updates).length) {
           setState(prev => ({ ...prev, ...updates }))
         }
       } else {

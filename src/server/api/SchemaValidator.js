@@ -81,7 +81,7 @@ export class Validators {
     }
 
     return {
-      valid: errors.length === 0,
+      valid: !errors.length,
       errors,
       messages
     }

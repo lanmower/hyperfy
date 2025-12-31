@@ -57,7 +57,7 @@ export class StructuredLogger {
       level: levelName,
       category: this.category,
       message,
-      context: Object.keys(fullContext).length > 0 ? fullContext : null,
+      context: Object.keys(fullContext).length ? fullContext : null,
       metadata: this.metadata
     }
   }

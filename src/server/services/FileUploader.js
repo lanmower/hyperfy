@@ -18,7 +18,7 @@ export class FileUploader {
   }
 
   validateFile(buffer, filename) {
-    if (!buffer || buffer.length === 0) {
+    if (!buffer?.length) {
       throw new Error('File buffer is empty')
     }
 

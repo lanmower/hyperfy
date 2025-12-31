@@ -156,7 +156,7 @@ export class Telemetry {
   }
 
   async sendBatch() {
-    if (!this.config.endpoint || this.batch.length === 0) {
+    if (!this.config.endpoint || !this.batch.length) {
       this.batch = []
       return
     }

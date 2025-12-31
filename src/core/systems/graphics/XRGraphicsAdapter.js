@@ -14,7 +14,7 @@ export class XRGraphicsAdapter {
     const frame = this.renderer.xr.getFrame()
     if (!frame || !referenceSpace) return
     const views = frame.getViewerPose(referenceSpace)?.views
-    if (!views || views.length === 0) return
+    if (!views?.length) return
     const projectionMatrix = views[0].projectionMatrix
     const fovFactor = projectionMatrix[5]
     const renderState = this.renderState.xrSession.renderState

@@ -38,7 +38,7 @@ export class QueryBuilder {
     const params = []
 
     for (const cond of this.conditions) {
-      if (params.length === 0) {
+      if (!params.length) {
         sql += " WHERE "
       } else {
         sql += " AND "
@@ -47,10 +47,10 @@ export class QueryBuilder {
       params.push(cond.value)
     }
 
-    if (this.limitNum \!== null) {
+    if (this.limitNum !== null) {
       sql += " LIMIT " + this.limitNum
     }
-    if (this.offsetNum \!== null) {
+    if (this.offsetNum !== null) {
       sql += " OFFSET " + this.offsetNum
     }
 
@@ -67,7 +67,7 @@ export class QueryBuilder {
   }
 
   async update(data) {
-    if (\!this.conditions.length) throw new Error("Update without WHERE clause")
+    if (!this.conditions.length) throw new Error("Update without WHERE clause")
     const keys = Object.keys(data)
     const values = Object.values(data)
     let sql = "UPDATE " + this.table + " SET " + keys.map(k => k + " = ?").join(", ")
@@ -83,12 +83,12 @@ export class QueryBuilder {
   }
 
   async delete() {
-    if (\!this.conditions.length) throw new Error("Delete without WHERE clause")
+    if (!this.conditions.length) throw new Error("Delete without WHERE clause")
     let sql = "DELETE FROM " + this.table
     const params = []
 
     for (const cond of this.conditions) {
-      if (params.length === 0) {
+      if (!params.length) {
         sql += " WHERE "
       } else {
         sql += " AND "
@@ -107,7 +107,7 @@ export class QueryBuilder {
     const params = []
 
     for (const cond of this.conditions) {
-      if (params.length === 0) {
+      if (!params.length) {
         sql += " WHERE "
       } else {
         sql += " AND "

@@ -33,7 +33,7 @@ export class FileUploadValidator extends BaseValidator {
 
     if (!fileData.name || typeof fileData.name !== 'string') {
       errors.push('Missing or invalid filename')
-    } else if (fileData.name.length === 0) {
+    } else if (!fileData.name.length) {
       errors.push('Filename cannot be empty')
     } else if (fileData.name.length > FileUploadValidator.MAX_FILENAME_LENGTH) {
       errors.push(`Filename exceeds ${FileUploadValidator.MAX_FILENAME_LENGTH} character limit`)
@@ -71,7 +71,7 @@ export class FileUploadValidator extends BaseValidator {
     }
 
     return {
-      valid: errors.length === 0,
+      valid: !errors.length,
       errors,
     }
   }
@@ -81,7 +81,7 @@ export class FileUploadValidator extends BaseValidator {
       return { valid: false, errors: ['Files must be an array'] }
     }
 
-    if (files.length === 0) {
+    if (!files.length) {
       return { valid: false, errors: ['File list cannot be empty'] }
     }
 

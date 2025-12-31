@@ -39,7 +39,7 @@ export class BaseEntity {
         this.data[key] = value
       }
     }
-    if (Object.keys(changes).length > 0) {
+    if (Object.keys(changes).length) {
       this.markDirty()
       this.onModified(changes)
     }

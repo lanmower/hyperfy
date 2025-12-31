@@ -54,7 +54,7 @@ export function validateMessage(message) {
   }
 
   return {
-    valid: errors.length === 0,
+    valid: !errors.length,
     errors
   }
 }

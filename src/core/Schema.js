@@ -23,7 +23,7 @@ export class Schema {
         if (err) errors.push(err)
       }
     }
-    return errors.length > 0 ? errors : null
+    return errors.length ? errors : null
   }
 
   normalize(data) {

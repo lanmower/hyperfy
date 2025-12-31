@@ -177,7 +177,7 @@ export class PerformanceMonitor {
 
   getStats(label) {
     const measurements = this.measurements.get(label)
-    if (!measurements || measurements.length === 0) {
+    if (!measurements || !measurements.length) {
       return null
     }
 

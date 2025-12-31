@@ -52,7 +52,7 @@ export class Socket {
       return { valid: false, error: 'Message too large' }
     }
 
-    if (packet.length === 0) {
+    if (!packet.length) {
       logger.error('Empty message from socket', { socketId: this.id })
       return { valid: false, error: 'Empty message' }
     }

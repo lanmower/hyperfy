@@ -73,7 +73,7 @@ export class ProxyBuilder {
       }
     }
 
-    if (Object.keys(descriptors).length > 0) {
+    if (Object.keys(descriptors).length) {
       proxy = Object.defineProperties(proxy, descriptors)
     }
 

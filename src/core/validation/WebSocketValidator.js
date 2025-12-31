@@ -146,7 +146,7 @@ export class WebSocketValidator extends BaseValidator {
     }
 
     return {
-      valid: errors.length === 0,
+      valid: !errors.length,
       errors,
       warnings,
       handlerCount: Object.keys(registry).length,
