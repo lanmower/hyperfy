@@ -46,6 +46,8 @@ export class PacketDefinition {
     both: 'both',
   }
 
+  static _entries = Object.entries(this.MESSAGE_TYPES)
+
   static getByName(name) {
     const def = this.MESSAGE_TYPES[name]
     if (!def) {
@@ -62,7 +64,7 @@ export class PacketDefinition {
   }
 
   static getById(id) {
-    for (const [name, def] of Object.entries(this.MESSAGE_TYPES)) {
+    for (const [name, def] of this._entries) {
       if (def.id === id) {
         return {
           name,
@@ -79,7 +81,7 @@ export class PacketDefinition {
 
   static getAllByDirection(direction) {
     const messages = []
-    for (const [name, def] of Object.entries(this.MESSAGE_TYPES)) {
+    for (const [name, def] of this._entries) {
       if (def.direction === direction || def.direction === 'both') {
         messages.push({
           name,
@@ -127,7 +129,7 @@ export class PacketDefinition {
   }
 
   static getAll() {
-    return Object.entries(this.MESSAGE_TYPES).map(([name, def]) => ({
+    return this._entries.map(([name, def]) => ({
       name,
       ...def,
     }))

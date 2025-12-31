@@ -147,7 +147,7 @@ export class FileStorage {
   getStats() {
     return this.listAll({ limit: 10000 }).then(files => {
       const totalSize = files.reduce((sum, f) => sum + f.size, 0)
-      const uploaders = new Set(files.map(f => f.uploader).filter(Boolean))
+      const uploaders = new Set(files.filter(f => f.uploader).map(f => f.uploader))
 
       return {
         totalFiles: files.length,

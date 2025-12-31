@@ -42,7 +42,7 @@ export class CORSConfig extends BaseManager {
     const corsOrigins = process.env.CORS_ALLOWED_ORIGINS
 
     if (corsOrigins) {
-      return corsOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+      return corsOrigins.split(',').filter(o => o.trim()).map(o => o.trim())
     }
 
     if (env === 'production') {
@@ -129,6 +129,15 @@ export class CORSConfig extends BaseManager {
     }
   }
 
+  _formatOrigins() {
+    return this.allowedOrigins.map(origin => {
+      if (origin instanceof RegExp) {
+        return origin.toString()
+      }
+      return origin
+    })
+  }
+
   getCORSOptions() {
     return {
       origin: (origin, callback) => this.validateOrigin(origin, callback),
@@ -144,12 +153,7 @@ export class CORSConfig extends BaseManager {
 
   getStats() {
     return {
-      allowedOrigins: this.allowedOrigins.map(origin => {
-        if (origin instanceof RegExp) {
-          return origin.toString()
-        }
-        return origin
-      }),
+      allowedOrigins: this._formatOrigins(),
       allowedMethods: this.allowedMethods,
       allowedHeaders: this.allowedHeaders,
       exposedHeaders: this.exposedHeaders,
@@ -164,12 +168,7 @@ export class CORSConfig extends BaseManager {
 
   getConfig() {
     return {
-      allowedOrigins: this.allowedOrigins.map(origin => {
-        if (origin instanceof RegExp) {
-          return origin.toString()
-        }
-        return origin
-      }),
+      allowedOrigins: this._formatOrigins(),
       allowedMethods: this.allowedMethods,
       allowedHeaders: this.allowedHeaders,
       exposedHeaders: this.exposedHeaders,

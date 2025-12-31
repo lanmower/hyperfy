@@ -94,22 +94,18 @@ export function createRateLimiter(endpoint, customConfig = {}) {
 }
 
 export function getRateLimitStats() {
-  const stats = {
+  const activeIPSet = new Set()
+  for (const [key] of rateLimitStore.entries()) {
+    const ip = key.split(':')[0]
+    activeIPSet.add(ip)
+  }
+
+  return {
     totalKeys: rateLimitStore.size,
     violations: violationLog.length,
     recentViolations: violationLog.slice(-10),
-    activeIPs: new Set(),
+    activeIPCount: activeIPSet.size,
   }
-
-  for (const [key] of rateLimitStore.entries()) {
-    const ip = key.split(':')[0]
-    stats.activeIPs.add(ip)
-  }
-
-  stats.activeIPCount = stats.activeIPs.size
-  delete stats.activeIPs
-
-  return stats
 }
 
 export function clearRateLimitForIP(ip) {

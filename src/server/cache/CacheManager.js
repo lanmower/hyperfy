@@ -26,11 +26,7 @@ export class CacheManager extends BaseManager {
 
   get(key) {
     const value = this.cache.get(key)
-    if (value === undefined) {
-      this.stats.misses++
-    } else {
-      this.stats.hits++
-    }
+    this.stats[value === undefined ? 'misses' : 'hits']++
     return value
   }
 
@@ -110,4 +106,4 @@ export class CacheManager extends BaseManager {
   }
 }
 
-export default CacheManager
+export { CacheManager as default }
