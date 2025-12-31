@@ -84,7 +84,7 @@ export function AppFields({ world, app, blueprint }) {
         value={tags}
         onChange={(value) => {
           setTags(value)
-          const tagArray = value.split(',').filter(t => t.trim()).map(t => t.trim())
+          const tagArray = value.split(',').map(t => t.trim()).filter(t => t)
           modify({ tags: tagArray })
         }}
       />
@@ -93,7 +93,7 @@ export function AppFields({ world, app, blueprint }) {
         value={authors}
         onChange={(value) => {
           setAuthors(value)
-          const authorArray = value.split(',').filter(a => a.trim()).map(a => a.trim())
+          const authorArray = value.split(',').map(a => a.trim()).filter(a => a)
           modify({ authors: authorArray })
         }}
       />

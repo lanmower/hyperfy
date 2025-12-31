@@ -27,6 +27,38 @@ export class Entities extends System {
     return this.players.get(entityId)
   }
 
+  get apps() {
+    const apps = []
+    for (const e of this.items.values()) {
+      if (e.isApp) apps.push(e)
+    }
+    return apps
+  }
+
+  get playerEntities() {
+    const players = []
+    for (const e of this.items.values()) {
+      if (e.isPlayer) players.push(e)
+    }
+    return players
+  }
+
+  countApps() {
+    let count = 0
+    for (const e of this.items.values()) {
+      if (e.isApp) count++
+    }
+    return count
+  }
+
+  countPlayers() {
+    let count = 0
+    for (const e of this.items.values()) {
+      if (e.isPlayer) count++
+    }
+    return count
+  }
+
   add(data, local) {
     return this.spawner.spawn(data, local)
   }

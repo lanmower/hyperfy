@@ -30,7 +30,7 @@ export class Client extends System {
       get entities() { return Array.from(world.entities.items.values()) },
       get players() { return Array.from(world.entities.players.values()) },
       get player() { return world.entities.player },
-      get apps() { return Array.from(world.entities.items.values()).filter(e => e.isApp) },
+      get apps() { return world.entities.apps },
       get blueprints() { return Array.from(world.blueprints.items.values()) },
       get scene() { return world.stage?.scene },
       get camera() { return world.camera },

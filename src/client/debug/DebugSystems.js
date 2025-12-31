@@ -19,11 +19,11 @@ export function setupDebugSystems(world, consoleLogs) {
     getPerformanceMetrics: () => ({
       entitiesCount: world.entities.items.size,
       blueprintsCount: world.blueprints.items.size,
-      appsCount: Array.from(world.entities.items.values()).filter(e => e.isApp).length,
-      playersCount: Array.from(world.entities.items.values()).filter(e => e.isPlayer).length,
+      appsCount: world.entities.apps.length,
+      playersCount: world.entities.playerEntities.length,
     }),
     checkSceneApp: () => {
-      const apps = Array.from(world.entities.items.values()).filter(e => e.isApp)
+      const apps = world.entities.apps
       const sceneApp = apps.find(app => app.data.id.includes('scene'))
       if (!sceneApp) return { error: 'Scene app not found' }
       const blueprint = world.blueprints.get(sceneApp.data.blueprint)

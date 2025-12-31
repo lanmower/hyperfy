@@ -187,8 +187,8 @@ export const ServerDebugHelpers = {
       },
       entities: {
         total: world.entities?.items?.size || 0,
-        apps: Array.from(world.entities?.items?.values() || []).filter(e => e.isApp).length,
-        players: Array.from(world.entities?.items?.values() || []).filter(e => e.isPlayer).length,
+        apps: world.entities?.apps?.length || 0,
+        players: world.entities?.playerEntities?.length || 0,
       },
       network: {
         clientsConnected: world.network?.clients?.size || 0,
@@ -203,7 +203,7 @@ export const ServerDebugHelpers = {
   },
 
   checkSceneIntegrity(world) {
-    const apps = Array.from(world.entities?.items?.values() || []).filter(e => e.isApp)
+    const apps = world.entities?.apps || []
     const sceneApp = apps.find(a => a.data?.id?.includes('scene'))
     return {
       sceneAppFound: !!sceneApp,

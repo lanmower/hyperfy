@@ -5,7 +5,7 @@ export class BaseValidator {
 
   validate(data) {
     const errors = this.getErrors(data)
-    if (errors.length > 0) {
+    if (errors.length) {
       const error = new Error(`Validation failed: ${errors[0]}`)
       error.name = 'ValidationError'
       error.errors = errors

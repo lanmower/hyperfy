@@ -23,7 +23,7 @@ export class WebSocketValidator extends BaseValidator {
       errors.push(`Message size ${size} exceeds ${WebSocketValidator.MAX_MESSAGE_SIZE} byte limit`)
     }
 
-    if (errors.length > 0) throw Object.assign(new Error(errors[0]), { name: 'ValidationError', errors, validator: this.name })
+    if (errors.length) throw Object.assign(new Error(errors[0]), { name: 'ValidationError', errors, validator: this.name })
     return { valid: true, size }
   }
 
@@ -41,7 +41,7 @@ export class WebSocketValidator extends BaseValidator {
       errors.push(`Payload size ${dataSize} exceeds ${WebSocketValidator.MAX_PAYLOAD_SIZE} byte limit`)
     }
 
-    if (errors.length > 0) throw Object.assign(new Error(errors[0]), { name: 'ValidationError', errors, validator: this.name })
+    if (errors.length) throw Object.assign(new Error(errors[0]), { name: 'ValidationError', errors, validator: this.name })
     return { valid: true, size: dataSize }
   }
 

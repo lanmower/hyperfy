@@ -25,7 +25,7 @@ export class SchemaValidator extends BaseValidator {
     this.validations++
     const errors = this.validate(data, schema)
 
-    if (errors.length > 0) {
+    if (errors.length) {
       this.validationErrors++
       return { valid: false, errors }
     }

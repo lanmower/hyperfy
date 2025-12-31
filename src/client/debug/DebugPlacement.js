@@ -5,7 +5,7 @@ export function setupDebugPlacement(world) {
       const composer = builder?.composer
       const selectionMgr = composer?.selectionManager
       const stateTransition = composer?.stateTransitionHandler
-      const apps = Array.from(world.entities.items.values()).filter(e => e.isApp).filter(e => !e.data.id.includes('scene'))
+      const apps = world.entities.apps.filter(e => !e.data.id.includes('scene'))
 
       return {
         builderEnabled: builder?.enabled || false,
@@ -53,7 +53,7 @@ export function setupDebugPlacement(world) {
     assertPlacementReady: () => {
       const assertions = []
       const builder = world.builder
-      const apps = Array.from(world.entities.items.values()).filter(e => e.isApp).filter(e => !e.data.id.includes('scene'))
+      const apps = world.entities.apps.filter(e => !e.data.id.includes('scene'))
 
       if (!builder) assertions.push('❌ Builder system missing')
       else assertions.push('✅ Builder system available')

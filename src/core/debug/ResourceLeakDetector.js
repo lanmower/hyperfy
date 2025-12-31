@@ -81,7 +81,7 @@ export class ResourceLeakDetector {
         }
       }
 
-      if (alive.length > 0 || leaked.length > 0) {
+      if (alive.length || leaked.length) {
         snapshot.categories[category] = {
           alive: alive.length,
           aliveLists: alive,
@@ -137,7 +137,7 @@ export class ResourceLeakDetector {
       }
     }
 
-    if (report.leaks.length > 0) {
+    if (report.leaks.length) {
       logger.warn('Resource leaks detected', { leaks: report.leaks.length })
     }
 

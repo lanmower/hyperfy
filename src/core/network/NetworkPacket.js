@@ -146,7 +146,7 @@ export class NetworkPacketBuilder {
   }
 
   build() {
-    return new NetworkPacket(this.name, Object.keys(this.data).length > 0 ? this.data : null)
+    return new NetworkPacket(this.name, Object.keys(this.data).length ? this.data : null)
   }
 
   clear() {

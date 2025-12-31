@@ -9,7 +9,7 @@ export function setupDebugNetwork(world) {
       id: world.network.id,
       isServer: world.network.isServer,
       isClient: world.network.isClient,
-      connected: world.network.ws ? true : false,
+      connected: !!world.network.ws,
     }),
   }
 }

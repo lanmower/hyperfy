@@ -12,8 +12,8 @@ export function setupDebugPlayer(world) {
         isLocal: player.isLocal,
         position: player.data.position,
         mode: player.data.mode,
-        hasAvatar: player.avatar ? true : false,
-        hasPhysics: player.physics ? true : false,
+        hasAvatar: !!player.avatar,
+        hasPhysics: !!player.physics,
       }
     },
     playerState: () => {

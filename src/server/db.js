@@ -100,7 +100,7 @@ export async function getDB(worldDir) {
   if (!db) {
     await initDatabase()
 
-    const configExists = query(`SELECT name FROM sqlite_master WHERE type='table' AND name='config'`).length > 0
+    const configExists = query(`SELECT name FROM sqlite_master WHERE type='table' AND name='config'`).length
     if (!configExists) {
       exec(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)`)
       insert('config', { key: 'version', value: '0' })

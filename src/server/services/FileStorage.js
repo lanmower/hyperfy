@@ -154,7 +154,7 @@ export class FileStorage {
         totalSize,
         totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
         uniqueUploaders: uploaders.size,
-        averageSize: files.length > 0 ? Math.round(totalSize / files.length) : 0
+        averageSize: files.length ? Math.round(totalSize / files.length) : 0
       }
     })
   }

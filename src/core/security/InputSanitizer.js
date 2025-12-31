@@ -46,7 +46,7 @@ export class InputSanitizer {
       }
     }
 
-    if (violations.length > 0) {
+    if (violations.length) {
       logger.info('Script validation failed', { violationCount: violations.length, violations })
       return { valid: false, violations }
     }
@@ -116,7 +116,7 @@ export class InputSanitizer {
       }
     }
 
-    if (violations.length > 0) {
+    if (violations.length) {
       logger.info('Property validation failed', { depth, violationCount: violations.length, violations })
       return { valid: false, violations }
     }
@@ -173,7 +173,7 @@ export class InputSanitizer {
       }
     }
 
-    if (violations.length > 0) {
+    if (violations.length) {
       logger.info('URL validation failed', { url, violationCount: violations.length, violations })
       return { valid: false, violations }
     }
@@ -206,7 +206,7 @@ export class InputSanitizer {
       }
     }
 
-    if (violations.length > 0) {
+    if (violations.length) {
       logger.info('File path validation failed', { filePath, violationCount: violations.length, violations })
       return { valid: false, violations }
     }
@@ -243,7 +243,7 @@ export class InputSanitizer {
       })
     }
 
-    if (violations.length > 0) {
+    if (violations.length) {
       logger.info('Regex validation failed', { pattern, violationCount: violations.length, violations })
       return { valid: false, violations }
     }
@@ -323,7 +323,7 @@ export class InputSanitizer {
       }
     }
 
-    if (violations.length > 0) {
+    if (violations.length) {
       logger.info('Entity data validation failed', { entityId: data.id, violationCount: violations.length, violations })
       return { valid: false, violations }
     }

@@ -4,11 +4,11 @@ export function setupDebugEntity(world) {
     getBlueprint: (id) => world.blueprints.get(id),
     entities: () => Array.from(world.entities.items.values()),
     blueprints: () => Array.from(world.blueprints.items.entries()),
-    apps: () => Array.from(world.entities.items.values()).filter(e => e.isApp),
-    players: () => Array.from(world.entities.items.values()).filter(e => e.isPlayer),
+    apps: () => world.entities.apps,
+    players: () => world.entities.playerEntities,
 
     getAppByBlueprint: (blueprintName) => {
-      const apps = Array.from(world.entities.items.values()).filter(e => e.isApp)
+      const apps = world.entities.apps
       return apps.find(app => {
         const bp = world.blueprints.get(app.data.blueprint)
         return bp?.name === blueprintName
@@ -29,7 +29,7 @@ export function setupDebugEntity(world) {
 
     findNodesByName: (name) => {
       const results = []
-      const apps = Array.from(world.entities.items.values()).filter(e => e.isApp)
+      const apps = world.entities.apps
       apps.forEach(app => {
         if (app.root?.children) {
           const found = app.root.children.filter(c => c.name === name)

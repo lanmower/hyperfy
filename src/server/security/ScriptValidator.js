@@ -119,7 +119,7 @@ export class ScriptValidator {
       const sanitized = { ...blueprint }
 
       const scriptViolations = validation.violations.filter(v => v.source === 'blueprint.script')
-      if (scriptViolations.length > 0) {
+      if (scriptViolations.length) {
         delete sanitized.script
         logger.warn('Removed dangerous script from blueprint', {
           blueprintId: blueprint.id,
@@ -128,7 +128,7 @@ export class ScriptValidator {
       }
 
       const propsViolations = validation.violations.filter(v => v.source === 'blueprint.props')
-      if (propsViolations.length > 0) {
+      if (propsViolations.length) {
         sanitized.props = this.sanitizeProperties(blueprint.props)
         logger.warn('Sanitized blueprint props', {
           blueprintId: blueprint.id,
@@ -137,7 +137,7 @@ export class ScriptValidator {
       }
 
       const modelViolations = validation.violations.filter(v => v.source === 'blueprint.model')
-      if (modelViolations.length > 0) {
+      if (modelViolations.length) {
         delete sanitized.model
         logger.warn('Removed invalid model URL from blueprint', {
           blueprintId: blueprint.id,

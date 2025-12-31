@@ -57,6 +57,6 @@ export class GizmoController {
   }
 
   isActive() {
-    return this.gizmo ? true : false
+    return !!this.gizmo
   }
 }

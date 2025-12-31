@@ -85,13 +85,13 @@ export class ConfigSchema {
       const fieldPath = `[${section}.${fieldName}]`
 
       // Check required
-      if (rules.required && (value === undefined || value === null)) {
+      if (rules.required && (value == null)) {
         errors.push(`${fieldPath} Required field is missing`)
         continue
       }
 
       // Skip validation if optional and not provided
-      if (!rules.required && (value === undefined || value === null)) {
+      if (!rules.required && (value == null)) {
         continue
       }
 

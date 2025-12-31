@@ -154,7 +154,7 @@ export class FileUploadValidator extends BaseValidator {
       errors.push('Invalid user ID')
     }
 
-    if (errors.length > 0) {
+    if (errors.length) {
       return { valid: false, errors }
     }
 
