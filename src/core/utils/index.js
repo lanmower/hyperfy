@@ -9,8 +9,4 @@ export * as collections from './collections/collections.js'
 export { uuid, clamp, num } from './helpers/misc.js'
 export { hashFile, createJWT, readJWT, hashFileClient, hashFileServer } from './helpers/crypto.js'
 
-export { SharedVectorPool } from './SharedVectorPool.js'
-
-export { BatchProcessor } from './BatchProcessor.js'
-
 export { Props, prop, propSchema } from '../Props.js'

@@ -1,2 +1,2 @@
-export { Logger, ConsoleSink, FileSink } from './Logger.js'
+export { ServerLogger as Logger, ConsoleSink, FileSink } from '../../core/utils/logging/index.js'
 export * from './IntegrationUtils.js'
