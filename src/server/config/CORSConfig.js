@@ -1,7 +1,8 @@
-export class CORSConfig {
-  constructor(logger = null) {
-    this.logger = logger
-    this.allowedOrigins = this.parseAllowedOrigins()
+import { BaseManager } from '../../core/patterns/BaseManager.js'
+
+export class CORSConfig extends BaseManager {
+  constructor() {
+    super(null, 'CORSConfig')
     this.allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
     this.allowedHeaders = [
       'Content-Type',
@@ -25,6 +26,15 @@ export class CORSConfig {
     this.rejectedRequests = []
     this.acceptedRequests = []
     this.maxLogSize = 100
+  }
+
+  async initInternal() {
+    this.allowedOrigins = this.parseAllowedOrigins()
+  }
+
+  async destroyInternal() {
+    this.rejectedRequests = []
+    this.acceptedRequests = []
   }
 
   parseAllowedOrigins() {

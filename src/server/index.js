@@ -60,7 +60,8 @@ if (env === 'production') {
 }
 await logger.init()
 
-const corsConfig = new CORSConfig(logger)
+const corsConfig = new CORSConfig()
+await corsConfig.init()
 const shutdownManager = new ShutdownManager(logger, {
   gracefulTimeout: parseInt(process.env.SHUTDOWN_TIMEOUT) || 30000,
   forceTimeout: 5000,
