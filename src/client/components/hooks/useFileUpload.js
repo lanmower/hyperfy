@@ -3,6 +3,7 @@ import { hashFile } from '../../../core/utils-client.js'
 import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { useUpdate } from '../../useUpdate.js'
 import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
 
 const logger = new ComponentLogger('useFileUpload')
 
@@ -44,7 +45,16 @@ export function useFileUpload(world, kindName) {
     }
 
     setLoading(newValue)
-    await world.network.upload(file)
+    try {
+      await NetworkUploadUtil.uploadWithRetry(world.network, file, {
+        maxRetries: 3,
+        onProgress: (percent) => setLoading({ ...newValue, progress: percent })
+      })
+    } catch (err) {
+      logger.error('Upload failed after retries', { kindName, ext, error: err.message })
+      setLoading(null)
+      return
+    }
     if (nRef.current !== n) return
 
     world.loader.insert(kind.type, url, file)

@@ -1,6 +1,7 @@
 import { uuid } from '../../../utils-client.js'
 import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
 import { BlueprintFactory } from '../../../core/factories/BlueprintFactory.js'
+import { NetworkUploadUtil } from '../../../utils/network/index.js'
 
 export class BaseSpawner {
   constructor(entitySpawner) {
@@ -30,9 +31,13 @@ export class BaseSpawner {
   }
 
   async handleUploadWithRollback(files, entity) {
-    const promises = files.map(file => this.clientBuilder.network.upload(file))
     try {
-      await Promise.all(promises)
+      const result = await NetworkUploadUtil.uploadBatch(this.clientBuilder.network, files, {
+        onRetry: (f, attempt) => this.logger.warn('Upload retry', { file: f.name, attempt })
+      })
+      if (result.failed.length > 0) {
+        throw new Error(`${result.failed.length} file(s) failed to upload`)
+      }
       entity.onUploaded()
     } catch (err) {
       this.logger.error('Asset upload failed', { error: err.message })

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { css } from '@firebolt-dev/css'
 import { hashFile } from '../../../core/utils-client.js'
 import { load } from '../../utils/monacoLoader.js'
+import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
+import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+
+const logger = new ComponentLogger('Editor')
 
 const cached = {
   key: null,
@@ -28,7 +32,12 @@ export function Editor({ app, onHandle }) {
     world.loader.insert('script', url, file)
     const version = blueprint.version + 1
     world.blueprints.modify({ id: blueprint.id, version, script: url })
-    await world.network.upload(file)
+    try {
+      await NetworkUploadUtil.uploadWithRetry(world.network, file, { maxRetries: 3 })
+    } catch (err) {
+      logger.error('Script upload failed', { blueprintId: blueprint.id, error: err.message })
+      return
+    }
     world.network.send('blueprintModified', { id: blueprint.id, version, script: url })
   }
   const saveState = () => {

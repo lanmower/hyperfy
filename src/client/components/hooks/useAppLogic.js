@@ -3,6 +3,7 @@ import { exportApp } from '../../../core/extras/appTools.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { isBoolean } from 'lodash-es'
 import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
 
 const logger = new ComponentLogger('useAppLogic')
 
@@ -33,7 +34,12 @@ export function useAppLogic(world) {
     world.loader.insert(type, url, file)
     const version = blueprint.version + 1
     world.blueprints.modify({ id: blueprint.id, version, model: url })
-    await world.network.upload(file)
+    try {
+      await NetworkUploadUtil.uploadWithRetry(world.network, file, { maxRetries: 3 })
+    } catch (err) {
+      logger.error('Model upload failed', { blueprintId: blueprint.id, error: err.message })
+      return
+    }
     world.network.send('blueprintModified', { id: blueprint.id, version, model: url })
   }
 
