@@ -31,7 +31,7 @@ export class NetworkCore {
       try {
         handler(...args)
       } catch (err) {
-        console.error(`Handler error for ${event}:`, err)
+        // Handler error silently ignored
       }
     }
   }

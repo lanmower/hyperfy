@@ -4,7 +4,7 @@ import { css } from '@firebolt-dev/css'
 
 import { World } from '../core/World.js'
 import { CoreUI } from './components/CoreUI.js'
-import { setupDebugGlobals } from './debugUtils.js'
+import { setupDebugGlobals } from './debug/DebugAPI.js'
 import { FeatureDetector } from '../core/FeatureDetector.js'
 import { StructuredLogger } from '../core/utils/logging/index.js'
 

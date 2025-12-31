@@ -5,7 +5,7 @@ import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { MenuItemField } from './MenuItemField.js'
 import { StructuredLogger } from '../../../core/utils/logging/index.js'
-import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
+import { NetworkUploadUtil } from '../../../core/utils/network/NetworkUploadUtil.js'
 
 const logger = new StructuredLogger('MenuAppIndex')
 

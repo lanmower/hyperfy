@@ -3,7 +3,7 @@ import { cls } from '../cls.js'
 import { useAppStats } from '../hooks/useAppStats.js'
 import { EntityTargeting } from './EntityTargeting.js'
 import { AppActions } from './AppActions.js'
-import { contentStyles } from './ContentStyles.js'
+import { contentStyles } from '../styles/ComponentStyles.js'
 import { TableHeader } from './TableHeader.js'
 import { TableRow } from './TableRow.js'
 

@@ -1,7 +1,3 @@
-import { StructuredLogger } from '../../../core/utils/logging/index.js'
-
-const logger = new StructuredLogger('EntityTargeting')
-
 export class EntityTargeting {
   constructor(world) {
     this.world = world
@@ -12,10 +8,7 @@ export class EntityTargeting {
     const players = Array.from(this.world.entities.items.values()).filter(e => e.isPlayer)
     const localPlayer = players.find(p => p.isLocal) || players[0]
     const playerPosition = localPlayer?.base?.position
-    if (!playerPosition) {
-      logger.warn('No player position found', {})
-      return null
-    }
+    if (!playerPosition) return null
 
     let closestEntity
     let closestDistance = null

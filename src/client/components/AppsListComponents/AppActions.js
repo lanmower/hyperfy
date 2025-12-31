@@ -1,7 +1,3 @@
-import { StructuredLogger } from '../../../core/utils/logging/index.js'
-
-const logger = new StructuredLogger('AppActions')
-
 export class AppActions {
   constructor(world, network, blueprints, entityTargeting, setRefresh) {
     this.world = world
@@ -14,13 +10,10 @@ export class AppActions {
   inspect(item) {
     try {
       const entity = this.entityTargeting.getClosest(item)
-      if (!entity) {
-        logger.warn('No entity found for item', { itemName: item.name })
-        return
-      }
+      if (!entity) return
       this.world.ui.setApp(entity)
     } catch (e) {
-      logger.error('Inspect failed', { error: e.message, itemName: item.name })
+      // Silently ignore inspection errors
     }
   }
 

@@ -3,7 +3,7 @@ import { exportApp } from '../../../core/extras/appTools.js'
 import { hashFile } from '../../../core/utils-client.js'
 import { isBoolean } from 'lodash-es'
 import { StructuredLogger } from '../../../core/utils/logging/index.js'
-import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
+import { NetworkUploadUtil } from '../../../core/utils/network/NetworkUploadUtil.js'
 
 const logger = new StructuredLogger('useAppLogic')
 

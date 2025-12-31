@@ -5,7 +5,7 @@ import { ControlPriorities } from '../../../core/extras/ControlPriorities.js'
 import { MiniMessages } from './MiniMessages.js'
 import { Messages } from './Messages.js'
 import { useWorldEvent } from '../hooks/index.js'
-import { chatStyles } from './ChatStyles.js'
+import { chatStyles } from '../styles/ComponentStyles.js'
 
 export function Chat({ world }) {
   const inputRef = useRef()

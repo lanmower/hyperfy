@@ -1,4 +1,4 @@
-export { UnifiedEventEmitter } from './events/index.js'
+export { UnifiedEventEmitter } from '../patterns/UnifiedEventEmitter.js'
 
 export * as validation from './validation/index.js'
 
