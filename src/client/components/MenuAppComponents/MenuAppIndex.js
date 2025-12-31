@@ -6,6 +6,7 @@ import { hashFile } from '../../../core/utils-client.js'
 import { MenuItemField } from './MenuItemField.js'
 import { StructuredLogger } from '../../../core/utils/logging/index.js'
 import { NetworkUploadUtil } from '../../../core/utils/network/NetworkUploadUtil.js'
+import { getFileExtension } from '../../../core/utils/getFileExtension.js'
 
 const logger = new StructuredLogger('MenuAppIndex')
 
@@ -46,7 +47,7 @@ export function MenuAppIndex({ world, app, blueprint, pop, push }) {
 
   const changeModel = async file => {
     if (!file) return
-    const ext = file.name.split('.').pop().toLowerCase()
+    const ext = getFileExtension(file.name)
     if (!allowedModels.includes(ext)) return
     const hash = await hashFile(file)
     const filename = `${hash}.${ext}`

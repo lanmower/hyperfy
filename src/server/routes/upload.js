@@ -5,6 +5,7 @@ import { createRateLimiter } from '../middleware/RateLimiter.js'
 import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 import { MasterConfig } from '../config/MasterConfig.js'
+import { getFileExtension } from '../../core/utils/getFileExtension.js'
 
 const logger = LoggerFactory.get('Routes.Upload')
 
@@ -28,7 +29,7 @@ export function registerUploadRoutes(fastify, assetsDir) {
         throw new Error('No file provided')
       }
 
-      const ext = file.filename.split('.').pop().toLowerCase()
+      const ext = getFileExtension(file.filename)
       if (BLOCKED_EXTENSIONS.has(ext)) {
         throw new Error('File type not allowed')
       }

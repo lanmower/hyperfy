@@ -3,6 +3,7 @@ import { uuid } from '../../utils-client.js'
 import { BaseBuilderHandler } from './BaseBuilderHandler.js'
 import { FileExtractor } from './FileExtractor.js'
 import { EntitySpawner } from './EntitySpawner.js'
+import { getFileExtension } from '../utils/getFileExtension.js'
 
 export class FileDropHandler extends BaseBuilderHandler {
   constructor(clientBuilder) {
@@ -37,7 +38,7 @@ export class FileDropHandler extends BaseBuilderHandler {
       if (!file) return
 
       await new Promise(resolve => setTimeout(resolve, 100))
-      const ext = file.name.split('.').pop().toLowerCase()
+      const ext = getFileExtension(file.name)
 
       if (!this.validateFileAccess(ext, file)) return
       if (!this.validateFileSize(ext, file)) return

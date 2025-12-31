@@ -10,6 +10,8 @@ import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
 const logger = LoggerFactory.get('ServerMiddleware')
 
+const isHealthEndpoint = (url) => url.startsWith('/health') || url === '/metrics'
+
 export function registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager) {
   fastify.register(createRequestIdMiddleware())
   fastify.register(createErrorHandler(logger, errorTracker))
@@ -32,16 +34,14 @@ export function registerMiddleware(fastify, timeoutManager, logger, errorTracker
 
   fastify.addHook('onRequest', async (request, reply) => {
     if (shutdownManager.isShuttingDown) {
-      const isHealthEndpoint = request.url.startsWith('/health') || request.url === '/metrics'
-      if (!isHealthEndpoint) {
+      if (!isHealthEndpoint(request.url)) {
         return ErrorResponseBuilder.sendError(reply, 'SERVICE_UNAVAILABLE', 'Server is shutting down')
       }
     }
 
     const origin = request.headers.origin
     if (origin && !corsConfig.isOriginAllowed(origin)) {
-      const isHealthEndpoint = request.url.startsWith('/health') || request.url === '/metrics'
-      if (!isHealthEndpoint) {
+      if (!isHealthEndpoint(request.url)) {
         logger.warn(`[CORS] Blocked request from non-whitelisted origin: ${origin}`, {
           url: request.url,
           method: request.method,

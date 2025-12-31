@@ -1,5 +1,7 @@
 
 
+const normalizeString = (str) => (str || '').toLowerCase()
+
 export const BlueprintSchema = {
   id: {
     type: 'string',
@@ -172,10 +174,10 @@ export function getListableBlueprints(blueprints, options = {}) {
   }
 
   if (query) {
-    const lowerQuery = query.toLowerCase()
+    const lowerQuery = normalizeString(query)
     filtered = filtered.filter(bp => {
-      const name = (bp.name || '').toLowerCase()
-      const desc = (bp.description || '').toLowerCase()
+      const name = normalizeString(bp.name)
+      const desc = normalizeString(bp.description)
       const tags = (bp.tags || []).join(' ').toLowerCase()
       return name.includes(lowerQuery) || desc.includes(lowerQuery) || tags.includes(lowerQuery)
     })

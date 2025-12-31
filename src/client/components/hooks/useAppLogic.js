@@ -4,6 +4,7 @@ import { hashFile } from '../../../core/utils-client.js'
 import { isBoolean } from 'lodash-es'
 import { StructuredLogger } from '../../../core/utils/logging/index.js'
 import { NetworkUploadUtil } from '../../../core/utils/network/NetworkUploadUtil.js'
+import { getFileExtension } from '../../../core/utils/getFileExtension.js'
 
 const logger = new StructuredLogger('useAppLogic')
 
@@ -24,7 +25,7 @@ export function useAppLogic(world) {
 
   const changeModel = async (blueprint, file) => {
     if (!file) return
-    const ext = file.name.split('.').pop().toLowerCase()
+    const ext = getFileExtension(file.name)
     const allowedModels = ['glb', 'vrm']
     if (!allowedModels.includes(ext)) return
     const hash = await hashFile(file)
