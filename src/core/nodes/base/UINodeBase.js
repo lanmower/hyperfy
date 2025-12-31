@@ -3,9 +3,9 @@ import { isArray, isNumber } from 'lodash-es'
 import { Node } from '../Node.js'
 import { Display, FlexDirection, JustifyContent, AlignItems, AlignContent, FlexWrap } from '../../extras/yoga.js'
 import { fillRoundRect } from '../../extras/roundRect.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('UINodeBase')
+const logger = new StructuredLogger('UINodeBase')
 const isBrowser = typeof window !== 'undefined'
 
 export function createYogaPropertyHandlers(res) {

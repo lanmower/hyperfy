@@ -1,11 +1,11 @@
 // Base manager pattern with template method for initialization and lifecycle
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
 export class BaseManager {
   constructor(world, name) {
     this.world = world
     this.name = name
-    this.logger = new ComponentLogger(name)
+    this.logger = new StructuredLogger(name)
     this.initialized = false
     this._resources = []
   }

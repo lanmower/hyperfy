@@ -1,9 +1,9 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
 export class BaseBuilderHandler {
   constructor(parent, componentName) {
     this.parent = parent
-    this.logger = new ComponentLogger(componentName)
+    this.logger = new StructuredLogger(componentName)
     this._commands = new Map()
   }
 

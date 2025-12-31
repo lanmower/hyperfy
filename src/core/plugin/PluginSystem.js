@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('PluginSystem')
+const logger = new StructuredLogger('PluginSystem')
 
 export class PluginSystem {
   constructor(world) {

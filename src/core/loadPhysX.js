@@ -1,7 +1,7 @@
 import PhysXModule from './physx-js-webidl.js'
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from 'utils/logging/index.js'
 
-const logger = new ComponentLogger('loadPhysX')
+const logger = new StructuredLogger('loadPhysX')
 let promise
 export function loadPhysX() {
   if (!promise) {

@@ -5,9 +5,9 @@ import { bindRotations } from '../../extras/bindRotations.js'
 import { InputDispatcher } from './InputDispatcher.js'
 import { ComposableInputHandler } from './ComposableInputHandler.js'
 import { TouchInputHandler } from '../controls/TouchInputHandler.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('InputSystem')
+const logger = new StructuredLogger('InputSystem')
 const isBrowser = typeof window !== 'undefined'
 
 let actionIds = 0

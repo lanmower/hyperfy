@@ -1,13 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { OpenAI } from 'openai'
 import { AIProviderConfig } from '../../../server/config/AIProviderConfig.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AIClientFactory')
+const logger = new StructuredLogger('AIClientFactory')
 
 class BaseAIClient {
   constructor(name) {
-    this.logger = new ComponentLogger(name)
+    this.logger = new StructuredLogger(name)
   }
 
   async wrapCall(fn, operation) {

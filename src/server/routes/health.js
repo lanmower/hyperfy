@@ -1,7 +1,7 @@
 import { performance } from 'perf_hooks'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('Routes.Health')
+const logger = new StructuredLogger('Routes.Health')
 
 export function registerStatusAPI(fastify, world) {
   fastify.get('/api/status', async (request, reply) => {

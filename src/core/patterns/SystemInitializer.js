@@ -1,7 +1,7 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { AsyncInitializer } from './AsyncInitializer.js'
 
-const logger = new ComponentLogger('SystemInitializer')
+const logger = new StructuredLogger('SystemInitializer')
 
 export class SystemInitializer {
   constructor(system, world) {

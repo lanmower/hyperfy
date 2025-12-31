@@ -3,10 +3,10 @@ import { System } from './System.js'
 import { isBoolean } from 'lodash-es'
 import { Room, RoomEvent, ParticipantEvent, ScreenSharePresets } from 'livekit-client'
 import { EVENT } from '../constants/EventNames.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
-const logger = new ComponentLogger('ClientLiveKit')
+const logger = new StructuredLogger('ClientLiveKit')
 
 const { v1, v2, q1 } = SharedVectorPool('ClientLiveKit', 2, 1)
 

@@ -1,7 +1,7 @@
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 import { ServerDebugHelpers } from './ServerDebugHelpers.js'
 
-const logger = new ComponentLogger('ServerDebugAPI')
+const logger = new StructuredLogger('ServerDebugAPI')
 
 export function setupServerDebugGlobals(world) {
   const debugGlobals = {

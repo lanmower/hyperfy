@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('InputHelper')
+const logger = new StructuredLogger('InputHelper')
 
 export class InputHelper {
   static registerInput(control, eventType, handler, options = {}) {

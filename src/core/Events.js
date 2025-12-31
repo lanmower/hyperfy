@@ -1,7 +1,7 @@
 import { UnifiedEventEmitter } from './patterns/UnifiedEventEmitter.js'
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from 'utils/logging/index.js'
 
-const logger = new ComponentLogger('Events')
+const logger = new StructuredLogger('Events')
 
 export class Events {
   constructor(name = 'Events') {

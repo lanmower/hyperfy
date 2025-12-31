@@ -1,8 +1,8 @@
 
 import { uuid } from '../utils.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('BaseEntity')
+const logger = new StructuredLogger('BaseEntity')
 
 export class BaseEntity {
   constructor(world, data = {}, local = false) {

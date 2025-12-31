@@ -1,9 +1,9 @@
 import { clamp, uuid } from '../../utils/helpers/misc.js'
 import * as THREE from '../three.js'
 import { ProxyBuilder } from '../../utils/ProxyBuilder.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('PlayerProxy')
+const logger = new StructuredLogger('PlayerProxy')
 
 const HEALTH_MAX = 100
 

@@ -1,8 +1,8 @@
 import { Packr } from 'msgpackr'
 import { PACKET_NAMES } from './packets.constants.js'
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from 'utils/logging/index.js'
 
-const logger = new ComponentLogger('packets')
+const logger = new StructuredLogger('packets')
 const packr = new Packr({ structuredClone: true })
 
 const names = PACKET_NAMES

@@ -1,8 +1,8 @@
 import { storage } from '../../storage.js'
 import { TimeoutConfig } from '../../server/config/TimeoutConfig.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('WebSocketManager')
+const logger = new StructuredLogger('WebSocketManager')
 
 export class WebSocketManager {
   constructor(network) {

@@ -1,8 +1,8 @@
 import * as THREE from '../../extras/three.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { isNumber } from 'lodash-es'
 
-const logger = new ComponentLogger('RenderHelper')
+const logger = new StructuredLogger('RenderHelper')
 
 export class RenderHelper {
   static createMaterial(options = {}) {

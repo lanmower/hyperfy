@@ -1,8 +1,8 @@
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 import { createFastifyPlugin } from './PluginFactory.js'
 import { ErrorResponses } from './ErrorResponses.js'
 
-const logger = new ComponentLogger('TimeoutMiddleware')
+const logger = new StructuredLogger('TimeoutMiddleware')
 
 export function createTimeoutMiddleware(timeoutManager) {
   async function timeoutMiddleware(fastify) {

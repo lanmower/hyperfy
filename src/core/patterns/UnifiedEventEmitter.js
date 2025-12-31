@@ -1,9 +1,9 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
 export class UnifiedEventEmitter {
   constructor(name = 'UnifiedEventEmitter') {
     this.name = name
-    this.logger = new ComponentLogger(name)
+    this.logger = new StructuredLogger(name)
     this.handlers = new Map()
   }
 

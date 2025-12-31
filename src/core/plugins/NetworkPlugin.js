@@ -1,8 +1,8 @@
 import { Plugin } from './Plugin.js'
 import { MessageHandler } from './core/MessageHandler.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('NetworkPlugin')
+const logger = new StructuredLogger('NetworkPlugin')
 
 export class NetworkPlugin extends Plugin {
   constructor(world, options = {}) {

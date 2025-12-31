@@ -1,9 +1,9 @@
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
 import { v } from '../utils/TempVectors.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('ClientAudio')
+const logger = new StructuredLogger('ClientAudio')
 
 const up = new THREE.Vector3(0, 1, 0)
 

@@ -1,6 +1,6 @@
 // Factory pattern for creating standardized API routes with consistent error handling and logging
 import { APIMethodWrapper } from '../utils/api/index.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
 export class RouteFactory {
   static createRoute(name) {
@@ -11,7 +11,7 @@ export class RouteFactory {
 class RouteBuilder {
   constructor(name) {
     this.name = name
-    this.logger = new ComponentLogger(`Routes.${name}`)
+    this.logger = new StructuredLogger(`Routes.${name}`)
     this.routes = []
   }
 

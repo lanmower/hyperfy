@@ -1,7 +1,7 @@
 import { World } from './World.js'
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from 'utils/logging/index.js'
 
-const logger = new ComponentLogger('WorldBuilder')
+const logger = new StructuredLogger('WorldBuilder')
 
 export class WorldBuilder {
   constructor() {

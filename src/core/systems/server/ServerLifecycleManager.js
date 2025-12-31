@@ -2,9 +2,9 @@ import { FileStorage } from '../../../server/services/FileStorage.js'
 import { FileUploader } from '../../../server/services/FileUploader.js'
 import { CommandHandler } from '../../../server/services/CommandHandler.js'
 import { WorldPersistence } from '../../../server/services/WorldPersistence.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('ServerLifecycleManager')
+const logger = new StructuredLogger('ServerLifecycleManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
 

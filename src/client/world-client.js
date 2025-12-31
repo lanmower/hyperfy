@@ -6,9 +6,9 @@ import { World } from '../core/World.js'
 import { CoreUI } from './components/CoreUI.js'
 import { setupDebugGlobals } from './debugUtils.js'
 import { FeatureDetector } from '../core/FeatureDetector.js'
-import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('WorldClient')
+const logger = new StructuredLogger('WorldClient')
 
 export { System } from '../core/systems/System.js'
 

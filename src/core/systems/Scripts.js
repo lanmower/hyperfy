@@ -7,15 +7,15 @@ import { Curve } from '../extras/Curve.js'
 import { prng } from '../extras/prng.js'
 import { BufferedLerpVector3 } from '../extras/BufferedLerpVector3.js'
 import { BufferedLerpQuaternion } from '../extras/BufferedLerpQuaternion.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('Scripts')
+const logger = new StructuredLogger('Scripts')
 
 
 export class Scripts extends System {
   constructor(world) {
     super(world)
-    const scriptLogger = new ComponentLogger('ScriptExecution')
+    const scriptLogger = new StructuredLogger('ScriptExecution')
     this.compartment = new Compartment({
       console: {
         log: (...args) => console.log(...args),

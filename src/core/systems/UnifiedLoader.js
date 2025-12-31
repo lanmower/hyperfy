@@ -1,11 +1,11 @@
 /* Unified loader consolidating client and server asset loading */
 
 import { System } from './System.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { AssetHandlers } from './loaders/AssetHandlers.js'
 import { ServerAssetHandlers } from './loaders/ServerAssetHandlers.js'
 
-const logger = new ComponentLogger('UnifiedLoader')
+const logger = new StructuredLogger('UnifiedLoader')
 
 export class UnifiedLoader extends System {
   static DEPS = {

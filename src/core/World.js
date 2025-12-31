@@ -1,13 +1,13 @@
 import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
 import { WorldConfig } from './config/SystemConfig.js'
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from './utils/logging/index.js'
 import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
 import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 import { memoryAnalyzer } from './memory/index.js'
 import { eventAudit, eventRegistry } from './events/index.js'
 
-const logger = new ComponentLogger('World')
+const logger = new StructuredLogger('World')
 
 export class World extends EventEmitter {
   constructor() {

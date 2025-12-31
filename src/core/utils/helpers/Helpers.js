@@ -1,9 +1,9 @@
 // Consolidated helper module for render, input, UI, and video operations
 import * as THREE from '../../extras/three.js'
-import { ComponentLogger } from '../logging/ComponentLogger.js'
+import { StructuredLogger } from '../logging/index.js'
 import { isNumber } from 'lodash-es'
 
-const logger = new ComponentLogger('Helpers')
+const logger = new StructuredLogger('Helpers')
 
 export class RenderHelper {
   static createMaterial(options = {}) {

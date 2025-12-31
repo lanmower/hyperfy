@@ -2,10 +2,10 @@ import { useRef, useState } from 'react'
 import { hashFile } from '../../../core/utils-client.js'
 import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { useUpdate } from '../../useUpdate.js'
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../core/utils/logging/index.js'
 import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
 
-const logger = new ComponentLogger('useFileUpload')
+const logger = new StructuredLogger('useFileUpload')
 
 export const fileKinds = {
   avatar: { type: 'avatar', accept: '.vrm', exts: ['vrm'], placeholder: 'vrm' },

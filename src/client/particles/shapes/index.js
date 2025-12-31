@@ -5,9 +5,9 @@ import { createConeShape } from './ConeShape.js'
 import { createBoxShape } from './BoxShape.js'
 import { createCircleShape } from './CircleShape.js'
 import { createRectangleShape } from './RectangleShape.js'
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('shapes')
+const logger = new StructuredLogger('shapes')
 
 export function createShape(config) {
   const [type, ...args] = config

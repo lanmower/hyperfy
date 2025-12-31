@@ -8,11 +8,11 @@ import { BuilderCommandHandler } from './server/BuilderCommandHandler.js'
 import { ServerLifecycleManager } from './server/ServerLifecycleManager.js'
 import { SocketManager } from './server/SocketManager.js'
 import { Compressor } from './network/Compressor.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
 let ErrorHandlingService = null
 
-const logger = new ComponentLogger('ServerNetwork')
+const logger = new StructuredLogger('ServerNetwork')
 const PING_RATE = 1
 
 export class ServerNetwork extends BaseNetwork {

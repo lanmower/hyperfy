@@ -1,9 +1,9 @@
 import * as THREE from '../extras/three.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { System } from './System.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('ClientPointer')
+const logger = new StructuredLogger('ClientPointer')
 const PointerEvents = { ENTER: 'pointerenter', LEAVE: 'pointerleave', DOWN: 'pointerdown', UP: 'pointerup' }
 const CURSOR_DEFAULT = 'default'
 

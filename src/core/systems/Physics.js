@@ -5,10 +5,10 @@ import { PhysicsQueries } from './physics/PhysicsQueries.js'
 import { PhysicsCoordinator } from './physics/PhysicsCoordinator.js'
 import { PhysicsSimulationEvents } from './physics/PhysicsSimulationEvents.js'
 import { Layers } from '../extras/Layers.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { tracer } from '../utils/tracing/index.js'
 
-const logger = new ComponentLogger('Physics')
+const logger = new StructuredLogger('Physics')
 
 export class Physics extends System {
   static DEPS = {

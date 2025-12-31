@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('TimeoutManager')
+const logger = new StructuredLogger('TimeoutManager')
 
 export class TimeoutManager {
   constructor(defaultTimeout = 30000) {

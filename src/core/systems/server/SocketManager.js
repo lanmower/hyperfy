@@ -1,8 +1,8 @@
 import { MessageHandler } from '../../plugins/core/MessageHandler.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { WebSocketValidator } from '../../validation/Validators.js'
 
-const logger = new ComponentLogger('SocketManager')
+const logger = new StructuredLogger('SocketManager')
 
 export class SocketManager {
   constructor(network) {

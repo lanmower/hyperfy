@@ -1,7 +1,7 @@
 import SecurityConfig from '../../server/config/SecurityConfig.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('InputSanitizer')
+const logger = new StructuredLogger('InputSanitizer')
 
 export class InputSanitizer {
   static validateScript(scriptCode) {

@@ -2,10 +2,10 @@ import * as THREE from '../three.js'
 import { AimAxis, UpAxis, DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX, MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
 import { getQueryParams } from './VRMUtilities.js'
 import { Modes } from '../../constants/AnimationModes.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const logger = new ComponentLogger('VRMControllers')
+const logger = new StructuredLogger('VRMControllers')
 
 const { v1, v2, q1 } = SharedVectorPool('VRMControllers', 2, 1)
 

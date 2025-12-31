@@ -1,7 +1,7 @@
 import { System } from '../systems/System.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('BaseNetwork')
+const logger = new StructuredLogger('BaseNetwork')
 
 export class BaseNetwork extends System {
   constructor(world, handlers = {}) {

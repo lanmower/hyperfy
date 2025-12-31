@@ -1,5 +1,5 @@
 import { uuid } from '../../../utils-client.js'
-import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../utils/logging/index.js'
 import { BlueprintFactory } from '../../../factories/BlueprintFactory.js'
 import { NetworkUploadUtil } from '../../../utils/network/index.js'
 
@@ -7,7 +7,7 @@ export class BaseSpawner {
   constructor(entitySpawner) {
     this.entitySpawner = entitySpawner
     this.clientBuilder = entitySpawner.clientBuilder
-    this.logger = new ComponentLogger(this.constructor.name)
+    this.logger = new StructuredLogger(this.constructor.name)
   }
 
   createBlueprint(overrides = {}) {

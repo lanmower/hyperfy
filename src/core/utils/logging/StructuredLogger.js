@@ -10,6 +10,7 @@ export class StructuredLogger {
     this.handlers = options.handlers || [defaultConsoleHandler]
     this.contextStack = []
     this.metadata = {}
+    this.sinks = []
   }
 
   setMinLevel(levelName) {
@@ -73,6 +74,14 @@ export class StructuredLogger {
         handler(logEntry)
       } catch (err) {
         console.error('Log handler error:', err.message)
+      }
+    }
+
+    for (const sink of this.sinks) {
+      try {
+        sink.write(logEntry)
+      } catch (err) {
+        console.error('Sink error:', err.message)
       }
     }
 
@@ -140,6 +149,27 @@ export class StructuredLogger {
     return this
   }
 
+  addSink(sink) {
+    if (!sink || typeof sink.write !== 'function') {
+      throw new Error('Sink must have a write() method')
+    }
+    this.sinks.push(sink)
+    return this
+  }
+
+  removeSink(sink) {
+    const index = this.sinks.indexOf(sink)
+    if (index >= 0) {
+      this.sinks.splice(index, 1)
+    }
+    return this
+  }
+
+  clearSinks() {
+    this.sinks = []
+    return this
+  }
+
   createChild(childCategory) {
     const child = new StructuredLogger(childCategory, {
       minLevel: LogLevelNames[this.minLevel],
@@ -150,6 +180,7 @@ export class StructuredLogger {
     })
 
     child.metadata = { ...this.metadata }
+    child.sinks = [...this.sinks]
     for (const { key, value } of this.contextStack) {
       child.pushContext(key, value)
     }

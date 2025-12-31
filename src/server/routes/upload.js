@@ -2,9 +2,9 @@ import path from 'path'
 import fs from 'fs-extra'
 import { hashFile } from '../../core/utils.js'
 import { createRateLimiter } from '../middleware/RateLimiter.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('Routes.Upload')
+const logger = new StructuredLogger('Routes.Upload')
 
 const MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 const BLOCKED_EXTENSIONS = new Set(['exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'js'])

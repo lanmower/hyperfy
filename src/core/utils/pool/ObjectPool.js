@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../logging/ComponentLogger.js'
+import { StructuredLogger } from '../logging/index.js'
 
-const logger = new ComponentLogger('ObjectPool')
+const logger = new StructuredLogger('ObjectPool')
 
 export class ObjectPool {
   constructor(Factory, initialSize = 10, name = 'ObjectPool') {

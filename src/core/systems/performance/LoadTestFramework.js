@@ -1,9 +1,9 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
 export class LoadTestFramework {
   constructor(world) {
     this.world = world
-    this.logger = new ComponentLogger('LoadTestFramework')
+    this.logger = new StructuredLogger('LoadTestFramework')
     this.tests = []
     this.running = false
     this.results = []

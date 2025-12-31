@@ -1,7 +1,7 @@
 import { InputSanitizer } from '../../security/InputSanitizer.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AppUtilities')
+const logger = new StructuredLogger('AppUtilities')
 
 export class AppUtilities {
   constructor(app) {

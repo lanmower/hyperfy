@@ -23,7 +23,7 @@ import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
 import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
 import { PlayerStateManager } from './player/PlayerStateManager.js'
 import { EVENT } from '../constants/EventNames.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
 const UP = new THREE.Vector3(0, 1, 0)
@@ -36,7 +36,7 @@ const { v1, v2, v3, v4, v5, v6, e1, q1, q2, q3, q4, m1, m2, m3 } = SharedVectorP
 
 const gazeTiltAngle = 10 * DEG2RAD
 const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
-const logger = new ComponentLogger('PlayerLocal')
+const logger = new StructuredLogger('PlayerLocal')
 
 export class PlayerLocal extends BaseEntity {
   constructor(world, data, local) {

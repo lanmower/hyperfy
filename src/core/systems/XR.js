@@ -1,10 +1,10 @@
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
 import { XRControllerModelFactory } from 'three/addons'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
-const logger = new ComponentLogger('XR')
+const logger = new StructuredLogger('XR')
 const UP = new THREE.Vector3(0, 1, 0)
 
 const { v1, e1 } = SharedVectorPool('XR', 1, 0, 1)

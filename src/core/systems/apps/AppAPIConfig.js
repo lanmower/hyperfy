@@ -4,10 +4,10 @@ import { ControlPriorities } from '../../extras/ControlPriorities.js'
 import * as NodeClasses from '../../nodes/index.js'
 import { APIConfigBuilder } from '../../utils/api/index.js'
 import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { FILE_TYPES } from './FieldTypeConstants.js'
 
-const logger = new ComponentLogger('AppAPIConfig')
+const logger = new StructuredLogger('AppAPIConfig')
 
 const fileRemaps = Object.fromEntries(FILE_TYPES.map(type => [
   type,

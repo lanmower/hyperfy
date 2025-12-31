@@ -4,11 +4,11 @@ import { glbToNodes } from '../../extras/glbToNodes.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { BaseAssetHandler } from './BaseAssetHandler.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { createVideoFactory } from './VideoFactory.js'
 import { AssetResults } from './AssetResults.js'
 
-const logger = new ComponentLogger('AssetHandlers')
+const logger = new StructuredLogger('AssetHandlers')
 
 export class AssetHandlers extends BaseAssetHandler {
   constructor(clientLoader, world) {

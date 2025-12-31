@@ -1,7 +1,7 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { FileUploadValidator } from '../../validation/Validators.js'
 
-const logger = new ComponentLogger('FileUploadHandler')
+const logger = new StructuredLogger('FileUploadHandler')
 
 export class FileUploadHandler {
   constructor(serverNetwork) {

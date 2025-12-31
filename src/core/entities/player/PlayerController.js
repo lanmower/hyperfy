@@ -2,7 +2,7 @@
 
 import * as THREE from '../../extras/three.js'
 import { AvatarConfig } from '../../config/SystemConfig.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { DEG2RAD } from '../../extras/general.js'
 import { bindRotations } from '../../extras/bindRotations.js'
 import { clamp } from '../../utils.js'
@@ -14,7 +14,7 @@ import { TouchPanInputStrategy } from './input/TouchPanInputStrategy.js'
 import { ScrollZoomStrategy } from './input/ScrollZoomStrategy.js'
 import { createNode } from '../../extras/createNode.js'
 
-const logger = new ComponentLogger('PlayerController')
+const logger = new StructuredLogger('PlayerController')
 
 export class PlayerController {
   constructor(player) {

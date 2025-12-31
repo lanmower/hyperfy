@@ -1,7 +1,7 @@
 // Consolidated validation module for WebSocket, FileUpload, and domain validation
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('Validators')
+const logger = new StructuredLogger('Validators')
 
 export class WebSocketValidator {
   static MAX_MESSAGE_SIZE = 10 * 1024 * 1024

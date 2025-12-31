@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('AppActions')
+const logger = new StructuredLogger('AppActions')
 
 export class AppActions {
   constructor(world, network, blueprints, entityTargeting, setRefresh) {

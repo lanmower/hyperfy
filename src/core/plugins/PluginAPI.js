@@ -1,8 +1,8 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { pluginRegistry } from './PluginRegistry.js'
 import { pluginHooks } from './PluginHooks.js'
 
-const logger = new ComponentLogger('PluginAPI')
+const logger = new StructuredLogger('PluginAPI')
 
 export class PluginAPI {
   constructor(world, pluginName) {

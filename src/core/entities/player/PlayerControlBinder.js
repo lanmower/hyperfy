@@ -1,7 +1,7 @@
 import { ControlPriorities } from '../../extras/ControlPriorities.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('PlayerControlBinder')
+const logger = new StructuredLogger('PlayerControlBinder')
 const STICK_OUTER_RADIUS = 50
 const STICK_INNER_RADIUS = 25
 

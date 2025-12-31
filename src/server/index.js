@@ -29,7 +29,7 @@ import { DegradationStrategies } from './resilience/DegradationStrategies.js'
 import { ShutdownManager } from './resilience/ShutdownManager.js'
 import { StatusPageData } from './services/StatusPageData.js'
 import { CORSConfig } from './config/CORSConfig.js'
-import { ServerLogger, ConsoleSink, FileSink } from '../core/utils/logging/index.js'
+import { StructuredLogger, ConsoleSink, FileSink } from '../core/utils/logging/index.js'
 import { ErrorTracker } from './services/ErrorTracker.js'
 import { registerMiddleware } from './middleware/ServerMiddleware.js'
 import { registerWorldNetwork } from './plugins/WorldNetworkPlugin.js'
@@ -53,12 +53,11 @@ await fs.ensureDir(logsDir)
 await fs.copy(path.join(rootDir, 'src/world/assets'), path.join(assetsDir))
 await fs.copy(path.join(rootDir, 'src/world/collections'), path.join(collectionsDir))
 
-const logger = new ServerLogger({ name: 'Server', level: env === 'production' ? 'INFO' : 'DEBUG', logsDir })
+const logger = new StructuredLogger('Server', { minLevel: env === 'production' ? 'INFO' : 'DEBUG', includeTimestamp: true })
 logger.addSink(new ConsoleSink())
 if (env === 'production') {
   logger.addSink(new FileSink(logsDir, 'server'))
 }
-await logger.init()
 
 const corsConfig = new CORSConfig()
 await corsConfig.init()

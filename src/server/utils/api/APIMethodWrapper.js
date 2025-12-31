@@ -1,9 +1,9 @@
 /* APIMethodWrapper: Wraps async methods with error handling and logging */
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../core/utils/logging/index.js'
 import { ErrorResponseBuilder } from './ErrorResponseBuilder.js'
 import { OperationError } from '../errors/OperationError.js'
 
-const logger = new ComponentLogger('APIMethodWrapper')
+const logger = new StructuredLogger('APIMethodWrapper')
 
 export class APIMethodWrapper {
   static async wrapMethod(fn, options = {}) {

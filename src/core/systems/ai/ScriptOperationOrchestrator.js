@@ -1,8 +1,8 @@
 import { File } from 'buffer'
 import { hashFile } from '../../utils-server.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('ScriptOperationOrchestrator')
+const logger = new StructuredLogger('ScriptOperationOrchestrator')
 
 const PREFIX = `app.remove(app.get('Block'))\n`
 

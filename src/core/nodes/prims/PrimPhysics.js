@@ -1,11 +1,11 @@
 import * as THREE from '../../extras/three.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { geometryToPxMesh } from '../../extras/geometryToPxMesh.js'
 import { Layers } from '../../extras/Layers.js'
 import { getGeometry, isUniformScale } from './PrimGeometry.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const logger = new ComponentLogger('PrimPhysics')
+const logger = new StructuredLogger('PrimPhysics')
 
 const { v1: _v1, v2: _v2, q1: _q1 } = SharedVectorPool('PrimPhysics', 2, 1)
 

@@ -1,7 +1,7 @@
 import { gzipSync, gunzipSync } from 'zlib'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('Compressor')
+const logger = new StructuredLogger('Compressor')
 const MIN_COMPRESS_SIZE = 1024
 
 export class Compressor {

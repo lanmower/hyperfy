@@ -1,7 +1,7 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { MemorySnapshot } from './MemorySnapshot.js'
 
-const logger = new ComponentLogger('MemoryAnalyzer')
+const logger = new StructuredLogger('MemoryAnalyzer')
 
 export class MemoryAnalyzer {
   constructor(maxSnapshots = 20) {

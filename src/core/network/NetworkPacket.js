@@ -1,7 +1,7 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { PacketDefinition } from './protocol/PacketDefinition.js'
 
-const logger = new ComponentLogger('NetworkPacket')
+const logger = new StructuredLogger('NetworkPacket')
 
 export class NetworkPacket {
   constructor(name, data = null, version = PacketDefinition.PROTOCOL_VERSION) {

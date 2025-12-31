@@ -1,11 +1,11 @@
 // Base factory pattern for common configuration and validation patterns
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
 export class BaseFactory {
   constructor(name, config = {}) {
     this.name = name
     this.config = config
-    this.logger = new ComponentLogger(name)
+    this.logger = new StructuredLogger(name)
     this.validateConfig()
   }
 

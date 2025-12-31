@@ -1,8 +1,8 @@
 import { Plugin } from './Plugin.js'
 import { RenderHelper } from '../utils/helpers/Helpers.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('RenderPlugin')
+const logger = new StructuredLogger('RenderPlugin')
 
 export class RenderPlugin extends Plugin {
   constructor(world, options = {}) {

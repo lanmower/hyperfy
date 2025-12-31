@@ -1,8 +1,8 @@
 import { createPlayerProxy } from '../../extras/createPlayerProxy.js'
 import { ProxyRegistry } from '../../proxy/ProxyRegistry.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AppProxyManager')
+const logger = new StructuredLogger('AppProxyManager')
 
 export class AppProxyManager {
   constructor(app) {

@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('SchemaValidator')
+const logger = new StructuredLogger('SchemaValidator')
 
 export class SchemaValidator {
   constructor() {

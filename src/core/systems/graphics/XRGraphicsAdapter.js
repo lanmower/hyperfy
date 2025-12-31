@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('XRGraphicsAdapter')
+const logger = new StructuredLogger('XRGraphicsAdapter')
 
 export class XRGraphicsAdapter {
   constructor(renderer, renderState) {

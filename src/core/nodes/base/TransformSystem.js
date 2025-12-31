@@ -1,8 +1,8 @@
 import * as THREE from '../../extras/three.js'
 import { v, q, m } from '../../utils/TempVectors.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('TransformSystem')
+const logger = new StructuredLogger('TransformSystem')
 const EPSILON = 0.000000001
 
 export class TransformSystem {

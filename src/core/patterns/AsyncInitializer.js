@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('AsyncInitializer')
+const logger = new StructuredLogger('AsyncInitializer')
 
 export class AsyncInitializer {
   constructor(name) {

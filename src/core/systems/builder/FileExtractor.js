@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('FileExtractor')
+const logger = new StructuredLogger('FileExtractor')
 
 export class FileExtractor {
   async extractFromDrop(e) {

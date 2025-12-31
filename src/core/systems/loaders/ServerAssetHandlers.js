@@ -4,9 +4,9 @@ import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { BaseAssetHandler } from './BaseAssetHandler.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('ServerAssetHandlers')
+const logger = new StructuredLogger('ServerAssetHandlers')
 
 const isRemoteURL = url => url.startsWith('http://') || url.startsWith('https://')
 

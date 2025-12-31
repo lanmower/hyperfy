@@ -1,6 +1,6 @@
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from './utils/logging/index.js'
 
-const logger = new ComponentLogger('Storage')
+const logger = new StructuredLogger('Storage')
 
 class LocalStorage {
   get(key, defaultValue = null) {

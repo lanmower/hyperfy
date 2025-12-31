@@ -1,7 +1,7 @@
 import { isNumber } from 'lodash-es'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AudioPlaybackController')
+const logger = new StructuredLogger('AudioPlaybackController')
 
 export class AudioPlaybackController {
   constructor(audioNode) {

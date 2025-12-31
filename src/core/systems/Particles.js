@@ -4,9 +4,9 @@ import { uuid } from '../utils.js'
 import { ParticleGeometryBuilder } from './particles/ParticleGeometryBuilder.js'
 import { ParticleMaterialFactory } from './particles/ParticleMaterialFactory.js'
 import { EmitterController } from './particles/EmitterController.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('Particles')
+const logger = new StructuredLogger('Particles')
 const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const billboardModeInts = { full: 0, y: 1, direction: 2 }
 

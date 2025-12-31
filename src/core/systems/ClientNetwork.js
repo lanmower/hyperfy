@@ -11,10 +11,10 @@ import { MessageHandler } from '../plugins/core/MessageHandler.js'
 import { storage } from '../storage.js'
 import { Compressor } from './network/Compressor.js'
 import { clientTimeoutManager } from './network/TimeoutManager.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { TimeoutConfig } from '../../server/config/TimeoutConfig.js'
 
-const logger = new ComponentLogger('ClientNetwork')
+const logger = new StructuredLogger('ClientNetwork')
 
 export class ClientNetwork extends BaseNetwork {
   static DEPS = {

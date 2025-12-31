@@ -2,9 +2,9 @@ import { AccessToken, TrackSource } from 'livekit-server-sdk'
 
 import { System } from './System.js'
 import { uuid } from '../utils.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('ServerLiveKit')
+const logger = new StructuredLogger('ServerLiveKit')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const levels = ['disabled', 'spatial', 'global']
 const levelPriorities = {

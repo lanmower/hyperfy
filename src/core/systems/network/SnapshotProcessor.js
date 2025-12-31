@@ -1,10 +1,10 @@
 import { emoteUrls } from '../../extras/playerEmotes.js'
 import { storage } from '../../storage.js'
 import { SnapshotCodec } from './SnapshotCodec.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { tracer } from '../../utils/tracing/index.js'
 
-const logger = new ComponentLogger('SnapshotProcessor')
+const logger = new StructuredLogger('SnapshotProcessor')
 
 export class SnapshotProcessor {
   constructor(network) {

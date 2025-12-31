@@ -5,9 +5,9 @@ import { uuid } from '../../utils.js'
 import { createJWT, readJWT } from '../../utils/helpers/crypto.js'
 import moment from 'moment'
 import { EVENT } from '../../constants/EventNames.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('PlayerConnectionManager')
+const logger = new StructuredLogger('PlayerConnectionManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const HEALTH_MAX = 100
 

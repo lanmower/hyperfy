@@ -1,4 +1,3 @@
-export { ComponentLogger } from './ComponentLogger.js'
-export { StructuredLogger } from './StructuredLogger.js'
+export { StructuredLogger, defaultConsoleHandler, createLogBuffer, createFileHandler } from './StructuredLogger.js'
 export { LogLevels, LogLevelNames, getLevelValue, shouldLog } from './LogLevels.js'
-export { ServerLogger, ConsoleSink, FileSink } from './ServerLogger.js'
+export { ConsoleSink, FileSink } from './ServerLogger.js'

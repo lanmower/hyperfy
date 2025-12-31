@@ -3,9 +3,9 @@ import { css } from '@firebolt-dev/css'
 import { hashFile } from '../../../core/utils-client.js'
 import { load } from '../../utils/monacoLoader.js'
 import { NetworkUploadUtil } from '../../../core/utils/network/index.js'
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('Editor')
+const logger = new StructuredLogger('Editor')
 
 const cached = {
   key: null,

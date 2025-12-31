@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('PacketDefinition')
+const logger = new StructuredLogger('PacketDefinition')
 
 export class PacketDefinition {
   static PROTOCOL_VERSION = 1

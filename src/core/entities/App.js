@@ -3,7 +3,7 @@ import { isArray, isFunction, isNumber, isString } from 'lodash-es'
 import moment from 'moment'
 
 import { BaseEntity } from './BaseEntity.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { NullSafetyHelper } from '../utils/safety/NullSafetyHelper.js'
 import { createNode } from '../extras/createNode.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
@@ -18,7 +18,7 @@ import { AppUtilities } from './app/AppUtilities.js'
 import { RigidBody } from '../nodes/RigidBody.js'
 import { Collider } from '../nodes/Collider.js'
 
-const logger = new ComponentLogger('App')
+const logger = new StructuredLogger('App')
 
 const Modes = {
   ACTIVE: 'active',

@@ -2,11 +2,11 @@ import { isEqual } from 'lodash-es'
 import { System } from './System.js'
 import { InputSanitizer } from '../security/InputSanitizer.js'
 import { AppValidator } from '../validators/AppValidator.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { tracer } from '../utils/tracing/index.js'
 import { PerformanceMetrics } from '../utils/metrics/PerformanceMetrics.js'
 
-const logger = new ComponentLogger('BlueprintManager')
+const logger = new StructuredLogger('BlueprintManager')
 
 export class BlueprintManager extends System {
   static DEPS = {

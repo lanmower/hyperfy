@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../logging/ComponentLogger.js'
+import { StructuredLogger } from '../logging/index.js'
 
-const logger = new ComponentLogger('APIMethodWrapper')
+const logger = new StructuredLogger('APIMethodWrapper')
 
 export class APIMethodWrapper {
   /**

@@ -1,10 +1,10 @@
 import { MessageHandler } from './plugins/core/MessageHandler.js'
-import { ComponentLogger } from './utils/logging/ComponentLogger.js'
+import { StructuredLogger } from 'utils/logging/index.js'
 
 const MAX_MESSAGE_SIZE = 1024 * 1024
 const INVALID_MESSAGE_THRESHOLD = 10
 const INVALID_MESSAGE_WINDOW = 60000
-const logger = new ComponentLogger('Socket')
+const logger = new StructuredLogger('Socket')
 
 export class Socket {
   constructor({ id, ws, network, player }) {

@@ -1,7 +1,7 @@
 import { EVENT } from '../../constants/EventNames.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('EntityLifecycle')
+const logger = new StructuredLogger('EntityLifecycle')
 
 export class EntityLifecycle {
   constructor(world, entities) {

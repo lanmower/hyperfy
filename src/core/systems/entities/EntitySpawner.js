@@ -2,9 +2,9 @@ import { App } from '../../entities/App.js'
 import { PlayerLocal } from '../../entities/PlayerLocal.js'
 import { PlayerRemote } from '../../entities/PlayerRemote.js'
 import { EVENT } from '../../constants/EventNames.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('EntitySpawner')
+const logger = new StructuredLogger('EntitySpawner')
 let hyperfyEntityValidation = null
 
 const Types = {

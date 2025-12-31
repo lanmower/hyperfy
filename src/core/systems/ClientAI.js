@@ -1,8 +1,8 @@
 import { System } from './System.js'
 import { uuid } from '../utils.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('ClientAI')
+const logger = new StructuredLogger('ClientAI')
 
 export class ClientAI extends System {
   constructor(world) {

@@ -1,9 +1,9 @@
 import { uuid } from '../../utils.js'
 import { serializeForNetwork } from '../../schemas/ChatMessage.schema.js'
 import { ScriptValidator } from '../../../server/security/ScriptValidator.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('BuilderCommandHandler')
+const logger = new StructuredLogger('BuilderCommandHandler')
 
 export class BuilderCommandHandler {
   constructor(serverNetwork) {

@@ -1,9 +1,9 @@
 import { RATE_LIMIT_PRESETS } from '../config/RateLimitConfig.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 import { ErrorResponses } from './ErrorResponses.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
-const logger = new ComponentLogger('RateLimiter')
+const logger = new StructuredLogger('RateLimiter')
 const rateLimitStore = new Map()
 const violationLog = []
 

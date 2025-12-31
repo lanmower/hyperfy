@@ -2,9 +2,9 @@
 
 import * as THREE from '../../extras/three.js'
 import { createNode } from '../../extras/createNode.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AssetCoordinator')
+const logger = new StructuredLogger('AssetCoordinator')
 
 export class AssetCoordinator {
   constructor(resolveURL) {

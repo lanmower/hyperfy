@@ -1,10 +1,10 @@
 import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const logger = new ComponentLogger('PlayerCapsuleFactory')
+const logger = new StructuredLogger('PlayerCapsuleFactory')
 const BACKWARD = new THREE.Vector3(0, 0, 1)
 const { q1, v1 } = SharedVectorPool('PlayerCapsuleFactory', 1, 1)
 

@@ -1,7 +1,7 @@
 import * as THREE from '../../extras/three.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('PhysicsCallbackManager')
+const logger = new StructuredLogger('PhysicsCallbackManager')
 
 function createPool(factory) {
   const pool = []

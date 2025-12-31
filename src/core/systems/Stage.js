@@ -5,9 +5,9 @@ import { createMaterialProxy } from '../systems/stage/MaterialProxy.js'
 import { isNumber } from 'lodash-es'
 import { MeshInserter } from './stage/MeshInserter.js'
 import { ObjectPool } from './stage/ObjectPool.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('Stage')
+const logger = new StructuredLogger('Stage')
 const raycasterVec2 = new THREE.Vector2()
 
 export class Stage extends System {

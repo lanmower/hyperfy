@@ -1,7 +1,7 @@
 import { validateBlueprint, normalizeBlueprint, isListableApp } from '../schemas/AppBlueprint.schema.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('AppValidator')
+const logger = new StructuredLogger('AppValidator')
 
 export class AppValidator {
   

@@ -3,7 +3,7 @@ import { System } from './System.js'
 import { withHandlerRegistry } from '../mixins/HandlerRegistryMixin.js'
 import { withCacheable } from '../mixins/CacheableMixin.js'
 import { withStateManager } from '../mixins/StateManagerMixin.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { EventListenerManager } from './EventListenerManager.js'
 
 const SystemWithMixins = withStateManager(withCacheable(withHandlerRegistry(System)))
@@ -18,7 +18,7 @@ export class BaseSystem extends SystemWithMixins {
     }
 
     this._isBaseSystem = true
-    this.logger = new ComponentLogger(this.constructor.name)
+    this.logger = new StructuredLogger(this.constructor.name)
     this.listeners = new EventListenerManager(this)
   }
 

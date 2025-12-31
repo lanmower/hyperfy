@@ -1,7 +1,7 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { PerformanceBudget } from './PerformanceBudget.js'
 
-const logger = new ComponentLogger('PerformanceMonitor')
+const logger = new StructuredLogger('PerformanceMonitor')
 
 export class PerformanceMonitor {
   constructor() {

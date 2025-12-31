@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('RollbackManager')
+const logger = new StructuredLogger('RollbackManager')
 
 export class Snapshot {
   constructor(id, data, timestamp = Date.now()) {

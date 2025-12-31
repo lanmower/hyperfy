@@ -1,7 +1,7 @@
 import { Plugin } from '../Plugin.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AIClientPlugin')
+const logger = new StructuredLogger('AIClientPlugin')
 
 export class AIClientPlugin extends Plugin {
   constructor(world, options = {}) {

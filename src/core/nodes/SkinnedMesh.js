@@ -7,9 +7,9 @@ import * as THREE from '../extras/three.js'
 import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
 import { schema } from '../utils/validation/index.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('SkinnedMesh')
+const logger = new StructuredLogger('SkinnedMesh')
 
 const defaultStopOpts = { fade: 0.15 }
 

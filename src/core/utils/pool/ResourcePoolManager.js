@@ -1,7 +1,7 @@
 import { ObjectPool, VectorPool, QuaternionPool, Matrix4Pool } from './ObjectPool.js'
-import { ComponentLogger } from '../logging/ComponentLogger.js'
+import { StructuredLogger } from '../logging/index.js'
 
-const logger = new ComponentLogger('ResourcePoolManager')
+const logger = new StructuredLogger('ResourcePoolManager')
 
 export class ResourcePoolManager {
   constructor() {

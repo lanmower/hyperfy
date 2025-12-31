@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('FileUploadValidator')
+const logger = new StructuredLogger('FileUploadValidator')
 
 export class FileUploadValidator {
   static MAX_FILE_SIZE = 500 * 1024 * 1024

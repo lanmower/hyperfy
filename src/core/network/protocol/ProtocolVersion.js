@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('ProtocolVersion')
+const logger = new StructuredLogger('ProtocolVersion')
 
 export class ProtocolVersion {
   static VERSION = 1

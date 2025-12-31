@@ -1,11 +1,11 @@
 import { System } from './System.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { AIClientFactory } from './ai/AIClientFactory.js'
 import { AIFunctionCaller } from './ai/AIFunctionCaller.js'
 import { PromptBuilder } from './ai/PromptBuilder.js'
 import { ScriptOperationOrchestrator } from './ai/ScriptOperationOrchestrator.js'
 
-const logger = new ComponentLogger('ServerAI')
+const logger = new StructuredLogger('ServerAI')
 
 export class ServerAI extends System {
   constructor(world) {

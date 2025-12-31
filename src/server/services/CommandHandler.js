@@ -2,9 +2,9 @@ import { uuid } from '../../core/utils.js'
 import { Ranks } from '../../core/extras/ranks.js'
 import moment from 'moment'
 import { serializeForNetwork } from '../../core/schemas/ChatMessage.schema.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('CommandHandler')
+const logger = new StructuredLogger('CommandHandler')
 
 const MAX_ADMIN_ATTEMPTS = 5
 const ADMIN_LOCKOUT_TIME = 5 * 60 * 1000

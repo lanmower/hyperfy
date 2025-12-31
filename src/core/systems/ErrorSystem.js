@@ -1,7 +1,7 @@
 import { System } from './System.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('ErrorSystem')
+const logger = new StructuredLogger('ErrorSystem')
 
 export class ErrorSystem extends System {
   constructor(world) {

@@ -9,9 +9,9 @@ import { schema } from '../utils/validation/index.js'
 import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
 import { v, q } from '../utils/TempVectors.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('Collider')
+const logger = new StructuredLogger('Collider')
 
 const rebuildIfShape = onSetRebuildIf(function() { return !!this.shape })
 

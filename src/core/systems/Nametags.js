@@ -3,7 +3,7 @@ import CustomShaderMaterial from '../libs/three-custom-shader-material/index.js'
 import { System } from './System.js'
 import { NametagRenderer } from '../../client/canvas/NametagRenderer.js'
 import * as Config from '../config/NametagConfig.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
 export class Nametags extends System {
   static DEPS = { rig: 'rig', stage: 'stage', events: 'events' }
@@ -11,7 +11,7 @@ export class Nametags extends System {
 
   constructor(world) {
     super(world)
-    this.logger = new ComponentLogger('Nametags')
+    this.logger = new StructuredLogger('Nametags')
     this.renderer = new NametagRenderer()
     this.uniforms = { uAtlas: { value: this.renderer.texture }, uXR: { value: 0 }, uOrientation: { value: this.rig.quaternion } }
     this.nametags = []

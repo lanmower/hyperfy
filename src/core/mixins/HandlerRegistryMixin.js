@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('HandlerRegistry')
+const logger = new StructuredLogger('HandlerRegistry')
 
 export const withHandlerRegistry = (Base) => class extends Base {
   constructor(...args) {

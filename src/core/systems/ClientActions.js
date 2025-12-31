@@ -6,10 +6,10 @@ import { isTouch } from '../../client/utils.js'
 import { clamp, BatchProcessor } from '../utils.js'
 import { CanvasDrawUtils } from './actions/CanvasDrawUtils.js'
 import { RenderConfig } from '../config/SystemConfig.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 
-const logger = new ComponentLogger('ClientActions')
+const logger = new StructuredLogger('ClientActions')
 
 const BATCH_SIZE = RenderConfig.ACTION_BATCH_SIZE
 const sizes = [128, 256, 512, 2048, 4096]

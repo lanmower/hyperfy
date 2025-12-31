@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../logging/ComponentLogger.js'
+import { StructuredLogger } from '../logging/index.js'
 
-const logger = new ComponentLogger('NetworkUploadUtil')
+const logger = new StructuredLogger('NetworkUploadUtil')
 
 export class NetworkUploadUtil {
   static async uploadWithRetry(network, file, options = {}) {

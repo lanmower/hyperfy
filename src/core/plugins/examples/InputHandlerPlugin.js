@@ -1,7 +1,7 @@
 import { Plugin } from '../Plugin.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('InputHandlerPlugin')
+const logger = new StructuredLogger('InputHandlerPlugin')
 
 export class InputHandlerPlugin extends Plugin {
   constructor(world, options = {}) {

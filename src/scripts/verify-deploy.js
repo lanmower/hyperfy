@@ -1,13 +1,13 @@
 import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { ComponentLogger } from '../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../core/utils/logging/index.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.join(dirname, '../../..')
 const buildDir = path.join(rootDir, 'build')
 const srcDir = path.join(rootDir, 'src')
-const logger = new ComponentLogger('VerifyDeploy')
+const logger = new StructuredLogger('VerifyDeploy')
 
 const checks = {
   passed: [],

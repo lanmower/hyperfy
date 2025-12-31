@@ -1,7 +1,7 @@
 import { Color } from '../../core/extras/three.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('CurveInterpolators')
+const logger = new StructuredLogger('CurveInterpolators')
 const color1 = new Color()
 
 function toRGB(color) {

@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('BatchUploader')
+const logger = new StructuredLogger('BatchUploader')
 
 export class BatchUploader {
   constructor(fileUploader) {

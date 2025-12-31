@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('InitializationHelper')
+const logger = new StructuredLogger('InitializationHelper')
 
 export class InitializationHelper {
   static async invokeSystemsMethod(world, methodName, ...args) {

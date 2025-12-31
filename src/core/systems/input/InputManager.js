@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('InputManager')
+const logger = new StructuredLogger('InputManager')
 
 export class InputManager {
   constructor(inputSystem) {

@@ -1,10 +1,10 @@
 /* BaseController: Server request handler pattern with template methods */
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
 export class BaseController {
   constructor(name) {
     this.name = name
-    this.logger = new ComponentLogger(name)
+    this.logger = new StructuredLogger(name)
     this.logger.info('Controller initialized')
   }
 

@@ -1,7 +1,7 @@
 import { Plugin } from '../Plugin.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('AssetLoaderPlugin')
+const logger = new StructuredLogger('AssetLoaderPlugin')
 
 export class AssetLoaderPlugin extends Plugin {
   constructor(world, options = {}) {

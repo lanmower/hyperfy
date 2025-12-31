@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('CircuitBreaker')
+const logger = new StructuredLogger('CircuitBreaker')
 
 const STATE = {
   CLOSED: 'CLOSED',

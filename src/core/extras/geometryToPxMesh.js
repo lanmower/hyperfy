@@ -1,8 +1,8 @@
 import * as THREE from './three.js'
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('GeometryToPxMesh')
+const logger = new StructuredLogger('GeometryToPxMesh')
 const cache = new Map()
 
 class PMeshHandle {

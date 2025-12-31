@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('PhysicsSimulationEvents')
+const logger = new StructuredLogger('PhysicsSimulationEvents')
 
 export class PhysicsSimulationEvents {
   constructor(physics) {

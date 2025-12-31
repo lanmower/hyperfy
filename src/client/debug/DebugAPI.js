@@ -1,4 +1,4 @@
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 import { ConsoleCapture } from './ConsoleCapture.js'
 import { setupDebugEntity } from './DebugEntity.js'
 import { setupDebugPlayer } from './DebugPlayer.js'
@@ -8,7 +8,7 @@ import { setupDebugSystems } from './DebugSystems.js'
 import { setupDebugPlugins } from './DebugPlugins.js'
 import { setupDebugMonitoring } from './DebugMonitoring.js'
 
-const logger = new ComponentLogger('DebugAPI')
+const logger = new StructuredLogger('DebugAPI')
 
 export function setupDebugGlobals(world) {
   if (typeof window === 'undefined') return

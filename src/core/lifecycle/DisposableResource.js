@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('DisposableResource')
+const logger = new StructuredLogger('DisposableResource')
 
 export class DisposableResource {
   constructor(name = 'DisposableResource') {

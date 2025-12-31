@@ -1,7 +1,7 @@
 import { Plugin } from '../Plugin.js'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('NetworkTransportPlugin')
+const logger = new StructuredLogger('NetworkTransportPlugin')
 
 export class NetworkTransportPlugin extends Plugin {
   constructor(world, options = {}) {

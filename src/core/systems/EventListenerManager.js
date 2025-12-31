@@ -1,6 +1,6 @@
-import { ComponentLogger } from '../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 
-const logger = new ComponentLogger('EventListenerManager')
+const logger = new StructuredLogger('EventListenerManager')
 
 export class EventListenerManager {
   constructor(owner) {

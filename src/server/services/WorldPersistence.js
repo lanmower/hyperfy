@@ -1,9 +1,9 @@
 
 import { PersistenceBase } from '../../core/services/PersistenceBase.js'
 import { ScriptValidator } from '../security/ScriptValidator.js'
-import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../core/utils/logging/index.js'
 
-const logger = new ComponentLogger('WorldPersistence')
+const logger = new StructuredLogger('WorldPersistence')
 
 export class WorldPersistence extends PersistenceBase {
   constructor(db, fileUploader = null) {

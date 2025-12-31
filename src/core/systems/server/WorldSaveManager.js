@@ -1,7 +1,7 @@
 import moment from 'moment'
-import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
+import { StructuredLogger } from '../../utils/logging/index.js'
 
-const logger = new ComponentLogger('WorldSaveManager')
+const logger = new StructuredLogger('WorldSaveManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
 
