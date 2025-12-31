@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": 1767154189712,
+  "lastUpdated": 1767154904630,
   "workingDirectory": "C:\\dev\\hyperfy",
   "files": [
     {
@@ -1198,10 +1198,10 @@
     {
       "path": "src/client/components/hooks/index.js",
       "firstSeen": 1767152647035,
-      "lastReported": null,
+      "lastReported": 1767154875785,
       "reportedDates": {},
-      "lastModified": 1766140478422,
-      "lastUpdated": 1767152647035
+      "lastModified": 1767154875785,
+      "lastUpdated": 1767154904623
     },
     {
       "path": "src/client/components/hooks/useAppLogic.js",
@@ -1254,10 +1254,10 @@
     {
       "path": "src/client/components/hooks/useFieldNumber.js",
       "firstSeen": 1767152647036,
-      "lastReported": null,
+      "lastReported": 1767154857555,
       "reportedDates": {},
-      "lastModified": 1766128301722,
-      "lastUpdated": 1767152647036
+      "lastModified": 1767154857555,
+      "lastUpdated": 1767154904623
     },
     {
       "path": "src/client/components/hooks/useFieldRange.js",
@@ -1294,10 +1294,10 @@
     {
       "path": "src/client/components/hooks/useFieldVec3.js",
       "firstSeen": 1767152647036,
-      "lastReported": null,
+      "lastReported": 1767154866085,
       "reportedDates": {},
-      "lastModified": 1766128303431,
-      "lastUpdated": 1767152647036
+      "lastModified": 1767154866085,
+      "lastUpdated": 1767154904624
     },
     {
       "path": "src/client/components/hooks/useFileUpload.js",
@@ -5225,7 +5225,7 @@
       "lastReported": 1767154167805,
       "reportedDates": {},
       "lastModified": 1767154167805,
-      "lastUpdated": 1767154189691
+      "lastUpdated": 1767154290936
     },
     {
       "path": "src/core/utils/logging/ComponentLogger.js",
@@ -5257,7 +5257,7 @@
       "lastReported": 1767154105138,
       "reportedDates": {},
       "lastModified": 1767154105138,
-      "lastUpdated": 1767154189691
+      "lastUpdated": 1767154290936
     },
     {
       "path": "src/core/utils/metrics/MetricCounter.js",
@@ -5697,7 +5697,7 @@
       "lastReported": 1767154123633,
       "reportedDates": {},
       "lastModified": 1767154123633,
-      "lastUpdated": 1767154189691
+      "lastUpdated": 1767154290937
     },
     {
       "path": "src/server/index_patch.txt",
@@ -5729,7 +5729,7 @@
       "lastReported": 1767154135512,
       "reportedDates": {},
       "lastModified": 1767154135512,
-      "lastUpdated": 1767154189691
+      "lastUpdated": 1767154290937
     },
     {
       "path": "src/server/middleware/ErrorResponses.js",

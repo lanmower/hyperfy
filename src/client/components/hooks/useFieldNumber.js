@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { parseNumberInput } from './parseNumber.js'
 
 export function useFieldNumber(value, onChange, { dp = 0, min = -Infinity, max = Infinity, step = 1, bigStep = 2 } = {}) {
   const safeValue = value ?? 0
@@ -10,14 +11,7 @@ export function useFieldNumber(value, onChange, { dp = 0, min = -Infinity, max =
   }, [focused, safeValue, dp])
 
   const setTo = useCallback(str => {
-    let num
-    try {
-      num = (0, eval)(str)
-      if (typeof num !== 'number') throw new Error('input number parse fail')
-    } catch (err) {
-      num = safeValue
-    }
-    if (num < min || num > max) num = safeValue
+    const num = parseNumberInput(str, safeValue, { min, max })
     setLocal(num.toFixed(dp))
     onChange(+num.toFixed(dp))
   }, [safeValue, min, max, dp, onChange])

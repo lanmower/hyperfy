@@ -320,6 +320,7 @@
       ".gitignore",
       ".npmrc",
       ".nvmrc",
+      ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       "LICENSE",
       "package-lock.json",
@@ -583,6 +584,8 @@
       "UnifiedLoader.js",
       "Wind.js",
       "XR.js",
+      "BatchProcessor.js",
+      "GeometryCache.js",
       "ProxyBuilder.js",
       "serialization.js",
       "SharedVectorPool.js",
@@ -678,6 +681,7 @@
       ".gitignore",
       ".npmrc",
       ".nvmrc",
+      ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       "package.json"
     ]
@@ -697,5 +701,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767154283597
+  "lastAnalyzed": 1767154904523
 }

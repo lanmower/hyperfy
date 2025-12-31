@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { parseNumberInput } from './parseNumber.js'
 
 export function useFieldVec3(value, onChange, { dp = 0, min = -Infinity, max = Infinity, step = 1, bigStep = 2 } = {}) {
   const [vx, vy, vz] = value || [0, 0, 0]
@@ -15,16 +16,7 @@ export function useFieldVec3(value, onChange, { dp = 0, min = -Infinity, max = I
     }
   }, [focused, vx, vy, vz, dp])
 
-  const parseStr = useCallback(str => {
-    let num
-    try {
-      num = (0, eval)(str)
-      if (typeof num !== 'number') throw new Error('input number parse fail')
-    } catch (err) {
-      num = 0
-    }
-    return num < min || num > max ? 0 : num
-  }, [min, max])
+  const parseStr = useCallback(str => parseNumberInput(str, 0, { min, max }), [min, max])
 
   const createInputProps = (idx, local, setLocal, current) => ({
     type: 'text',
