@@ -73,7 +73,7 @@ export class TransformHandler extends BaseBuilderHandler {
         this.lastMoveSendTime = 0
       }
     } catch (err) {
-      this.logger.error('Send updates failed', { appId: app?.data.id })
+      this.logger.error('Send updates failed', { appId: this.parent.selected?.data.id })
     }
   }
 

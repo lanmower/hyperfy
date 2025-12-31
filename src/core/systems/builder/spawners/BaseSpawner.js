@@ -1,6 +1,6 @@
 import { uuid } from '../../../utils-client.js'
 import { ComponentLogger } from '../../../utils/logging/ComponentLogger.js'
-import { BlueprintFactory } from '../../../core/factories/BlueprintFactory.js'
+import { BlueprintFactory } from '../../../factories/BlueprintFactory.js'
 import { NetworkUploadUtil } from '../../../utils/network/index.js'
 
 export class BaseSpawner {

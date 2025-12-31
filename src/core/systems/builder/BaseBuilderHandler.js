@@ -4,17 +4,31 @@ export class BaseBuilderHandler {
   constructor(parent, componentName) {
     this.parent = parent
     this.logger = new ComponentLogger(componentName)
+    this._commands = new Map()
   }
 
-  async executeCommand(command, handler, eventName) {
+  registerCommand(name, handler, schema, eventName) {
+    this._commands.set(name, { handler: handler.bind(this), schema, eventName })
+  }
+
+  async executeCommand(commandName, data) {
+    const cmd = this._commands.get(commandName)
+    if (!cmd) {
+      throw new Error(`Unknown command: ${commandName}`)
+    }
+
     try {
-      const result = await handler()
-      if (eventName) {
-        this.emitEvent(eventName, result)
+      if (cmd.schema) {
+        cmd.schema.parse(data)
+      }
+
+      const result = await cmd.handler(data)
+      if (cmd.eventName) {
+        this.emitEvent(cmd.eventName, result)
       }
       return result
     } catch (err) {
-      this.logger.error('Command execution failed', { command, error: err.message })
+      this.logger.error(`${commandName} failed`, { error: err.message })
       throw err
     }
   }
