@@ -3,10 +3,11 @@ import fs from 'fs-extra'
 import { hashFile } from '../../core/utils.js'
 import { createRateLimiter } from '../middleware/RateLimiter.js'
 import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
+import { MasterConfig } from '../config/MasterConfig.js'
 
 const logger = new StructuredLogger('Routes.Upload')
 
-const MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 const BLOCKED_EXTENSIONS = new Set(['exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'js'])
 
 export function registerUploadRoutes(fastify, assetsDir) {
@@ -16,6 +17,7 @@ export function registerUploadRoutes(fastify, assetsDir) {
     const timeoutManager = fastify.timeoutManager
     const circuitBreakerManager = fastify.circuitBreakerManager
     const uploadTimeout = timeoutManager ? timeoutManager.getTimeout('upload') : 120000
+    const maxUploadSize = MasterConfig.uploads.maxFileSize
 
     const executeUpload = async () => {
       const filePromise = req.file()
@@ -35,7 +37,7 @@ export function registerUploadRoutes(fastify, assetsDir) {
       let totalSize = 0
       for await (const chunk of file.file) {
         totalSize += chunk.length
-        if (totalSize > MAX_UPLOAD_SIZE) {
+        if (totalSize > maxUploadSize) {
           const error = new Error('File size exceeds maximum allowed')
           error.code = 'FILE_TOO_LARGE'
           throw error
@@ -67,20 +69,20 @@ export function registerUploadRoutes(fastify, assetsDir) {
     } catch (error) {
       if (error.code === 'CIRCUIT_OPEN') {
         logger.error('Upload circuit breaker open', {})
-        return reply.code(503).send({ error: 'Upload service unavailable' })
+        return ErrorResponseBuilder.sendError(reply, 'SERVICE_UNAVAILABLE', 'Upload service unavailable')
       }
       if (error.code === 'TIMEOUT') {
         logger.error('Upload timeout', { error: error.message })
-        return reply.code(408).send({ error: 'Upload timeout', message: error.message })
+        return ErrorResponseBuilder.sendError(reply, 'INTERNAL_ERROR', 'Upload timeout', { timeout: uploadTimeout })
       }
       if (error.code === 'FILE_TOO_LARGE') {
-        return reply.code(413).send({ error: error.message })
+        return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', error.message)
       }
       if (error.message === 'No file provided' || error.message === 'File type not allowed') {
-        return reply.code(400).send({ error: error.message })
+        return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', error.message)
       }
       logger.error('Upload failed', { error: error.message })
-      return reply.code(500).send({ error: 'Upload failed' })
+      return ErrorResponseBuilder.sendError(reply, 'INTERNAL_ERROR', 'Upload failed')
     }
   })
 
@@ -89,25 +91,25 @@ export function registerUploadRoutes(fastify, assetsDir) {
       const { hash } = req.query
 
       if (!hash) {
-        return reply.code(400).send({ error: 'Hash parameter required' })
+        return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'Hash parameter required')
       }
 
       if (typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash)) {
-        return reply.code(400).send({ error: 'Invalid hash format' })
+        return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'Invalid hash format')
       }
 
       const filename = hash.substring(0, 2) + '/' + hash.substring(2)
       const filePath = path.resolve(path.join(assetsDir, filename))
 
       if (!filePath.startsWith(path.resolve(assetsDir))) {
-        return reply.code(400).send({ error: 'Invalid path' })
+        return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'Invalid path')
       }
 
       const exists = await fs.exists(filePath)
       return reply.code(200).send({ exists })
     } catch (error) {
       logger.error('Upload check failed', { error: error.message })
-      return reply.code(500).send({ error: 'Check failed' })
+      return ErrorResponseBuilder.sendError(reply, 'INTERNAL_ERROR', 'Check failed')
     }
   })
 }

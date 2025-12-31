@@ -1,6 +1,6 @@
-/* APIMethodWrapper: Wraps async methods with error handling and logging */
 import { StructuredLogger } from '../../../core/utils/logging/index.js'
 import { ErrorResponseBuilder } from './ErrorResponseBuilder.js'
+import { HyperfyError } from '../errors/HyperfyError.js'
 import { OperationError } from '../errors/OperationError.js'
 
 const logger = new StructuredLogger('APIMethodWrapper')
@@ -41,8 +41,8 @@ export class APIMethodWrapper {
       const result = await fn()
       return result
     } catch (error) {
-      if (error instanceof OperationError) {
-        errorLogger.error(error.message, error.toJSON())
+      if (error instanceof (OperationError || HyperfyError)) {
+        errorLogger.error(error.message, error.toJSON?.() || error)
         const details = { context: error.context }
         if (error.correlationId) details.requestId = error.correlationId
         return ErrorResponseBuilder.sendError(reply, error.code, error.message, details)

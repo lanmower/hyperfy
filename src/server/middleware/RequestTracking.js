@@ -1,5 +1,4 @@
 import { nanoid } from 'nanoid'
-import { ErrorResponse } from '../utils/errors/index.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 import { createFastifyPlugin } from './PluginFactory.js'
 
