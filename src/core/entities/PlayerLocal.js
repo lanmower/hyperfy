@@ -110,7 +110,7 @@ export class PlayerLocal extends BaseEntity {
       this.networkSynchronizer = new NetworkSynchronizer(this)
       this.effectOnEnd = null
       this.controlBinder = new PlayerControlBinder(this)
-      this.capsuleFactory = new PlayerCapsuleFactory(this.world)
+      // PlayerCapsuleFactory is now static
 
       if (this.world.loader?.preloader) {
         logger.info('Waiting for preloader')
@@ -149,7 +149,7 @@ export class PlayerLocal extends BaseEntity {
   async applyAvatar() { return this.avatarManager.applyAvatar() }
 
   initCapsule() {
-    const { capsule, capsuleHandle, material } = this.capsuleFactory.createCapsule(this)
+    const { capsule, capsuleHandle, material } = PlayerCapsuleFactory.create({ world: this.world, player: this })
     this.capsule = capsule
     this.capsuleHandle = capsuleHandle
     this.material = material
@@ -346,7 +346,7 @@ export class PlayerLocal extends BaseEntity {
     this.networkSynchronizer = null
     this.effectOnEnd = null
     this.controlBinder = null
-    this.capsuleFactory = null
+    // capsuleFactory removed
 
     this.pushForce = null
     this.stick = null

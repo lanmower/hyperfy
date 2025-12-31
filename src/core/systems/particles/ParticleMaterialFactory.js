@@ -1,28 +1,41 @@
+// Particle material factory with shader generation
 import * as THREE from '../../extras/three.js'
 import CustomShaderMaterial from '../../libs/three-custom-shader-material/index.js'
 import { DEG2RAD } from '../../extras/general.js'
+import { BaseFactory } from '../../patterns/BaseFactory.js'
 
-const billboardModeInts = {
-  full: 0,
-  y: 1,
-  direction: 2,
-}
+export class ParticleMaterialFactory extends BaseFactory {
+  static create(config) {
+    this.validate(config)
+    const { node, uniforms, loader } = config
+    return this.createMaterial(node, uniforms, loader)
+  }
 
-export class ParticleMaterialFactory {
-  static create(node, uniforms, loader) {
+  static validate(config) {
+    if (!config || typeof config !== 'object') {
+      throw new Error('ParticleMaterialFactory config must be an object')
+    }
+    if (!config.node || !config.uniforms) {
+      throw new Error('ParticleMaterialFactory config requires node and uniforms')
+    }
+  }
+
+  static createMaterial(node, uniforms, loader) {
     const texture = new THREE.Texture()
     texture.colorSpace = THREE.SRGBColorSpace
 
     const materialUniforms = {
       uTexture: { value: texture },
-      uBillboard: { value: billboardModeInts[node._billboard] },
+      uBillboard: { value: this.billboardModeInts[node._billboard] },
       uOrientation: uniforms.uOrientation,
     }
 
-    loader.load('texture', node._image).then(tex => {
-      tex.colorSpace = THREE.SRGBColorSpace
-      materialUniforms.uTexture.value = tex
-    })
+    if (loader) {
+      loader.load('texture', node._image).then(tex => {
+        tex.colorSpace = THREE.SRGBColorSpace
+        materialUniforms.uTexture.value = tex
+      })
+    }
 
     const material = new CustomShaderMaterial({
       baseMaterial: node._lit ? THREE.MeshStandardMaterial : THREE.MeshBasicMaterial,
@@ -40,6 +53,12 @@ export class ParticleMaterialFactory {
     })
 
     return material
+  }
+
+  static billboardModeInts = {
+    full: 0,
+    y: 1,
+    direction: 2,
   }
 
   static getVertexShader() {

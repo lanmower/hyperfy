@@ -1,3 +1,4 @@
+// Blueprint factory with validation and defaults
 import { uuid } from '../utils.js'
 import { BaseFactory } from '../patterns/BaseFactory.js'
 import { AppValidator } from '../validation/AppValidator.js'
@@ -32,11 +33,8 @@ const TYPE_DEFAULTS = {
 }
 
 export class BlueprintFactory extends BaseFactory {
-  constructor() {
-    super('BlueprintFactory')
-  }
-
-  static createBlueprint(type = 'app', data = {}) {
+  static create(config = {}) {
+    const { type = 'app', ...data } = config
     const defaults = TYPE_DEFAULTS[type] || TYPE_DEFAULTS.app
     const blueprint = { ...defaults, ...data }
 
@@ -48,17 +46,11 @@ export class BlueprintFactory extends BaseFactory {
       blueprint.version = String(blueprint.version)
     }
 
-    BlueprintFactory.validateBlueprint(blueprint)
+    this.validate(blueprint)
     return blueprint
   }
 
-  static createDefault(type = 'app') {
-    const defaults = TYPE_DEFAULTS[type] || TYPE_DEFAULTS.app
-    const blueprint = { ...defaults, id: uuid() }
-    return blueprint
-  }
-
-  static validateBlueprint(blueprint) {
+  static validate(blueprint) {
     if (!blueprint) {
       throw new Error('Blueprint is null or undefined')
     }
@@ -88,9 +80,17 @@ export class BlueprintFactory extends BaseFactory {
     return blueprint
   }
 
+  static createBlueprint(type = 'app', data = {}) {
+    return this.create({ type, ...data })
+  }
+
+  static createDefault(type = 'app') {
+    return this.create({ type })
+  }
+
   static mergeBlueprintData(defaults = {}, overrides = {}) {
     const merged = { ...defaults, ...overrides }
-    BlueprintFactory.validateBlueprint(merged)
+    this.validate(merged)
     return merged
   }
 
@@ -111,7 +111,7 @@ export class BlueprintFactory extends BaseFactory {
       formatted.name = ''
     }
 
-    BlueprintFactory.validateBlueprint(formatted)
+    this.validate(formatted)
     return formatted
   }
 }

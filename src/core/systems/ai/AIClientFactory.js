@@ -1,6 +1,8 @@
+// AI client factory with provider abstraction
 import Anthropic from '@anthropic-ai/sdk'
 import { OpenAI } from 'openai'
 import { AIProviderConfig } from '../../../server/config/AIProviderConfig.js'
+import { BaseFactory } from '../../patterns/BaseFactory.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 
 const logger = new StructuredLogger('AIClientFactory')
@@ -175,12 +177,10 @@ class GoogleClient extends BaseAIClient {
   async classify(prompt) { return this._apiCall(prompt, 'classify') }
 }
 
-export class AIClientFactory {
-  static createClient(provider, apiKey, model, effort) {
-    if (!provider || !model || !apiKey) {
-      logger.warn('AI client creation skipped - missing configuration', { provider, hasModel: !!model, hasApiKey: !!apiKey })
-      return null
-    }
+export class AIClientFactory extends BaseFactory {
+  static create(config) {
+    this.validate(config)
+    const { provider, apiKey, model, effort } = config
 
     switch (provider) {
       case 'openai':
@@ -199,5 +199,22 @@ export class AIClientFactory {
         logger.warn('Unknown AI provider', { provider })
         return null
     }
+  }
+
+  static validate(config) {
+    if (!config || typeof config !== 'object') {
+      throw new Error('AIClientFactory config must be an object')
+    }
+    if (!config.provider || !config.apiKey || !config.model) {
+      logger.warn('AI client creation skipped - missing configuration', {
+        provider: config.provider,
+        hasModel: !!config.model,
+        hasApiKey: !!config.apiKey
+      })
+    }
+  }
+
+  static createClient(provider, apiKey, model, effort) {
+    return this.create({ provider, apiKey, model, effort })
   }
 }
