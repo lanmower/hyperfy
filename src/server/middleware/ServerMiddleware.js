@@ -6,6 +6,7 @@ import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { createRequestIdMiddleware, createErrorHandler } from './RequestTracking.js'
 import { createTimeoutMiddleware } from './TimeoutMiddleware.js'
 import { ErrorResponses } from './ErrorResponses.js'
+import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
 const logger = new ComponentLogger('ServerMiddleware')
 
@@ -33,7 +34,7 @@ export function registerMiddleware(fastify, timeoutManager, logger, errorTracker
     if (shutdownManager.isShuttingDown) {
       const isHealthEndpoint = request.url.startsWith('/health') || request.url === '/metrics'
       if (!isHealthEndpoint) {
-        return reply.code(503).send(ErrorResponses.serviceUnavailable('Server is shutting down'))
+        return ErrorResponseBuilder.sendError(reply, 'SERVICE_UNAVAILABLE', 'Server is shutting down')
       }
     }
 
@@ -46,7 +47,7 @@ export function registerMiddleware(fastify, timeoutManager, logger, errorTracker
           method: request.method,
         })
         corsConfig.logRejectedRequest(origin)
-        reply.code(403).send(ErrorResponses.corsBlocked(origin))
+        return ErrorResponseBuilder.sendError(reply, 'PERMISSION_DENIED', `CORS policy violation: Origin ${origin} is not allowed`)
       }
     }
   })

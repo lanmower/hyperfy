@@ -1,6 +1,7 @@
 import { RATE_LIMIT_PRESETS } from '../config/RateLimitConfig.js'
 import { ComponentLogger } from '../../core/utils/logging/ComponentLogger.js'
 import { ErrorResponses } from './ErrorResponses.js'
+import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
 const logger = new ComponentLogger('RateLimiter')
 const rateLimitStore = new Map()
@@ -98,11 +99,11 @@ export function createRateLimiter(endpoint, customConfig = {}) {
 
     if (!result.allowed) {
       logViolation(clientIP, endpoint, result.current, result.limit)
-      return reply.code(429).send(ErrorResponses.rateLimitExceeded(
-        result.limit,
-        result.current,
-        Math.ceil(result.resetIn / 1000)
-      ))
+      return ErrorResponseBuilder.sendError(reply, 'RATE_LIMIT_EXCEEDED', 'Too Many Requests', {
+        limit: result.limit,
+        current: result.current,
+        retryAfter: Math.ceil(result.resetIn / 1000),
+      })
     }
   }
 }

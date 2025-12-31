@@ -2,6 +2,7 @@
 import { adminOnlyMiddleware } from '../../middleware/authMiddleware.js'
 import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
 import { APIMethodWrapper } from './APIMethodWrapper.js'
+import { ErrorResponseBuilder } from './ErrorResponseBuilder.js'
 
 export class AdminRouteBuilder {
   constructor(loggerName) {
@@ -72,7 +73,7 @@ export class AdminRouteBuilder {
     this.createRoute(fastify, 'get', path, async (request, reply, fastify) => {
       const { id } = request.params
       const item = await getFunc(fastify, id)
-      if (!item) return reply.code(404).send({ error: `Item ${id} not found`, success: false })
+      if (!item) return ErrorResponseBuilder.sendError(reply, 'NOT_FOUND', `Item ${id} not found`)
       return reply.code(200).send({ success: true, item })
     }, description)
   }
@@ -88,8 +89,8 @@ export class AdminRouteBuilder {
   createBulkActionRoute(fastify, path, actionFunc, description) {
     this.createRoute(fastify, 'post', path, async (request, reply, fastify) => {
       const { ids, action } = request.body
-      if (!ids || !Array.isArray(ids)) return reply.code(400).send({ error: 'ids array required', success: false })
-      if (!action) return reply.code(400).send({ error: 'action required', success: false })
+      if (!ids || !Array.isArray(ids)) return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'ids array required')
+      if (!action) return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'action required')
       const results = await actionFunc(fastify, ids, action)
       return reply.code(200).send({ success: true, affected: ids.length, results })
     }, description)

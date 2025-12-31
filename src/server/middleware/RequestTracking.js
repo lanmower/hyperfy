@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import { ErrorResponse } from '../utils/errors/index.js'
+import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 import { createFastifyPlugin } from './PluginFactory.js'
 
 function createRequestIdMiddlewareHook() {
@@ -53,15 +54,7 @@ function createErrorHandlerHook(logger, errorTracker) {
         path: request.url,
       })
 
-      let response
-      if (err.code) {
-        response = ErrorResponse.fromOperationError(err)
-      } else {
-        response = ErrorResponse.fromError(err, requestId)
-      }
-      response.setCorrelationId(requestId)
-
-      reply.code(response.statusCode).send(response.toJSON())
+      return ErrorResponseBuilder.sendErrorFromException(reply, err, requestId)
     })
   }
 

@@ -1,5 +1,7 @@
 /* APIMethodWrapper: Wraps async methods with error handling and logging */
 import { ComponentLogger } from '../../../core/utils/logging/ComponentLogger.js'
+import { ErrorResponseBuilder } from './ErrorResponseBuilder.js'
+import { OperationError } from '../errors/OperationError.js'
 
 const logger = new ComponentLogger('APIMethodWrapper')
 
@@ -32,7 +34,7 @@ export class APIMethodWrapper {
   }
 
   static async wrapFastifyMethod(fn, reply, options = {}) {
-    const { logger: customLogger, defaultStatusCode = 500, defaultMessage = 'Operation failed' } = options
+    const { logger: customLogger, defaultMessage = 'Operation failed' } = options
     const errorLogger = customLogger || logger
 
     try {
@@ -41,18 +43,13 @@ export class APIMethodWrapper {
     } catch (error) {
       if (error instanceof OperationError) {
         errorLogger.error(error.message, error.toJSON())
-        return reply.code(error.statusCode).send({
-          error: error.message,
-          code: error.code,
-          context: error.context,
-          correlationId: error.correlationId,
-        })
+        const details = { context: error.context }
+        if (error.correlationId) details.requestId = error.correlationId
+        return ErrorResponseBuilder.sendError(reply, error.code, error.message, details)
       }
 
       errorLogger.error(error.message, { stack: error.stack })
-      return reply.code(defaultStatusCode).send({
-        error: error.message || defaultMessage,
-      })
+      return ErrorResponseBuilder.sendError(reply, 'INTERNAL_ERROR', error.message || defaultMessage)
     }
   }
 }
