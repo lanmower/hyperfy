@@ -108,6 +108,20 @@ export class AdminRouteBuilder {
     }, description)
   }
 
+  validateRequired(reply, value, fieldName) {
+    if (!value) {
+      return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', `${fieldName} is required`)
+    }
+    return null
+  }
+
+  ensureManager(reply, manager, name) {
+    if (!manager) {
+      return ErrorResponseBuilder.sendError(reply, 'SERVICE_UNAVAILABLE', `${name} not available`)
+    }
+    return null
+  }
+
   logInfo(message, context = {}) {
     this.logger.info(message, context)
   }
