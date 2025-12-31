@@ -1,4 +1,3 @@
-/* AdminDegradationRoutes: Admin endpoints for service degradation management */
 import { AdminRouteBuilder } from '../utils/api/index.js'
 
 const builder = new AdminRouteBuilder('Routes.Admin.Degradation')
@@ -15,7 +14,7 @@ export function registerAdminDegradationRoutes(fastify) {
 
   builder.createGetRoute(fastify, '/api/admin/degradation/:service', async (request, reply, fastify) => {
     const { service } = request.params
-    if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
+    if (builder.ensureManager(reply, fastify.degradationManager, 'Degradation manager')) return
     builder.logInfo('Get service degradation status', { service })
     return reply.code(200).send({
       success: true,
@@ -25,8 +24,8 @@ export function registerAdminDegradationRoutes(fastify) {
 
   builder.createPostRoute(fastify, '/api/admin/degradation/force-mode', async (request, reply, fastify) => {
     const { mode, reason } = request.body
-    if (!mode) return reply.code(400).send({ error: 'Mode is required' })
-    if (!fastify.degradationManager) return reply.code(503).send({ error: 'Degradation manager not available' })
+    if (builder.validateRequired(reply, mode, 'Mode')) return
+    if (builder.ensureManager(reply, fastify.degradationManager, 'Degradation manager')) return
     builder.logInfo('Force degradation mode', { mode })
     return reply.code(200).send({
       success: true,

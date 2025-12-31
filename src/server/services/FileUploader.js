@@ -1,14 +1,14 @@
 import crypto from 'crypto'
-
+import { MasterConfig } from '../config/MasterConfig.js'
 import { FileStorage } from './FileStorage.js'
 import { UploadStats } from './uploader/UploadStats.js'
 import { BatchUploader } from './uploader/BatchUploader.js'
 import { formatBytes, formatDuration, exportStats } from './uploader/FormatUtils.js'
 
 export class FileUploader {
-  constructor(storage, maxUploadSize = 50 * 1024 * 1024) {
+  constructor(storage, maxUploadSize = null) {
     this.storage = storage
-    this.maxUploadSize = maxUploadSize
+    this.maxUploadSize = maxUploadSize ?? MasterConfig.uploads.maxFileSize
     this.uploads = new Map()
     this.stats = new UploadStats()
     this.batchUploader = new BatchUploader(this)

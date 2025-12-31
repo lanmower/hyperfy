@@ -1,4 +1,3 @@
-/* AdminCorsRoutes: Admin endpoints for CORS configuration */
 import { AdminRouteBuilder } from '../utils/api/index.js'
 
 const builder = new AdminRouteBuilder('Routes.Admin.Cors')
@@ -15,8 +14,8 @@ export function registerAdminCorsRoutes(fastify) {
 
   builder.createPostRoute(fastify, '/api/admin/cors/origin', async (request, reply, fastify) => {
     const { origin } = request.body
-    if (!origin) return reply.code(400).send({ error: 'Origin is required' })
-    if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
+    if (builder.validateRequired(reply, origin, 'Origin')) return
+    if (builder.ensureManager(reply, fastify.corsConfig, 'CORS config')) return
     builder.logInfo('Add CORS origin', { origin })
     return reply.code(200).send({
       success: true,
@@ -27,8 +26,8 @@ export function registerAdminCorsRoutes(fastify) {
 
   builder.createDeleteRoute(fastify, '/api/admin/cors/origin', async (request, reply, fastify) => {
     const { origin } = request.body
-    if (!origin) return reply.code(400).send({ error: 'Origin is required' })
-    if (!fastify.corsConfig) return reply.code(503).send({ error: 'CORS config not available' })
+    if (builder.validateRequired(reply, origin, 'Origin')) return
+    if (builder.ensureManager(reply, fastify.corsConfig, 'CORS config')) return
     builder.logInfo('Remove CORS origin', { origin })
     return reply.code(200).send({
       success: true,

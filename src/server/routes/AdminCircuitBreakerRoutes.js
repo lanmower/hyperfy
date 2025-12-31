@@ -1,4 +1,3 @@
-/* AdminCircuitBreakerRoutes: Admin endpoints for circuit breaker management */
 import { AdminRouteBuilder } from '../utils/api/index.js'
 
 const builder = new AdminRouteBuilder('Routes.Admin.CircuitBreaker')
@@ -12,8 +11,8 @@ export function registerAdminCircuitBreakerRoutes(fastify) {
 
   builder.createGetRoute(fastify, '/api/admin/circuit-breakers/:name', async (request, reply, fastify) => {
     const { name } = request.params
-    if (!fastify.circuitBreakerManager) return reply.code(503).send({ error: 'Circuit breaker manager not available' })
-    if (!fastify.circuitBreakerManager.has(name)) return reply.code(404).send({ error: `Circuit breaker ${name} not found` })
+    if (builder.ensureManager(reply, fastify.circuitBreakerManager, 'Circuit breaker manager')) return
+    if (builder.validateRequired(reply, fastify.circuitBreakerManager.has(name), 'Circuit breaker')) return
     builder.logInfo('Get circuit breaker', { name })
     return reply.code(200).send({
       success: true,
@@ -33,7 +32,7 @@ export function registerAdminCircuitBreakerRoutes(fastify) {
   }, 'reset circuit breaker')
 
   builder.createPostRoute(fastify, '/api/admin/circuit-breakers/reset-all', async (request, reply, fastify) => {
-    if (!fastify.circuitBreakerManager) return reply.code(503).send({ error: 'Circuit breaker manager not available' })
+    if (builder.ensureManager(reply, fastify.circuitBreakerManager, 'Circuit breaker manager')) return
     builder.logInfo('Reset all circuit breakers')
     fastify.circuitBreakerManager.reset()
     return reply.code(200).send({

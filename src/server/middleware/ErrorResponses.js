@@ -1,39 +1,24 @@
-/* Standardized error response builders for middleware */
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
 export const ErrorResponses = {
-  timeout(timeout, path, method) {
-    return ErrorResponseBuilder.createError('INTERNAL_ERROR', 'Request timeout', {
-      timeout,
-      path,
-      method,
-    })
-  },
+  timeout: (timeout, path, method) =>
+    ErrorResponseBuilder.createError('INTERNAL_ERROR', 'Request timeout', { timeout, path, method }),
 
-  rateLimitExceeded(limit, current, retryAfter) {
-    return ErrorResponseBuilder.createError('RATE_LIMIT_EXCEEDED', 'Too Many Requests', {
-      retryAfter,
-      limit,
-      current,
-    })
-  },
+  rateLimitExceeded: (limit, current, retryAfter) =>
+    ErrorResponseBuilder.createError('RATE_LIMIT_EXCEEDED', 'Too Many Requests', { retryAfter, limit, current }),
 
-  unauthorized(message = 'Authorization required') {
-    return ErrorResponseBuilder.createError('UNAUTHORIZED', message)
-  },
+  unauthorized: (message = 'Authorization required') =>
+    ErrorResponseBuilder.createError('UNAUTHORIZED', message),
 
-  forbidden(message = 'Forbidden') {
-    return ErrorResponseBuilder.createError('PERMISSION_DENIED', message)
-  },
+  forbidden: (message = 'Forbidden') =>
+    ErrorResponseBuilder.createError('PERMISSION_DENIED', message),
 
-  serviceUnavailable(message = 'Service Unavailable') {
-    return ErrorResponseBuilder.createError('SERVICE_UNAVAILABLE', message)
-  },
+  serviceUnavailable: (message = 'Service Unavailable') =>
+    ErrorResponseBuilder.createError('SERVICE_UNAVAILABLE', message),
 
-  corsBlocked(origin) {
-    return ErrorResponseBuilder.createError('PERMISSION_DENIED', 'CORS policy violation', {
+  corsBlocked: (origin) =>
+    ErrorResponseBuilder.createError('PERMISSION_DENIED', 'CORS policy violation', {
       origin,
       message: `Origin ${origin} is not allowed`,
-    })
-  },
+    }),
 }

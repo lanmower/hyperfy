@@ -1,23 +1,20 @@
 import { BaseManager } from '../../core/patterns/index.js'
+import { MasterConfig } from '../config/MasterConfig.js'
 
 export class TimeoutManager extends BaseManager {
   constructor() {
     super(null, 'TimeoutManager')
     this.timeouts = {
-      http: 30000,
-      websocket: 60000,
-      database: 30000,
-      upload: 120000,
-      fetch: 30000,
+      http: MasterConfig.network.requestTimeout,
+      websocket: MasterConfig.network.inactivityTimeout,
+      database: MasterConfig.network.databaseQueryTimeout,
+      upload: MasterConfig.uploads.maxFileSize ? 120000 : 120000,
+      fetch: MasterConfig.network.fetchDefaultTimeout,
     }
-    this.timeoutStats = {
-      total: 0,
-      byType: {},
-    }
+    this.timeoutStats = { total: 0, byType: {} }
   }
 
-  async initInternal() {
-  }
+  async initInternal() {}
 
   setTimeouts(config) {
     Object.assign(this.timeouts, config)
@@ -47,10 +44,7 @@ export class TimeoutManager extends BaseManager {
   }
 
   resetStats() {
-    this.timeoutStats = {
-      total: 0,
-      byType: {},
-    }
+    this.timeoutStats = { total: 0, byType: {} }
   }
 
   wrapPromise(promise, timeout, type = 'http', operation = 'unknown') {
