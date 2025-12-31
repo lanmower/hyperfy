@@ -2,6 +2,7 @@ import * as THREE from '../../extras/three.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
+import { BaseAssetHandler } from './BaseAssetHandler.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 import { createVideoFactory } from './VideoFactory.js'
@@ -9,8 +10,9 @@ import { AssetResults } from './AssetResults.js'
 
 const logger = new ComponentLogger('AssetHandlers')
 
-export class AssetHandlers {
+export class AssetHandlers extends BaseAssetHandler {
   constructor(clientLoader, world) {
+    super()
     this.clientLoader = clientLoader
     this.rgbeLoader = new RGBELoader()
     this.texLoader = new THREE.TextureLoader()
@@ -23,9 +25,7 @@ export class AssetHandlers {
     this.results = clientLoader.results
     this.fallbackManager = clientLoader.fallbackManager
     this.vrmHooks = null
-    this.registry = new AssetHandlerRegistry()
     this.insertRegistry = new AssetHandlerRegistry()
-    this.setupHandlers()
   }
 
   setupHandlers() {

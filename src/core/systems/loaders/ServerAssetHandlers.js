@@ -1,22 +1,22 @@
 import fs from 'fs-extra'
-
 import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { createNode } from '../../extras/createNode.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
-import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
+import { BaseAssetHandler } from './BaseAssetHandler.js'
 import { ComponentLogger } from '../../utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('ServerAssetHandlers')
 
-export class ServerAssetHandlers {
+const isRemoteURL = url => url.startsWith('http://') || url.startsWith('https://')
+
+export class ServerAssetHandlers extends BaseAssetHandler {
   constructor(world, errors, scripts) {
+    super()
     this.world = world
     this.errors = errors
     this.scripts = scripts
     this.gltfLoader = new GLTFLoader()
-    this.registry = new AssetHandlerRegistry()
-    this.setupHandlers()
   }
 
   setupHandlers() {
@@ -29,12 +29,9 @@ export class ServerAssetHandlers {
 
   async fetchArrayBuffer(url) {
     try {
-      const isRemote = url.startsWith('http://') || url.startsWith('https://')
-      if (isRemote) {
+      if (isRemoteURL(url)) {
         const response = await fetch(url)
-        if (!response.ok) {
-          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
-        }
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
         return await response.arrayBuffer()
       }
       const buffer = await fs.readFile(url)
@@ -47,12 +44,9 @@ export class ServerAssetHandlers {
 
   async fetchText(url) {
     try {
-      const isRemote = url.startsWith('http://') || url.startsWith('https://')
-      if (isRemote) {
+      if (isRemoteURL(url)) {
         const response = await fetch(url)
-        if (!response.ok) {
-          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
-        }
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
         return await response.text()
       }
       return await fs.readFile(url, { encoding: 'utf8' })
@@ -128,8 +122,4 @@ export class ServerAssetHandlers {
   }
 
   handleAudio = (url) => Promise.reject(null)
-
-  getHandlers() {
-    return this.registry.getAll()
-  }
 }
