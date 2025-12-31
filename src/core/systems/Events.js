@@ -1,10 +1,10 @@
 import { System } from './System.js'
-import { EventBus } from '../utils/events/EventBus.js'
+import { UnifiedEventEmitter } from '../patterns/UnifiedEventEmitter.js'
 
 export class Events extends System {
   constructor(world) {
     super(world)
-    this.bus = new EventBus()
+    this.bus = new UnifiedEventEmitter('WorldEvents')
   }
 
   on(name, callback) {

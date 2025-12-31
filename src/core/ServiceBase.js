@@ -1,11 +1,11 @@
 
-import { EventBus } from './utils/EventBus.js'
+import { UnifiedEventEmitter } from './patterns/UnifiedEventEmitter.js'
 
 export class ServiceBase {
   constructor(name = 'Service') {
     this.name = name
     this.isInitialized = false
-    this.events = new EventBus()
+    this.events = new UnifiedEventEmitter(name)
     this.config = {}
     this.metadata = {}
   }

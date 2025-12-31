@@ -1,1 +1,1 @@
-export { EventBus, globalEvents } from './EventBus.js'
+export { UnifiedEventEmitter } from '../../patterns/UnifiedEventEmitter.js'

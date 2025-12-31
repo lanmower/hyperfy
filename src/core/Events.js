@@ -1,4 +1,4 @@
-import { EventBus } from './utils/EventBus.js'
+import { UnifiedEventEmitter } from './patterns/UnifiedEventEmitter.js'
 import { ComponentLogger } from './utils/logging/ComponentLogger.js'
 
 const logger = new ComponentLogger('Events')
@@ -6,7 +6,7 @@ const logger = new ComponentLogger('Events')
 export class Events {
   constructor(name = 'Events') {
     this.name = name
-    this.bus = new EventBus()
+    this.bus = new UnifiedEventEmitter(name)
     this.types = new Map()
   }
 
