@@ -1,15 +1,17 @@
 import { MessageHandler } from '../../plugins/core/MessageHandler.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
-import { WebSocketValidator } from '../../validation/Validators.js'
+import { WebSocketValidator } from '../../validation/WebSocketValidator.js'
 
 const logger = new StructuredLogger('SocketManager')
+
+const wsValidator = new WebSocketValidator()
 
 export class SocketManager {
   constructor(network) {
     this.network = network
     this.circuitBreakerManager = null
     this.messageLimiters = new Map()
-    this.connectionLimiter = WebSocketValidator.createConnectionLimiter()
+    this.connectionLimiter = wsValidator.createConnectionLimiter()
   }
 
   setCircuitBreakerManager(manager) {
@@ -17,7 +19,7 @@ export class SocketManager {
   }
 
   send(name, data, ignoreSocketId) {
-    const validation = WebSocketValidator.validatePacket(name, data)
+    const validation = wsValidator.validatePacket(name, data)
     if (!validation.valid) {
       logger.error('WebSocket send validation failed', { name, errors: validation.errors })
       return
@@ -67,14 +69,14 @@ export class SocketManager {
   }
 
   validateMessage(socketId, message) {
-    const validation = WebSocketValidator.validateMessage(message)
+    const validation = wsValidator.validateMessage(message)
     if (!validation.valid) {
       logger.warn('WebSocket message validation failed', { socketId, errors: validation.errors })
       return false
     }
 
     if (!this.messageLimiters.has(socketId)) {
-      this.messageLimiters.set(socketId, WebSocketValidator.createRateLimiter())
+      this.messageLimiters.set(socketId, wsValidator.createRateLimiter())
     }
 
     const limiter = this.messageLimiters.get(socketId)

@@ -1,6 +1,8 @@
 import { uuid } from '../utils.js'
 import { BaseFactory } from '../patterns/BaseFactory.js'
-import { AppValidator } from '../validators/AppValidator.js'
+import { AppValidator } from '../validation/AppValidator.js'
+
+const appValidator = new AppValidator()
 
 const DEFAULT_BLUEPRINT = {
   id: null,
@@ -77,8 +79,8 @@ export class BlueprintFactory extends BaseFactory {
       throw new Error('Blueprint must have a valid name (string)')
     }
 
-    const normalized = AppValidator.normalizeBlueprint(blueprint)
-    const validation = AppValidator.validateBlueprint(normalized)
+    const normalized = appValidator.normalizeBlueprint(blueprint)
+    const validation = appValidator.validateBlueprint(normalized)
     if (!validation.valid) {
       throw new Error(`Blueprint validation failed: ${validation.error}`)
     }

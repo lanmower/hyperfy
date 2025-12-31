@@ -1,7 +1,11 @@
-export { SchemaValidator, APIDocumenter } from './SchemaValidator.js'
+export { SchemaValidator } from '../../core/validation/SchemaValidator.js'
+export { APIDocumenter } from './SchemaValidator.js'
 
 let schemaValidator = null
 let apiDocumenter = null
+
+import { SchemaValidator } from '../../core/validation/SchemaValidator.js'
+import { APIDocumenter } from './SchemaValidator.js'
 
 export function initializeAPI(options = {}) {
   schemaValidator = new SchemaValidator()

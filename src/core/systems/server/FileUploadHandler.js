@@ -1,7 +1,9 @@
 import { StructuredLogger } from '../../utils/logging/index.js'
-import { FileUploadValidator } from '../../validation/Validators.js'
+import { FileUploadValidator } from '../../validation/FileUploadValidator.js'
 
 const logger = new StructuredLogger('FileUploadHandler')
+
+const fileValidator = new FileUploadValidator()
 
 export class FileUploadHandler {
   constructor(serverNetwork) {
@@ -16,7 +18,7 @@ export class FileUploadHandler {
 
       const { buffer, filename, mimeType, metadata } = data
 
-      const validation = FileUploadValidator.validateFileData({
+      const validation = fileValidator.validateFileData({
         name: filename,
         type: mimeType || 'application/octet-stream',
         data: buffer,

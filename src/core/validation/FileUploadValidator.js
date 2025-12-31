@@ -1,8 +1,9 @@
+import { BaseValidator } from './BaseValidator.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 
 const logger = new StructuredLogger('FileUploadValidator')
 
-export class FileUploadValidator {
+export class FileUploadValidator extends BaseValidator {
   static MAX_FILE_SIZE = 500 * 1024 * 1024
   static MAX_FILENAME_LENGTH = 255
   static ALLOWED_MIME_TYPES = new Set([
@@ -19,7 +20,11 @@ export class FileUploadValidator {
     'application/json',
   ])
 
-  static validateFileData(fileData) {
+  constructor() {
+    super('FileUploadValidator')
+  }
+
+  validateFileData(fileData) {
     const errors = []
 
     if (!fileData || typeof fileData !== 'object') {
@@ -30,15 +35,15 @@ export class FileUploadValidator {
       errors.push('Missing or invalid filename')
     } else if (fileData.name.length === 0) {
       errors.push('Filename cannot be empty')
-    } else if (fileData.name.length > this.MAX_FILENAME_LENGTH) {
-      errors.push(`Filename exceeds ${this.MAX_FILENAME_LENGTH} character limit`)
+    } else if (fileData.name.length > FileUploadValidator.MAX_FILENAME_LENGTH) {
+      errors.push(`Filename exceeds ${FileUploadValidator.MAX_FILENAME_LENGTH} character limit`)
     } else if (!/^[a-zA-Z0-9._\-\s]+$/.test(fileData.name)) {
       errors.push('Filename contains invalid characters')
     }
 
     if (!fileData.type || typeof fileData.type !== 'string') {
       errors.push('Missing or invalid MIME type')
-    } else if (!this.ALLOWED_MIME_TYPES.has(fileData.type)) {
+    } else if (!FileUploadValidator.ALLOWED_MIME_TYPES.has(fileData.type)) {
       errors.push(`MIME type "${fileData.type}" not allowed`)
     }
 
@@ -46,16 +51,16 @@ export class FileUploadValidator {
       errors.push('Missing file data')
     } else if (typeof fileData.data === 'string') {
       const byteLength = Buffer.byteLength(fileData.data, 'base64')
-      if (byteLength > this.MAX_FILE_SIZE) {
-        errors.push(`File size ${byteLength} exceeds ${this.MAX_FILE_SIZE} byte limit`)
+      if (byteLength > FileUploadValidator.MAX_FILE_SIZE) {
+        errors.push(`File size ${byteLength} exceeds ${FileUploadValidator.MAX_FILE_SIZE} byte limit`)
       }
     } else if (fileData.data instanceof ArrayBuffer) {
-      if (fileData.data.byteLength > this.MAX_FILE_SIZE) {
-        errors.push(`File size ${fileData.data.byteLength} exceeds ${this.MAX_FILE_SIZE} byte limit`)
+      if (fileData.data.byteLength > FileUploadValidator.MAX_FILE_SIZE) {
+        errors.push(`File size ${fileData.data.byteLength} exceeds ${FileUploadValidator.MAX_FILE_SIZE} byte limit`)
       }
     } else if (ArrayBuffer.isView(fileData.data)) {
-      if (fileData.data.byteLength > this.MAX_FILE_SIZE) {
-        errors.push(`File size ${fileData.data.byteLength} exceeds ${this.MAX_FILE_SIZE} byte limit`)
+      if (fileData.data.byteLength > FileUploadValidator.MAX_FILE_SIZE) {
+        errors.push(`File size ${fileData.data.byteLength} exceeds ${FileUploadValidator.MAX_FILE_SIZE} byte limit`)
       }
     } else {
       errors.push('Invalid file data format')
@@ -71,7 +76,7 @@ export class FileUploadValidator {
     }
   }
 
-  static validateBatchUpload(files) {
+  validateBatchUpload(files) {
     if (!Array.isArray(files)) {
       return { valid: false, errors: ['Files must be an array'] }
     }
@@ -119,14 +124,14 @@ export class FileUploadValidator {
     }
   }
 
-  static sanitizeFilename(filename) {
+  sanitizeFilename(filename) {
     return filename
       .replace(/[^a-zA-Z0-9._\-\s]/g, '_')
-      .substring(0, this.MAX_FILENAME_LENGTH)
+      .substring(0, FileUploadValidator.MAX_FILENAME_LENGTH)
       .trim()
   }
 
-  static validateUploadRequest(request) {
+  validateUploadRequest(request) {
     if (!request || typeof request !== 'object') {
       return { valid: false, errors: ['Invalid request object'] }
     }
@@ -156,7 +161,7 @@ export class FileUploadValidator {
     return this.validateBatchUpload(request.files)
   }
 
-  static logValidation(filename, validation) {
+  logValidation(filename, validation) {
     if (validation.valid) {
       logger.info('File validation passed', { filename })
     } else {

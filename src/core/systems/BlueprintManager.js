@@ -1,9 +1,11 @@
 import { isEqual } from 'lodash-es'
 import { System } from './System.js'
 import { InputSanitizer } from '../security/InputSanitizer.js'
-import { AppValidator } from '../validators/AppValidator.js'
+import { AppValidator } from '../validation/AppValidator.js'
 import { tracer } from '../utils/tracing/index.js'
 import { PerformanceMetrics } from '../utils/metrics/PerformanceMetrics.js'
+
+const appValidator = new AppValidator()
 
 export class BlueprintManager extends System {
   static DEPS = {
@@ -105,7 +107,7 @@ export class BlueprintManager extends System {
   }
 
   validate(data) {
-    const validation = AppValidator.validateBlueprint(data)
+    const validation = appValidator.validateBlueprint(data)
     if (!validation.valid) {
       throw new Error(`Blueprint validation failed: ${validation.error}`)
     }
@@ -113,7 +115,7 @@ export class BlueprintManager extends System {
   }
 
   normalize(data) {
-    return AppValidator.normalizeBlueprint(data)
+    return appValidator.normalizeBlueprint(data)
   }
 
   store(normalizedData) {

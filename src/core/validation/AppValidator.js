@@ -1,21 +1,23 @@
+import { BaseValidator } from './BaseValidator.js'
 import { validateBlueprint, normalizeBlueprint, isListableApp } from '../schemas/AppBlueprint.schema.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 
 const logger = new StructuredLogger('AppValidator')
 
-export class AppValidator {
-  
-  static validateBlueprint(blueprint) {
+export class AppValidator extends BaseValidator {
+  constructor() {
+    super('AppValidator')
+  }
+
+  validateBlueprint(blueprint) {
     return validateBlueprint(blueprint)
   }
 
-  
-  static normalizeBlueprint(blueprint) {
+  normalizeBlueprint(blueprint) {
     return normalizeBlueprint(blueprint)
   }
 
-  
-  static validateAppEntity(entity, blueprintMap) {
+  validateAppEntity(entity, blueprintMap) {
     if (!entity) {
       return { valid: false, error: 'Entity is null or undefined' }
     }
@@ -41,8 +43,7 @@ export class AppValidator {
     return this.validateBlueprint(blueprint)
   }
 
-  
-  static isAppListable(app, blueprintMap) {
+  isAppListable(app, blueprintMap) {
     if (!app || app.type !== 'app') {
       return false
     }
@@ -60,8 +61,7 @@ export class AppValidator {
     return isListableApp(blueprint)
   }
 
-  
-  static filterListableApps(apps, blueprintMap) {
+  filterListableApps(apps, blueprintMap) {
     if (!Array.isArray(apps)) {
       return []
     }
@@ -76,8 +76,7 @@ export class AppValidator {
     })
   }
 
-  
-  static getValidationErrors(blueprint) {
+  getValidationErrors(blueprint) {
     const errors = []
 
     if (!blueprint) {
