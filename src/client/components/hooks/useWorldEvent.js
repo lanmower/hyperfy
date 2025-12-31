@@ -1,48 +1,20 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEventFactory, useEventFactoryMulti } from './factories/useEventFactory.js'
 
 export function useWorldEvent(emitter, event, handler, deps = []) {
-  const handlerRef = useRef(handler)
-  handlerRef.current = handler
-
-  useEffect(() => {
-    if (!emitter) return
-    const callback = (...args) => handlerRef.current(...args)
-    emitter.on(event, callback)
-    return () => emitter.off(event, callback)
-  }, [emitter, event, ...deps])
+  useEventFactory(emitter, event, handler, deps)
 }
 
 export function useWorldEvents(emitter, eventMap, deps = []) {
-  const handlersRef = useRef(eventMap)
-  handlersRef.current = eventMap
-
-  useEffect(() => {
-    if (!emitter) return
-    const callbacks = {}
-    for (const [event, handler] of Object.entries(handlersRef.current)) {
-      callbacks[event] = (...args) => handlersRef.current[event](...args)
-      emitter.on(event, callbacks[event])
-    }
-    return () => {
-      for (const [event, callback] of Object.entries(callbacks)) {
-        emitter.off(event, callback)
-      }
-    }
-  }, [emitter, ...deps])
+  useEventFactoryMulti(emitter, eventMap, deps)
 }
 
 export function useEntityEvent(world, entityId, event, handler, deps = []) {
-  const handlerRef = useRef(handler)
-  handlerRef.current = handler
-
-  useEffect(() => {
-    if (!world || !entityId) return
-    const entity = world.entities.get(entityId)
-    if (!entity) return
-    const callback = (...args) => handlerRef.current(...args)
-    entity.on(event, callback)
-    return () => entity.off(event, callback)
-  }, [world, entityId, event, ...deps])
+  useEventFactory(
+    entityId && world ? world.entities.get(entityId) : null,
+    event,
+    handler,
+    [world, entityId, ...deps]
+  )
 }
 
 export function useWorldReady(world, handler) {

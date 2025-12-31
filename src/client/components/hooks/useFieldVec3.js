@@ -2,14 +2,16 @@ import { useCallback } from 'react'
 import { useFieldBase } from './useFieldBase.js'
 import { parseNumberInput } from './parseNumber.js'
 
+const createVec3Coerce = (current, dp) => (v) => {
+  const str = typeof v === 'number' ? v.toFixed(dp) : v
+  return str === '' ? current.toFixed(dp) : str
+}
+
 export function useFieldVec3(value, onChange, { dp = 0, min = -Infinity, max = Infinity, step = 1, bigStep = 2 } = {}) {
   const [vx, vy, vz] = value || [0, 0, 0]
 
   const createFieldProps = (idx, current) => {
-    const coerce = useCallback(v => {
-      const str = typeof v === 'number' ? v.toFixed(dp) : v
-      return str === '' ? current.toFixed(dp) : str
-    }, [current])
+    const coerce = useCallback(createVec3Coerce(current, dp), [current, dp])
 
     const { value: local, handlers } = useFieldBase(current, (num) => {
       const newVal = [...(value || [0, 0, 0])]

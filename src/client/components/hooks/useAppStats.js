@@ -2,14 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { orderBy } from 'lodash-es'
 import { formatBytes } from '../../../core/extras/formatBytes.js'
 
-const defaultStats = {
-  geometries: 0,
-  triangles: 0,
-  textureBytes: 0,
-  fileBytes: 0,
-}
-
-function formatNumber(num) {
+export function formatNumber(num) {
   if (num === null || num === undefined || isNaN(num)) {
     return '0'
   }
@@ -28,9 +21,9 @@ function formatNumber(num) {
     .replace(/(\.\d+[1-9])0+([KM])?$/, '$1$2')
 }
 
-function aggregateAppStats(world, refresh) {
+const aggregateAppStats = (world, refresh) => {
   const itemMap = new Map()
-  let items = []
+  const items = []
   for (const [_, entity] of world.entities.items) {
     if (!entity.isApp) continue
     const blueprint = entity.blueprint
@@ -93,5 +86,3 @@ export function useAppStats(world, { query, sortKey = 'count', ascending = false
     formatNumber,
   }
 }
-
-export { formatNumber }
