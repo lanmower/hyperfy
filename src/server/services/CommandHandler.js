@@ -3,11 +3,12 @@ import { Ranks } from '../../core/extras/ranks.js'
 import moment from 'moment'
 import { serializeForNetwork } from '../../core/schemas/ChatMessage.schema.js'
 import { StructuredLogger } from '../../core/utils/logging/index.js'
+import { MasterConfig } from '../config/MasterConfig.js'
 
 const logger = new StructuredLogger('CommandHandler')
 
-const MAX_ADMIN_ATTEMPTS = 5
-const ADMIN_LOCKOUT_TIME = 5 * 60 * 1000
+const MAX_ADMIN_ATTEMPTS = MasterConfig.security.maxAdminAttempts
+const ADMIN_LOCKOUT_TIME = MasterConfig.security.adminLockoutTime
 const adminAttempts = new Map()
 
 function checkAdminAttempts(clientIP) {
