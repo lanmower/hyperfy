@@ -10,6 +10,8 @@ import { Layers } from '../extras/Layers.js'
 import { geometryToPxMesh } from '../extras/geometryToPxMesh.js'
 import { v, q } from '../utils/TempVectors.js'
 import { StructuredLogger } from '../utils/logging/index.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 
 const logger = new StructuredLogger('Collider')
 
@@ -34,6 +36,7 @@ export class Collider extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'collider', propertySchema, {}, data)
+    StateInitializer.mergeState(this, StateInitializer.initPhysicsState())
   }
 
   mount() {
@@ -92,7 +95,7 @@ export class Collider extends Node {
     this.shape.setLocalPose(pose)
     this.parent?.addShape?.(this.shape)
     PHYSX.destroy(geometry)
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
   }
 
   commit(didMove) {

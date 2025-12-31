@@ -22,6 +22,7 @@ import { UIHelper } from '../utils/helpers/Helpers.js'
 const { getPivotOffset } = UIHelper
 import { UILayoutManager } from './ui/UILayoutManager.js'
 import { UIBillboardController } from './ui/UIBillboardController.js'
+import { StateInitializer } from './base/StateInitializer.js'
 
 const isBrowser = typeof window !== 'undefined'
 
@@ -92,6 +93,7 @@ export class UI extends Node {
     super(data)
     initializeNode(this, 'ui', propertySchema, {}, data)
     this._offset = new THREE.Vector3().fromArray(data.offset || defaults.offset)
+    StateInitializer.mergeState(this, StateInitializer.initRenderingState())
 
     this.ui = this
     this.renderer = new UIRenderer(this)

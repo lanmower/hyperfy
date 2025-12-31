@@ -4,6 +4,8 @@ import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
 import { Node } from './Node.js'
 import * as THREE from 'three'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 
 const propertySchema = schema('src', 'emote', 'visible', 'onLoad')
   .overrideAll({
@@ -18,15 +20,13 @@ export class Avatar extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'avatar', propertySchema, {}, data)
-
+    StateInitializer.mergeState(this, StateInitializer.initLoadingState('n'))
     this.factory = data.factory
     this.hooks = data.hooks
-    this.instance = null
-    this.n = 0
   }
 
   async mount() {
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
     if (this._src) {
       const n = ++this.n
       let avatar = this.ctx.world.loader.get('avatar', this._src)

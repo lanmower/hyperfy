@@ -9,6 +9,8 @@ import { onSetRebuildIf } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
 import { geometryCache } from '../utils/GeometryCache.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 
 const propertySchema = schema('type', 'width', 'height', 'depth', 'radius', 'linked', 'castShadow', 'receiveShadow', 'visible', 'color')
   .override('type', { onSet() { this.markRebuild() } })
@@ -27,10 +29,11 @@ export class Mesh extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'mesh', propertySchema, {}, data)
+    StateInitializer.mergeState(this, StateInitializer.initRenderingState())
   }
 
   mount() {
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
     if (!this._geometry) return
     let geometry
     if (this._type === 'box') {

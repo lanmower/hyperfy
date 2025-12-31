@@ -7,6 +7,9 @@ import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
 import { PhysicsForces } from './physics/PhysicsForces.js'
 import { PhysicsProperties } from './physics/PhysicsProperties.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { PhysicsSubsystemFactory } from './base/PhysicsSubsystemFactory.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 
 const _defaultScale = new THREE.Vector3(1, 1, 1)
 
@@ -29,20 +32,11 @@ export class RigidBody extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'rigidbody', propertySchema, {}, data)
-
-    this.shapes = new Set()
-
-    this._tm = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-
-    this.tempVec3 = new THREE.Vector3()
-    this.tempQuat = new THREE.Quaternion()
-
-    this.physicsForces = null
-    this.physicsProperties = null
+    PhysicsSubsystemFactory.initializeRigidBodySubsystems(this)
   }
 
   mount() {
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
     if (this.ctx.entity?.moving) return
 
     this.matrixWorld.decompose(v[0], q[0], v[1])
@@ -96,8 +90,7 @@ export class RigidBody extends Node {
       },
     })
 
-    this.physicsForces = new PhysicsForces(this.actor)
-    this.physicsProperties = new PhysicsProperties(this.actor, this.tempVec3, this.tempQuat)
+    PhysicsSubsystemFactory.attachActor(this, this.actor)
   }
 
   commit(didMove) {
@@ -127,11 +120,8 @@ export class RigidBody extends Node {
     if (this.actor) {
       this.actorHandle?.destroy()
       this.actorHandle = null
-      this.actor.release()
-      this.actor = null
     }
-    this.physicsForces = null
-    this.physicsProperties = null
+    PhysicsSubsystemFactory.cleanupActor(this)
   }
 
   addShape(shape) {

@@ -4,6 +4,8 @@ import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import * as THREE from '../extras/three.js'
 import { schema } from '../utils/validation/index.js'
 import { StructuredLogger } from '../utils/logging/index.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 
 const logger = new StructuredLogger('Sky')
 
@@ -26,11 +28,13 @@ export class Sky extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'sky', propertySchema, {}, data)
+    StateInitializer.mergeState(this, StateInitializer.initRenderingState())
   }
 
   mount() {
     logger.info('Sky mount started', { hasCtx: !!this.ctx, hasWorld: !!this.ctx?.world })
     this.handle = this.ctx.world.environment.addSky?.(this)
+    LifecycleHelper.markMounted(this)
     logger.info('Sky mount completed', { handleSet: !!this.handle })
   }
 
@@ -38,7 +42,7 @@ export class Sky extends Node {
     if (this.needsRebuild) {
       this.handle?.destroy()
       this.handle = this.ctx.world.environment.addSky?.(this)
-      this.needsRebuild = false
+      LifecycleHelper.markMounted(this)
     }
   }
 

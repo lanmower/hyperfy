@@ -4,6 +4,7 @@ import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
 import { AudioPlaybackController } from './audio/AudioPlaybackController.js'
 import { AudioPannerController } from './audio/AudioPannerController.js'
+import { StateInitializer } from './base/StateInitializer.js'
 
 const propertySchema = schema('src', 'volume', 'loop', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
   .override('volume', { onSet() { if (this.gainNode) this.gainNode.gain.value = this._volume } })
@@ -21,14 +22,7 @@ export class Audio extends Node {
     super(data)
     initializeNode(this, 'audio', propertySchema, {}, data)
 
-    this.n = 0
-    this.source = null
-    this.gainNode = null
-    this.pannerNode = null
-
-    this.offset = 0
-    this.shouldPlay = false
-    this.startTime = null
+    StateInitializer.mergeState(this, StateInitializer.initAudioState())
     this.playback = new AudioPlaybackController(this)
   }
 

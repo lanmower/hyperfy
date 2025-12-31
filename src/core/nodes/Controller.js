@@ -10,6 +10,9 @@ import { initializeNode } from './base/NodeConstructorHelper.js'
 import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
+import { PhysicsSubsystemFactory } from './base/PhysicsSubsystemFactory.js'
 
 const defaults = {
   radius: 0.4,
@@ -38,10 +41,11 @@ export class Controller extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'controller', propertySchema, {}, data)
+    PhysicsSubsystemFactory.initializeRigidBodySubsystems(this)
   }
 
   mount() {
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
     if (this._visible) {
       const geometry = new THREE.CapsuleGeometry(this._radius, this._height, 2, 8)
       geometry.translate(0, this._height / 2 + this._radius, 0)

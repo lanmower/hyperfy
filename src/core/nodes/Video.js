@@ -11,6 +11,8 @@ import { VideoInstanceManager } from './video/VideoInstanceManager.js'
 import { createVideoMaterialProxy } from './video/VideoMaterialProxy.js'
 import { isDistanceModel, isGroup, isFit, isPivot } from '../validation/TypeValidators.js'
 import { VideoHelper } from '../utils/helpers/Helpers.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 const { applyPivot } = VideoHelper
 
 const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'color', 'lit', 'doubleside', 'castShadow', 'receiveShadow', 'aspect', 'fit', 'width', 'height', 'pivot', 'volume', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
@@ -48,14 +50,18 @@ export class Video extends Node {
     initializeNode(this, 'video', propertySchema, {}, data)
     this._geometry = getRef(data.geometry)
 
-    this.n = 0
-    this._loading = true
+    StateInitializer.mergeState(
+      this,
+      StateInitializer.initLoadingState('n'),
+      StateInitializer.initRenderingState()
+    )
     this.renderer = new VideoRenderer(this)
     this.audioController = new VideoAudioController(this)
-    this.instanceManager = new VideoInstanceManager(this)  }
+    this.instanceManager = new VideoInstanceManager(this)
+  }
 
   async mount() {
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
     if (this.ctx.world.network.isServer) return
     this._loading = true
 

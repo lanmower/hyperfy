@@ -5,6 +5,8 @@ import { Node } from './Node.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
+import { StateInitializer } from './base/StateInitializer.js'
+import { LifecycleHelper } from './base/LifecycleHelper.js'
 
 const shapeTypes = ['point', 'sphere', 'hemisphere', 'cone', 'box', 'circle', 'rectangle']
 const spaces = ['local', 'world']
@@ -98,10 +100,11 @@ export class Particles extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'particles', propertySchema, {}, data)
+    StateInitializer.mergeState(this, StateInitializer.initRenderingState())
   }
 
   mount() {
-    this.needsRebuild = false
+    LifecycleHelper.markMounted(this)
     this.emitter = this.ctx.world.particles?.register(this)
   }
 
