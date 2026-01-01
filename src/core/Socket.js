@@ -1,5 +1,5 @@
 import { MessageHandler } from './plugins/core/MessageHandler.js'
-import { StructuredLogger } from 'utils/logging/index.js'
+import { StructuredLogger } from './utils/logging/index.js'
 
 const MAX_MESSAGE_SIZE = 1024 * 1024
 const INVALID_MESSAGE_THRESHOLD = 10

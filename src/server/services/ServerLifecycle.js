@@ -57,7 +57,7 @@ export async function startServer(fastify, port, logger, metrics, telemetry, shu
       await new Promise(resolve => setTimeout(resolve, 2000))
       return startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker, retries - 1)
     }
-    logger.critical(`Failed to launch on port ${port}: ${err.message}`)
+    logger.error(`Failed to launch on port ${port}: ${err.message}`)
     errorTracker.captureException(err, { category: 'ServerStartup', module: 'Server', port })
     process.exit(1)
   }

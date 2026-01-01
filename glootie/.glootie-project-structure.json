@@ -50,6 +50,10 @@
       "^3.3.3"
     ],
     [
+      "async-retry",
+      "^1.3.3"
+    ],
+    [
       "d3",
       "^7.9.0"
     ],
@@ -60,6 +64,10 @@
     [
       "esbuild-plugin-polyfill-node",
       "^0.3.0"
+    ],
+    [
+      "esbuild-wasm",
+      "^0.27.2"
     ],
     [
       "eventemitter3",
@@ -76,6 +84,10 @@
     [
       "fs-extra",
       "^11.2.0"
+    ],
+    [
+      "generic-pool",
+      "^3.9.0"
     ],
     [
       "hls.js",
@@ -120,6 +132,10 @@
     [
       "nanoid",
       "^5.0.6"
+    ],
+    [
+      "p-queue",
+      "^4.0.0"
     ],
     [
       "postprocessing",
@@ -172,6 +188,10 @@
       "^7.23.10"
     ],
     [
+      "@esbuild/win32-x64",
+      "^0.27.2"
+    ],
+    [
       "esbuild",
       "^0.24.0"
     ],
@@ -199,8 +219,10 @@
   "structure": {
     "directories": [
       ".git",
+      ".glootie",
       "build",
       "glootie",
+      ".mcp-metadata",
       "node_modules",
       "scripts",
       "src",
@@ -310,6 +332,7 @@
       "uploader",
       "telemetry",
       "errors",
+      "query",
       "webhooks",
       "world",
       "assets",
@@ -321,9 +344,12 @@
       ".npmrc",
       ".nvmrc",
       "build-output.log",
+      ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
+      ".mcp-init-flag.json",
       "LICENSE",
+      "nul",
       "package-lock.json",
       "package.json",
       "build.mjs",
@@ -372,7 +398,6 @@
       "DebugPlayer.js",
       "DebugPlugins.js",
       "DebugSystems.js",
-      "debugUtils.js",
       "CurveInterpolators.js",
       "EmitterFactory.js",
       "ParticleDataAssembler.js",
@@ -400,6 +425,7 @@
       "SystemConfig.js",
       "AnimationModes.js",
       "EventNames.js",
+      "MathConstants.js",
       "TransformDefaults.js",
       "createNodeClientWorld.js",
       "createViewerWorld.js",
@@ -445,6 +471,7 @@
       "three.js",
       "yoga.js",
       "BlueprintFactory.js",
+      "FactoryRegistry.js",
       "FeatureDetector.js",
       "GraphicsAPI.js",
       "InitializationHelper.js",
@@ -498,9 +525,9 @@
       "AsyncInitializer.js",
       "BaseController.js",
       "BaseFactory.js",
-      "BaseHandler.js",
       "BaseManager.js",
       "SystemInitializer.js",
+      "UnifiedEventEmitter.js",
       "Constants.js",
       "PerformanceBudget.js",
       "PerformanceMonitor.js",
@@ -531,9 +558,7 @@
       "Schema.js",
       "AppBlueprint.schema.js",
       "ChatMessage.schema.js",
-      "FileUploadValidator.js",
       "InputSanitizer.js",
-      "WebSocketValidator.js",
       "ServiceBase.js",
       "DatabaseProxy.js",
       "PersistenceBase.js",
@@ -589,15 +614,20 @@
       "XR.js",
       "BatchProcessor.js",
       "GeometryCache.js",
+      "getFileExtension.js",
       "ProxyBuilder.js",
       "serialization.js",
       "SharedVectorPool.js",
       "TempVectors.js",
       "utils-client.js",
       "utils-server.js",
-      "TypeValidators.js",
-      "Validators.js",
       "AppValidator.js",
+      "BaseValidator.js",
+      "FileUploadValidator.js",
+      "SchemaValidator.js",
+      "TypeValidators.js",
+      "ValidationRegistry.js",
+      "WebSocketValidator.js",
       "World.js",
       "WorldBuilder.js",
       "rollback.js",
@@ -605,14 +635,9 @@
       "verify-deploy.js",
       "ResponseBuilder.js",
       "RouteFactory.js",
-      "SchemaValidator.js",
       "bootstrap.js",
-      "CacheManager.js",
       "verify-optimizations.js",
       "collections.js",
-      "AIProviderConfig.js",
-      "AlertingConfig.json",
-      "AutoScalingConfig.json",
       "ConfigLoader.js",
       "ConfigSchema.js",
       "CORSConfig.js",
@@ -648,14 +673,19 @@
       "StaticAssets.js",
       "upload.js",
       "ScriptValidator.js",
+      "ServerInitializer.js",
+      "CircuitBreakerHealthMapper.js",
       "CommandHandler.js",
       "ErrorTracker.js",
       "FileStorage.js",
       "FileUploader.js",
+      "HealthAggregator.js",
       "HealthMonitor.js",
+      "IncidentHistory.js",
       "Metrics.js",
       "ServerLifecycle.js",
       "StatusPageData.js",
+      "SystemMetricsCollector.js",
       "TimeoutManager.js",
       "WorldPersistence.js",
       "Storage.js",
@@ -677,20 +707,17 @@
       "mp-walk-left.glb",
       "mp-walk-right.glb",
       "mp-walk.glb",
-      "scene.hyp",
-      "test-blueprint-factory.mjs",
-      "test-debug.mjs",
-      "test-debug2.mjs",
-      "test-debug3.mjs",
-      "test-debug4.mjs"
+      "scene.hyp"
     ],
     "configFiles": [
       ".env.example",
       ".gitignore",
       ".npmrc",
       ".nvmrc",
+      ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
+      ".mcp-init-flag.json",
       "package.json"
     ]
   },
@@ -709,5 +736,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767171575183
+  "lastAnalyzed": 1767307296658
 }

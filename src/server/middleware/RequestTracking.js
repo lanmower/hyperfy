@@ -38,8 +38,8 @@ function createErrorHandlerHook(logger, errorTracker) {
     fastify.setErrorHandler(async (err, request, reply) => {
       const requestId = request.id || 'unknown'
 
-      logger.setRequestId(requestId)
       logger.error(err.message, {
+        requestId,
         path: request.url,
         method: request.method,
         statusCode: err.statusCode || 500,

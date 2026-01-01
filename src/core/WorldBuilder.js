@@ -1,5 +1,5 @@
 import { World } from './World.js'
-import { StructuredLogger } from 'utils/logging/index.js'
+import { StructuredLogger } from './utils/logging/index.js'
 
 const logger = new StructuredLogger('WorldBuilder')
 
