@@ -1,5 +1,5 @@
 import PhysXModule from './physx-js-webidl.js'
-import { StructuredLogger } from 'utils/logging/index.js'
+import { StructuredLogger } from './utils/logging/index.js'
 
 const logger = new StructuredLogger('loadPhysX')
 let promise

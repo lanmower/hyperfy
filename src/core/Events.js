@@ -1,5 +1,5 @@
 import { UnifiedEventEmitter } from './patterns/UnifiedEventEmitter.js'
-import { StructuredLogger } from 'utils/logging/index.js'
+import { StructuredLogger } from './utils/logging/index.js'
 
 const logger = new StructuredLogger('Events')
 
