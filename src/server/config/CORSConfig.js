@@ -65,7 +65,7 @@ export class CORSConfig extends BaseManager {
 
   isOriginAllowed(origin) {
     if (!origin) {
-      return false
+      return process.env.NODE_ENV === 'development'
     }
 
     for (const allowed of this.allowedOrigins) {

@@ -13,7 +13,7 @@ function createRequestIdMiddlewareHook() {
     fastify.addHook('onResponse', async (request, reply) => {
       const duration = performance.now() - request.startTime
 
-      if (fastify.errorTracker) {
+      if (fastify.errorTracker && typeof fastify.errorTracker.addBreadcrumb === 'function') {
         fastify.errorTracker.addBreadcrumb('HTTP Request', {
           method: request.method,
           path: request.url,
