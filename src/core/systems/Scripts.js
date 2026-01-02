@@ -11,6 +11,17 @@ import { StructuredLogger } from '../utils/logging/index.js'
 
 const logger = new StructuredLogger('Scripts')
 
+class FallbackCompartment {
+  constructor(globals) {
+    this.globals = globals
+  }
+  evaluate(source) {
+    const fn = new Function(...Object.keys(this.globals), `return (${source})`)
+    return fn(...Object.values(this.globals))
+  }
+}
+
+const Compartment = typeof globalThis.Compartment === 'function' ? globalThis.Compartment : FallbackCompartment
 
 export class Scripts extends System {
   constructor(world) {

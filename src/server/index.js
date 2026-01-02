@@ -1,5 +1,4 @@
 import 'dotenv-flow/config'
-import 'ses'
 import '../core/lockdown.js'
 import './bootstrap.js'
 

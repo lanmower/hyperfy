@@ -50,13 +50,14 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   init({ wsUrl, name, avatar }) {
+    logger.info('ClientNetwork.init called', { wsUrl, name, avatar })
     if (!wsUrl) {
       logger.warn('No WebSocket URL provided, running in offline mode', {})
       this.offlineMode = true
       return
     }
 
-    this.wsManager.connect(wsUrl, { name, avatar })
+    this.wsManager.init(wsUrl, name, avatar)
   }
 
   send(method, data) {

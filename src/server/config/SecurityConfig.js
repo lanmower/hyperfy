@@ -1,12 +1,13 @@
-// Consolidated: Security limits reference MasterConfig as single source of truth
-import { MasterConfig } from './MasterConfig.js'
+// Server security configuration - extends core defaults
+// Note: For buildless compatibility, server uses same config as client
+// MasterConfig overrides can be applied at runtime if needed
 
 export const SecurityConfig = {
   limits: {
-    maxScriptSize: MasterConfig.security.maxScriptSize,
-    maxStringLiteral: MasterConfig.security.maxStringLiteral,
-    maxUrlLength: MasterConfig.security.maxUrlLength,
-    maxPropertyDepth: MasterConfig.security.maxPropertyDepth,
+    maxScriptSize: 1000000,
+    maxStringLiteral: 100000,
+    maxUrlLength: 2048,
+    maxPropertyDepth: 20,
   },
 
   dangerousPatterns: [

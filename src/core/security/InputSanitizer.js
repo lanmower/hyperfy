@@ -1,4 +1,4 @@
-import SecurityConfig from '../../server/config/SecurityConfig.js'
+import { SecurityConfig } from './SecurityConfig.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 
 const logger = new StructuredLogger('InputSanitizer')

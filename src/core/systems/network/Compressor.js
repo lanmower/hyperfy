@@ -3,9 +3,12 @@ import { StructuredLogger } from '../../utils/logging/index.js'
 let gzipSync, gunzipSync
 let hasZlib = false
 
+// Node.js only - module name as variable to prevent bundler from analyzing the require
 if (typeof globalThis.process !== 'undefined' && globalThis.process.versions?.node) {
   try {
-    const zlib = require('zlib')
+    // Use variable to obfuscate module name from bundler
+    const moduleName = 'zli' + 'b'
+    const zlib = require(moduleName)
     gzipSync = zlib.gzipSync
     gunzipSync = zlib.gunzipSync
     hasZlib = true
