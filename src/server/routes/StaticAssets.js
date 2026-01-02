@@ -2,6 +2,7 @@ import statics from '@fastify/static'
 import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import * as Babel from '@babel/standalone'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.join(__dirname, '../../..')
@@ -10,12 +11,20 @@ const clientDir = path.join(srcDir, 'client')
 const publicDir = path.join(clientDir, 'public')
 
 async function transformCode(code, filepath) {
-  // Basic JSX/ES module transformation for development
-  if (filepath.endsWith('.jsx') || code.includes('jsx')) {
-    // Client-side JSX will be transformed by @firebolt-dev/jsx at runtime
+  if (!filepath.endsWith('.js')) return code
+  if (typeof code !== 'string') return code
+
+  try {
+    const result = Babel.transform(code, {
+      presets: ['react'],
+      filename: filepath,
+      babelrc: false
+    })
+    return result.code
+  } catch (err) {
+    console.error(`[JSX Transform Error] ${filepath}:`, err.message)
     return code
   }
-  return code
 }
 
 export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
@@ -38,6 +47,9 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     reply.type('text/html').send(html)
   })
 
+  // Buildless serving disabled - using bundled client.js instead
+  // The bundle includes all dependencies, so buildless routes are no longer needed
+  /*
   // Serve src/client files directly (buildless)
   fastify.get('/src/client/*', async (req, reply) => {
     const filepath = path.join(clientDir, req.params['*'])
@@ -49,6 +61,36 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
       reply.code(404).send(`Not found: ${req.params['*']}`)
     }
   })
+
+  // Serve src/core files directly (buildless)
+  fastify.get('/src/core/*', async (req, reply) => {
+    const filepath = path.join(srcDir, 'core', req.params['*'])
+    try {
+      const code = await fs.readFile(filepath, 'utf-8')
+      const transformed = await transformCode(code, filepath)
+      reply.type('application/javascript').send(transformed)
+    } catch (err) {
+      reply.code(404).send(`Not found: ${req.params['*']}`)
+    }
+  })
+
+  // Serve node_modules files directly (buildless)
+  fastify.get('/node_modules/*', async (req, reply) => {
+    const filepath = path.join(rootDir, 'node_modules', req.params['*'])
+    try {
+      const code = await fs.readFile(filepath, 'utf-8')
+      const transformed = await transformCode(code, filepath)
+      reply.type('application/javascript').send(transformed)
+    } catch (err) {
+      reply.code(404).send(`Not found: ${req.params['*']}`)
+    }
+  })
+
+  // Stub handler for server-only files accessed from client (returns empty export)
+  fastify.get('/src/server/*', async (req, reply) => {
+    reply.type('application/javascript').send('export const SecurityConfig = {}; export default {};')
+  })
+  */
 
   // Serve public assets
   fastify.register(statics, {
@@ -74,17 +116,20 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
 }
 
 export function registerEnvEndpoint(fastify) {
-  const publicEnvs = {}
-  for (const key in process.env) {
-    if (key.startsWith('PUBLIC_')) {
-      publicEnvs[key] = process.env[key]
-    }
-  }
-  const envsCode = `
-  if (!globalThis.env) globalThis.env = {}
-  globalThis.env = ${JSON.stringify(publicEnvs)}
-`
   fastify.get('/env.js', async (req, reply) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol
+    const host = req.headers['x-forwarded-host'] || req.headers.host
+    const wsProtocol = protocol === 'https' ? 'wss' : 'ws'
+    const wsUrl = process.env.PUBLIC_WS_URL || `${wsProtocol}://${host}`
+
+    const publicEnvs = { PUBLIC_WS_URL: wsUrl }
+    for (const key in process.env) {
+      if (key.startsWith('PUBLIC_')) {
+        publicEnvs[key] = process.env[key]
+      }
+    }
+
+    const envsCode = `window.env = ${JSON.stringify(publicEnvs)};`
     reply.type('application/javascript').send(envsCode)
   })
 }

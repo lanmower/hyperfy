@@ -1,1 +1,1 @@
-window.env = { PUBLIC_WS_URL: 'ws://localhost:3000' };
+window.env = { PUBLIC_WS_URL: 'ws://localhost:3000/ws' };

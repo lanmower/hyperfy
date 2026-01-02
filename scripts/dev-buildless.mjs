@@ -14,11 +14,59 @@ const clientDir = path.join(srcDir, 'client')
 const publicDir = path.join(clientDir, 'public')
 
 let serverProcess = null
+let clientBuildProcess = null
 let watchTimeout = null
+let rebuildTimeout = null
 
-console.log('\n🚀 Starting Hyperfy in buildless mode...')
-console.log('📦 No build step - serving ES modules directly')
+console.log('\n🚀 Starting Hyperfy with hot reload...')
+console.log('📦 Building client bundle and watching for changes')
 console.log('🔥 Hot reload enabled\n')
+
+async function buildClient() {
+  return new Promise((resolve, reject) => {
+    console.log('🔨 Building client bundle...')
+    clientBuildProcess = spawn('node', [path.join(__dirname, 'build-client.mjs')], {
+      cwd: rootDir,
+      stdio: ['inherit', 'pipe', 'pipe'],
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    clientBuildProcess.stdout.on('data', (data) => {
+      const msg = data.toString().trim()
+      if (msg) {
+        console.log(msg)
+        stdout += msg + '\n'
+      }
+    })
+
+    clientBuildProcess.stderr.on('data', (data) => {
+      const msg = data.toString().trim()
+      if (msg) {
+        console.error(msg)
+        stderr += msg + '\n'
+      }
+    })
+
+    clientBuildProcess.on('exit', (code) => {
+      if (code === 0) {
+        console.log('✅ Client bundle built successfully')
+        resolve()
+      } else {
+        console.error('❌ Client build failed with code', code)
+        reject(new Error(`Build failed: ${stderr || stdout}`))
+      }
+      clientBuildProcess = null
+    })
+
+    clientBuildProcess.on('error', (err) => {
+      console.error('❌ Client build error:', err.message)
+      clientBuildProcess = null
+      reject(err)
+    })
+  })
+}
 
 async function startServer() {
   if (serverProcess) {
@@ -47,66 +95,53 @@ async function startServer() {
   })
 }
 
-function debounceRestart(delay = 500) {
+function debounceServerRestart(delay = 500) {
   if (watchTimeout) clearTimeout(watchTimeout)
   watchTimeout = setTimeout(() => {
-    console.log('\n📦 Files changed - restarting server...')
+    console.log('\n📦 Server files changed - restarting server...')
     startServer()
+  }, delay)
+}
+
+function debounceClientRebuild(delay = 500) {
+  if (rebuildTimeout) clearTimeout(rebuildTimeout)
+  rebuildTimeout = setTimeout(async () => {
+    console.log('\n📦 Client files changed - rebuilding bundle...')
+    try {
+      await buildClient()
+      if (serverProcess) {
+        try {
+          serverProcess.send({ type: 'hotReload', file: 'client' })
+        } catch (e) {
+          // Process might not have IPC channel
+        }
+      }
+    } catch (err) {
+      console.error('Build error:', err.message)
+    }
   }, delay)
 }
 
 async function setupWatchers() {
   // Watch server files
   watch(serverDir, { recursive: true }, (eventType, filename) => {
-    if (!filename || filename.includes('.git') || filename.includes('node_modules')) return
+    if (!filename || filename.includes('.git') || filename.includes('node_modules') || filename.includes('dist')) return
     if (filename.endsWith('.js') || filename.endsWith('.mjs')) {
-      console.log(`  📝 ${filename} changed`)
-      debounceRestart()
+      console.log(`  📝 server: ${filename} changed`)
+      debounceServerRestart()
     }
   })
 
-  // Watch client entry points - these will be served directly
+  // Watch client files - rebuild bundle on changes
   watch(clientDir, { recursive: true }, (eventType, filename) => {
-    if (!filename || filename.includes('.git') || filename.includes('node_modules')) return
+    if (!filename || filename.includes('.git') || filename.includes('node_modules') || filename.includes('dist')) return
     if (filename.endsWith('.js') || filename.endsWith('.jsx') || filename.endsWith('.ts') || filename.endsWith('.tsx')) {
-      console.log(`  📝 ${filename} changed`)
-      if (serverProcess) {
-        // Notify server of HMR - send via process message
-        try {
-          serverProcess.send({ type: 'hotReload', file: filename })
-        } catch (e) {
-          // Process might not have IPC channel, that's ok
-        }
-      }
+      console.log(`  📝 client: ${filename} changed`)
+      debounceClientRebuild()
     }
   })
 
   console.log('👀 Watching for file changes...')
-}
-
-async function generateHTML() {
-  // Generate index.html from template
-  const templatePath = path.join(publicDir, 'index.html')
-  const htmlContent = fs.readFileSync(templatePath, 'utf-8')
-    .replace('{jsPath}', '/src/client/index.js?t=' + Date.now())
-    .replace('{particlesPath}', '/src/client/particles.js?t=' + Date.now())
-    .replace('{buildId}', Date.now().toString())
-
-  // Also generate env.js for environment variables
-  const wsUrl = process.env.WS_URL || `ws://localhost:${process.env.PORT || 3000}`
-  const envJs = `window.ENV = { WS_URL: '${wsUrl}' };`
-
-  // Write env.js to public for serving
-  fs.writeFileSync(path.join(publicDir, 'env.js'), envJs)
-
-  return htmlContent
-}
-
-// Setup routes to serve files directly
-async function setupClientRoutes() {
-  // This will be handled by the server's static asset handling
-  // Just ensure public assets are available
-  console.log('✓ Client routes ready for direct ES module serving')
 }
 
 process.on('SIGINT', () => {
@@ -114,18 +149,17 @@ process.on('SIGINT', () => {
   if (serverProcess) {
     serverProcess.kill()
   }
+  if (clientBuildProcess) {
+    clientBuildProcess.kill()
+  }
   process.exit(0)
 })
 
 // Start everything
 async function main() {
   try {
-    await generateHTML()
-    console.log('✓ Generated HTML template')
-
-    await setupClientRoutes()
+    await buildClient()
     await setupWatchers()
-
     await startServer()
   } catch (err) {
     console.error('Fatal error:', err)
