@@ -1,7 +1,6 @@
 import { isBoolean } from 'lodash-es'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { System } from './System.js'
-import { thickness } from 'three/src/nodes/TSL.js'
 
 const appPanes = ['app', 'script', 'nodes', 'meta']
 

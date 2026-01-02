@@ -25,6 +25,7 @@ async function build() {
       outfile,
       external: [
         'three', 'three/examples/jsm/*',
+        'react', 'react-dom', 'react-dom/client', 'react/jsx-runtime',
         'fs', 'path', 'url', 'child_process', 'os', 'zlib', 'util', 'assert', 'constants', 'stream', 'buffer',
         'graceful-fs', 'fs-extra',
         './loaders/ServerAssetHandlers.js', 'src/core/systems/loaders/ServerAssetHandlers.js',

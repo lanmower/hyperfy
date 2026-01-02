@@ -41,7 +41,7 @@ export function Client({ wsUrl, onSetup }) {
       const config = { viewport, ui, wsUrl, baseEnvironment }
       console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl })
       onSetup?.(world, config)
-      world.init(config)
+      await world.init(config)
     }
     init()
   }, [])
