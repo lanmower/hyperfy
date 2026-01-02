@@ -294,8 +294,8 @@ async function handleToolCall(toolName, toolInput) {
 }
 
 // MCP Server implementation
-const stdio = process.stdin;
 let inputBuffer = '';
+let initialized = false;
 
 process.stdin.setEncoding('utf-8');
 process.stdin.on('data', async (chunk) => {
@@ -306,79 +306,46 @@ process.stdin.on('data', async (chunk) => {
   for (const line of lines) {
     if (!line.trim()) continue;
 
+    let message;
     try {
-      const message = JSON.parse(line);
+      message = JSON.parse(line);
+    } catch (error) {
+      continue;
+    }
 
+    if (!message.id) continue;
+
+    try {
       if (message.method === 'initialize') {
+        initialized = true;
         process.stdout.write(
           JSON.stringify({
             jsonrpc: '2.0',
             id: message.id,
             result: {
-              protocolVersion: '2024-11-05',
-              capabilities: {
-                tools: {
-                  listChanged: false
-                }
-              },
-              serverInfo: {
-                name: 'hyperfy-dev-server',
-                version: '1.0.0'
-              }
+              protocolVersion: '2025-11-25',
+              capabilities: { tools: {} },
+              serverInfo: { name: 'hyperfy-dev-server', version: '1.0.0' }
             }
           }) + '\n'
         );
       } else if (message.method === 'tools/list') {
+        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: { tools } }) + '\n');
+      } else if (message.method === 'tools/call') {
+        const result = await handleToolCall(message.params.name, message.params.arguments);
         process.stdout.write(
           JSON.stringify({
             jsonrpc: '2.0',
             id: message.id,
-            result: { tools }
+            result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
           }) + '\n'
         );
-      } else if (message.method === 'tools/call') {
-        try {
-          const result = await handleToolCall(message.params.name, message.params.arguments);
-          process.stdout.write(
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id: message.id,
-              result: {
-                content: [
-                  {
-                    type: 'text',
-                    text: JSON.stringify(result, null, 2)
-                  }
-                ]
-              }
-            }) + '\n'
-          );
-        } catch (toolError) {
-          process.stdout.write(
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id: message.id,
-              result: {
-                content: [
-                  {
-                    type: 'text',
-                    text: toolError.message
-                  }
-                ],
-                isError: true
-              }
-            }) + '\n'
-          );
-        }
       } else {
         process.stdout.write(
           JSON.stringify({
             jsonrpc: '2.0',
             id: message.id,
-            error: {
-              code: -32601,
-              message: `Method not found: ${message.method}`
-            }
+            error: { code: -32601, message: `Method not found: ${message.method}` }
           }) + '\n'
         );
       }
@@ -386,11 +353,8 @@ process.stdin.on('data', async (chunk) => {
       process.stdout.write(
         JSON.stringify({
           jsonrpc: '2.0',
-          id: message?.id || null,
-          error: {
-            code: -32603,
-            message: error.message
-          }
+          id: message.id,
+          error: { code: -32603, message: error.message }
         }) + '\n'
       );
     }
