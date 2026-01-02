@@ -1,5 +1,6 @@
 import * as THREE from '../../extras/three.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
+import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { BaseAssetHandler } from './BaseAssetHandler.js'
@@ -16,7 +17,7 @@ export class AssetHandlers extends BaseAssetHandler {
     this.clientLoader = clientLoader
     this.rgbeLoader = new RGBELoader()
     this.texLoader = new THREE.TextureLoader()
-    this.gltfLoader = clientLoader.gltfLoader
+    this.gltfLoader = new GLTFLoader()
     this.audio = clientLoader.audio
     this.scripts = clientLoader.scripts
     this.world = world
@@ -49,7 +50,7 @@ export class AssetHandlers extends BaseAssetHandler {
       return await promise
     } catch (err) {
       logger.error(`${type} error`, { url, error: err.message })
-      const fallback = this.fallbackManager.getFallback(type, url, err)
+      const fallback = this.fallbackManager?.getFallback(type, url, err)
       if (fallback) {
         this.results.set(key, fallback)
         return fallback
@@ -138,9 +139,12 @@ export class AssetHandlers extends BaseAssetHandler {
   }
 
   handleHDR(url, file, key) {
-    return file.arrayBuffer().then(buffer => {
+    const loadPromise = file
+      ? file.arrayBuffer()
+      : this.clientLoader.fetchArrayBuffer(url)
+    return loadPromise.then(buffer => {
       const result = this.rgbeLoader.parse(buffer)
-      const texture = new THREE.DataTexture(result.data, result.width, result.height)
+      const texture = new THREE.DataTexture(result.data, result.width, result.height, result.format)
       texture.colorSpace = THREE.LinearSRGBColorSpace
       texture.minFilter = THREE.LinearFilter
       texture.magFilter = THREE.LinearFilter
@@ -148,7 +152,7 @@ export class AssetHandlers extends BaseAssetHandler {
       texture.flipY = true
       texture.type = result.type
       texture.needsUpdate = true
-      this.results.set(key, texture)
+      if (key) this.results.set(key, texture)
       return texture
     })
   }
@@ -178,7 +182,10 @@ export class AssetHandlers extends BaseAssetHandler {
   }
 
   handleModel(url, file, key) {
-    return this.withFallback('model', url, key, file.arrayBuffer().then(async buffer => {
+    const loadPromise = file
+      ? file.arrayBuffer()
+      : this.clientLoader.fetchArrayBuffer(url)
+    return this.withFallback('model', url, key, loadPromise.then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
       const model = AssetResults.createModel(glbToNodes(glb, this.world), file, glb.scene)
       this.results.set(key, model)
@@ -187,7 +194,10 @@ export class AssetHandlers extends BaseAssetHandler {
   }
 
   handleEmote(url, file, key) {
-    return file.arrayBuffer().then(async buffer => {
+    const loadPromise = file
+      ? file.arrayBuffer()
+      : this.clientLoader.fetchArrayBuffer(url)
+    return loadPromise.then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
       const emote = { toClip: options => AvatarFactory.createEmote(glb, url).toClip(options) }
       this.results.set(key, emote)
@@ -196,7 +206,10 @@ export class AssetHandlers extends BaseAssetHandler {
   }
 
   handleAvatar(url, file, key) {
-    return file.arrayBuffer().then(async buffer => {
+    const loadPromise = file
+      ? file.arrayBuffer()
+      : this.clientLoader.fetchArrayBuffer(url)
+    return loadPromise.then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
       const avatar = AssetResults.createAvatar(AvatarFactory.createVRM(glb, this.setupMaterial), file, this.vrmHooks)
       this.results.set(key, avatar)
@@ -205,7 +218,11 @@ export class AssetHandlers extends BaseAssetHandler {
   }
 
   handleScript(url, file, key) {
-    return this.withFallback('script', url, key, file.text().then(code => {
+    if (!this.scripts) return Promise.reject(new Error('Scripts system not initialized'))
+    const loadPromise = file
+      ? file.text()
+      : this.clientLoader.fetchText(url)
+    return this.withFallback('script', url, key, loadPromise.then(code => {
       const script = this.scripts.evaluate(code)
       this.results.set(key, script)
       return script
@@ -213,7 +230,11 @@ export class AssetHandlers extends BaseAssetHandler {
   }
 
   handleAudio(url, file, key) {
-    return this.withFallback('audio', url, key, file.arrayBuffer().then(buffer =>
+    if (!this.audio) return Promise.reject(new Error('Audio system not initialized'))
+    const loadPromise = file
+      ? file.arrayBuffer()
+      : this.clientLoader.fetchArrayBuffer(url)
+    return this.withFallback('audio', url, key, loadPromise.then(buffer =>
       this.audio.ctx.decodeAudioData(buffer)
     ).then(audioBuffer => {
       this.results.set(key, audioBuffer)

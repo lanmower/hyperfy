@@ -98,7 +98,15 @@ export class UnifiedLoader extends System {
       return Promise.reject(err)
     }
 
-    const promise = typeHandler(url)
+    const promise = Promise.resolve()
+      .then(async () => {
+        if (this.isServer) return typeHandler(url, null, key)
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${url}`)
+        const blob = await response.blob()
+        const file = new File([blob], url.split('/').pop(), { type: blob.type })
+        return typeHandler(url, file, key)
+      })
       .then(result => {
         this.results.set(key, result)
         return result
