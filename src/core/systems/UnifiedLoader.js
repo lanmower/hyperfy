@@ -1,4 +1,4 @@
-/* Unified loader consolidating client and server asset loading */
+/* Unified loader: client and server asset loading separated */
 
 import { System } from './System.js'
 import { StructuredLogger } from '../utils/logging/index.js'
@@ -24,24 +24,18 @@ export class UnifiedLoader extends System {
     this.preloadItems = []
     this.resolveURL = world.resolveURL
     this.isServer = typeof window === 'undefined'
-    this.handlers = null
     if (!this.isServer) {
       this.handlers = new AssetHandlers(this, world)
-    } else {
-      this.setupHandlers()
     }
   }
 
-  async setupHandlers() {
+  async init() {
     if (this.isServer) {
       globalThis.self = { URL }
       globalThis.window = {}
       globalThis.document = { createElementNS: () => ({ style: {} }) }
-      // Use dynamic import to avoid bundling fs-extra in client
       const serverHandlers = await import('./loaders/ServerAssetHandlers.js')
       this.handlers = new serverHandlers.ServerAssetHandlers(this.world, this.errors, this.scripts)
-    } else {
-      this.handlers = new AssetHandlers(this, this.world)
     }
   }
 

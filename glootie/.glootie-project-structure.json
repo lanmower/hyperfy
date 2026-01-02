@@ -222,6 +222,7 @@
       "build",
       "glootie",
       ".mcp-metadata",
+      "code_search_index",
       "node_modules",
       "playwright-report",
       "data",
@@ -249,6 +250,7 @@
       "particles",
       "shapes",
       "public",
+      "setup",
       "utils",
       "monaco",
       "core",
@@ -338,10 +340,12 @@
       "world",
       "assets",
       "default",
+      "test-results",
       "logs"
     ],
     "files": [
       ".env.example",
+      ".env.local",
       ".gitignore",
       ".npmrc",
       ".nvmrc",
@@ -350,8 +354,12 @@
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
+      "hyperfy-error-check.png",
       "hyperfy-final-test.png",
+      "hyperfy-final.png",
       "hyperfy-overlay-fixed.png",
+      "hyperfy-screenshot.png",
+      "hyperfy-screenshot2.png",
       "hyperfy-test.png",
       "LICENSE",
       "nul",
@@ -429,6 +437,7 @@
       "HandlerRegistry.js",
       "NametagConfig.js",
       "SystemConfig.js",
+      "TimeoutConfig.js",
       "AnimationModes.js",
       "EventNames.js",
       "MathConstants.js",
@@ -650,7 +659,6 @@
       "MasterConfig.js",
       "RateLimitConfig.js",
       "SecurityConfig.js",
-      "TimeoutConfig.js",
       "migrations.json",
       "db.js",
       "ServerDebugAPI.js",
@@ -714,6 +722,16 @@
       "mp-walk-right.glb",
       "mp-walk.glb",
       "scene.hyp",
+      "test-console.mjs",
+      "test-error.mjs",
+      "test-final.mjs",
+      "test-hyperfy.mjs",
+      "test-hyperfy2.mjs",
+      "test-hyperfy3.mjs",
+      "test-loaded.mjs",
+      "test-network.mjs",
+      ".last-run.json",
+      "test-verbose.mjs",
       "2faa49a0505b0e7f143e2278e3aa4a5585cabe9e87cc850f3b9b3c1625b8ba69.glb",
       "2fecd2130b39ec39e00dce51c162247ce07500f419fbb188e0bf99b5cec415af.png",
       "378774dc69a8dc33c006d5c75c2d586070bfaa0aa42e0e4ba2ef74a2fd2aa81f.js",
@@ -735,6 +753,7 @@
     ],
     "configFiles": [
       ".env.example",
+      ".env.local",
       ".gitignore",
       ".npmrc",
       ".nvmrc",
@@ -742,7 +761,8 @@
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
-      "package.json"
+      "package.json",
+      ".last-run.json"
     ]
   },
   "patterns": {
@@ -761,5 +781,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767335012910
+  "lastAnalyzed": 1767339801244
 }

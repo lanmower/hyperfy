@@ -64,6 +64,15 @@ async function buildClient() {
     },
     plugins: [
       {
+        name: 'exclude-server-modules',
+        setup(build) {
+          build.onResolve({ filter: /ServerAssetHandlers\.js$/ }, () => ({
+            path: 'excluded',
+            external: true,
+          }))
+        },
+      },
+      {
         name: 'client-hot-reload',
         setup(build) {
           build.onEnd(async result => {
