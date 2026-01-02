@@ -347,7 +347,10 @@
       "components.json",
       "CdevhyperfysrcserverServerInitializer.js",
       "dev.log",
+      "E2E_GAMEPLAY_TEST_SUMMARY.md",
       "fork-of-shadcn-react-context.zip",
+      "GAMEPLAY_SYSTEMS_ARCHITECTURE.md",
+      "GAMEPLAY_TEST_REPORT.md",
       ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
@@ -374,6 +377,7 @@
       "placeholder.jpg",
       "placeholder.svg",
       "README.md",
+      "README_TESTING.txt",
       "dev-buildless.mjs",
       "AppFields.js",
       "AvatarCamera.js",
@@ -741,7 +745,10 @@
       "test-client-connection.js",
       "test-client-connection.mjs",
       "test-client-full.mjs",
+      "test-gameplay-systems.js",
       ".last-run.json",
+      "TESTING_INDEX.md",
+      "TEST_DELIVERABLES.md",
       "tsconfig.json",
       "verify-client.html",
       "1aa2381f0fb25ba2fe9941b62eb2cad1fe2c77afa0316df8828ba5eba5d3d374.glb",
@@ -800,5 +807,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767375940608
+  "lastAnalyzed": 1767379019142
 }
