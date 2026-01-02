@@ -27,9 +27,24 @@ if (typeof window !== 'undefined') {
 
 import { createRoot } from 'react-dom/client'
 import { Client } from './world-client.js'
+import { ClientPrefs } from '../core/systems/ClientPrefs.js'
+import { UnifiedLoader } from '../core/systems/UnifiedLoader.js'
+import { InputSystem } from '../core/systems/input/InputSystem.js'
+import { ClientGraphics } from '../core/systems/ClientGraphics.js'
+import { ClientEnvironment } from '../core/systems/ClientEnvironment.js'
+import { ClientNetwork } from '../core/systems/ClientNetwork.js'
+
+function setupClientSystems(world, config) {
+  world.register('prefs', ClientPrefs)
+  world.register('loader', UnifiedLoader)
+  world.register('controls', InputSystem)
+  world.register('graphics', ClientGraphics)
+  world.register('environment', ClientEnvironment)
+  world.register('network', ClientNetwork)
+}
 
 function App() {
-  return <Client wsUrl={env.PUBLIC_WS_URL} />
+  return <Client wsUrl={env.PUBLIC_WS_URL} onSetup={setupClientSystems} />
 }
 
 const root = createRoot(document.getElementById('root'))

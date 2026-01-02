@@ -12,7 +12,7 @@ import { storage } from '../storage.js'
 import { Compressor } from './network/Compressor.js'
 import { clientTimeoutManager } from './network/TimeoutManager.js'
 import { StructuredLogger } from '../utils/logging/index.js'
-import { TimeoutConfig } from '../../server/config/TimeoutConfig.js'
+import { TimeoutConfig } from '../config/TimeoutConfig.js'
 
 const logger = new StructuredLogger('ClientNetwork')
 

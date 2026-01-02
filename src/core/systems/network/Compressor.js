@@ -1,5 +1,18 @@
-import { gzipSync, gunzipSync } from 'zlib'
 import { StructuredLogger } from '../../utils/logging/index.js'
+
+let gzipSync, gunzipSync
+let hasZlib = false
+
+if (typeof globalThis.process !== 'undefined' && globalThis.process.versions?.node) {
+  try {
+    const zlib = require('zlib')
+    gzipSync = zlib.gzipSync
+    gunzipSync = zlib.gunzipSync
+    hasZlib = true
+  } catch (e) {
+    // zlib not available
+  }
+}
 
 const logger = new StructuredLogger('Compressor')
 const MIN_COMPRESS_SIZE = 1024
@@ -17,6 +30,7 @@ export class Compressor {
 
   compress(data) {
     if (!data) return data
+    if (!hasZlib) return { compressed: false, data }
 
     const buffer = Buffer.from(JSON.stringify(data))
     const originalSize = buffer.length
@@ -46,12 +60,14 @@ export class Compressor {
   decompress(payload) {
     if (!payload || !payload.compressed) {
       this.stats.uncompressed++
-      if (payload?.data) {
+      if (payload?.data && typeof Buffer !== 'undefined') {
         const size = Buffer.byteLength(JSON.stringify(payload.data))
         this.stats.totalUncompressedBytes += size
       }
       return payload?.data || payload
     }
+
+    if (!hasZlib) return null
 
     try {
       const buffer = Buffer.from(payload.data, 'base64')

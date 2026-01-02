@@ -1,5 +1,5 @@
 import { storage } from '../../storage.js'
-import { TimeoutConfig } from '../../server/config/TimeoutConfig.js'
+import { TimeoutConfig } from '../../config/TimeoutConfig.js'
 import { BaseManager } from '../../patterns/index.js'
 
 export class WebSocketManager extends BaseManager {

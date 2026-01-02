@@ -204,10 +204,6 @@ export class UI extends Node {
     return findHitNode(this)
   }
 
-  findNodeAt(x, y) {
-    return this.interactionHandler.findNodeAt(x, y)
-  }
-
   createMaterial(lit, texture, transparent, doubleside) {
     return this.renderer.createMaterial(lit, texture, transparent, doubleside)
   }
