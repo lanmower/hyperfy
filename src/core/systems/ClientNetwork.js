@@ -13,6 +13,7 @@ import { Compressor } from './network/Compressor.js'
 import { clientTimeoutManager } from './network/TimeoutManager.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 import { TimeoutConfig } from '../config/TimeoutConfig.js'
+import { readPacket } from '../packets.js'
 
 const logger = new StructuredLogger('ClientNetwork')
 
@@ -47,6 +48,7 @@ export class ClientNetwork extends BaseNetwork {
     this.offlineMode = false
     this.lastKnownState = null
     this.timeoutManager = clientTimeoutManager
+    this.queue = []
   }
 
   init({ wsUrl, name, avatar }) {
@@ -58,6 +60,10 @@ export class ClientNetwork extends BaseNetwork {
     }
 
     this.wsManager.init(wsUrl, name, avatar)
+  }
+
+  preFixedUpdate() {
+    this.flush()
   }
 
   send(method, data) {
@@ -123,24 +129,158 @@ export class ClientNetwork extends BaseNetwork {
     return moment.now() - this.serverTimeOffset
   }
 
-  onSnapshot = (snapshot) => {
-    this.snapshotProcessor.process(snapshot)
+  enqueue(method, data) {
+    this.queue.push([method, data])
   }
 
-  onMessage = (data) => {
-    this.packetHandlers.handle(data)
+  flush() {
+    while (this.queue.length) {
+      try {
+        const [method, data] = this.queue.shift()
+        this[method]?.(data)
+      } catch (err) {
+        logger.error('Error flushing queue', { error: err.message })
+      }
+    }
   }
 
-  onConnect = () => {
-    logger.info('Connected to server', { id: this.id })
+  onPacket = e => {
+    const [method, data] = readPacket(e.data)
+    if (!method) {
+      logger.error('Invalid packet received')
+      return
+    }
+    this.enqueue(method, data)
   }
 
-  onDisconnect = () => {
-    logger.info('Disconnected from server', {})
+  onSnapshot(data) {
+    this.id = data.id
+    this.serverTimeOffset = data.serverTime - performance.now()
+    this.apiUrl = data.apiUrl
+    this.maxUploadSize = data.maxUploadSize
+    this.world.assetsUrl = data.assetsUrl
+
+    if (data.settings && data.settings.avatar) {
+      this.world.loader.preload('avatar', data.settings.avatar.url)
+    }
+
+    for (const item of data.blueprints || []) {
+      if (item.preload && !item.disabled) {
+        if (item.model) {
+          const type = item.model.endsWith('.vrm') ? 'avatar' : 'model'
+          this.world.loader.preload(type, item.model)
+        }
+        if (item.script) {
+          this.world.loader.preload('script', item.script)
+        }
+        for (const value of Object.values(item.props || {})) {
+          if (value === undefined || value === null || !value?.url || !value?.type) continue
+          this.world.loader.preload(value.type, value.url)
+        }
+      }
+    }
+
+    for (const item of data.entities || []) {
+      if (item.type === 'player' && item.owner === this.id) {
+        const url = item.sessionAvatar || item.avatar
+        this.world.loader.preload('avatar', url)
+      }
+    }
+
+    if (this.world.loader && this.world.loader.execPreload) {
+      this.world.loader.execPreload()
+    }
+
+    this.world.collections.deserialize(data.collections)
+    this.world.settings.deserialize(data.settings)
+    this.world.settings.setHasAdminCode(data.hasAdminCode)
+    this.world.chat.deserialize(data.chat)
+    this.world.blueprints.deserialize(data.blueprints)
+    this.world.entities.deserialize(data.entities)
+    this.world.livekit?.deserialize(data.livekit)
+    storage.set('authToken', data.authToken)
+
+    logger.info('Snapshot received', { id: this.id })
   }
 
-  onError = (error) => {
-    logger.error('Network error', { error: error.message })
+  onSettingsModified = data => {
+    this.world.settings.set(data.key, data.value)
+  }
+
+  onChatAdded = msg => {
+    this.world.chat.add(msg, false)
+  }
+
+  onChatCleared = () => {
+    this.world.chat.clear()
+  }
+
+  onBlueprintAdded = blueprint => {
+    this.world.blueprints.add(blueprint)
+  }
+
+  onBlueprintModified = change => {
+    this.world.blueprints.modify(change)
+  }
+
+  onEntityAdded = data => {
+    this.world.entities.add(data)
+  }
+
+  onEntityModified = data => {
+    const entity = this.world.entities.get(data.id)
+    if (!entity) return logger.error('onEntityModified: no entity found', { id: data.id })
+    entity.modify(data)
+  }
+
+  onEntityEvent = event => {
+    const [id, version, name, data] = event
+    const entity = this.world.entities.get(id)
+    entity?.onEvent(version, name, data)
+  }
+
+  onEntityRemoved = id => {
+    this.world.entities.remove(id)
+  }
+
+  onPlayerTeleport = data => {
+    this.world.entities.player?.teleport(data)
+  }
+
+  onPlayerPush = data => {
+    this.world.entities.player?.push(data.force)
+  }
+
+  onPlayerSessionAvatar = data => {
+    this.world.entities.player?.setSessionAvatar(data.avatar)
+  }
+
+  onLiveKitLevel = data => {
+    this.world.livekit.setLevel(data.playerId, data.level)
+  }
+
+  onMute = data => {
+    this.world.livekit.setMuted(data.playerId, data.muted)
+  }
+
+  onPong = time => {
+    this.world.stats?.onPong(time)
+  }
+
+  onKick = code => {
+    this.world.emit('kick', code)
+  }
+
+  onClose = code => {
+    this.world.chat.add({
+      id: uuid(),
+      from: null,
+      fromId: null,
+      body: 'You have been disconnected.',
+      createdAt: moment().toISOString(),
+    })
+    this.world.emit('disconnect', code || true)
+    logger.info('Disconnected', { code })
   }
 
   destroy() {
