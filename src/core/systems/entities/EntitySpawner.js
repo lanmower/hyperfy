@@ -175,16 +175,22 @@ export class EntitySpawner {
     if (data.type === 'player') {
       this.entities.players.set(entity.data.id, entity)
       if (this.entities.network.isClient && data.userId !== this.entities.network.id) {
-        this.entities.events.emit(EVENT.game.enter, { playerId: entity.data.id })
+        if (this.entities.events) {
+          this.entities.events.emit(EVENT.game.enter, { playerId: entity.data.id })
+        }
       }
     }
 
     if (data.userId === this.entities.network.id) {
       this.entities.player = entity
-      this.entities.events.emit(EVENT.player, entity)
+      if (this.entities.events) {
+        this.entities.events.emit(EVENT.player, entity)
+      }
     }
 
-    this.entities.events.emit(EVENT.entity.added, entity)
+    if (this.entities.events) {
+      this.entities.events.emit(EVENT.entity.added, entity)
+    }
     return entity
   }
 }
