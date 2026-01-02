@@ -17,7 +17,10 @@ export async function initDatabase() {
       id TEXT PRIMARY KEY,
       name TEXT,
       email TEXT,
-      createdAt INTEGER
+      avatar TEXT,
+      rank INTEGER,
+      createdAt INTEGER,
+      updatedAt INTEGER
     );
     CREATE TABLE IF NOT EXISTS blueprints (
       id TEXT PRIMARY KEY,
@@ -79,7 +82,9 @@ export function query(sql, params = []) {
 
 export function exec(sql, params = []) {
   const stmt = db.prepare(sql)
-  stmt.bind(params)
+  if (params.length > 0) {
+    stmt.bind(params)
+  }
   stmt.step()
   stmt.free()
 }
