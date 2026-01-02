@@ -14,7 +14,7 @@ let startTime = null;
 const tools = [
   {
     name: 'start_dev_server',
-    description: 'Start the Hyperfy dev server (npm run dev)',
+    description: 'Start the Hyperfy dev server with hot reload',
     inputSchema: {
       type: 'object',
       properties: {

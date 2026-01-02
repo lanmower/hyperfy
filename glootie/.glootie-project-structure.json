@@ -4,9 +4,9 @@
   "languages": [
     "unknown",
     "json",
-    "markdown",
     "javascript",
     "html",
+    "markdown",
     "css"
   ],
   "buildTools": [],
@@ -355,20 +355,13 @@
       ".mcp.json",
       ".npmrc",
       ".nvmrc",
-      "ANALYSIS_COMPLETE.txt",
       "build-output.log",
-      "BUILDLESS_ANALYSIS.md",
-      "BUILDLESS_EXECUTIVE_SUMMARY.md",
       "BUILDLESS_FINDINGS.txt",
-      "BUILDLESS_IMPLEMENTATION_PLAN.md",
-      "debug-render.js",
       "dev.log",
-      "diagnose.mjs",
       ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
-      "HMR_IMPLEMENTATION.md",
       "LICENSE",
       "mcp-dev-server.js",
       "nul",
@@ -376,7 +369,7 @@
       "package.json",
       "6b7a8d95dd20ee8ddef74e1d4181b124ffec047d.webm",
       "index.html",
-      "README_BUILDLESS.md",
+      "README.md",
       "build.mjs",
       "dev.mjs",
       "AppFields.js",
@@ -735,10 +728,6 @@
       "mp-walk-right.glb",
       "mp-walk.glb",
       "scene.hyp",
-      "start-dev.mjs",
-      "test-mcp.js",
-      "test-render.js",
-      "test-render.mjs",
       ".last-run.json",
       "2faa49a0505b0e7f143e2278e3aa4a5585cabe9e87cc850f3b9b3c1625b8ba69.glb",
       "2fecd2130b39ec39e00dce51c162247ce07500f419fbb188e0bf99b5cec415af.png",
@@ -792,5 +781,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767345034911
+  "lastAnalyzed": 1767345963194
 }
