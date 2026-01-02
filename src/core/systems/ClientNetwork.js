@@ -136,7 +136,18 @@ export class ClientNetwork extends BaseNetwork {
   flush() {
     while (this.queue.length) {
       try {
-        const [method, data] = this.queue.shift()
+        const entry = this.queue.shift()
+        if (!Array.isArray(entry) || entry.length < 2) {
+          if (entry && !Array.isArray(entry)) {
+            logger.error('Invalid queue entry type', { type: typeof entry })
+          }
+          continue
+        }
+        const [method, data] = entry
+        if (!method) {
+          logger.warn('Empty method in queue entry')
+          continue
+        }
         this[method]?.(data)
       } catch (err) {
         logger.error('Error flushing queue', { error: err.message })

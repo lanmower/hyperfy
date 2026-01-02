@@ -38,8 +38,8 @@ export function Client({ wsUrl, onSetup }) {
         wsUrl = wsUrl()
         if (wsUrl instanceof Promise) wsUrl = await wsUrl
       }
-      const config = { viewport, ui, wsUrl, baseEnvironment }
-      console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl })
+      const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: window.env?.PUBLIC_ASSETS_URL || '/assets' }
+      console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl, assetsUrl: config.assetsUrl })
       onSetup?.(world, config)
       await world.init(config)
 

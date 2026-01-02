@@ -81,6 +81,7 @@ export class World extends EventEmitter {
     this.storage = options.storage
     this.assetsDir = options.assetsDir
     this.assetsUrl = options.assetsUrl
+    logger.info('World.init() called', { assetsUrl: this.assetsUrl, assetsDir: this.assetsDir })
 
     if (options.plugins) {
       await this.initializePlugins(options.plugins)
