@@ -142,6 +142,7 @@ export class ServerInitializer {
     const { ServerNetwork } = await import('../core/systems/ServerNetwork.js')
     const { Settings } = await import('../core/systems/Settings.js')
     const { ServerLiveKit } = await import('../core/systems/ServerLiveKit.js')
+    const { Scripts } = await import('../core/systems/Scripts.js')
     const { UnifiedLoader } = await import('../core/systems/UnifiedLoader.js')
     world.register('collections', Collections)
     world.register('settings', Settings)
@@ -149,6 +150,7 @@ export class ServerInitializer {
     world.register('entities', Entities)
     world.register('network', ServerNetwork)
     world.register('livekit', ServerLiveKit)
+    world.register('scripts', Scripts)
     world.register('loader', UnifiedLoader)
 
     world.init({ db, storage, assetsDir: this.assetsDir, assetsUrl: world.assetsUrl })
