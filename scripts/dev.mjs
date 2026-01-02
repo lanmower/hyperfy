@@ -25,10 +25,10 @@ function log(type, msg, data) {
   console.log(`${time} ${types[type] || '·'} ${msg}${data ? ' ' + JSON.stringify(data) : ''}`)
 }
 
-function notifyHotReload() {
+function notifyHotReload(file) {
   if (serverSpawn && serverSpawn.connected) {
-    serverSpawn.send({ type: 'hotReload' })
-    log('success', 'HMR broadcast sent to clients')
+    serverSpawn.send({ type: 'hotReload', file })
+    log('success', `HMR triggered: ${file}`)
   }
 }
 
@@ -110,7 +110,7 @@ async function buildClient() {
 
               log('success', 'Client built', { ms: buildTime })
               if (!isFirstBuild) {
-                notifyHotReload()
+                notifyHotReload('src/client/index.js')
               }
             } catch (err) {
               log('error', 'Client build error', { error: err.message })
@@ -170,6 +170,13 @@ async function buildServer() {
                 })
               }
               serverSpawn = fork(path.join(rootDir, 'build/index.js'), [], { env: process.env })
+              serverSpawn.on('message', msg => {
+                if (msg?.type === 'hotReload' && msg?.file) {
+                  if (serverSpawn?.send) {
+                    serverSpawn.send({ type: 'hotReload', file: msg.file })
+                  }
+                }
+              })
               serverSpawn.on('error', err => log('error', 'Server process error', { error: err.message }))
               serverSpawn.on('exit', code => {
                 if (code && code !== 0) log('warn', 'Server exited', { code })

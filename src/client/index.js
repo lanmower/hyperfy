@@ -44,6 +44,12 @@ import { ClientLiveKit } from '../core/systems/ClientLiveKit.js'
 
 console.log('[HYPERFY] Client module starting')
 
+import { initHMR } from './hmr.js'
+
+if (typeof window !== 'undefined') {
+  initHMR()
+}
+
 function setupClientSystems(world, config) {
   world.register('settings', Settings)
   world.register('collections', Collections)

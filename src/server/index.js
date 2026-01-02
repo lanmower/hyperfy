@@ -12,6 +12,8 @@ import { registerWorldNetwork } from './plugins/WorldNetworkPlugin.js'
 import { registerRoutes } from './routes/index.js'
 import { registerStaticAssets, registerEnvEndpoint } from './routes/StaticAssets.js'
 import { startServer, registerSignalHandlers } from './services/ServerLifecycle.js'
+import { ServerHMR } from './dev/ServerHMR.js'
+import { initHMRBridge } from './dev/HMRBridge.js'
 
 global.SERVER_START_TIME = Date.now()
 
@@ -74,6 +76,19 @@ await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker
 registerRoutes(fastify, world, initializer.assetsDir)
 registerStaticAssets(fastify, __dirname, initializer.assetsDir, world)
 registerEnvEndpoint(fastify)
+
+let hmr = null
+if (process.env.NODE_ENV === 'development') {
+  await new Promise(resolve => {
+    fastify.ready(() => {
+      hmr = new ServerHMR(fastify.server)
+      fastify.hmr = hmr
+      initHMRBridge(fastify)
+      logger.info('HMR server initialized')
+      resolve()
+    })
+  })
+}
 
 await startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker)
 registerSignalHandlers(shutdownManager, errorTracker, logger)
