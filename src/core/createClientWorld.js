@@ -15,6 +15,7 @@ import { UnifiedLoader } from './systems/UnifiedLoader.js'
 import { BlueprintManager } from './systems/BlueprintManager.js'
 import { Entities } from './systems/Entities.js'
 import { ClientLiveKit } from './systems/ClientLiveKit.js'
+import { Avatars } from './systems/Avatars.js'
 
 export function createClientWorld() {
   const world = new World()
@@ -25,6 +26,7 @@ export function createClientWorld() {
   world.register('loader', UnifiedLoader)
   world.register('blueprints', BlueprintManager)
   world.register('entities', Entities)
+  world.register('avatars', Avatars)
   world.register('stage', Stage)
   world.register('prefs', ClientPrefs)
   world.register('environment', ClientEnvironment)
