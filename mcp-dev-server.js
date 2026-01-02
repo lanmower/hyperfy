@@ -1,7 +1,10 @@
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { spawn } from 'child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import * as z from 'zod';
 
 const BASE_DIR = dirname(fileURLToPath(import.meta.url));
 const LOG_FILE = join(BASE_DIR, '.dev-server.log');
@@ -10,60 +13,6 @@ const PID_FILE = join(BASE_DIR, '.dev-server.pid');
 let serverProcess = null;
 let serverPort = 3000;
 let startTime = null;
-
-const tools = [
-  {
-    name: 'start_dev_server',
-    description: 'Start the Hyperfy dev server with hot reload',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        port: {
-          type: 'number',
-          description: 'Port to run dev server on (default: 3000)'
-        },
-        cwd: {
-          type: 'string',
-          description: 'Working directory (default: project root)'
-        }
-      }
-    }
-  },
-  {
-    name: 'stop_dev_server',
-    description: 'Stop the running dev server cleanly',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        force: {
-          type: 'boolean',
-          description: 'Force kill if graceful shutdown fails (default: false)'
-        }
-      }
-    }
-  },
-  {
-    name: 'get_dev_logs',
-    description: 'Read recent dev server logs',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        lines: {
-          type: 'number',
-          description: 'Number of lines to read (default: 50)'
-        }
-      }
-    }
-  },
-  {
-    name: 'dev_server_status',
-    description: 'Check dev server status, port, uptime',
-    inputSchema: {
-      type: 'object',
-      properties: {}
-    }
-  }
-];
 
 function ensureLogFile() {
   const dir = dirname(LOG_FILE);
@@ -95,7 +44,6 @@ function writePid(pid) {
 function removePid() {
   if (existsSync(PID_FILE)) {
     try {
-      appendFileSync(PID_FILE, '');
       writeFileSync(PID_FILE, '');
     } catch (e) {
       // ignore
@@ -103,133 +51,135 @@ function removePid() {
   }
 }
 
-function startServer(port, cwd) {
-  return new Promise((resolve) => {
-    if (serverProcess) {
-      resolve({
-        status: 'already_running',
-        pid: serverProcess.pid,
-        port: serverPort,
-        message: 'Dev server already running'
-      });
-      return;
-    }
-
-    serverPort = port || 3000;
-    startTime = Date.now();
-    ensureLogFile();
-
-    logOutput(`Starting dev server on port ${serverPort}...`);
-
-    try {
-      serverProcess = spawn('node', ['scripts/dev.mjs'], {
-        cwd: cwd || BASE_DIR,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false,
-        shell: process.platform === 'win32',
-        windowsHide: true
-      });
-
-      serverProcess.stdout.on('data', (data) => {
-        const msg = data.toString().trim();
-        if (msg) logOutput(`[stdout] ${msg}`);
-      });
-
-      serverProcess.stderr.on('data', (data) => {
-        const msg = data.toString().trim();
-        if (msg) logOutput(`[stderr] ${msg}`);
-      });
-
-      serverProcess.on('error', (err) => {
-        logOutput(`[error] Process error: ${err.message}`);
-        serverProcess = null;
-        removePid();
-      });
-
-      serverProcess.on('exit', (code, signal) => {
-        logOutput(`[exit] Process exited with code ${code}, signal ${signal}`);
-        serverProcess = null;
-        removePid();
-      });
-
-      writePid(serverProcess.pid);
-      logOutput(`Dev server started with PID ${serverProcess.pid}`);
-
-      resolve({
-        status: 'started',
-        pid: serverProcess.pid,
-        port: serverPort,
-        logFile: LOG_FILE,
-        message: 'Dev server started successfully'
-      });
-    } catch (error) {
-      const msg = error.message;
-      logOutput(`[error] Failed to start: ${msg}`);
-      serverProcess = null;
-      removePid();
-      resolve({
-        status: 'error',
-        error: msg,
-        message: 'Failed to start dev server'
-      });
-    }
-  });
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
-function stopServer(force) {
-  return new Promise((resolve) => {
-    const pid = readPid();
+async function startServer(port, cwd) {
+  if (serverProcess) {
+    return {
+      status: 'already_running',
+      pid: serverProcess.pid,
+      port: serverPort,
+      message: 'Dev server already running'
+    };
+  }
 
-    if (!serverProcess && !pid) {
-      resolve({
-        status: 'not_running',
-        message: 'Dev server is not running'
-      });
-      return;
-    }
+  serverPort = port || 3000;
+  startTime = Date.now();
+  ensureLogFile();
+  logOutput(`Starting dev server on port ${serverPort}...`);
 
-    const targetPid = serverProcess?.pid || pid;
-    logOutput(`Stopping dev server (PID: ${targetPid}, force: ${force})...`);
-
-    if (serverProcess) {
-      serverProcess.removeAllListeners();
-
-      if (force) {
-        serverProcess.kill('SIGKILL');
-        logOutput('Sent SIGKILL');
-      } else {
-        serverProcess.kill('SIGTERM');
-        logOutput('Sent SIGTERM');
-
-        const timeout = setTimeout(() => {
-          if (serverProcess) {
-            logOutput('SIGTERM timeout, sending SIGKILL');
-            serverProcess.kill('SIGKILL');
-          }
-        }, 5000);
-
-        serverProcess.on('exit', () => {
-          clearTimeout(timeout);
-        });
-      }
-
-      serverProcess = null;
-    } else if (pid) {
-      try {
-        process.kill(pid, force ? 'SIGKILL' : 'SIGTERM');
-        logOutput(`Killed external process ${pid}`);
-      } catch (e) {
-        logOutput(`[error] Failed to kill process ${pid}: ${e.message}`);
-      }
-    }
-
-    removePid();
-    resolve({
-      status: 'stopped',
-      pid: targetPid,
-      message: 'Dev server stopped'
+  try {
+    serverProcess = spawn('node', ['scripts/dev.mjs'], {
+      cwd: cwd || BASE_DIR,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: false,
+      shell: process.platform === 'win32',
+      windowsHide: true
     });
-  });
+
+    serverProcess.stdout.on('data', (data) => {
+      const msg = data.toString().trim();
+      if (msg) logOutput(`[stdout] ${msg}`);
+    });
+
+    serverProcess.stderr.on('data', (data) => {
+      const msg = data.toString().trim();
+      if (msg) logOutput(`[stderr] ${msg}`);
+    });
+
+    serverProcess.on('error', (err) => {
+      logOutput(`[error] Process error: ${err.message}`);
+      serverProcess = null;
+      removePid();
+    });
+
+    serverProcess.on('exit', (code, signal) => {
+      logOutput(`[exit] Process exited with code ${code}, signal ${signal}`);
+      serverProcess = null;
+      removePid();
+    });
+
+    writePid(serverProcess.pid);
+    logOutput(`Dev server started with PID ${serverProcess.pid}`);
+
+    return {
+      status: 'started',
+      pid: serverProcess.pid,
+      port: serverPort,
+      logFile: LOG_FILE,
+      message: 'Dev server started successfully'
+    };
+  } catch (error) {
+    const msg = error.message;
+    logOutput(`[error] Failed to start: ${msg}`);
+    serverProcess = null;
+    removePid();
+    return {
+      status: 'error',
+      error: msg,
+      message: 'Failed to start dev server'
+    };
+  }
+}
+
+async function stopServer(force) {
+  const pid = readPid();
+
+  if (!serverProcess && !pid) {
+    return {
+      status: 'not_running',
+      message: 'Dev server is not running'
+    };
+  }
+
+  const targetPid = serverProcess?.pid || pid;
+  logOutput(`Stopping dev server (PID: ${targetPid}, force: ${force})...`);
+
+  if (serverProcess) {
+    serverProcess.removeAllListeners();
+
+    if (force) {
+      serverProcess.kill('SIGKILL');
+      logOutput('Sent SIGKILL');
+    } else {
+      serverProcess.kill('SIGTERM');
+      logOutput('Sent SIGTERM');
+
+      const timeout = setTimeout(() => {
+        if (serverProcess) {
+          logOutput('SIGTERM timeout, sending SIGKILL');
+          serverProcess.kill('SIGKILL');
+        }
+      }, 5000);
+
+      serverProcess.on('exit', () => {
+        clearTimeout(timeout);
+      });
+    }
+
+    serverProcess = null;
+  } else if (pid) {
+    try {
+      process.kill(pid, force ? 'SIGKILL' : 'SIGTERM');
+      logOutput(`Killed external process ${pid}`);
+    } catch (e) {
+      logOutput(`[error] Failed to kill process ${pid}: ${e.message}`);
+    }
+  }
+
+  removePid();
+  return {
+    status: 'stopped',
+    pid: targetPid,
+    message: 'Dev server stopped'
+  };
 }
 
 function getLogs(lineCount) {
@@ -269,109 +219,64 @@ function getStatus() {
   };
 }
 
-function isProcessAlive(pid) {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (e) {
-    return false;
+const server = new McpServer({
+  name: 'hyperfy-dev-server',
+  version: '1.0.0'
+});
+
+server.registerTool('start_dev_server', {
+  description: 'Start the Hyperfy dev server with hot reload',
+  inputSchema: {
+    port: z.number().optional().describe('Port to run dev server on (default: 3000)'),
+    cwd: z.string().optional().describe('Working directory (default: project root)')
   }
+}, async ({ port, cwd }) => {
+  const result = await startServer(port, cwd);
+  return {
+    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+  };
+});
+
+server.registerTool('stop_dev_server', {
+  description: 'Stop the running dev server cleanly',
+  inputSchema: {
+    force: z.boolean().optional().describe('Force kill if graceful shutdown fails (default: false)')
+  }
+}, async ({ force }) => {
+  const result = await stopServer(force || false);
+  return {
+    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+  };
+});
+
+server.registerTool('get_dev_logs', {
+  description: 'Read recent dev server logs',
+  inputSchema: {
+    lines: z.number().optional().describe('Number of lines to read (default: 50)')
+  }
+}, async ({ lines }) => {
+  const result = getLogs(lines || 50);
+  return {
+    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+  };
+});
+
+server.registerTool('dev_server_status', {
+  description: 'Check dev server status, port, uptime',
+  inputSchema: {}
+}, async () => {
+  const result = getStatus();
+  return {
+    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+  };
+});
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
 }
 
-async function handleToolCall(toolName, toolInput) {
-  switch (toolName) {
-    case 'start_dev_server':
-      return await startServer(toolInput.port, toolInput.cwd);
-    case 'stop_dev_server':
-      return await stopServer(toolInput.force || false);
-    case 'get_dev_logs':
-      return getLogs(toolInput.lines || 50);
-    case 'dev_server_status':
-      return getStatus();
-    default:
-      return { error: `Unknown tool: ${toolName}` };
-  }
-}
-
-// MCP Server implementation
-let inputBuffer = '';
-let initialized = false;
-
-process.stdin.setEncoding('utf-8');
-process.stdin.on('data', async (chunk) => {
-  inputBuffer += chunk;
-  const lines = inputBuffer.split('\n');
-  inputBuffer = lines.pop() || '';
-
-  for (const line of lines) {
-    if (!line.trim()) continue;
-
-    let message;
-    try {
-      message = JSON.parse(line);
-    } catch (error) {
-      continue;
-    }
-
-    if (!message.id) continue;
-
-    try {
-      if (message.method === 'initialize') {
-        initialized = true;
-        process.stdout.write(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: message.id,
-            result: {
-              protocolVersion: '2025-11-25',
-              capabilities: { tools: {} },
-              serverInfo: { name: 'hyperfy-dev-server', version: '1.0.0' }
-            }
-          }) + '\n'
-        );
-      } else if (message.method === 'tools/list') {
-        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: { tools } }) + '\n');
-      } else if (message.method === 'tools/call') {
-        const result = await handleToolCall(message.params.name, message.params.arguments);
-        process.stdout.write(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: message.id,
-            result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
-          }) + '\n'
-        );
-      } else {
-        process.stdout.write(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: message.id,
-            error: { code: -32601, message: `Method not found: ${message.method}` }
-          }) + '\n'
-        );
-      }
-    } catch (error) {
-      process.stdout.write(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: message.id,
-          error: { code: -32603, message: error.message }
-        }) + '\n'
-      );
-    }
-  }
-});
-
-process.stdin.on('end', () => {
-  if (serverProcess) {
-    serverProcess.kill('SIGTERM');
-  }
-  process.exit(0);
-});
-
-process.on('uncaughtException', (error) => {
-  process.exit(1);
-});
-
-process.on('unhandledRejection', () => {
+main().catch((error) => {
+  console.error('Failed to start MCP server:', error);
   process.exit(1);
 });
