@@ -21,9 +21,9 @@ export class Socket {
     this.invalidMessageCount = 0
     this.invalidMessageWindow = Date.now()
 
-    this.ws.on('message', this.onMessage)
-    this.ws.on('pong', this.onPong)
-    this.ws.on('close', this.onClose)
+    this.ws.on('message', (packet) => this.onMessage(packet))
+    this.ws.on('pong', () => this.onPong())
+    this.ws.on('close', (e) => this.onClose(e))
   }
 
   send(name, data) {
@@ -39,7 +39,6 @@ export class Socket {
     this.alive = false
     this.ws.ping()
   }
-
 
   validateMessage(packet) {
     if (!Buffer.isBuffer(packet)) {
@@ -76,11 +75,11 @@ export class Socket {
     return false
   }
 
-  onPong = () => {
+  onPong() {
     this.alive = true
   }
 
-  onMessage = packet => {
+  onMessage(packet) {
     const validation = this.validateMessage(packet)
     if (!validation.valid) {
       logger.error('Message validation failed for socket', {
@@ -116,7 +115,7 @@ export class Socket {
     this.network.enqueue(this, method, data)
   }
 
-  onClose = e => {
+  onClose(e) {
     this.closed = true
     this.disconnect(e?.code)
   }
