@@ -23,23 +23,52 @@ export class AppProxyManager {
   getWorldProxy() {
     const cached = this.proxyRegistry.getProxy('world')
     if (cached) return cached
-    const apps = this.app.world.apps
-    const proxy = {}
-    if (!apps) return proxy
-    const allKeys = new Set([...Object.keys(apps.worldGetters || {}), ...Object.keys(apps.worldSetters || {})])
-    for (const key of allKeys) {
-      try {
-        const descriptor = { enumerable: true, configurable: true }
-        if (apps.worldGetters?.[key]) descriptor.get = () => apps.worldGetters[key](apps, this.app)
-        if (apps.worldSetters?.[key]) descriptor.set = (value) => apps.worldSetters[key](apps, this.app, value)
-        Object.defineProperty(proxy, key, descriptor)
-      } catch (err) {
-        logger.warn('Failed to define property', { property: key, error: err.message })
-      }
-    }
-    for (const key in apps.worldMethods) {
-      proxy[key] = (...args) => apps.worldMethods[key](apps, this.app, ...args)
-    }
+    const proxy = new Proxy({}, {
+      get: (target, key) => {
+        const apps = this.app.world.apps
+        if (!apps) return undefined
+        if (apps.worldGetters?.[key]) {
+          return apps.worldGetters[key](apps, this.app)
+        }
+        if (apps.worldMethods?.[key]) {
+          return (...args) => apps.worldMethods[key](apps, this.app, ...args)
+        }
+        return target[key]
+      },
+      set: (target, key, value) => {
+        const apps = this.app.world.apps
+        if (!apps) return false
+        if (apps.worldSetters?.[key]) {
+          apps.worldSetters[key](apps, this.app, value)
+          return true
+        }
+        target[key] = value
+        return true
+      },
+      has: (target, key) => {
+        const apps = this.app.world.apps
+        if (!apps) return false
+        return !!(apps.worldGetters?.[key] || apps.worldSetters?.[key] || apps.worldMethods?.[key])
+      },
+      ownKeys: (target) => {
+        const apps = this.app.world.apps
+        if (!apps) return []
+        const keys = new Set([
+          ...Object.keys(apps.worldGetters || {}),
+          ...Object.keys(apps.worldSetters || {}),
+          ...Object.keys(apps.worldMethods || {}),
+        ])
+        return Array.from(keys)
+      },
+      getOwnPropertyDescriptor: (target, key) => {
+        const apps = this.app.world.apps
+        if (!apps) return undefined
+        if (apps.worldGetters?.[key] || apps.worldSetters?.[key] || apps.worldMethods?.[key]) {
+          return { enumerable: true, configurable: true }
+        }
+        return undefined
+      },
+    })
     this.proxyRegistry.cache.set('world', proxy)
     return proxy
   }
@@ -47,23 +76,52 @@ export class AppProxyManager {
   getAppProxy() {
     const cached = this.proxyRegistry.getProxy('app')
     if (cached) return cached
-    const apps = this.app.world.apps
-    const proxy = {}
-    if (!apps) return proxy
-    const allKeys = new Set([...Object.keys(apps.appGetters || {}), ...Object.keys(apps.appSetters || {})])
-    for (const key of allKeys) {
-      try {
-        const descriptor = { enumerable: true, configurable: true }
-        if (apps.appGetters?.[key]) descriptor.get = () => apps.appGetters[key](apps, this.app)
-        if (apps.appSetters?.[key]) descriptor.set = (value) => apps.appSetters[key](apps, this.app, value)
-        Object.defineProperty(proxy, key, descriptor)
-      } catch (err) {
-        logger.warn('Failed to define property', { property: key, error: err.message })
-      }
-    }
-    for (const key in apps.appMethods) {
-      proxy[key] = (...args) => apps.appMethods[key](apps, this.app, ...args)
-    }
+    const proxy = new Proxy({}, {
+      get: (target, key) => {
+        const apps = this.app.world.apps
+        if (!apps) return undefined
+        if (apps.appGetters?.[key]) {
+          return apps.appGetters[key](apps, this.app)
+        }
+        if (apps.appMethods?.[key]) {
+          return (...args) => apps.appMethods[key](apps, this.app, ...args)
+        }
+        return target[key]
+      },
+      set: (target, key, value) => {
+        const apps = this.app.world.apps
+        if (!apps) return false
+        if (apps.appSetters?.[key]) {
+          apps.appSetters[key](apps, this.app, value)
+          return true
+        }
+        target[key] = value
+        return true
+      },
+      has: (target, key) => {
+        const apps = this.app.world.apps
+        if (!apps) return false
+        return !!(apps.appGetters?.[key] || apps.appSetters?.[key] || apps.appMethods?.[key])
+      },
+      ownKeys: (target) => {
+        const apps = this.app.world.apps
+        if (!apps) return []
+        const keys = new Set([
+          ...Object.keys(apps.appGetters || {}),
+          ...Object.keys(apps.appSetters || {}),
+          ...Object.keys(apps.appMethods || {}),
+        ])
+        return Array.from(keys)
+      },
+      getOwnPropertyDescriptor: (target, key) => {
+        const apps = this.app.world.apps
+        if (!apps) return undefined
+        if (apps.appGetters?.[key] || apps.appSetters?.[key] || apps.appMethods?.[key]) {
+          return { enumerable: true, configurable: true }
+        }
+        return undefined
+      },
+    })
     this.proxyRegistry.cache.set('app', proxy)
     return proxy
   }

@@ -13,7 +13,6 @@ export class Apps extends System {
     this.appGetters = { ...AppAPIConfig.getters }
     this.appSetters = { ...AppAPIConfig.setters }
     this.appMethods = { ...AppAPIConfig.methods }
-    console.log('[Apps] configure method:', typeof this.appMethods.configure)
     this.registry = new AppRegistry(
       this.worldGetters,
       this.worldSetters,
