@@ -28,7 +28,7 @@ async function startServer() {
   console.log('⏳ Starting server...')
   serverProcess = spawn('node', ['src/server/index.js'], {
     cwd: rootDir,
-    stdio: 'inherit',
+    stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
     env: {
       ...process.env,
       NODE_ENV: 'development',

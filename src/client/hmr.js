@@ -1,6 +1,7 @@
 export function initHMR(onReload) {
   if (!window.location.hostname.includes('localhost')) return
 
+  console.log('[HMR] Connecting to HMR endpoint')
   const ws = new WebSocket(`ws://${window.location.host}/hmr`)
   let debounceTimer = null
 
