@@ -16,7 +16,7 @@ export class EntityLifecycle {
     entity.destroy()
     this.entities.items.delete(id)
     this.entities.removed.push(id)
-    this.entities.events.emit(EVENT.entity.removed, id)
+    this.entities.events?.emit(EVENT.entity.removed, id)
   }
 
   setHot(entity, hot) {

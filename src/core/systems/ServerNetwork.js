@@ -107,6 +107,10 @@ export class ServerNetwork extends BaseNetwork {
     this.playerConnectionManager.handleDisconnection(playerId)
   }
 
+  onDisconnect(socket, code) {
+    this.playerConnectionManager.onDisconnect(socket, code)
+  }
+
   async onMessage(ws, name, data) {
     await this.socketManager.onMessage(ws, name, data)
   }

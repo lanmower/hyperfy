@@ -1,6 +1,7 @@
 import * as THREE from '../../extras/three.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
+import { VRMLoaderPlugin } from '../../libs/three-vrm/index.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { BaseAssetHandler } from './BaseAssetHandler.js'
@@ -18,6 +19,7 @@ export class AssetHandlers extends BaseAssetHandler {
     this.rgbeLoader = new RGBELoader()
     this.texLoader = new THREE.TextureLoader()
     this.gltfLoader = new GLTFLoader()
+    this.gltfLoader.register(exporter => new VRMLoaderPlugin(exporter))
     this.audio = clientLoader.audio
     this.scripts = clientLoader.scripts
     this.world = world
