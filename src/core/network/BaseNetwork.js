@@ -1,5 +1,6 @@
 import { System } from '../systems/System.js'
 import { StructuredLogger } from '../utils/logging/index.js'
+import { writePacket } from '../packets.js'
 
 const logger = new StructuredLogger('BaseNetwork')
 
@@ -19,6 +20,26 @@ export class BaseNetwork extends System {
             this.protocol.flushTarget[handlerName](socket, data)
           }
         }
+      },
+      send: (socket, method, data) => {
+        try {
+          const packet = writePacket(method, data)
+          socket?.send?.(packet)
+        } catch (err) {
+          logger.error('Send failed', { method, error: err.message })
+        }
+      },
+      sendReliable: (socket, method, data) => {
+        return new Promise((resolve, reject) => {
+          try {
+            const packet = writePacket(method, data)
+            socket?.send?.(packet)
+            resolve()
+          } catch (err) {
+            logger.error('SendReliable failed', { method, error: err.message })
+            reject(err)
+          }
+        })
       },
       processPacket: (data) => {
         try {
