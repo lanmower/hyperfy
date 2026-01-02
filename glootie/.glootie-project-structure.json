@@ -3,9 +3,9 @@
   "framework": "react",
   "languages": [
     "unknown",
+    "markdown",
     "json",
     "javascript",
-    "markdown",
     "html",
     "css"
   ],
@@ -337,6 +337,8 @@
       ".gitignore",
       ".npmrc",
       ".nvmrc",
+      "FINAL_TEST_SUMMARY.md",
+      "GAMEPLAY_TEST_REPORT.txt",
       ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
@@ -711,8 +713,6 @@
       "mp-walk-right.glb",
       "mp-walk.glb",
       "scene.hyp.bak",
-      "test-extended-stress.mjs",
-      "test-gameplay.mjs",
       ".last-run.json",
       "179d71586e675efc4af04185e1b2d3e6b7f4a5b707f1ef5e9b6497c5660ecab7.webp",
       "1aa2381f0fb25ba2fe9941b62eb2cad1fe2c77afa0316df8828ba5eba5d3d374.glb",
@@ -770,5 +770,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767381532067
+  "lastAnalyzed": 1767382278820
 }
