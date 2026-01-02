@@ -1,17 +1,18 @@
-import path from 'path'
-import fs from 'fs-extra'
-import { hashFile } from '../../core/utils.js'
 import { createRateLimiter } from '../middleware/RateLimiter.js'
 import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 import { MasterConfig } from '../config/MasterConfig.js'
 import { getFileExtension } from '../../core/utils/getFileExtension.js'
+import { createAssets } from '../assets.js'
 
 const logger = LoggerFactory.get('Routes.Upload')
 
 const BLOCKED_EXTENSIONS = new Set(['exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'js'])
 
-export function registerUploadRoutes(fastify, assetsDir) {
+export async function registerUploadRoutes(fastify, assetsDir) {
+  const assets = createAssets({ worldDir: assetsDir })
+  await assets.init({ worldDir: assetsDir, rootDir: process.cwd() })
+
   fastify.post('/api/upload', {
     preHandler: createRateLimiter('upload'),
   }, async (req, reply) => {
@@ -46,17 +47,13 @@ export function registerUploadRoutes(fastify, assetsDir) {
         chunks.push(chunk)
       }
 
-      const buffer = Buffer.concat(chunks)
-      const hash = await hashFile(buffer)
-      const filename = `${hash}.${ext}`
-      const filePath = path.join(assetsDir, filename)
-
-      const exists = await fs.exists(filePath)
-      if (!exists) {
-        await fs.writeFile(filePath, buffer)
+      const mockFile = {
+        arrayBuffer: async () => Buffer.concat(chunks),
+        name: file.filename,
       }
 
-      return { success: true, hash }
+      const result = await assets.upload(mockFile)
+      return { success: true, hash: result.hash, filename: result.filename }
     }
 
     try {
@@ -99,14 +96,9 @@ export function registerUploadRoutes(fastify, assetsDir) {
         return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'Invalid hash format')
       }
 
-      const filename = hash.substring(0, 2) + '/' + hash.substring(2)
-      const filePath = path.resolve(path.join(assetsDir, filename))
-
-      if (!filePath.startsWith(path.resolve(assetsDir))) {
-        return ErrorResponseBuilder.sendError(reply, 'INPUT_VALIDATION', 'Invalid path')
-      }
-
-      const exists = await fs.exists(filePath)
+      const ext = req.query.ext || 'bin'
+      const filename = `${hash}.${ext}`
+      const exists = await assets.exists(filename)
       return reply.code(200).send({ exists })
     } catch (error) {
       logger.error('Upload check failed', { error: error.message })

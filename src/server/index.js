@@ -72,7 +72,7 @@ fastify.shutdownManager = shutdownManager
 registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager)
 await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker)
 
-registerRoutes(fastify, world, initializer.assetsDir)
+await registerRoutes(fastify, world, initializer.assetsDir)
 registerStaticAssets(fastify, __dirname, initializer.assetsDir, world)
 registerEnvEndpoint(fastify)
 
