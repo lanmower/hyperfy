@@ -316,7 +316,9 @@ process.stdin.on('data', async (chunk) => {
             id: message.id,
             result: {
               protocolVersion: '2024-11-05',
-              capabilities: {},
+              capabilities: {
+                tools: {}
+              },
               serverInfo: {
                 name: 'hyperfy-dev-server',
                 version: '1.0.0'
