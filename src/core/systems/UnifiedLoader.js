@@ -3,7 +3,6 @@
 import { System } from './System.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 import { AssetHandlers } from './loaders/AssetHandlers.js'
-import { ServerAssetHandlers } from './loaders/ServerAssetHandlers.js'
 
 const logger = new StructuredLogger('UnifiedLoader')
 
@@ -25,15 +24,22 @@ export class UnifiedLoader extends System {
     this.preloadItems = []
     this.resolveURL = world.resolveURL
     this.isServer = typeof window === 'undefined'
-    this.setupHandlers()
+    this.handlers = null
+    if (!this.isServer) {
+      this.handlers = new AssetHandlers(this, world)
+    } else {
+      this.setupHandlers()
+    }
   }
 
-  setupHandlers() {
+  async setupHandlers() {
     if (this.isServer) {
       globalThis.self = { URL }
       globalThis.window = {}
       globalThis.document = { createElementNS: () => ({ style: {} }) }
-      this.handlers = new ServerAssetHandlers(this.world, this.errors, this.scripts)
+      // Use dynamic import to avoid bundling fs-extra in client
+      const serverHandlers = await import('./loaders/ServerAssetHandlers.js')
+      this.handlers = new serverHandlers.ServerAssetHandlers(this.world, this.errors, this.scripts)
     } else {
       this.handlers = new AssetHandlers(this, this.world)
     }

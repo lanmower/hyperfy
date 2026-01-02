@@ -28,24 +28,26 @@ if (typeof window !== 'undefined') {
 import { createRoot } from 'react-dom/client'
 import { Client } from './world-client.js'
 import { ClientPrefs } from '../core/systems/ClientPrefs.js'
-import { UnifiedLoader } from '../core/systems/UnifiedLoader.js'
 import { InputSystem } from '../core/systems/input/InputSystem.js'
 import { ClientGraphics } from '../core/systems/ClientGraphics.js'
 import { ClientEnvironment } from '../core/systems/ClientEnvironment.js'
 import { ClientNetwork } from '../core/systems/ClientNetwork.js'
 
+console.log('[HYPERFY] Client module starting')
+
 function setupClientSystems(world, config) {
   world.register('prefs', ClientPrefs)
-  world.register('loader', UnifiedLoader)
   world.register('controls', InputSystem)
   world.register('graphics', ClientGraphics)
   world.register('environment', ClientEnvironment)
   world.register('network', ClientNetwork)
 }
 
-function App() {
-  return <Client wsUrl={env.PUBLIC_WS_URL} onSetup={setupClientSystems} />
+console.log('[HYPERFY] About to create root and render')
+const rootEl = document.getElementById('root')
+if (rootEl) {
+  rootEl.setAttribute('data-client-loaded', 'yes')
+  const root = createRoot(rootEl)
+  root.render(<Client wsUrl={window.env?.PUBLIC_WS_URL} onSetup={setupClientSystems} />)
+  console.log('[HYPERFY] React rendered')
 }
-
-const root = createRoot(document.getElementById('root'))
-root.render(<App />)
