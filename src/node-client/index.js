@@ -1,5 +1,5 @@
 import 'ses'
-import '../core/lockdown'
+import '../core/lockdown.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 

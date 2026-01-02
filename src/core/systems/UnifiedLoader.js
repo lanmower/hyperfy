@@ -22,7 +22,6 @@ export class UnifiedLoader extends System {
     this.promises = new Map()
     this.results = new Map()
     this.preloadItems = []
-    this.resolveURL = world.resolveURL
     this.isServer = typeof window === 'undefined'
     if (!this.isServer) {
       this.handlers = new AssetHandlers(this, world)
@@ -84,7 +83,7 @@ export class UnifiedLoader extends System {
 
   load(type, url) {
     if (!url) return Promise.reject(new Error('URL is required'))
-    url = this.resolveURL(url)
+    url = this.world.resolveURL(url, this.isServer)
     const key = `${type}/${url}`
 
     if (this.promises.has(key)) {

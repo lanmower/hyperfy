@@ -13,6 +13,7 @@ export class World extends EventEmitter {
   constructor() {
     super()
 
+    this.logger = logger
     this.maxDeltaTime = WorldConfig.MAX_DELTA_TIME
     this.fixedDeltaTime = WorldConfig.FIXED_DELTA_TIME
     this.frame = 0
@@ -241,10 +242,11 @@ export class World extends EventEmitter {
       return url
     }
     if (url.startsWith('asset://')) {
+      const assetPath = url.slice(8)
       if (this.assetsDir && allowLocal) {
-        return url.replace('asset:/', this.assetsDir)
+        return this.assetsDir + '/' + assetPath
       } else if (this.assetsUrl) {
-        return url.replace('asset:/', this.assetsUrl)
+        return this.assetsUrl + '/' + assetPath
       } else {
         logger.error('resolveURL: no assetsUrl or assetsDir defined', { url })
         return url

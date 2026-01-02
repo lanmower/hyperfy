@@ -133,7 +133,8 @@ export class ServerInitializer {
 
     const world = new World()
     world.isServer = true
-    world.assetsUrl = process.env.PUBLIC_ASSETS_URL
+    world.assetsUrl = process.env.PUBLIC_ASSETS_URL || '/assets'
+    world.assetsDir = this.assetsDir
 
     const { Collections } = await import('../core/systems/Collections.js')
     const { BlueprintManager } = await import('../core/systems/BlueprintManager.js')
@@ -149,9 +150,9 @@ export class ServerInitializer {
     world.register('network', ServerNetwork)
     world.register('livekit', ServerLiveKit)
     world.register('loader', UnifiedLoader)
-    world.collections.deserialize(collections)
 
-    world.init({ db, storage, assetsDir: this.assetsDir })
+    world.init({ db, storage, assetsDir: this.assetsDir, assetsUrl: world.assetsUrl })
+    world.collections.deserialize(collections)
 
     if (world.network && world.network.socketManager) {
       world.network.socketManager.setCircuitBreakerManager(circuitBreakerManager)

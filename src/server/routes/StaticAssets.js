@@ -1,23 +1,35 @@
 import statics from '@fastify/static'
 import fs from 'fs-extra'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.join(__dirname, '../../..')
+const srcDir = path.join(rootDir, 'src')
+const clientDir = path.join(srcDir, 'client')
+const publicDir = path.join(clientDir, 'public')
+
+async function transformCode(code, filepath) {
+  // Basic JSX/ES module transformation for development
+  if (filepath.endsWith('.jsx') || code.includes('jsx')) {
+    // Client-side JSX will be transformed by @firebolt-dev/jsx at runtime
+    return code
+  }
+  return code
+}
 
 export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
+  // Serve index.html
   fastify.get('/', async (req, reply) => {
     const title = world.settings.title || 'World'
     const desc = world.settings.desc || ''
     const image = world.resolveURL(world.settings.image?.url) || ''
     const url = process.env.PUBLIC_ASSETS_URL
-    const filePath = path.join(buildDir, '../build/public', 'index.html')
+    const filePath = path.join(publicDir, 'index.html')
     let html = fs.readFileSync(filePath, 'utf-8')
 
-    const publicDir = path.join(buildDir, '../build/public')
-    const files = fs.readdirSync(publicDir)
-    const jsFile = files.find(f => f.startsWith('index-') && f.endsWith('.js'))
-    const particlesFile = files.find(f => f.startsWith('particles-') && f.endsWith('.js'))
-
-    html = html.replace('{jsPath}', jsFile ? '/' + jsFile : '/index.js')
-    html = html.replace('{particlesPath}', particlesFile ? '/' + particlesFile : '/particles.js')
+    html = html.replace('{jsPath}', '/src/client/index.js?t=' + Date.now())
+    html = html.replace('{particlesPath}', '/src/client/particles.js?t=' + Date.now())
     html = html.replaceAll('{buildId}', Date.now())
     html = html.replaceAll('{url}', url)
     html = html.replaceAll('{title}', title)
@@ -26,8 +38,21 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     reply.type('text/html').send(html)
   })
 
+  // Serve src/client files directly (buildless)
+  fastify.get('/src/client/*', async (req, reply) => {
+    const filepath = path.join(clientDir, req.params['*'])
+    try {
+      const code = await fs.readFile(filepath, 'utf-8')
+      const transformed = await transformCode(code, filepath)
+      reply.type('application/javascript').send(transformed)
+    } catch (err) {
+      reply.code(404).send(`Not found: ${req.params['*']}`)
+    }
+  })
+
+  // Serve public assets
   fastify.register(statics, {
-    root: path.join(buildDir, '../build/public'),
+    root: publicDir,
     prefix: '/',
     decorateReply: false,
     setHeaders: res => {

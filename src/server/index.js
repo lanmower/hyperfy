@@ -1,7 +1,7 @@
 import 'dotenv-flow/config'
 import 'ses'
-import '../core/lockdown'
-import './bootstrap'
+import '../core/lockdown.js'
+import './bootstrap.js'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -22,7 +22,7 @@ if (__filename.startsWith('/') && __filename[2] === ':') {
   __filename = __filename.slice(1)
 }
 const __dirname = path.dirname(__filename)
-const rootDir = path.join(__dirname, '../')
+const rootDir = path.join(__dirname, '../../')
 const port = process.env.PORT || 3000
 const env = process.env.NODE_ENV || 'development'
 

@@ -76,11 +76,14 @@ async function startServer(port, cwd) {
   logOutput(`Starting dev server on port ${serverPort}...`);
 
   try {
-    serverProcess = spawn('node', ['scripts/dev.mjs'], {
+    const scriptPath = join(cwd || BASE_DIR, 'scripts', 'dev-buildless.mjs');
+    logOutput(`Spawning with scriptPath: ${scriptPath}`);
+    logOutput(`File exists: ${existsSync(scriptPath)}`);
+    serverProcess = spawn('node', [scriptPath], {
       cwd: cwd || BASE_DIR,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
-      shell: process.platform === 'win32',
+      shell: false,
       windowsHide: true
     });
 
