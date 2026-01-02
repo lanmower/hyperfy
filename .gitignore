@@ -29,3 +29,14 @@ nul
 # Build artifacts
 *.lock
 *.tsbuildinfo
+
+# MCP and tooling (generated during setup)
+.claude/mcp.json
+.claude-code/
+.mcp.json
+glootie/
+
+# Development logs and state
+.dev-server.log
+.dev-server.pid
+dev.log

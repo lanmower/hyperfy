@@ -36,7 +36,7 @@ export class BlueprintManager extends System {
     if (data.script) {
       const scriptValidation = InputSanitizer.validateScript(data.script)
       if (!scriptValidation.valid) {
-        logger.warn('Script validation failed for blueprint', {
+        this.logger.warn('Script validation failed for blueprint', {
           blueprintId: data.id,
           violationCount: scriptValidation.violations.length,
           violations: scriptValidation.violations,
@@ -47,7 +47,7 @@ export class BlueprintManager extends System {
     if (data.props) {
       const propsValidation = InputSanitizer.validateProperties(data.props)
       if (!propsValidation.valid) {
-        logger.warn('Properties validation failed for blueprint', {
+        this.logger.warn('Properties validation failed for blueprint', {
           blueprintId: data.id,
           violationCount: propsValidation.violations.length,
           violations: propsValidation.violations,
@@ -67,7 +67,7 @@ export class BlueprintManager extends System {
     if (data.script) {
       const scriptValidation = InputSanitizer.validateScript(data.script)
       if (!scriptValidation.valid) {
-        logger.warn('Script validation failed for blueprint modification', {
+        this.logger.warn('Script validation failed for blueprint modification', {
           blueprintId: data.id,
           violationCount: scriptValidation.violations.length,
           violations: scriptValidation.violations,
@@ -78,7 +78,7 @@ export class BlueprintManager extends System {
     if (data.props) {
       const propsValidation = InputSanitizer.validateProperties(data.props)
       if (!propsValidation.valid) {
-        logger.warn('Properties validation failed for blueprint modification', {
+        this.logger.warn('Properties validation failed for blueprint modification', {
           blueprintId: data.id,
           violationCount: propsValidation.violations.length,
           violations: propsValidation.violations,
@@ -120,7 +120,7 @@ export class BlueprintManager extends System {
 
   store(normalizedData) {
     if (!this.items) {
-      logger.error('Blueprint storage not initialized')
+      this.logger.error('Blueprint storage not initialized')
       return false
     }
 
@@ -142,7 +142,7 @@ export class BlueprintManager extends System {
 
   deserialize(datas) {
     if (!Array.isArray(datas)) {
-      logger.error('Invalid blueprint data format', { type: typeof datas })
+      this.logger.error('Invalid blueprint data format', { type: typeof datas })
       return []
     }
 
@@ -154,7 +154,7 @@ export class BlueprintManager extends System {
           deserialized.push(result)
         }
       } catch (error) {
-        logger.error('Blueprint deserialization failed', {
+        this.logger.error('Blueprint deserialization failed', {
           blueprintId: data?.id,
           error: error.message
         })
@@ -173,7 +173,7 @@ export class BlueprintManager extends System {
       this.store(normalized)
       return normalized
     } catch (error) {
-      logger.error('Single blueprint deserialization failed', {
+      this.logger.error('Single blueprint deserialization failed', {
         blueprintId: data.id,
         error: error.message,
       })
@@ -196,7 +196,7 @@ export class BlueprintManager extends System {
 
       const blueprintData = this.get(blueprintId)
       if (!blueprintData) {
-        logger.warn('Blueprint not found', { blueprintId })
+        this.logger.warn('Blueprint not found', { blueprintId })
         span?.setAttribute('status', 'not_found')
         return null
       }
@@ -233,7 +233,7 @@ export class BlueprintManager extends System {
           blueprint: blueprintData,
         }
       } catch (err) {
-        logger.error('Failed to load blueprint', { blueprintId, error: err.message })
+        this.logger.error('Failed to load blueprint', { blueprintId, error: err.message })
         const duration = performance.now() - startTime
         PerformanceMetrics.recordError('error', 'BlueprintManager')
         span?.setAttribute('status', 'error')
@@ -252,7 +252,7 @@ export class BlueprintManager extends System {
       try {
         const world = app.world
         if (!world.loader) {
-          logger.warn('Loader not available (server-side model loading not supported)')
+          this.logger.warn('Loader not available (server-side model loading not supported)')
           span?.setAttribute('status', 'loader_unavailable')
           PerformanceMetrics.recordResourceFail('model', 'loader_unavailable')
           return null
@@ -273,7 +273,7 @@ export class BlueprintManager extends System {
         }
 
         if (!glb) {
-          logger.warn('Failed to load model', { modelUrl })
+          this.logger.warn('Failed to load model', { modelUrl })
           span?.setAttribute('status', 'not_found')
           const duration = performance.now() - startTime
           PerformanceMetrics.recordResourceLoad(duration, type, modelUrl, false)
@@ -292,7 +292,7 @@ export class BlueprintManager extends System {
           scene: glb.getScene?.(),
         }
       } catch (err) {
-        logger.error('Error loading model', { modelUrl, error: err.message })
+        this.logger.error('Error loading model', { modelUrl, error: err.message })
         const duration = performance.now() - startTime
         PerformanceMetrics.recordResourceFail('model', 'error')
         PerformanceMetrics.recordError('error', 'BlueprintManager.loadModel')
@@ -313,7 +313,7 @@ export class BlueprintManager extends System {
         const world = app.world
 
         if (!world.loader) {
-          logger.warn('Loader not available (server-side script loading not supported)')
+          this.logger.warn('Loader not available (server-side script loading not supported)')
           span?.setAttribute('status', 'loader_unavailable')
           PerformanceMetrics.recordResourceFail('script', 'loader_unavailable')
           return null
@@ -331,7 +331,7 @@ export class BlueprintManager extends System {
         }
 
         if (!scriptCode) {
-          logger.warn('Failed to load script', { scriptUrl })
+          this.logger.warn('Failed to load script', { scriptUrl })
           span?.setAttribute('status', 'not_found')
           const duration = performance.now() - startTime
           PerformanceMetrics.recordResourceLoad(duration, 'script', scriptUrl, false)
@@ -348,7 +348,7 @@ export class BlueprintManager extends System {
         span?.setAttribute('duration', duration)
         return scriptCode
       } catch (err) {
-        logger.error('Error loading script', { scriptUrl, error: err.message })
+        this.logger.error('Error loading script', { scriptUrl, error: err.message })
         const duration = performance.now() - startTime
         PerformanceMetrics.recordResourceFail('script', 'error')
         PerformanceMetrics.recordError('error', 'BlueprintManager.loadScript')
