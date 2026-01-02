@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
-import { World } from '../core/World.js'
+import { createServerWorld } from '../core/createServerWorld.js'
 import { getDB } from './db.js'
 import { Storage } from './Storage.js'
 import { initCollections } from './collections.js'
@@ -131,31 +131,9 @@ export class ServerInitializer {
     db = createDbProxy(db)
     const storage = new Storage(path.join(this.worldDir, '/storage.json'), circuitBreakerManager)
 
-    const world = new World()
-    world.isServer = true
+    const world = createServerWorld()
     world.assetsUrl = process.env.PUBLIC_ASSETS_URL || '/assets'
     world.assetsDir = this.assetsDir
-
-    const { Collections } = await import('../core/systems/Collections.js')
-    const { BlueprintManager } = await import('../core/systems/BlueprintManager.js')
-    const { Entities } = await import('../core/systems/Entities.js')
-    const { ServerNetwork } = await import('../core/systems/ServerNetwork.js')
-    const { Settings } = await import('../core/systems/Settings.js')
-    const { ServerLiveKit } = await import('../core/systems/ServerLiveKit.js')
-    const { Scripts } = await import('../core/systems/Scripts.js')
-    const { UnifiedLoader } = await import('../core/systems/UnifiedLoader.js')
-    const { Apps } = await import('../core/systems/Apps.js')
-    const { Chat } = await import('../core/systems/Chat.js')
-    world.register('collections', Collections)
-    world.register('settings', Settings)
-    world.register('blueprints', BlueprintManager)
-    world.register('apps', Apps)
-    world.register('entities', Entities)
-    world.register('chat', Chat)
-    world.register('network', ServerNetwork)
-    world.register('livekit', ServerLiveKit)
-    world.register('scripts', Scripts)
-    world.register('loader', UnifiedLoader)
 
     world.init({ db, storage, assetsDir: this.assetsDir, assetsUrl: world.assetsUrl })
     world.collections.deserialize(collections)
