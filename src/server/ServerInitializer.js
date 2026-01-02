@@ -14,7 +14,8 @@ import { DegradationStrategies } from './resilience/DegradationStrategies.js'
 import { ShutdownManager } from './resilience/ShutdownManager.js'
 import { StatusPageData } from './services/StatusPageData.js'
 import { CORSConfig } from './config/CORSConfig.js'
-import { StructuredLogger, ConsoleSink, FileSink, LoggerFactory } from '../core/utils/logging/index.js'
+import { StructuredLogger, LoggerFactory } from '../core/utils/logging/index.js'
+import { ConsoleSink, FileSink } from '../core/utils/logging/ServerLogger.js'
 import { ErrorTracker } from './services/ErrorTracker.js'
 
 export class ServerInitializer {

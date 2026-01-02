@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react'
 
 export function LoadingOverlay({ world }) {
   const [progress, setProgress] = useState(0)
-  const { title, desc, image } = world.settings
+  const { title, desc, image } = world?.settings || {}
   useEffect(() => {
+    if (!world) return
     world.on('progress', setProgress)
     return () => {
       world.off('progress', setProgress)
     }
-  }, [])
+  }, [world])
   return (
     <div
       css={css`
@@ -35,7 +36,7 @@ export function LoadingOverlay({ world }) {
           background-position: center;
           background-size: cover;
           background-repeat: no-repeat;
-          background-image: ${image ? `url(${world.resolveURL(image.url)})` : 'none'};
+          background-image: ${image && world?.resolveURL ? `url(${world.resolveURL(image.url)})` : 'none'};
           animation: pulse 5s ease-in-out infinite;
         }
         .loading-shade {
