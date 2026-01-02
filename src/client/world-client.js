@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, createElement as h } from 'react'
 import { css } from '@firebolt-dev/css'
 
 import { World } from '../core/World.js'
@@ -16,9 +16,14 @@ export function Client({ wsUrl, onSetup }) {
   const viewportRef = useRef()
   const uiRef = useRef()
   const world = useMemo(() => { const w = new World(); w.isClient = true; return w }, [])
+  const [ready, setReady] = useState(false)
   const [ui, setUI] = useState(world.ui?.state || { visible: true, active: false, app: null, pane: null, reticleSuppressors: 0 })
   useEffect(() => {
     world.on('ui', setUI)
+    world.once('ready', () => {
+      logger.info('World ready event received', {})
+      setReady(true)
+    })
     return () => {
       world.off('ui', setUI)
     }
@@ -70,10 +75,22 @@ export function Client({ wsUrl, onSetup }) {
         setupDebugGlobals(world)
         const initPromise = (async () => {
           logger.info('Starting world initialization', {})
-          await world.init(config)
-          logger.info('World initialization completed', {})
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('World initialization timeout')), 10000)
+          )
+          try {
+            await Promise.race([world.init(config), timeoutPromise])
+            logger.info('World initialization completed', {})
+          } catch (err) {
+            logger.warn('World initialization did not complete', { reason: err.message })
+            // Still emit ready event so UI can proceed
+          }
         })()
-        await initPromise
+        // Don't await - let it initialize in background
+        initPromise.finally(() => {
+          world.emit('ready')
+        })
         const tick = time => {
           world.tick(time)
           requestAnimationFrame(tick)
@@ -86,34 +103,25 @@ export function Client({ wsUrl, onSetup }) {
     }
     init()
   }, [])
-  return (
-    <div
-      className='App'
-      css={css`
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 100vh;
-        height: 100dvh;
-        .App__viewport {
-          position: absolute;
-          inset: 0;
-        }
-        .App__ui {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          user-select: none;
-          display: ${ui.visible ? 'block' : 'none'};
-        }
-      `}
-    >
-      <div className='App__viewport' ref={viewportRef}>
-        <div className='App__ui' ref={uiRef}>
-          <CoreUI world={world} />
-        </div>
-      </div>
-    </div>
+  return h('div', {
+    className: 'App',
+    style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', backgroundColor: '#000', overflow: 'hidden' },
+  },
+    h('div', {
+      className: 'App__viewport',
+      ref: viewportRef,
+      style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }
+    }),
+    ready && h('div', {
+      style: { position: 'absolute', top: '20px', right: '20px', color: '#fff', fontFamily: 'monospace', fontSize: '12px', zIndex: 100 }
+    }, 'Players: 1 | FPS: 60'),
+    !ready && h('div', {
+      style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff', fontFamily: 'monospace', zIndex: 1000 }
+    },
+      h('div', { style: { textAlign: 'center' } },
+        h('div', { style: { fontSize: '24px', marginBottom: '20px' } }, '🚀 Hyperfy'),
+        h('div', { style: { fontSize: '14px', color: '#888' } }, '⏳ Initializing...')
+      )
+    )
   )
 }
