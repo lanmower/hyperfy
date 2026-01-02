@@ -1,4 +1,5 @@
 import { StructuredLogger } from '../logging/index.js'
+import { ValidationHelper } from './ValidationHelper.js'
 
 const logger = new StructuredLogger('APIMethodWrapper')
 

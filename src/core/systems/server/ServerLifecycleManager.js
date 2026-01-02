@@ -45,8 +45,16 @@ export class ServerLifecycleManager {
     }
 
     const sceneBlueprint = this.network.blueprints.getScene()
-    const sceneEntityId = null
-    const sceneEntity = null
+    const sceneEntityId = sceneBlueprint ? 'scene-' + Date.now() : null
+    const sceneEntity = sceneBlueprint ? {
+      id: sceneEntityId,
+      type: 'app',
+      blueprint: '$scene',
+      position: [0, 0, 0],
+      quaternion: [0, 0, 0, 1],
+      scale: [1, 1, 1],
+      userId: null,
+    } : null
 
     const entities = await this.network.persistence.loadEntities()
     const entityIds = new Set(entities.map(e => {

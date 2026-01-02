@@ -3,6 +3,7 @@ import * as THREE from '../../extras/three.js'
 import { ControlPriorities } from '../../extras/ControlPriorities.js'
 import * as NodeClasses from '../../nodes/index.js'
 import { APIConfigBuilder } from '../../utils/api/index.js'
+import { ValidationHelper } from '../../utils/api/ValidationHelper.js'
 import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { FILE_TYPES } from './FieldTypeConstants.js'
@@ -261,6 +262,24 @@ b.addMethod('control', (apps, entity, options) => {
     object: entity,
   })
   return entity.control
+})
+
+// Storage
+b.addMethodDirect('get', (apps, entity, key) => {
+  ValidationHelper.assertIsString(key, 'key', { operation: 'get' })
+  return entity.data.state?.[key]
+}, {
+  module: 'AppAPIConfig',
+  method: 'get',
+})
+
+b.addMethodDirect('set', (apps, entity, key, value) => {
+  ValidationHelper.assertIsString(key, 'key', { operation: 'set' })
+  if (!entity.data.state) entity.data.state = {}
+  entity.data.state[key] = value
+}, {
+  module: 'AppAPIConfig',
+  method: 'set',
 })
 
 export const AppAPIConfig = b.build()
