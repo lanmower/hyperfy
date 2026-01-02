@@ -74,7 +74,7 @@ export function registerSignalHandlers(shutdownManager, errorTracker, logger) {
   process.on('SIGTERM', () => shutdown(shutdownManager, errorTracker, 'SIGTERM'))
 
   process.on('uncaughtException', (err) => {
-    logger.critical(`Uncaught Exception: ${err.message}`, { stack: err.stack })
+    logger.error(`Uncaught Exception: ${err.message}`, { stack: err.stack })
     errorTracker.captureException(err, { category: 'UncaughtException', module: 'Server' })
     process.exit(1)
   })

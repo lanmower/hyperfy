@@ -6,7 +6,15 @@ class QueryBuilder {
   }
 
   where(key, value) {
-    this.conditions.push({ key, value })
+    if (typeof key === 'object' && value === undefined) {
+      // Handle where({ id: value }) syntax
+      for (const [k, v] of Object.entries(key)) {
+        this.conditions.push({ key: k, value: v })
+      }
+    } else {
+      // Handle where('id', value) syntax
+      this.conditions.push({ key, value })
+    }
     return this
   }
 

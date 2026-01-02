@@ -1,12 +1,22 @@
 import { LoggerFactory } from '../../core/utils/logging/index.js'
 import { createFastifyPlugin } from './PluginFactory.js'
-import { ErrorResponses } from './ErrorResponses.js'
+import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
 const logger = LoggerFactory.get('TimeoutMiddleware')
+const STATIC_PATHS = ['/assets/', '/dist/', '/', '/env.js', '/public/']
+
+const isStaticPath = (path) => {
+  const cleanPath = path.split('?')[0]
+  return STATIC_PATHS.some(p => cleanPath.startsWith(p) || cleanPath === p)
+}
 
 export function createTimeoutMiddleware(timeoutManager) {
   async function timeoutMiddleware(fastify) {
     fastify.addHook('onRequest', async (request, reply) => {
+      if (isStaticPath(request.url)) {
+        return
+      }
+
       const timeout = timeoutManager.getTimeout('http')
       const path = request.url
 
@@ -14,7 +24,7 @@ export function createTimeoutMiddleware(timeoutManager) {
         if (!reply.sent) {
           timeoutManager.recordTimeout('http', path)
           logger.error('HTTP request timeout', { method: request.method, path, timeout })
-          reply.code(408).send(ErrorResponses.timeout(timeout, path, request.method))
+          return ErrorResponseBuilder.sendError(reply, 'INTERNAL_ERROR', 'Request timeout', { timeout, path, method: request.method })
         }
       }, timeout)
     })

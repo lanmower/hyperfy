@@ -42,9 +42,10 @@ export async function createJWT(data) {
 
 export async function readJWT(token) {
   const jwtLib = await getJWT()
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     jwtLib.verify(token, jwtSecret, (err, data) => {
-      resolve(err ? null : data)
+      if (err) return reject(err)
+      resolve(data)
     })
   })
 }

@@ -47,7 +47,14 @@ export class PlayerConnectionManager {
           avatar: null,
           rank: 0,
         }
-        await this.serverNetwork.persistence.saveUser(user.id, user)
+        logger.info('Creating anonymous user', { userId: user.id })
+        try {
+          await this.serverNetwork.persistence.saveUser(user.id, user)
+          logger.info('Anonymous user saved successfully', { userId: user.id })
+        } catch (err) {
+          logger.error('Failed to save anonymous user', { userId: user.id, error: err.message, stack: err.stack })
+          throw err
+        }
         authToken = await createJWT({ userId: user.id })
       }
 
@@ -58,7 +65,7 @@ export class PlayerConnectionManager {
         return
       }
 
-      const livekit = await this.serverNetwork.livekit.serialize(user.id)
+      const livekit = this.serverNetwork.livekit ? await this.serverNetwork.livekit.serialize(user.id) : null
 
       const socket = new Socket({ id: user.id, ws, network: this.serverNetwork })
 
@@ -99,7 +106,7 @@ export class PlayerConnectionManager {
 
       this.serverNetwork.sockets.set(socket.id, socket)
 
-      this.serverNetwork.events.emit(EVENT.game.enter, { playerId: socket.player.data.id })
+      this.serverNetwork.world.emit(EVENT.game.enter, { playerId: socket.player.data.id })
     } catch (err) {
       logger.error('Player connection failed', { error: err.message })
     }
@@ -144,7 +151,7 @@ export class PlayerConnectionManager {
     this.serverNetwork.livekit.clearModifiers(socket.id)
     socket.player.destroy(true)
     this.serverNetwork.sockets.delete(socket.id)
-    this.serverNetwork.events.emit('exit', { playerId: socket.player.data.id })
+    this.serverNetwork.world.emit('exit', { playerId: socket.player.data.id })
   }
 
   onPlayerTeleport(socket, data) {
