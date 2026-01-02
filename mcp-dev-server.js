@@ -317,7 +317,9 @@ process.stdin.on('data', async (chunk) => {
             result: {
               protocolVersion: '2024-11-05',
               capabilities: {
-                tools: {}
+                tools: {
+                  listChanged: false
+                }
               },
               serverInfo: {
                 name: 'hyperfy-dev-server',
@@ -335,21 +337,39 @@ process.stdin.on('data', async (chunk) => {
           }) + '\n'
         );
       } else if (message.method === 'tools/call') {
-        const result = await handleToolCall(message.params.name, message.params.arguments);
-        process.stdout.write(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: message.id,
-            result: {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(result, null, 2)
-                }
-              ]
-            }
-          }) + '\n'
-        );
+        try {
+          const result = await handleToolCall(message.params.name, message.params.arguments);
+          process.stdout.write(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(result, null, 2)
+                  }
+                ]
+              }
+            }) + '\n'
+          );
+        } catch (toolError) {
+          process.stdout.write(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: toolError.message
+                  }
+                ],
+                isError: true
+              }
+            }) + '\n'
+          );
+        }
       }
     } catch (error) {
       process.stdout.write(
