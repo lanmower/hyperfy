@@ -9,7 +9,7 @@ export class AssetsLocal {
 
   async init({ rootDir, worldDir }) {
     console.log('[assets] initializing local storage')
-    this.dir = path.join(worldDir, 'assets')
+    this.dir = worldDir
     await fs.ensureDir(this.dir)
     const builtInDir = path.join(rootDir, 'src/world/assets')
     const exists = await fs.exists(builtInDir)
