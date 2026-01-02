@@ -60,6 +60,8 @@ export class PlayerInputProcessor {
     const isXR = this.playerLocal.world.xr?.session
     const { cam, control } = this.playerLocal
 
+    if (!cam) return
+
     if (isXR && !this.playerLocal.xrActive) {
       cam.zoom = 0
       this.playerLocal.xrActive = true

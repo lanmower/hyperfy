@@ -125,6 +125,17 @@ export class ServerNetwork extends BaseNetwork {
     this.core.unregisterSocket(playerId)
   }
 
+  commit() {
+    const shouldBroadcast = this.world.frame % Math.round(1 / this.world.networkRate) === 0
+    if (shouldBroadcast && this.sockets.size > 0) {
+      const snapshot = {
+        time: this.world.time,
+        frame: this.world.frame,
+      }
+      this.send('snapshot', snapshot)
+    }
+  }
+
   destroy() {
     if (this.socketIntervalId) clearInterval(this.socketIntervalId)
     this.socketManager?.destroy?.()

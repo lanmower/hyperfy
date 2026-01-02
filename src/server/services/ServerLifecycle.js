@@ -5,6 +5,37 @@ export async function startServer(fastify, port, logger, metrics, telemetry, shu
     metrics.gauge('server.port', port)
     telemetry.start()
 
+    let gameLoopId = null
+    let lastFrameTime = performance.now()
+    const TARGET_FPS = 60
+    const FRAME_TIME = 1000 / TARGET_FPS
+
+    const gameLoop = () => {
+      const now = performance.now()
+      const elapsed = now - lastFrameTime
+
+      if (elapsed >= FRAME_TIME) {
+        try {
+          world.tick(now)
+        } catch (err) {
+          logger.error('Game loop error', { error: err.message })
+        }
+        lastFrameTime = now
+      }
+
+      gameLoopId = setTimeout(gameLoop, 1)
+    }
+
+    gameLoopId = setTimeout(gameLoop, 1)
+    logger.info('Server game loop started', { targetFps: TARGET_FPS })
+
+    shutdownManager.addShutdownHandler('gameLoop', async () => {
+      if (gameLoopId) {
+        clearTimeout(gameLoopId)
+        logger.info('[SHUTDOWN] Stopping game loop')
+      }
+    }, 85)
+
     shutdownManager.addShutdownHandler('cache', async () => {
       if (world?.db?.cache) {
         logger.info('[SHUTDOWN] Closing cache')
@@ -12,13 +43,13 @@ export async function startServer(fastify, port, logger, metrics, telemetry, shu
           await world.db.cache.cache.close()
         }
       }
-    }, 90)
+    }, 80)
 
     shutdownManager.addShutdownHandler('database', async () => {
       if (world?.db) {
         logger.info('[SHUTDOWN] Closing database')
       }
-    }, 80)
+    }, 75)
 
     shutdownManager.addShutdownHandler('storage', async () => {
       if (world?.storage) {

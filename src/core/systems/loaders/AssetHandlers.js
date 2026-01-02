@@ -213,6 +213,9 @@ export class AssetHandlers extends BaseAssetHandler {
       : this.clientLoader.fetchArrayBuffer(url)
     return loadPromise.then(async buffer => {
       const glb = await this.gltfLoader.parseAsync(buffer)
+      if (!glb.userData?.vrm) {
+        throw new Error(`VRM data missing from loaded asset - VRM plugin may not have registered properly`)
+      }
       const avatar = AssetResults.createAvatar(AvatarFactory.createVRM(glb, this.setupMaterial), file, this.vrmHooks)
       this.results.set(key, avatar)
       return avatar
