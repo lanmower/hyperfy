@@ -65,7 +65,12 @@ export class CORSConfig extends BaseManager {
 
   isOriginAllowed(origin) {
     if (!origin) {
-      return process.env.NODE_ENV === 'development'
+      const env = process.env.NODE_ENV || 'development'
+      const isDev = env === 'development'
+      if (isDev && this.logger) {
+        this.logger.debug('[CORS] Allowing undefined origin in development')
+      }
+      return isDev
     }
 
     for (const allowed of this.allowedOrigins) {
@@ -89,11 +94,11 @@ export class CORSConfig extends BaseManager {
     const allowed = this.isOriginAllowed(origin)
 
     if (allowed) {
-      this.logAcceptedRequest(origin)
+      if (origin) this.logAcceptedRequest(origin)
       callback(null, true)
     } else {
       this.logRejectedRequest(origin)
-      callback(new Error(`CORS policy: Origin ${origin} not allowed`), false)
+      callback(new Error(`CORS policy: Origin ${origin || 'undefined'} not allowed`), false)
     }
   }
 

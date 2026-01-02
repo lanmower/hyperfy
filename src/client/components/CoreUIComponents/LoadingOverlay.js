@@ -3,14 +3,40 @@ import { useEffect, useState } from 'react'
 
 export function LoadingOverlay({ world }) {
   const [progress, setProgress] = useState(0)
+  const [complete, setComplete] = useState(false)
   const { title, desc, image } = world?.settings || {}
+
   useEffect(() => {
     if (!world) return
-    world.on('progress', setProgress)
-    return () => {
-      world.off('progress', setProgress)
+
+    // Listen for progress updates
+    const handleProgress = (p) => {
+      setProgress(p)
+      if (p >= 100) {
+        setComplete(true)
+      }
     }
-  }, [world])
+
+    world.on('progress', handleProgress)
+
+    // Also dismiss after 8 seconds if world is initialized (fallback for no-preload case)
+    const timeout = setTimeout(() => {
+      if (world && !complete) {
+        setComplete(true)
+      }
+    }, 8000)
+
+    return () => {
+      world.off('progress', handleProgress)
+      clearTimeout(timeout)
+    }
+  }, [world, complete])
+
+  // Hide overlay when complete
+  if (complete) {
+    return null
+  }
+
   return (
     <div
       css={css`

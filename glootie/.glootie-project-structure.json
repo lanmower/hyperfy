@@ -350,6 +350,9 @@
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
+      "hyperfy-final-test.png",
+      "hyperfy-overlay-fixed.png",
+      "hyperfy-test.png",
       "LICENSE",
       "nul",
       "package-lock.json",
@@ -758,5 +761,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767334487040
+  "lastAnalyzed": 1767335012910
 }
