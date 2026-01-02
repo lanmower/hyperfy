@@ -711,6 +711,9 @@
       "mp-walk-right.glb",
       "mp-walk.glb",
       "scene.hyp",
+      "scene.hyp.bak",
+      "test-extended-stress.mjs",
+      "test-gameplay.mjs",
       ".last-run.json",
       "2faa49a0505b0e7f143e2278e3aa4a5585cabe9e87cc850f3b9b3c1625b8ba69.glb",
       "2fecd2130b39ec39e00dce51c162247ce07500f419fbb188e0bf99b5cec415af.png",
@@ -764,5 +767,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767380560607
+  "lastAnalyzed": 1767380875803
 }

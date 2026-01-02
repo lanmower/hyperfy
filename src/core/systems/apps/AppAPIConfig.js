@@ -158,16 +158,15 @@ b.addMethod('create', (apps, entity, name, data) => {
     })
   }
 
-  if (name === 'sky') {
-    const skyNode = new NodeClasses.sky({})
-    const ctx = { world: apps.world, entity }
-    skyNode.ctx = ctx
-    const proxy = skyNode.getProxy?.() || skyNode
-    return proxy
-  }
-
   const node = entity.createNode(name, data)
-  return node.getProxy?.() || node
+  if (!node) {
+    throw new HyperfyError('NULL_REFERENCE', `Failed to create node: ${name}`, {
+      operation: 'create',
+      nodeName: name,
+    })
+  }
+  const proxy = node.getProxy?.()
+  return proxy || node
 })
 
 b.addMethod('add', (apps, entity, node) => {

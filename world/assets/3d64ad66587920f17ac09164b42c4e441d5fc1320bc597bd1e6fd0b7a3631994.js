@@ -96,22 +96,24 @@ app.configure(() => {
 
 const sky = app.create('sky')
 
-sky.bg = app.config.sky?.url
-sky.hdr = app.config.hdr?.url
-sky.rotationY = app.config.rotationY * -DEG2RAD
+if (sky) {
+  sky.bg = app.config.sky?.url
+  sky.hdr = app.config.hdr?.url
+  sky.rotationY = app.config.rotationY * -DEG2RAD
 
-const sunDirection = calculateSunDirection(
-  app.config.verticalRotation || 0,
-  app.config.horizontalRotation || 0
-)
-sky.sunDirection = sunDirection
-sky.sunIntensity = app.config.intensity
+  const sunDirection = calculateSunDirection(
+    app.config.verticalRotation || 0,
+    app.config.horizontalRotation || 0
+  )
+  sky.sunDirection = sunDirection
+  sky.sunIntensity = app.config.intensity
 
-sky.fogNear = app.config.fogNear
-sky.fogFar = app.config.fogFar
-sky.fogColor = app.config.fogColor
+  sky.fogNear = app.config.fogNear
+  sky.fogFar = app.config.fogFar
+  sky.fogColor = app.config.fogColor
 
-app.add(sky)
+  app.add(sky)
+}
 
 function calculateSunDirection(verticalDegrees, horizontalDegrees) {
   const verticalRad = verticalDegrees * DEG2RAD
