@@ -370,6 +370,17 @@ process.stdin.on('data', async (chunk) => {
             }) + '\n'
           );
         }
+      } else {
+        process.stdout.write(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: message.id,
+            error: {
+              code: -32601,
+              message: `Method not found: ${message.method}`
+            }
+          }) + '\n'
+        );
       }
     } catch (error) {
       process.stdout.write(
