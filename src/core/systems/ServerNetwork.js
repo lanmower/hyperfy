@@ -99,15 +99,7 @@ export class ServerNetwork extends BaseNetwork {
 
   async onConnection(ws, params) {
     logger.info('Player connecting', { params })
-    const playerId = this.playerConnectionManager.createPlayerId()
-    const connConfig = {
-      id: playerId,
-      ws,
-      params,
-      protocol: this.protocol,
-      handlers: serverNetworkHandlers,
-    }
-    return await this.playerConnectionManager.handleConnection(connConfig)
+    return await this.playerConnectionManager.onConnection(ws, params)
   }
 
   onDisconnection(playerId) {

@@ -8,11 +8,9 @@ export async function registerWorldNetwork(fastify, world, logger, shutdownManag
       }
 
       logger.info('WS Connection received')
-      errorTracker.addBreadcrumb('WebSocket Connection', { query: req.query })
-      shutdownManager.registerWebSocket(ws)
 
       ws.on('close', () => {
-        shutdownManager.unregisterWebSocket(ws)
+        logger.info('WS Connection closed')
       })
 
       world.network.onConnection(ws, req.query)
