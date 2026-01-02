@@ -367,3 +367,11 @@ process.stdin.on('end', () => {
   }
   process.exit(0);
 });
+
+process.on('uncaughtException', (error) => {
+  process.exit(1);
+});
+
+process.on('unhandledRejection', () => {
+  process.exit(1);
+});
