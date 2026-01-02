@@ -6,6 +6,7 @@ import { APIConfigBuilder } from '../../utils/api/index.js'
 import { ValidationHelper } from '../../utils/api/ValidationHelper.js'
 import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
+import { HyperfyError } from '../../../server/utils/errors/index.js'
 import { FILE_TYPES } from './FieldTypeConstants.js'
 
 const logger = new StructuredLogger('AppAPIConfig')
@@ -165,8 +166,7 @@ b.addMethod('create', (apps, entity, name, data) => {
       nodeName: name,
     })
   }
-  const proxy = node.getProxy?.()
-  return proxy || node
+  return typeof node.getProxy === 'function' ? node.getProxy() : node
 })
 
 b.addMethod('add', (apps, entity, node) => {
