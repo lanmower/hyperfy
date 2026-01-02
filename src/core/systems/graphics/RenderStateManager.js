@@ -22,9 +22,9 @@ export class RenderStateManager {
     renderer.outputColorSpace = THREE.SRGBColorSpace
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
     THREE.Texture.DEFAULT_ANISOTROPY = maxAnisotropy
-    this.width = viewport.offsetWidth
-    this.height = viewport.offsetHeight
-    this.aspect = this.width / this.height
+    this.width = viewport.offsetWidth || window.innerWidth
+    this.height = viewport.offsetHeight || window.innerHeight
+    this.aspect = this.width / this.height || 1
     return maxAnisotropy
   }
 

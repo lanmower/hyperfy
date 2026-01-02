@@ -6,18 +6,6 @@ import { RenderStateManager } from './graphics/RenderStateManager.js'
 import { ViewportResizer } from './graphics/ViewportResizer.js'
 import { XRGraphicsAdapter } from './graphics/XRGraphicsAdapter.js'
 
-let gRenderer
-
-function getRenderer() {
-  if (!gRenderer) {
-    gRenderer = new THREE.WebGLRenderer({
-      powerPreference: 'high-performance',
-      antialias: true,
-    })
-  }
-  return gRenderer
-}
-
 export class ClientGraphics extends System {
   static DEPS = {
     camera: 'camera',
@@ -35,7 +23,10 @@ export class ClientGraphics extends System {
 
   constructor(world) {
     super(world)
-    this.renderer = getRenderer()
+    this.renderer = new THREE.WebGLRenderer({
+      powerPreference: 'high-performance',
+      antialias: true,
+    })
     this.viewport = null
     this.renderState = new RenderStateManager()
     this.resizer = null
@@ -48,7 +39,9 @@ export class ClientGraphics extends System {
 
   async init({ viewport }) {
     this.viewport = viewport
-    this.renderer.setSize(viewport.offsetWidth, viewport.offsetHeight)
+    const width = viewport.offsetWidth || window.innerWidth
+    const height = viewport.offsetHeight || window.innerHeight
+    this.renderer.setSize(width, height)
     this.maxAnisotropy = this.renderState.initialize(this.renderer, viewport, this.prefs.state.get('dpr'))
     this.renderState.initializeXR(this.renderer)
     this.viewport.appendChild(this.renderer.domElement)

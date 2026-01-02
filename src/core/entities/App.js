@@ -275,7 +275,7 @@ export class App extends BaseEntity {
     this.utilities = null
     this.world.entities.remove(this.data.id)
     if (local) {
-      this.world.network.send('entityRemoved', this.data.id)
+      this.world.network.send('entityRemoved', { id: this.data.id })
     }
   }
 

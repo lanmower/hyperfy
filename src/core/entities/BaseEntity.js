@@ -103,7 +103,7 @@ export class BaseEntity {
     this.events.clear()
     this.state = {}
     if (local && this.world?.network) {
-      this.world.network.send('entityRemoved', this.data.id)
+      this.world.network.send('entityRemoved', { id: this.data.id })
     }
   }
 

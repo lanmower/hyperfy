@@ -179,14 +179,14 @@ export class PlayerRemote extends BaseEntity {
     this.base?.deactivate?.()
     this.avatar?.deactivate?.()
     this.avatar = null
-    this.world.setHot(this, false)
-    this.world.events.emit(EVENT.game.leave, { playerId: this.data.id })
+    this.world.setHot?.(this, false)
+    this.world.events?.emit(EVENT.game.leave, { playerId: this.data.id })
     this.aura?.deactivate?.()
     this.aura = null
 
     this.world.entities.remove(this.data.id)
     if (local) {
-      this.world.network.send('entityRemoved', this.data.id)
+      this.world.network.send('entityRemoved', { id: this.data.id })
     }
   }
 }

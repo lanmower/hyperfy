@@ -42,6 +42,12 @@ export function Client({ wsUrl, onSetup }) {
       console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl })
       onSetup?.(world, config)
       await world.init(config)
+
+      const tick = (time) => {
+        world.tick(time)
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
     }
     init()
   }, [])

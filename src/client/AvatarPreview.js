@@ -26,18 +26,6 @@ const v1 = new THREE.Vector3()
 const v2 = new THREE.Vector3()
 const v3 = new THREE.Vector3()
 
-let renderer = null
-function getRenderer() {
-  if (!renderer) {
-    renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: 'high-performance',
-      alpha: true,
-    })
-  }
-  return renderer
-}
-
 export class AvatarPreview {
   constructor(world, viewport) {
     this.world = world
@@ -52,7 +40,11 @@ export class AvatarPreview {
     this.sun.target.position.copy(this.camera.position)
     this.scene.add(this.sun)
     this.scene.add(this.sun.target)
-    this.renderer = getRenderer()
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance',
+      alpha: true,
+    })
     this.renderer.setClearColor(0xffffff, 0)
     this.renderer.setPixelRatio(window.devicePixelRatio || 1)
     this.renderer.setSize(this.size.width, this.size.height)
