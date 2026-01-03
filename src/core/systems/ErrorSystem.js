@@ -40,7 +40,7 @@ export class ErrorSystem extends System {
     if (this.errors.length > this.maxErrors) this.errors.shift()
 
     this.updateStats(errorEntry)
-    console.error(`[${errorEntry.side}] ${errorEntry.message}`, error)
+    logger.error('Error reported', { side: errorEntry.side, message: errorEntry.message, code: errorEntry.code })
 
     this.notifyListeners(errorEntry)
 

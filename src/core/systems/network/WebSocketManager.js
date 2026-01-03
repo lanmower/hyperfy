@@ -2,6 +2,12 @@ import { storage } from '../../storage.js'
 import { TimeoutConfig } from '../../config/TimeoutConfig.js'
 import { BaseManager } from '../../patterns/index.js'
 
+const RECONNECT_DELAY_MS = 1000
+const MAX_RECONNECT_ATTEMPTS = 10
+const MESSAGE_SEQUENCE_MODULO = 65536
+const WS_NORMAL_CLOSE = 1000
+const WS_POLICY_VIOLATION = 1008
+
 export class WebSocketManager extends BaseManager {
   constructor(network) {
     super(null, 'WebSocketManager')
@@ -16,8 +22,8 @@ export class WebSocketManager extends BaseManager {
     this.avatar = null
     this.isReconnecting = false
     this.reconnectAttempts = 0
-    this.maxReconnectAttempts = 10
-    this.reconnectDelay = 1000
+    this.maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS
+    this.reconnectDelay = RECONNECT_DELAY_MS
     this.reconnectTimeout = null
     this.invalidMessageCount = 0
     this.invalidMessageWindow = Date.now()
@@ -140,7 +146,7 @@ export class WebSocketManager extends BaseManager {
 
         if (this.trackInvalidMessage()) {
           this.logger.error('[SECURITY] Too many invalid messages, disconnecting')
-          this.ws?.close(1008, 'Invalid message threshold exceeded')
+          this.ws?.close(WS_POLICY_VIOLATION, 'Invalid message threshold exceeded')
           return
         }
 
@@ -149,13 +155,13 @@ export class WebSocketManager extends BaseManager {
 
       const sequenceInfo = this.extractSequenceFromPacket(e.data)
       if (sequenceInfo && this.expectedSequence > 0) {
-        const gap = (sequenceInfo.sequence - this.expectedSequence + 65536) % 65536
+        const gap = (sequenceInfo.sequence - this.expectedSequence + MESSAGE_SEQUENCE_MODULO) % MESSAGE_SEQUENCE_MODULO
         if (gap > 0 && gap < 256) {
           this.logger.warn('Message sequence gap detected', { expected: this.expectedSequence, received: sequenceInfo.sequence, gap })
         }
       }
       if (sequenceInfo) {
-        this.expectedSequence = (sequenceInfo.sequence + 1) % 65536
+        this.expectedSequence = (sequenceInfo.sequence + 1) % MESSAGE_SEQUENCE_MODULO
         e.data = sequenceInfo.payload
       }
 
@@ -197,7 +203,7 @@ export class WebSocketManager extends BaseManager {
       this.network.protocol.isConnected = false
       this.network.onClose?.(e.code)
 
-      if (!this.isReconnecting && e.code !== 1000) {
+      if (!this.isReconnecting && e.code !== WS_NORMAL_CLOSE) {
         this.scheduleReconnect()
       }
     }
@@ -257,7 +263,7 @@ export class WebSocketManager extends BaseManager {
       return false
     }
 
-    this.messageSequence = (this.messageSequence + 1) % 65536
+    this.messageSequence = (this.messageSequence + 1) % MESSAGE_SEQUENCE_MODULO
 
     if (this.ws.readyState === WebSocket.OPEN) {
       const sequencedPacket = this.addSequenceToPacket(packet, this.messageSequence)
@@ -341,7 +347,7 @@ export class WebSocketManager extends BaseManager {
       if (this.errorHandler) this.ws.removeEventListener('error', this.errorHandler)
 
       if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-        this.ws.close(1000, 'Client disconnecting')
+        this.ws.close(WS_NORMAL_CLOSE, 'Client disconnecting')
       }
       this.ws = null
     }

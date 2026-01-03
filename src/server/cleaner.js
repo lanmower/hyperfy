@@ -1,7 +1,10 @@
 import { createAssets } from './assets.js'
+import { StructuredLogger } from '../core/utils/logging/index.js'
+
+const logger = new StructuredLogger('Cleaner')
 
 export async function cleanOrphanedAssets(db, config, dryRun = true) {
-  console.log('[cleaner] scanning for orphaned assets')
+  logger.info('Scanning for orphaned assets', { context: 'Asset cleanup' })
 
   const assets = createAssets(config)
   await assets.init(config)
@@ -27,14 +30,14 @@ export async function cleanOrphanedAssets(db, config, dryRun = true) {
   const allAssets = await assets.list()
   const orphaned = Array.from(allAssets).filter(asset => !referencedAssets.has(asset))
 
-  console.log(`[cleaner] found ${orphaned.length} orphaned assets out of ${allAssets.size} total`)
+  logger.info('Asset scan complete', { orphaned: orphaned.length, total: allAssets.size })
 
   if (dryRun) {
-    console.log('[cleaner] dry-run mode - no assets deleted')
+    logger.info('Dry-run mode - no assets deleted', { context: 'Asset cleanup' })
     return { success: true, orphaned, dryRun: true }
   }
 
   const result = await assets.delete(orphaned)
-  console.log(`[cleaner] deleted ${result.removed} assets (${result.freed} bytes freed)`)
+  logger.info('Assets deleted', { removed: result.removed, freed: result.freed })
   return result
 }

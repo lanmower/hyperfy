@@ -79,8 +79,9 @@ export class Client extends System {
 
   onVisibilityChange = () => {
     if (!worker) {
+      const WORKER_RATE = 1000 / 5
       const script = `
-        const rate = 1000 / 5 // 5 FPS
+        const rate = ${WORKER_RATE}
         let intervalId = null;
         self.onmessage = e => {
           if (e.data === 'start' && !intervalId) {
@@ -95,7 +96,9 @@ export class Client extends System {
         }
       `
       const blob = new Blob([script], { type: 'application/javascript' })
-      worker = new Worker(URL.createObjectURL(blob))
+      const blobUrl = URL.createObjectURL(blob)
+      worker = new Worker(blobUrl)
+      URL.revokeObjectURL(blobUrl)
       worker.onmessage = () => {
         const time = performance.now()
         this.tick(time)

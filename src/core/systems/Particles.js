@@ -118,6 +118,8 @@ export class Particles extends System {
 
   destroy() {
     if (this.worker) {
+      this.worker.onmessage = null
+      this.worker.onerror = null
       this.worker.terminate()
       this.worker = null
     }
