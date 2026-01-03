@@ -42,53 +42,18 @@ export class ClientNetwork extends BaseNetwork {
     this.handlers = createClientNetworkHandlers(this)
   }
 
-  get id() {
-    return this.networkState.id
-  }
-
-  set id(value) {
-    this.networkState.id = value
-  }
-
-  get apiUrl() {
-    return this.networkState.apiUrl
-  }
-
-  set apiUrl(value) {
-    this.networkState.apiUrl = value
-  }
-
-  get maxUploadSize() {
-    return this.networkState.maxUploadSize
-  }
-
-  set maxUploadSize(value) {
-    this.networkState.maxUploadSize = value
-  }
-
-  get offlineMode() {
-    return this.networkState.offlineMode
-  }
-
-  set offlineMode(value) {
-    this.networkState.offlineMode = value
-  }
-
-  get initialized() {
-    return this.networkState.initialized
-  }
-
-  set initialized(value) {
-    this.networkState.initialized = value
-  }
-
-  get isClient() {
-    return true
-  }
-
-  get serverTimeOffset() {
-    return this.networkState.serverTimeOffset
-  }
+  get id() { return this.networkState.id }
+  set id(value) { this.networkState.id = value }
+  get apiUrl() { return this.networkState.apiUrl }
+  set apiUrl(value) { this.networkState.apiUrl = value }
+  get maxUploadSize() { return this.networkState.maxUploadSize }
+  set maxUploadSize(value) { this.networkState.maxUploadSize = value }
+  get offlineMode() { return this.networkState.offlineMode }
+  set offlineMode(value) { this.networkState.offlineMode = value }
+  get initialized() { return this.networkState.initialized }
+  set initialized(value) { this.networkState.initialized = value }
+  get isClient() { return true }
+  get serverTimeOffset() { return this.networkState.serverTimeOffset }
 
   init({ wsUrl, name, avatar }) {
     if (this.networkState.initialized) {
