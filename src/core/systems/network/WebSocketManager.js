@@ -124,8 +124,8 @@ export class WebSocketManager extends BaseManager {
   setupEventHandlers() {
     this.messageHandler = e => {
       this.lastActivityTime = Date.now()
-      this.reconnectAttempts = 0
-      this.isReconnecting = false
+      // Only reset reconnect flag in openHandler, not here, to prevent race conditions
+      // Setting isReconnecting = false here while reconnect is in progress corrupts state
 
       const validation = this.validateMessage(e.data)
       if (!validation.valid) {
@@ -155,7 +155,12 @@ export class WebSocketManager extends BaseManager {
       this.lastActivityTime = Date.now()
       this.setupInactivityMonitor()
 
-      if (this.isReconnecting) {
+      const wasReconnecting = this.isReconnecting
+      // Clear reconnecting flag FIRST to ensure atomic state transition
+      this.isReconnecting = false
+      this.reconnectAttempts = 0
+
+      if (wasReconnecting) {
         this.logger.info('Reconnected successfully, clearing stale queue and requesting full snapshot')
         // Clear stale messages from queue during disconnection to prevent state corruption
         const staleCount = this.messageQueue.length
@@ -168,7 +173,6 @@ export class WebSocketManager extends BaseManager {
         // On initial connection, flush any queued messages
         this.flushMessageQueue()
       }
-      this.reconnectAttempts = 0
     }
 
     this.closeHandler = e => {
