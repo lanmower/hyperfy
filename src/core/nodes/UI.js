@@ -3,26 +3,16 @@ import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import Yoga from 'yoga-layout'
 
 import { Node } from './Node.js'
-import { StructuredLogger } from '../utils/logging/index.js'
-
-const logger = new StructuredLogger('UI')
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
-import {
-  isAlignContent,
-  isAlignItem,
-  isFlexDirection,
-  isFlexWrap,
-  isJustifyContent,
-} from '../extras/yoga.js'
+import { isAlignContent, isAlignItem, isFlexDirection, isFlexWrap, isJustifyContent } from '../extras/yoga.js'
 import { UIRenderer } from './ui/UIRenderer.js'
 import { isBillboard, isPivot, isSpace, isEdge, isScaler } from '../validation/TypeValidators.js'
-import { UIHelper } from '../utils/helpers/Helpers.js'
-const { getPivotOffset } = UIHelper
 import { UILayoutManager } from './ui/UILayoutManager.js'
 import { UIBillboardController } from './ui/UIBillboardController.js'
 import { StateInitializer } from './base/StateInitializer.js'
+import { UILayoutCalculations } from './UILayout.js'
 
 const isBrowser = typeof window !== 'undefined'
 
@@ -94,11 +84,11 @@ export class UI extends Node {
     initializeNode(this, 'ui', propertySchema, {}, data)
     this._offset = new THREE.Vector3().fromArray(data.offset || defaults.offset)
     StateInitializer.mergeState(this, StateInitializer.initRenderingState())
-
     this.ui = this
     this.renderer = new UIRenderer(this)
     this.layoutManager = new UILayoutManager(this)
     this.billboardController = new UIBillboardController(this)
+    this.layout = new UILayoutCalculations(this)
     this._offset._onChange = () => this.rebuild()
   }
 
