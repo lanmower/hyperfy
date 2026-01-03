@@ -5,6 +5,11 @@ const logger = new StructuredLogger('WorldTickLoop')
 export class WorldTickLoop {
   constructor(world) {
     this.world = world
+    this.systems = []
+  }
+
+  registerSystem(system) {
+    this.systems.push(system)
   }
 
   tick = time => {
@@ -36,8 +41,7 @@ export class WorldTickLoop {
   }
 
   invokeSystemLifecycle(method, ...args) {
-    for (const key in this.world) {
-      const system = this.world[key]
+    for (const system of this.systems) {
       system?.[method]?.(...args)
     }
   }

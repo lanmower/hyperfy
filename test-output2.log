@@ -1,0 +1,36 @@
+[dev-server] Starting development server on port 3003...
+[AssetsS3] AWS SDK not available
+[AssetsS3] AWS SDK not available
+[AssetsS3] AWS SDK not available - S3 storage disabled
+[2026-01-03T13:45:50.894Z] [INFO] [CORSConfig] Initializing CORSConfig
+[2026-01-03T13:45:50.896Z] [INFO] [CORSConfig] CORSConfig initialized
+[2026-01-03T13:45:50.897Z] [INFO] [CircuitBreakerManager] Circuit breaker registered {"name":"database","options":{"failureThreshold":5,"successThreshold":2,"timeout":60000}}
+[2026-01-03T13:45:50.897Z] [INFO] [CircuitBreakerManager] Circuit breaker registered {"name":"storage","options":{"failureThreshold":5,"successThreshold":2,"timeout":60000}}
+[2026-01-03T13:45:50.897Z] [INFO] [CircuitBreakerManager] Circuit breaker registered {"name":"websocket","options":{"failureThreshold":10,"successThreshold":3,"timeout":30000}}
+[2026-01-03T13:45:50.897Z] [INFO] [CircuitBreakerManager] Circuit breaker registered {"name":"upload","options":{"failureThreshold":5,"successThreshold":2,"timeout":90000}}
+[2026-01-03T13:45:50.897Z] [INFO] [Server] Initializing server...
+[13:45:50] INFO     Initializing server...
+[2026-01-03T13:45:50.964Z] [WARN] [Scripts] SECURITY BOUNDARY: No SES Compartment available, using unvetted Function() sandbox {"context":"FallbackCompartment initialization","hasSES":false}
+[2026-01-03T13:45:50.965Z] [ERROR] [Scripts] SECURITY BOUNDARY: Script execution without SES sandbox {"context":"SecureCompartment initialization","sandboxStatus":"FALLBACK","risk":"Prototype pollution possible if validation bypassed"}
+[2026-01-03T13:45:50.965Z] [INFO] [World] World.init() called {"assetsUrl":"http://localhost:3000/assets","assetsDir":"C:\\dev\\hyperfy\\world\\assets"}
+[2026-01-03T13:45:50.966Z] [INFO] [Server] Server initialization complete {"entities":0,"blueprints":0}
+[13:45:50] INFO     Server initialization complete
+[2026-01-03T13:45:50.966Z] [INFO] [PluginManager] Initializing PluginManager
+[2026-01-03T13:45:51.023Z] [INFO] [Server] [CORS] CORS configuration registered {"origins":3,"methods":6}
+[13:45:51] INFO     [CORS] CORS configuration registered
+[2026-01-03T13:45:51.023Z] [INFO] [PluginManager] PluginManager initialized
+[assets] initializing local storage
+[2026-01-03T13:45:51.046Z] [INFO] [ServerLifecycleManager] Adding blueprint from collection {"blueprintId":"1gBgzpneVh"}
+[2026-01-03T13:45:51.051Z] [INFO] [ServerLifecycleManager] Adding blueprint from collection {"blueprintId":"58UBIq2DWs"}
+[2026-01-03T13:45:51.052Z] [INFO] [ServerLifecycleManager] Adding blueprint from collection {"blueprintId":"dLZuSHmCTC"}
+[2026-01-03T13:45:51.053Z] [INFO] [ServerLifecycleManager] Adding blueprint from collection {"blueprintId":"2C4uMiZplQ"}
+[2026-01-03T13:45:51.083Z] [INFO] [Server] HMR server initialized
+[13:45:51] INFO     HMR server initialized
+[2026-01-03T13:45:51.100Z] [INFO] [Server] Server running on port 3003 {"port":"3003","env":"development"}
+[13:45:51] INFO     Server running on port 3003
+[2026-01-03T13:45:51.100Z] [INFO] [Server] Telemetry started (batch interval: 60000ms)
+[13:45:51] INFO     Telemetry started (batch interval: 60000ms)
+[2026-01-03T13:45:51.100Z] [INFO] [Server] Server game loop started {"targetFps":60}
+[13:45:51] INFO     Server game loop started
+[2026-01-03T13:45:51.101Z] [INFO] [Server] AI provider health checks and telemetry started
+[13:45:51] INFO     AI provider health checks and telemetry started

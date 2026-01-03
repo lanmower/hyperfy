@@ -49,6 +49,7 @@ export class World extends EventEmitter {
   register(key, System) {
     const system = new System(this)
     this[key] = system
+    this.tickLoop.registerSystem(system)
     return system
   }
 
