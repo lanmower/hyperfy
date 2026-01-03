@@ -227,6 +227,10 @@ export class ClientNetwork extends BaseNetwork {
         }
       } else {
         // Uncompressed but still wrapped in envelope - unwrap it
+        if (data.data === undefined) {
+          logger.error('Uncompressed envelope missing data field', { method })
+          return
+        }
         finalData = data.data
         logger.info('Unwrapped uncompressed envelope', {
           method,

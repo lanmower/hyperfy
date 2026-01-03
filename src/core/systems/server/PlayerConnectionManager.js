@@ -165,14 +165,17 @@ export class PlayerConnectionManager {
   }
 
   onPlayerTeleport(socket, data) {
+    if (!data || !data.networkId) return
     this.serverNetwork.sendTo(data.networkId, 'playerTeleport', data)
   }
 
   onPlayerPush(socket, data) {
+    if (!data || !data.networkId) return
     this.serverNetwork.sendTo(data.networkId, 'playerPush', data)
   }
 
   onPlayerSessionAvatar(socket, data) {
+    if (!data || !data.avatar) return
     this.serverNetwork.sendTo(data.networkId, 'playerSessionAvatar', data.avatar)
   }
 }
