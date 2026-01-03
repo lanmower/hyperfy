@@ -180,6 +180,15 @@ export class VideoFactory extends BaseFactory {
         }
         return source.createHandle()
       },
+      cleanup() {
+        for (const key in sources) {
+          const source = sources[key]
+          if (source) {
+            const handle = source.createHandle()
+            handle.release()
+          }
+        }
+      }
     }
   }
 }
