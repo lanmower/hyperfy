@@ -268,50 +268,61 @@ export class ClientNetwork extends BaseNetwork {
       return
     }
 
+    if (!data.id || typeof data.serverTime !== 'number') {
+      logger.error('Snapshot missing required fields', {
+        hasId: !!data.id,
+        serverTimeType: typeof data.serverTime,
+        idType: typeof data.id,
+      })
+      return
+    }
+
     this.id = data.id
     this.serverTimeOffset = data.serverTime - performance.now()
-    this.apiUrl = data.apiUrl
-    this.maxUploadSize = data.maxUploadSize
-    this.world.assetsUrl = data.assetsUrl
+    this.apiUrl = data.apiUrl || ''
+    this.maxUploadSize = data.maxUploadSize || 0
+    this.world.assetsUrl = data.assetsUrl || ''
 
-    if (data.settings && data.settings.avatar) {
-      this.world.loader.preload('avatar', data.settings.avatar.url)
-    }
+    if (this.world.loader) {
+      if (data.settings && data.settings.avatar) {
+        this.world.loader.preload('avatar', data.settings.avatar.url)
+      }
 
-    for (const item of data.blueprints || []) {
-      if (item.preload && !item.disabled) {
-        if (item.model) {
-          const type = item.model.endsWith('.vrm') ? 'avatar' : 'model'
-          this.world.loader.preload(type, item.model)
+      for (const item of data.blueprints || []) {
+        if (item.preload && !item.disabled) {
+          if (item.model) {
+            const type = item.model.endsWith('.vrm') ? 'avatar' : 'model'
+            this.world.loader.preload(type, item.model)
+          }
+          if (item.script) {
+            this.world.loader.preload('script', item.script)
+          }
+          for (const value of Object.values(item.props || {})) {
+            if (value === undefined || value === null || !value?.url || !value?.type) continue
+            this.world.loader.preload(value.type, value.url)
+          }
         }
-        if (item.script) {
-          this.world.loader.preload('script', item.script)
+      }
+
+      for (const item of data.entities || []) {
+        if (item.type === 'player' && item.owner === this.id) {
+          const url = item.sessionAvatar || item.avatar
+          this.world.loader.preload('avatar', url)
         }
-        for (const value of Object.values(item.props || {})) {
-          if (value === undefined || value === null || !value?.url || !value?.type) continue
-          this.world.loader.preload(value.type, value.url)
-        }
+      }
+
+      if (this.world.loader.execPreload) {
+        this.world.loader.execPreload()
       }
     }
 
-    for (const item of data.entities || []) {
-      if (item.type === 'player' && item.owner === this.id) {
-        const url = item.sessionAvatar || item.avatar
-        this.world.loader.preload('avatar', url)
-      }
-    }
-
-    if (this.world.loader && this.world.loader.execPreload) {
-      this.world.loader.execPreload()
-    }
-
-    this.world.collections.deserialize(data.collections)
-    this.world.settings.deserialize(data.settings)
-    this.world.settings.setHasAdminCode(data.hasAdminCode)
-    this.world.chat.deserialize(data.chat)
-    this.world.blueprints.deserialize(data.blueprints)
-    this.world.entities.deserialize(data.entities)
-    this.world.livekit?.deserialize(data.livekit)
+    if (data.collections) this.world.collections.deserialize(data.collections)
+    if (data.settings) this.world.settings.deserialize(data.settings)
+    if (data.hasAdminCode !== undefined) this.world.settings.setHasAdminCode(data.hasAdminCode)
+    if (data.chat) this.world.chat.deserialize(data.chat)
+    if (data.blueprints) this.world.blueprints.deserialize(data.blueprints)
+    if (data.entities) this.world.entities.deserialize(data.entities)
+    if (data.livekit) this.world.livekit?.deserialize(data.livekit)
     storage.set('authToken', data.authToken)
 
     logger.info('Full snapshot received', { id: this.id })
