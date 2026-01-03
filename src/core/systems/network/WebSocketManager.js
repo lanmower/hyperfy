@@ -1,10 +1,12 @@
 import { storage } from '../../storage.js'
 import { TimeoutConfig } from '../../config/TimeoutConfig.js'
 import { BaseManager } from '../../patterns/index.js'
+import { WebSocketReconnectManager } from './WebSocketReconnectManager.js'
+import { WebSocketMessageQueue } from './WebSocketMessageQueue.js'
+import { WebSocketValidator } from './WebSocketValidator.js'
+import { WebSocketInactivityMonitor } from './WebSocketInactivityMonitor.js'
+import { WebSocketEventHandlers } from './WebSocketEventHandlers.js'
 
-const RECONNECT_DELAY_MS = 1000
-const MAX_RECONNECT_ATTEMPTS = 10
-const MESSAGE_SEQUENCE_MODULO = 65536
 const WS_NORMAL_CLOSE = 1000
 const WS_POLICY_VIOLATION = 1008
 
@@ -20,19 +22,11 @@ export class WebSocketManager extends BaseManager {
     this.wsUrl = null
     this.name = null
     this.avatar = null
-    this.isReconnecting = false
-    this.reconnectAttempts = 0
-    this.maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS
-    this.reconnectDelay = RECONNECT_DELAY_MS
-    this.reconnectTimeout = null
-    this.invalidMessageCount = 0
-    this.invalidMessageWindow = Date.now()
-    this.lastActivityTime = Date.now()
-    this.messageQueue = []
-    this.inactivityTimer = null
+    this.reconnectManager = new WebSocketReconnectManager(this.logger)
+    this.messageQueue = new WebSocketMessageQueue(this.logger)
+    this.validator = new WebSocketValidator(this.logger)
+    this.inactivityMonitor = new WebSocketInactivityMonitor(this.logger)
     this.requestTimeouts = new Map()
-    this.messageSequence = 0
-    this.expectedSequence = 0
   }
 
   init(wsUrl, name, avatar) {
@@ -58,8 +52,8 @@ export class WebSocketManager extends BaseManager {
 
     this.logger.info('Creating WebSocket', {
       url,
-      isReconnecting: this.isReconnecting,
-      attempt: this.reconnectAttempts
+      isReconnecting: this.reconnectManager.isReconnecting,
+      attempt: this.reconnectManager.reconnectAttempts
     })
 
     try {
@@ -80,141 +74,18 @@ export class WebSocketManager extends BaseManager {
     if (this.errorHandler) this.ws.removeEventListener('error', this.errorHandler)
   }
 
-  validateMessage(data) {
-    if (!(data instanceof ArrayBuffer)) {
-      this.logger.error('[SECURITY] Invalid message type, expected ArrayBuffer:', typeof data)
-      return { valid: false, error: 'Invalid message type' }
-    }
-
-    if (data.byteLength > TimeoutConfig.websocket.maxMessageSize) {
-      this.logger.error('[SECURITY] Message size exceeds limit:', { actual: data.byteLength, max: TimeoutConfig.websocket.maxMessageSize })
-      return { valid: false, error: 'Message too large' }
-    }
-
-    if (data.byteLength === 0) {
-      this.logger.error('[SECURITY] Empty message received')
-      return { valid: false, error: 'Empty message' }
-    }
-
-    return { valid: true }
-  }
-
-  trackInvalidMessage() {
-    const now = Date.now()
-    if (now - this.invalidMessageWindow > TimeoutConfig.websocket.invalidMessageWindow) {
-      this.invalidMessageCount = 0
-      this.invalidMessageWindow = now
-    }
-
-    this.invalidMessageCount++
-    if (this.invalidMessageCount > TimeoutConfig.websocket.invalidMessageThreshold) {
-      this.logger.error('[SECURITY] Invalid message threshold exceeded', { count: this.invalidMessageCount, window: TimeoutConfig.websocket.invalidMessageWindow })
-      return true
-    }
-
-    return false
-  }
-
   setupInactivityMonitor() {
-    if (this.inactivityTimer) {
-      clearInterval(this.inactivityTimer)
-    }
-
-    this.inactivityTimer = setInterval(() => {
-      const now = Date.now()
-      if (now - this.lastActivityTime > TimeoutConfig.websocket.inactivityTimeout) {
-        this.logger.info('Inactivity timeout, reconnecting')
-        this.scheduleReconnect()
-      }
-    }, TimeoutConfig.websocket.inactivityCheckInterval)
+    this.inactivityMonitor.start(() => {
+      this.scheduleReconnect()
+    })
   }
 
   setupEventHandlers() {
-    this.messageHandler = e => {
-      this.lastActivityTime = Date.now()
-      // Only reset reconnect flag in openHandler, not here, to prevent race conditions
-      // Setting isReconnecting = false here while reconnect is in progress corrupts state
-
-      const validation = this.validateMessage(e.data)
-      if (!validation.valid) {
-        this.logger.error('[SECURITY] Message validation failed', {
-          error: validation.error,
-          size: e.data?.byteLength || 0,
-          type: typeof e.data,
-          preview: e.data instanceof ArrayBuffer ? new Uint8Array(e.data.slice(0, 100)) : null
-        })
-
-        if (this.trackInvalidMessage()) {
-          this.logger.error('[SECURITY] Too many invalid messages, disconnecting')
-          this.ws?.close(WS_POLICY_VIOLATION, 'Invalid message threshold exceeded')
-          return
-        }
-
-        return
-      }
-
-      const sequenceInfo = this.extractSequenceFromPacket(e.data)
-      if (sequenceInfo && this.expectedSequence > 0) {
-        const gap = (sequenceInfo.sequence - this.expectedSequence + MESSAGE_SEQUENCE_MODULO) % MESSAGE_SEQUENCE_MODULO
-        if (gap > 0 && gap < 256) {
-          this.logger.warn('Message sequence gap detected', { expected: this.expectedSequence, received: sequenceInfo.sequence, gap })
-        }
-      }
-      if (sequenceInfo) {
-        this.expectedSequence = (sequenceInfo.sequence + 1) % MESSAGE_SEQUENCE_MODULO
-        e.data = sequenceInfo.payload
-      }
-
-      this.logger.info('Message received', { size: e.data.byteLength })
-      this.network.onPacket(e)
-    }
-
-    this.openHandler = () => {
-      this.logger.info('WebSocket opened')
-      this.network.protocol.isConnected = true
-      this.lastActivityTime = Date.now()
-      this.setupInactivityMonitor()
-
-      const wasReconnecting = this.isReconnecting
-      // Clear reconnecting flag FIRST to ensure atomic state transition
-      this.isReconnecting = false
-      this.reconnectAttempts = 0
-
-      if (wasReconnecting) {
-        this.logger.info('Reconnected successfully, clearing stale state and requesting full snapshot')
-        // Clear stale messages from queue during disconnection to prevent state corruption
-        const staleCount = this.messageQueue.length
-        this.messageQueue = []
-        if (staleCount > 0) {
-          this.logger.warn('Cleared stale messages from queue', { count: staleCount })
-        }
-        // Clear pending request timeouts that were scheduled during disconnection
-        this.requestTimeouts.forEach(timer => clearTimeout(timer))
-        this.requestTimeouts.clear()
-        this.network.onReconnect?.()
-      } else {
-        // On initial connection, flush any queued messages
-        this.flushMessageQueue()
-      }
-    }
-
-    this.closeHandler = e => {
-      this.logger.info('WebSocket closed', { code: e.code, wasClean: e.wasClean })
-      this.network.protocol.isConnected = false
-      this.network.onClose?.(e.code)
-
-      if (!this.isReconnecting && e.code !== WS_NORMAL_CLOSE) {
-        this.scheduleReconnect()
-      }
-    }
-
-    this.errorHandler = e => {
-      this.logger.error('WebSocket error', e)
-      this.network.protocol.isConnected = false
-      if (!this.isReconnecting) {
-        this.scheduleReconnect()
-      }
-    }
+    const handlers = new WebSocketEventHandlers(this)
+    this.messageHandler = handlers.createMessageHandler()
+    this.openHandler = handlers.createOpenHandler()
+    this.closeHandler = handlers.createCloseHandler()
+    this.errorHandler = handlers.createErrorHandler()
 
     if (this.ws) {
       this.ws.addEventListener('message', this.messageHandler)
@@ -225,31 +96,9 @@ export class WebSocketManager extends BaseManager {
   }
 
   scheduleReconnect() {
-    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        this.logger.error('Max reconnection attempts reached, reloading page')
-        window.location.reload()
-      }
-      return
-    }
-
-    this.isReconnecting = true
-    this.reconnectAttempts++
-
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), TimeoutConfig.websocket.maxReconnectBackoff)
-    this.logger.info('Scheduling reconnection attempt', {
-      attempt: this.reconnectAttempts,
-      delay,
-      maxAttempts: this.maxReconnectAttempts
-    })
-
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-    }
-
-    this.reconnectTimeout = setTimeout(() => {
+    this.reconnectManager.scheduleReconnect(() => {
       this.connect()
-    }, delay)
+    })
   }
 
   send(packet) {
@@ -258,67 +107,36 @@ export class WebSocketManager extends BaseManager {
       return false
     }
 
-    if (this.messageQueue.length >= TimeoutConfig.websocket.messageQueueMax) {
+    if (this.messageQueue.getPendingCount() >= TimeoutConfig.websocket.messageQueueMax) {
       this.logger.error('[SECURITY] Message queue backpressure, dropping packet')
       return false
     }
 
-    this.messageSequence = (this.messageSequence + 1) % MESSAGE_SEQUENCE_MODULO
+    const sequence = this.messageQueue.getNextSequence()
 
     if (this.ws.readyState === WebSocket.OPEN) {
-      const sequencedPacket = this.addSequenceToPacket(packet, this.messageSequence)
+      const sequencedPacket = this.messageQueue.addSequenceToPacket(packet, sequence)
       this.ws.send(sequencedPacket)
-      this.lastActivityTime = Date.now()
+      this.inactivityMonitor.updateActivity()
       return true
     } else if (this.ws.readyState === WebSocket.CONNECTING) {
       this.logger.warn('WebSocket still connecting, packet queued')
-      this.messageQueue.push(packet)
+      this.messageQueue.enqueue(packet)
       return false
     } else {
       this.logger.warn('WebSocket not connected, attempting reconnect', { state: this.ws.readyState })
-      if (!this.isReconnecting) {
+      if (!this.reconnectManager.isReconnecting) {
         this.scheduleReconnect()
       }
       return false
     }
   }
 
-  addSequenceToPacket(packet, sequence) {
-    if (packet instanceof ArrayBuffer) {
-      const view = new Uint8Array(packet)
-      const seqBuffer = new Uint8Array(2)
-      seqBuffer[0] = (sequence >> 8) & 0xFF
-      seqBuffer[1] = sequence & 0xFF
-      const combined = new Uint8Array(view.length + 2)
-      combined.set(seqBuffer, 0)
-      combined.set(view, 2)
-      return combined.buffer
-    }
-    return packet
-  }
-
-  extractSequenceFromPacket(packet) {
-    if (!(packet instanceof ArrayBuffer) || packet.byteLength < 2) {
-      return null
-    }
-    const view = new Uint8Array(packet)
-    const sequence = (view[0] << 8) | view[1]
-    const payload = packet.slice(2)
-    return { sequence, payload }
-  }
-
   flushMessageQueue() {
-    if (this.ws?.readyState !== WebSocket.OPEN) return
-
-    while (this.messageQueue.length > 0) {
-      const packet = this.messageQueue.shift()
-      this.ws.send(packet)
-    }
+    this.messageQueue.flush(this.ws)
   }
 
   simulateLag(amount) {
-    // For testing/debugging: artificially delay packet sends
-    // This helps expose timing-dependent bugs in network code
     this._lagSimulation = Math.max(0, amount)
   }
 
@@ -327,16 +145,8 @@ export class WebSocketManager extends BaseManager {
   }
 
   async destroyInternal() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = null
-    }
-
-    if (this.inactivityTimer) {
-      clearInterval(this.inactivityTimer)
-      this.inactivityTimer = null
-    }
-
+    this.reconnectManager.destroy()
+    this.inactivityMonitor.destroy()
     this.requestTimeouts.forEach(timer => clearTimeout(timer))
     this.requestTimeouts.clear()
 
@@ -356,8 +166,6 @@ export class WebSocketManager extends BaseManager {
     this.openHandler = null
     this.closeHandler = null
     this.errorHandler = null
-    this.isReconnecting = false
-    this.reconnectAttempts = 0
-    this.messageQueue = []
+    this.messageQueue.reset()
   }
 }
