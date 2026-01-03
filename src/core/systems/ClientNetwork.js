@@ -173,12 +173,13 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onPacket = e => {
-    logger.info('onPacket called')
     const [method, data] = readPacket(e.data)
     if (!method) {
       logger.error('Invalid packet received')
       return
     }
+
+    logger.info('Packet method received', { method })
 
     // Decompress data if compressed
     let finalData = data
@@ -197,7 +198,7 @@ export class ClientNetwork extends BaseNetwork {
       }
     } else if (method === 'onSnapshot') {
       // Log snapshot packet details for debugging
-      logger.debug('Snapshot packet received', {
+      logger.info('Snapshot packet received (not compressed)', {
         hasCompressed: data?.hasOwnProperty('compressed'),
         compressedValue: data?.compressed,
         dataKeys: data && typeof data === 'object' ? Object.keys(data).slice(0, 10) : 'not-object',
