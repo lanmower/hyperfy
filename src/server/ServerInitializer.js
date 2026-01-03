@@ -127,7 +127,7 @@ export class ServerInitializer {
       }
     }
 
-    let db = await getDB(this.worldDir, timeoutManager, circuitBreakerManager)
+    let db = await getDB(this.worldDir)
     db = createDbProxy(db)
     const storage = new Storage(path.join(this.worldDir, '/storage.json'), circuitBreakerManager)
 

@@ -1,14 +1,128 @@
-// Database initialization and direct SQL.js wrapper
-import initSqlJs from 'sql.js'
+import path from 'path'
+import fs from 'fs-extra'
 
-let db
-let SQL
+let dbInstance = null
+let dbType = 'sqlite'
+let pgPool = null
 
-export async function initDatabase() {
-  SQL = await initSqlJs()
-  db = new SQL.Database()
+async function initSqlite(dbPath) {
+  let Database
+  try {
+    const betterSqlite3 = await import('better-sqlite3')
+    Database = betterSqlite3.default
+  } catch {
+    const initSqlJs = await import('sql.js').then(m => m.default)
+    const SQL = await initSqlJs()
+    return createSqlJsDb(SQL)
+  }
 
-  db.exec(`
+  const dir = path.dirname(dbPath)
+  await fs.ensureDir(dir)
+  const db = new Database(dbPath)
+  db.pragma('journal_mode = WAL')
+  db.pragma('synchronous = NORMAL')
+  return {
+    query: async (sql, params = []) => db.prepare(sql).all(...params),
+    queryOne: async (sql, params = []) => db.prepare(sql).get(...params) || null,
+    exec: async (sql, params = []) => {
+      db.prepare(sql).run(...params)
+    },
+    run: async (sql, params = []) => {
+      const stmt = db.prepare(sql)
+      const info = stmt.run(...params)
+      return info.lastInsertRowid || null
+    },
+    close: async () => db.close()
+  }
+}
+
+function createSqlJsDb(SQL) {
+  const db = new SQL.Database()
+  return {
+    query: async (sql, params = []) => {
+      const stmt = db.prepare(sql)
+      stmt.bind(params)
+      const rows = []
+      while (stmt.step()) {
+        rows.push(stmt.getAsObject())
+      }
+      stmt.free()
+      return rows
+    },
+    queryOne: async (sql, params = []) => {
+      const stmt = db.prepare(sql)
+      stmt.bind(params)
+      if (stmt.step()) {
+        const row = stmt.getAsObject()
+        stmt.free()
+        return row
+      }
+      stmt.free()
+      return null
+    },
+    exec: async (sql, params = []) => {
+      const stmt = db.prepare(sql)
+      stmt.bind(params)
+      stmt.step()
+      stmt.free()
+    },
+    run: async (sql, params = []) => {
+      const stmt = db.prepare(sql)
+      stmt.bind(params)
+      stmt.step()
+      stmt.free()
+      return null
+    },
+    close: async () => {}
+  }
+}
+
+async function initPostgres(connectionString) {
+  const pg = await import('pg')
+  const { Pool } = pg
+  pgPool = new Pool({
+    connectionString,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  })
+
+  await pgPool.query('SELECT 1')
+
+  return {
+    query: async (sql, params = []) => {
+      const result = await pgPool.query(sql, params)
+      return result.rows
+    },
+    queryOne: async (sql, params = []) => {
+      const result = await pgPool.query(sql, params)
+      return result.rows[0] || null
+    },
+    exec: async (sql, params = []) => {
+      await pgPool.query(sql, params)
+    },
+    run: async (sql, params = []) => {
+      const result = await pgPool.query(sql, params)
+      return result.lastId || null
+    },
+    close: async () => {
+      if (pgPool) await pgPool.end()
+    }
+  }
+}
+
+async function initSchema(db) {
+  const isPostgres = dbType === 'postgres'
+
+  const tableExists = await db.queryOne(
+    isPostgres
+      ? `SELECT 1 FROM information_schema.tables WHERE table_name = 'config'`
+      : `SELECT name FROM sqlite_master WHERE type='table' AND name='config'`
+  )
+
+  if (tableExists) return
+
+  const schema = `
     CREATE TABLE IF NOT EXISTS config (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -16,7 +130,7 @@ export async function initDatabase() {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT,
-      email TEXT,
+      email TEXT UNIQUE,
       avatar TEXT,
       rank INTEGER,
       createdAt INTEGER,
@@ -44,94 +158,79 @@ export async function initDatabase() {
       stored INTEGER,
       url TEXT
     );
-  `)
+  `
+
+  const statements = schema.split(';').filter(s => s.trim())
+  for (const stmt of statements) {
+    await db.exec(stmt.trim())
+  }
 
   const indexes = [
-    'CREATE INDEX IF NOT EXISTS idx_blueprints_id ON blueprints(id)',
     'CREATE INDEX IF NOT EXISTS idx_blueprints_created ON blueprints(createdAt)',
-    'CREATE INDEX IF NOT EXISTS idx_entities_id ON entities(id)',
     'CREATE INDEX IF NOT EXISTS idx_entities_created ON entities(createdAt)',
-    'CREATE INDEX IF NOT EXISTS idx_users_id ON users(id)',
     'CREATE INDEX IF NOT EXISTS idx_users_name ON users(name)',
     'CREATE INDEX IF NOT EXISTS idx_files_hash ON files(hash)',
     'CREATE INDEX IF NOT EXISTS idx_files_uploader ON files(uploader)',
     'CREATE INDEX IF NOT EXISTS idx_files_timestamp ON files(timestamp)',
-    'CREATE INDEX IF NOT EXISTS idx_config_key ON config(key)',
   ]
 
   for (const idx of indexes) {
-    try {
-      db.run(idx)
-    } catch (e) {
+    await db.exec(idx)
+  }
+
+  const settingsExists = await db.queryOne('SELECT 1 FROM config WHERE key = ?', ['settings'])
+  if (!settingsExists) {
+    const defaultSettings = {
+      title: null,
+      desc: null,
+      image: null,
+      avatar: null,
+      voice: 'spatial',
+      playerLimit: 0,
+      ao: true,
+      customAvatars: false,
+      rank: 0
     }
+    await db.exec('INSERT INTO config (key, value) VALUES (?, ?)', [
+      'settings',
+      JSON.stringify(defaultSettings)
+    ])
   }
-
-  return db
-}
-
-export function query(sql, params = []) {
-  const stmt = db.prepare(sql)
-  stmt.bind(params)
-  const rows = []
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject())
-  }
-  stmt.free()
-  return rows
-}
-
-export function exec(sql, params = []) {
-  const stmt = db.prepare(sql)
-  if (params.length > 0) {
-    stmt.bind(params)
-  }
-  stmt.step()
-  stmt.free()
-}
-
-export function insert(table, data) {
-  const keys = Object.keys(data)
-  const values = keys.map(k => data[k])
-  const placeholders = keys.map(() => '?').join(',')
-  const sql = `INSERT INTO ${table} (${keys.join(',')}) VALUES (${placeholders})`
-  exec(sql, values)
-}
-
-export function getDatabase() {
-  return db
 }
 
 export async function getDB(worldDir) {
-  if (!db) {
-    await initDatabase()
+  if (dbInstance) return dbInstance
 
-    const configExists = query(`SELECT name FROM sqlite_master WHERE type='table' AND name='config'`).length
-    if (!configExists) {
-      exec(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)`)
-      insert('config', { key: 'version', value: '0' })
-    }
+  const dbUri = process.env.DB_URI || 'local'
 
-    const result = query(`SELECT * FROM config WHERE key = 'settings'`)
-    if (!result.length) {
-      const defaultSettings = {
-        title: null,
-        desc: null,
-        image: null,
-        avatar: null,
-        voice: 'spatial',
-        playerLimit: 0,
-        ao: true,
-        customAvatars: false,
-        rank: 0
-      }
-      insert('config', { key: 'settings', value: JSON.stringify(defaultSettings) })
-    }
+  if (dbUri.startsWith('postgres://') || dbUri.startsWith('postgresql://')) {
+    dbType = 'postgres'
+    dbInstance = await initPostgres(dbUri)
+  } else {
+    dbType = 'sqlite'
+    const dbPath = path.join(worldDir, 'hyperfy.db')
+    dbInstance = await initSqlite(dbPath)
   }
 
+  await initSchema(dbInstance)
+
   return {
-    insert,
-    query,
-    exec,
+    query: async (sql, params = []) => dbInstance.query(sql, params),
+    queryOne: async (sql, params = []) => dbInstance.queryOne(sql, params),
+    exec: async (sql, params = []) => dbInstance.exec(sql, params),
+    run: async (sql, params = []) => dbInstance.run(sql, params),
+    close: async () => dbInstance.close(),
     metrics: () => ({ lastMin: { totalQueries: 0, avgDuration: 0, slowQueries: 0, byType: {}, byTable: {} } })
+  }
+}
+
+export async function closeDB() {
+  if (dbInstance) {
+    await dbInstance.close()
+    dbInstance = null
+  }
+  if (pgPool) {
+    await pgPool.end()
+    pgPool = null
   }
 }

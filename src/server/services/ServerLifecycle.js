@@ -1,3 +1,5 @@
+import { closeDB } from '../db.js'
+
 export async function startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker, retries = 10) {
   try {
     await fastify.listen({ port, host: '0.0.0.0', exclusive: false })
@@ -46,9 +48,8 @@ export async function startServer(fastify, port, logger, metrics, telemetry, shu
     }, 80)
 
     shutdownManager.addShutdownHandler('database', async () => {
-      if (world?.db) {
-        logger.info('[SHUTDOWN] Closing database')
-      }
+      logger.info('[SHUTDOWN] Closing database')
+      await closeDB()
     }, 75)
 
     shutdownManager.addShutdownHandler('storage', async () => {

@@ -1,4 +1,4 @@
-import { getDB, insert, query } from '../db.js'
+import { getDB, closeDB } from '../db.js'
 
 async function verify() {
   console.log('[Verify] Database verification\n')
@@ -8,62 +8,54 @@ async function verify() {
   console.log('=== 1. Direct SQL Operations ===')
   console.log('Creating test data...')
 
-  insert('users', {
-    id: 'user-1',
-    name: 'User One',
-    email: 'user1@test.com',
-    createdAt: Date.now(),
-  })
+  await db.exec('INSERT INTO users (id, name, email, createdAt) VALUES (?, ?, ?, ?)', [
+    'user-1',
+    'User One',
+    'user1@test.com',
+    Date.now(),
+  ])
 
-  insert('users', {
-    id: 'user-2',
-    name: 'User Two',
-    email: 'user2@test.com',
-    createdAt: Date.now(),
-  })
+  await db.exec('INSERT INTO users (id, name, email, createdAt) VALUES (?, ?, ?, ?)', [
+    'user-2',
+    'User Two',
+    'user2@test.com',
+    Date.now(),
+  ])
 
-  insert('blueprints', {
-    id: 'bp-1',
-    data: JSON.stringify({ name: 'Blueprint 1', type: 'app' }),
-    createdAt: Date.now(),
-  })
+  await db.exec('INSERT INTO blueprints (id, data, createdAt) VALUES (?, ?, ?)', [
+    'bp-1',
+    JSON.stringify({ name: 'Blueprint 1', type: 'app' }),
+    Date.now(),
+  ])
 
-  insert('entities', {
-    id: 'entity-1',
-    worldId: 'world-1',
-    data: JSON.stringify({ name: 'Entity 1' }),
-    createdAt: Date.now(),
-  })
+  await db.exec('INSERT INTO entities (id, worldId, data, createdAt) VALUES (?, ?, ?, ?)', [
+    'entity-1',
+    'world-1',
+    JSON.stringify({ name: 'Entity 1' }),
+    Date.now(),
+  ])
 
   console.log('\n=== 2. Query Operations ===')
   console.log('Running queries...')
 
-  const users = query(`SELECT * FROM users`)
+  const users = await db.query(`SELECT * FROM users`)
   console.log(`Found ${users.length} users`)
   console.log(JSON.stringify(users, null, 2))
 
-  const blueprints = query(`SELECT * FROM blueprints`)
+  const blueprints = await db.query(`SELECT * FROM blueprints`)
   console.log(`Found ${blueprints.length} blueprints`)
 
-  const entities = query(`SELECT * FROM entities`)
+  const entities = await db.query(`SELECT * FROM entities`)
   console.log(`Found ${entities.length} entities`)
 
-  console.log('\n=== 3. Database Indexes ===')
-  const indexes = query(`SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND tbl_name IN ('users', 'blueprints', 'entities', 'config', 'files')`)
-  console.log(`Total indexes: ${indexes.length}`)
-  const indexesByTable = {}
-  for (const idx of indexes) {
-    if (!indexesByTable[idx.tbl_name]) indexesByTable[idx.tbl_name] = []
-    indexesByTable[idx.tbl_name].push(idx.name)
-  }
-  console.log('Indexes by table:', JSON.stringify(indexesByTable, null, 2))
-
-  console.log('\n=== 4. Cleanup ===')
+  console.log('\n=== 3. Cleanup ===')
   console.log('Deleting test data...')
-  db.exec(`DELETE FROM users WHERE id = ?`, ['user-1'])
-  db.exec(`DELETE FROM users WHERE id = ?`, ['user-2'])
-  db.exec(`DELETE FROM blueprints WHERE id = ?`, ['bp-1'])
-  db.exec(`DELETE FROM entities WHERE id = ?`, ['entity-1'])
+  await db.exec(`DELETE FROM users WHERE id = ?`, ['user-1'])
+  await db.exec(`DELETE FROM users WHERE id = ?`, ['user-2'])
+  await db.exec(`DELETE FROM blueprints WHERE id = ?`, ['bp-1'])
+  await db.exec(`DELETE FROM entities WHERE id = ?`, ['entity-1'])
+
+  await closeDB()
 
   console.log('\n=== VERIFICATION COMPLETE ===')
   process.exit(0)

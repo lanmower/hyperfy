@@ -33,7 +33,7 @@ class QueryBuilder {
       params.push(cond.value)
     }
 
-    return this.db.query(sql, params)
+    return await this.db.query(sql, params)
   }
 
   async insert(data) {
@@ -41,7 +41,7 @@ class QueryBuilder {
     const values = Object.values(data)
     const placeholders = keys.map(() => '?').join(',')
     const sql = 'INSERT INTO ' + this.table + ' (' + keys.join(',') + ') VALUES (' + placeholders + ')'
-    this.db.exec(sql, values)
+    await this.db.exec(sql, values)
     return { changes: 1 }
   }
 
@@ -56,7 +56,7 @@ class QueryBuilder {
       sql += (i === 0 ? ' WHERE ' : ' AND ') + cond.key + ' = ?'
       params.push(cond.value)
     }
-    this.db.exec(sql, params)
+    await this.db.exec(sql, params)
     return { changes: 1 }
   }
 
@@ -69,7 +69,7 @@ class QueryBuilder {
       sql += (i === 0 ? ' WHERE ' : ' AND ') + cond.key + ' = ?'
       params.push(cond.value)
     }
-    this.db.exec(sql, params)
+    await this.db.exec(sql, params)
     return { changes: 1 }
   }
 
@@ -82,7 +82,7 @@ class QueryBuilder {
       sql += (i === 0 ? ' WHERE ' : ' AND ') + cond.key + ' = ?'
       params.push(cond.value)
     }
-    const result = this.db.query(sql, params)
+    const result = await this.db.query(sql, params)
     return result[0]?.count || 0
   }
 
