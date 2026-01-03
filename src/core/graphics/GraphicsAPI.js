@@ -1,5 +1,7 @@
 import * as THREE from '../extras/three.js'
 import { StructuredLogger } from '../utils/logging/index.js'
+import { VectorPool, QuaternionPool, MatrixPool } from './GraphicsAPIPools.js'
+import { GraphicsAPIGeometry } from './GraphicsAPIGeometry.js'
 
 const logger = new StructuredLogger('GraphicsAPI')
 
@@ -8,6 +10,7 @@ export class GraphicsAPI {
     this.vectors = new VectorPool()
     this.quaternions = new QuaternionPool()
     this.matrices = new MatrixPool()
+    this.geometry = new GraphicsAPIGeometry()
   }
 
   createVector(x = 0, y = 0, z = 0) {
@@ -30,54 +33,36 @@ export class GraphicsAPI {
     return new THREE.Group()
   }
 
-  createMesh(geometry, material) {
-    return new THREE.Mesh(geometry, material)
-  }
-
   createBoxGeometry(width, height, depth) {
-    return new THREE.BoxGeometry(width, height, depth)
+    return this.geometry.createBoxGeometry(width, height, depth)
   }
 
   createSphereGeometry(radius, widthSegments = 32, heightSegments = 32) {
-    return new THREE.SphereGeometry(radius, widthSegments, heightSegments)
+    return this.geometry.createSphereGeometry(radius, widthSegments, heightSegments)
   }
 
   createCylinderGeometry(radiusTop, radiusBottom, height, radialSegments = 32) {
-    return new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments)
+    return this.geometry.createCylinderGeometry(radiusTop, radiusBottom, height, radialSegments)
   }
 
   createConeGeometry(radius, height, radialSegments = 32) {
-    return new THREE.ConeGeometry(radius, height, radialSegments)
+    return this.geometry.createConeGeometry(radius, height, radialSegments)
   }
 
   createTorusGeometry(radius, tube, radialSegments = 100, tubularSegments = 100) {
-    return new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments)
+    return this.geometry.createTorusGeometry(radius, tube, radialSegments, tubularSegments)
   }
 
   createPlaneGeometry(width, height) {
-    return new THREE.PlaneGeometry(width, height)
+    return this.geometry.createPlaneGeometry(width, height)
   }
 
   createMaterial(type = 'standard', props = {}) {
-    const defaults = {
-      metalness: props.metalness ?? 0.5,
-      roughness: props.roughness ?? 0.5,
-      color: props.color ?? 0xffffff,
-      emissive: props.emissive ?? 0x000000,
-      transparent: props.transparent ?? false,
-      opacity: props.opacity ?? 1,
-      side: props.side ?? THREE.FrontSide,
-    }
+    return this.geometry.createMaterial(type, props)
+  }
 
-    if (type === 'standard') {
-      return new THREE.MeshStandardMaterial(defaults)
-    } else if (type === 'phong') {
-      return new THREE.MeshPhongMaterial(defaults)
-    } else if (type === 'basic') {
-      return new THREE.MeshBasicMaterial(defaults)
-    }
-
-    return new THREE.MeshStandardMaterial(defaults)
+  createMesh(geometry, material) {
+    return this.geometry.createMesh(geometry, material)
   }
 
   createScene() {
@@ -217,69 +202,6 @@ export class GraphicsAPI {
     if (object.dispose) {
       object.dispose()
     }
-  }
-}
-
-class VectorPool {
-  constructor(size = 1000) {
-    this.pool = []
-    this.size = size
-    this.index = 0
-    for (let i = 0; i < size; i++) {
-      this.pool.push(new THREE.Vector3())
-    }
-  }
-
-  get() {
-    const vec = this.pool[this.index]
-    this.index = (this.index + 1) % this.size
-    return vec.set(0, 0, 0)
-  }
-
-  reset() {
-    this.index = 0
-  }
-}
-
-class QuaternionPool {
-  constructor(size = 500) {
-    this.pool = []
-    this.size = size
-    this.index = 0
-    for (let i = 0; i < size; i++) {
-      this.pool.push(new THREE.Quaternion())
-    }
-  }
-
-  get() {
-    const quat = this.pool[this.index]
-    this.index = (this.index + 1) % this.size
-    return quat.set(0, 0, 0, 1)
-  }
-
-  reset() {
-    this.index = 0
-  }
-}
-
-class MatrixPool {
-  constructor(size = 500) {
-    this.pool = []
-    this.size = size
-    this.index = 0
-    for (let i = 0; i < size; i++) {
-      this.pool.push(new THREE.Matrix4())
-    }
-  }
-
-  get() {
-    const matrix = this.pool[this.index]
-    this.index = (this.index + 1) % this.size
-    return matrix.identity()
-  }
-
-  reset() {
-    this.index = 0
   }
 }
 

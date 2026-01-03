@@ -1,250 +1,52 @@
 import { StructuredLogger } from '../utils/logging/index.js'
+import { SystemIntegrationRegistry } from './SystemIntegrationRegistry.js'
+import { SystemIntegrationVerifier, HealthMonitor } from './SystemIntegrationLifecycle.js'
 
 const logger = new StructuredLogger('SystemIntegration')
 
-export class SystemIntegrationVerifier {
+export class SystemIntegration {
   constructor(world) {
     this.world = world
-    this.checks = new Map()
-    this.results = []
-    this.lastVerification = null
-  }
-
-  registerCheck(name, checkFn, options = {}) {
-    this.checks.set(name, {
-      fn: checkFn,
-      critical: options.critical || false,
-      timeout: options.timeout || 5000,
-      description: options.description || ''
-    })
-  }
-
-  async verify() {
-    const startTime = Date.now()
-    const results = []
-
-    for (const [name, check] of this.checks) {
-      const checkResult = await this.runCheck(name, check)
-      results.push(checkResult)
-    }
-
-    const duration = Date.now() - startTime
-    const verification = {
-      timestamp: Date.now(),
-      duration,
-      results,
-      summary: this.summarizeResults(results)
-    }
-
-    this.results.push(verification)
-    this.lastVerification = verification
-
-    logger.info('System integration verification completed', {
-      duration,
-      passed: verification.summary.passed,
-      failed: verification.summary.failed,
-      critical: verification.summary.criticalFailures
-    })
-
-    return verification
-  }
-
-  async runCheck(name, check) {
-    const startTime = Date.now()
-
-    try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Check timeout')), check.timeout)
-      )
-
-      await Promise.race([check.fn(this.world), timeoutPromise])
-
-      const duration = Date.now() - startTime
-      return { name, status: 'passed', duration, error: null }
-    } catch (error) {
-      const duration = Date.now() - startTime
-      return {
-        name,
-        status: 'failed',
-        duration,
-        error: error.message,
-        critical: check.critical
-      }
-    }
-  }
-
-  summarizeResults(results) {
-    const passed = results.filter(r => r.status === 'passed').length
-    const failed = results.filter(r => r.status === 'failed').length
-    const criticalFailures = results.filter(r => r.status === 'failed' && r.critical).length
-
-    return {
-      total: results.length,
-      passed,
-      failed,
-      criticalFailures,
-      passRate: ((passed / results.length) * 100).toFixed(2) + '%'
-    }
-  }
-
-  getLatestResults() {
-    return this.lastVerification
-  }
-
-  getAllResults() {
-    return [...this.results]
-  }
-}
-
-export class HealthMonitor {
-  constructor(world) {
-    this.world = world
-    this.healthChecks = new Map()
-    this.status = 'unknown'
-    this.lastCheck = null
-  }
-
-  registerHealthCheck(name, checkFn, options = {}) {
-    this.healthChecks.set(name, {
-      fn: checkFn,
-      weight: options.weight || 1,
-      threshold: options.threshold || 0.8,
-      description: options.description || ''
-    })
-  }
-
-  async checkHealth() {
-    const checks = {}
-    let totalWeight = 0
-    let totalScore = 0
-
-    for (const [name, check] of this.healthChecks) {
-      try {
-        const score = await check.fn(this.world)
-        checks[name] = {
-          status: score >= check.threshold ? 'healthy' : 'degraded',
-          score,
-          threshold: check.threshold
-        }
-        totalWeight += check.weight
-        totalScore += score * check.weight
-      } catch (error) {
-        checks[name] = {
-          status: 'unhealthy',
-          score: 0,
-          error: error.message
-        }
-      }
-    }
-
-    const healthScore = totalWeight > 0 ? totalScore / totalWeight : 0
-
-    this.status = healthScore >= 0.8 ? 'healthy' : healthScore >= 0.5 ? 'degraded' : 'unhealthy'
-    this.lastCheck = {
-      timestamp: Date.now(),
-      score: healthScore,
-      status: this.status,
-      checks
-    }
-
-    return this.lastCheck
-  }
-
-  getStatus() {
-    return {
-      status: this.status,
-      score: this.lastCheck?.score || null,
-      lastCheck: this.lastCheck?.timestamp || null,
-      checks: this.lastCheck?.checks || {}
-    }
-  }
-
-  getDetails() {
-    return this.lastCheck
-  }
-}
-
-export class DependencyResolver {
-  constructor(world) {
-    this.world = world
-    this.dependencies = new Map()
-    this.resolved = new Set()
-    this.failures = []
+    this.registry = new SystemIntegrationRegistry(world)
+    this.verifier = new SystemIntegrationVerifier(world)
+    this.healthMonitor = new HealthMonitor(world)
   }
 
   registerDependency(name, dependencies, resolveFn) {
-    this.dependencies.set(name, {
-      dependencies: Array.isArray(dependencies) ? dependencies : [dependencies],
-      resolveFn
-    })
+    this.registry.registerDependency(name, dependencies, resolveFn)
   }
 
-  async resolve() {
-    this.resolved.clear()
-    this.failures = []
-
-    const order = this.topologicalSort()
-
-    for (const name of order) {
-      const dep = this.dependencies.get(name)
-
-      try {
-        await dep.resolveFn(this.world)
-        this.resolved.add(name)
-        logger.debug('Dependency resolved', { name })
-      } catch (error) {
-        this.failures.push({ name, error: error.message })
-        logger.error('Dependency resolution failed', { name, error: error.message })
-      }
-    }
-
-    return {
-      resolved: Array.from(this.resolved),
-      failures: this.failures,
-      success: this.failures.length === 0
-    }
+  async resolveDependencies() {
+    return this.registry.resolve()
   }
 
-  topologicalSort() {
-    const visited = new Set()
-    const visiting = new Set()
-    const result = []
+  registerCheck(name, checkFn, options = {}) {
+    this.verifier.registerCheck(name, checkFn, options)
+  }
 
-    const visit = (name) => {
-      if (visited.has(name)) return
-      if (visiting.has(name)) {
-        logger.warn('Circular dependency detected', { name })
-        return
-      }
+  async verify() {
+    return this.verifier.verify()
+  }
 
-      visiting.add(name)
+  registerHealthCheck(name, checkFn, options = {}) {
+    this.healthMonitor.registerHealthCheck(name, checkFn, options)
+  }
 
-      const dep = this.dependencies.get(name)
-      if (dep) {
-        for (const depName of dep.dependencies) {
-          if (this.dependencies.has(depName)) {
-            visit(depName)
-          }
-        }
-      }
+  async checkHealth() {
+    return this.healthMonitor.checkHealth()
+  }
 
-      visiting.delete(name)
-      visited.add(name)
-      result.push(name)
-    }
+  getHealthStatus() {
+    return this.healthMonitor.getStatus()
+  }
 
-    for (const name of this.dependencies.keys()) {
-      visit(name)
-    }
-
-    return result
+  getVerificationResults() {
+    return this.verifier.getLatestResults()
   }
 
   getDependencyGraph() {
-    const graph = {}
-    for (const [name, dep] of this.dependencies) {
-      graph[name] = dep.dependencies
-    }
-    return graph
+    return this.registry.getDependencyGraph()
   }
 }
+
+export { SystemIntegrationRegistry, SystemIntegrationVerifier, HealthMonitor }
