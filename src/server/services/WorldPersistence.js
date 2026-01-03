@@ -1,7 +1,7 @@
-
 import { PersistenceBase } from '../../core/services/PersistenceBase.js'
 import { ScriptValidator } from '../security/ScriptValidator.js'
 import { LoggerFactory } from '../../core/utils/logging/index.js'
+import { WorldPersistenceSerializer } from './WorldPersistenceSerializer.js'
 
 const logger = LoggerFactory.get('WorldPersistence')
 
@@ -23,12 +23,7 @@ export class WorldPersistence extends PersistenceBase {
   async loadSettings() {
     const row = await this.db('config').where('key', 'settings').cacheAs('getConfigValue').first()
     if (!row) return {}
-    try {
-      return JSON.parse(row.value)
-    } catch (err) {
-      logger.error('Failed to parse settings', { error: err.message })
-      return {}
-    }
+    return WorldPersistenceSerializer.parseSettings(row.value)
   }
 
   async saveSettings(settings) {
@@ -40,9 +35,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async saveBlueprint(id, data, createdAt, updatedAt) {
-    const validation = ScriptValidator.validateBlueprint(data, {
-      blueprintId: id,
-    })
+    const validation = ScriptValidator.validateBlueprint(data, { blueprintId: id })
 
     if (!validation.valid) {
       logger.warn('Blueprint validation failed before saving', {
@@ -59,9 +52,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async saveEntity(id, data, createdAt, updatedAt) {
-    const validation = ScriptValidator.validateEntityData(data, {
-      entityId: id,
-    })
+    const validation = ScriptValidator.validateEntityData(data, { entityId: id })
 
     if (!validation.valid) {
       logger.warn('Entity data validation failed before saving', {
@@ -103,16 +94,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async exportBlueprints(blueprints) {
-    const exported = []
-    for (const blueprint of blueprints) {
-      try {
-        const data = typeof blueprint === 'string' ? JSON.parse(blueprint) : blueprint
-        exported.push(data)
-      } catch (err) {
-        logger.error('Failed to parse blueprint during export', { error: err.message })
-      }
-    }
-    return exported
+    return WorldPersistenceSerializer.exportBlueprints(blueprints)
   }
 
   async importBlueprints(blueprints, uploader = null) {
@@ -129,16 +111,7 @@ export class WorldPersistence extends PersistenceBase {
   }
 
   async exportEntities(entities) {
-    const exported = []
-    for (const entity of entities) {
-      try {
-        const data = typeof entity === 'string' ? JSON.parse(entity) : entity
-        exported.push(data)
-      } catch (err) {
-        logger.error('Failed to parse entity during export', { error: err.message })
-      }
-    }
-    return exported
+    return WorldPersistenceSerializer.exportEntities(entities)
   }
 
   async importEntities(entities, uploader = null) {
@@ -160,38 +133,7 @@ export class WorldPersistence extends PersistenceBase {
     const settings = await this.loadSettings()
     const spawn = await this.loadSpawn()
 
-    const blueprintData = blueprints.map(b => {
-      try {
-        return JSON.parse(b.data)
-      } catch (err) {
-        logger.error('Failed to parse blueprint during backup', { blueprintId: b.id, error: err.message })
-        return {}
-      }
-    })
-
-    const entityData = entities.map(e => {
-      try {
-        return JSON.parse(e.data)
-      } catch (err) {
-        logger.error('Failed to parse entity during backup', { entityId: e.id, error: err.message })
-        return {}
-      }
-    })
-
-    let spawnData = {}
-    try {
-      spawnData = JSON.parse(spawn)
-    } catch (err) {
-      logger.error('Failed to parse spawn during backup', { error: err.message })
-    }
-
-    return {
-      blueprints: blueprintData,
-      entities: entityData,
-      settings,
-      spawn: spawnData,
-      timestamp: Date.now()
-    }
+    return WorldPersistenceSerializer.createBackupPackage(blueprints, entities, settings, spawn)
   }
 
   async restoreWorld(backup, uploader = null) {
@@ -199,7 +141,7 @@ export class WorldPersistence extends PersistenceBase {
       blueprints: [],
       entities: [],
       settings: false,
-      spawn: false
+      spawn: false,
     }
 
     if (backup.blueprints) {
@@ -241,4 +183,3 @@ export class WorldPersistence extends PersistenceBase {
     return await this.fileUploader.storage.listAll(options)
   }
 }
-
