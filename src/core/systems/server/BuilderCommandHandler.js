@@ -1,146 +1,61 @@
 import { uuid } from '../../utils.js'
 import { serializeForNetwork } from '../../schemas/ChatMessage.schema.js'
-import { ScriptValidator } from '../../../server/security/ScriptValidator.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
+import { BuilderCommandParser } from './BuilderCommandParser.js'
 
 const logger = new StructuredLogger('BuilderCommandHandler')
 
 export class BuilderCommandHandler {
   constructor(serverNetwork) {
     this.serverNetwork = serverNetwork
+    this.parser = new BuilderCommandParser(serverNetwork)
   }
 
   onBlueprintAdded(socket, blueprint) {
-    if (!socket.player.isBuilder()) {
-      logger.error('player attempted to add blueprint without builder permission')
+    const result = this.parser.parseBlueprint(socket, blueprint)
+    if (!result.valid) {
+      this.sendValidationError(socket, result)
       return
     }
-
-    const validation = ScriptValidator.validateBlueprint(blueprint, {
-      userId: socket.player.data.userId,
-      blueprintId: blueprint.id,
-    })
-
-    if (!validation.valid) {
-      logger.error('Blueprint validation failed', {
-        blueprintId: blueprint.id,
-        userId: socket.player.data.userId,
-        violations: validation.violations,
-      })
-      socket.send('error', {
-        message: 'Blueprint validation failed',
-        violations: validation.violations,
-      })
-      return
-    }
-
     this.serverNetwork.blueprints.add(blueprint)
     this.serverNetwork.send('blueprintAdded', blueprint, socket.id)
     this.serverNetwork.dirtyBlueprints.add(blueprint.id)
   }
 
   onBlueprintModified(socket, data) {
-    if (!socket.player.isBuilder()) {
-      logger.error('player attempted to modify blueprint without builder permission')
+    const result = this.parser.parseBlueprint(socket, data)
+    if (!result.valid) {
+      this.sendValidationError(socket, result)
       return
     }
-
-    const validation = ScriptValidator.validateBlueprint(data, {
-      userId: socket.player.data.userId,
-      blueprintId: data.id,
-    })
-
-    if (!validation.valid) {
-      logger.error('Blueprint modification validation failed', {
-        blueprintId: data.id,
-        userId: socket.player.data.userId,
-        violations: validation.violations,
-      })
-      socket.send('error', {
-        message: 'Blueprint validation failed',
-        violations: validation.violations,
-      })
-      return
-    }
-
     const blueprint = this.serverNetwork.blueprints.get(data.id)
     if (data.version > blueprint.version) {
       this.serverNetwork.blueprints.modify(data)
       this.serverNetwork.send('blueprintModified', data, socket.id)
       this.serverNetwork.dirtyBlueprints.add(data.id)
-    }
-    else {
+    } else {
       socket.send('blueprintModified', blueprint)
     }
   }
 
   onEntityAdded(socket, data) {
-    if (!socket.player.isBuilder()) {
-      logger.error('player attempted to add entity without builder permission')
+    const result = this.parser.parseEntity(socket, data)
+    if (!result.valid) {
+      this.sendValidationError(socket, result)
       return
     }
-
-    const validation = ScriptValidator.validateEntityData(data, {
-      userId: socket.player.data.userId,
-      entityId: data.id,
-    })
-
-    if (!validation.valid) {
-      logger.error('Entity data validation failed', {
-        entityId: data.id,
-        userId: socket.player.data.userId,
-        violations: validation.violations,
-      })
-      socket.send('error', {
-        message: 'Entity data validation failed',
-        violations: validation.violations,
-      })
-      return
-    }
-
     const entity = this.serverNetwork.entities.add(data)
     this.serverNetwork.send('entityAdded', data, socket.id)
     if (entity.isApp) this.serverNetwork.dirtyApps.add(entity.data.id)
   }
 
   async onEntityModified(socket, data) {
-    if (!socket.player.isBuilder()) {
-      logger.error('player attempted to modify entity without builder permission')
+    const result = this.parser.parseEntityModification(socket, data)
+    if (!result.valid) {
+      this.sendValidationError(socket, result)
       return
     }
-
-    const entity = this.serverNetwork.entities.get(data.id)
-    if (!entity) {
-      logger.error('onEntityModified: no entity found', { id: data.id })
-      return
-    }
-
-    if (entity.isApp && !socket.player.isAdmin()) {
-      const ownerUserId = entity.data.userId
-      if (ownerUserId && ownerUserId !== socket.player.data.userId) {
-        logger.error('player attempted to modify app entity they do not own')
-        return
-      }
-    }
-
-    const validation = ScriptValidator.validateEntityData(data, {
-      userId: socket.player.data.userId,
-      entityId: data.id,
-    })
-
-    if (!validation.valid) {
-      logger.error('Entity modification validation failed', {
-        entityId: data.id,
-        userId: socket.player.data.userId,
-        violations: validation.violations,
-      })
-      socket.send('error', {
-        message: 'Entity data validation failed',
-        violations: validation.violations,
-      })
-      return
-    }
-
+    const entity = result.entity
     entity.modify(data)
     this.serverNetwork.send('entityModified', data, socket.id)
     if (entity.isApp) {
@@ -175,8 +90,9 @@ export class BuilderCommandHandler {
   }
 
   onSettingsModified(socket, data) {
-    if (!socket.player.isBuilder()) {
-      logger.error('player attempted to modify settings without builder permission')
+    const result = this.parser.parseSettings(socket, data)
+    if (!result.valid) {
+      this.sendValidationError(socket, result)
       return
     }
     this.serverNetwork.settings.set(data.key, data.value)
@@ -184,8 +100,9 @@ export class BuilderCommandHandler {
   }
 
   async onSpawnModified(socket, op) {
-    if (!socket.player.isBuilder()) {
-      logger.error('player attempted to modify spawn without builder permission')
+    const result = this.parser.parseSpawn(socket, op)
+    if (!result.valid) {
+      this.sendValidationError(socket, result)
       return
     }
     const player = socket.player
@@ -193,8 +110,6 @@ export class BuilderCommandHandler {
       this.serverNetwork.spawn = { position: player.data.position.slice(), quaternion: player.data.quaternion.slice() }
     } else if (op === 'clear') {
       this.serverNetwork.spawn = { position: [0, 0, 0], quaternion: [0, 0, 0, 1] }
-    } else {
-      return
     }
     const data = JSON.stringify(this.serverNetwork.spawn)
     await this.serverNetwork.persistence.setConfig('spawn', data)
@@ -210,8 +125,26 @@ export class BuilderCommandHandler {
   }
 
   onEntityEvent(socket, event) {
-    const [id, version, name, data] = event
-    const entity = this.serverNetwork.entities.get(id)
-    entity?.onEvent(version, name, data, socket.id)
+    const result = this.parser.parseEvent(socket, event)
+    if (!result.valid) return
+    const entity = result.entity
+    entity.onEvent(result.version, result.name, result.data, result.socketId)
+  }
+
+  sendValidationError(socket, result) {
+    if (result.error === 'permission') {
+      socket.send('error', { message: 'Permission denied' })
+    } else if (result.error === 'validation') {
+      socket.send('error', {
+        message: 'Validation failed',
+        violations: result.violations,
+      })
+    } else if (result.error === 'ownership') {
+      socket.send('error', { message: 'You do not own this entity' })
+    } else if (result.error === 'not_found') {
+      socket.send('error', { message: 'Entity not found' })
+    } else if (result.error === 'invalid_op') {
+      socket.send('error', { message: 'Invalid operation' })
+    }
   }
 }
