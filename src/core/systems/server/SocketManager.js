@@ -43,11 +43,9 @@ export class SocketManager {
         }
       })
     } else {
-      try {
-        executeSend()
-      } catch (err) {
+      executeSend().catch(err => {
         logger.error('Broadcast error', { name, error: err.message })
-      }
+      })
     }
   }
 
