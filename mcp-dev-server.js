@@ -76,7 +76,7 @@ async function startServer(port, cwd) {
   logOutput(`Starting dev server on port ${serverPort}...`);
 
   try {
-    const scriptPath = join(cwd || BASE_DIR, 'scripts', 'dev-buildless.mjs');
+    const scriptPath = join(cwd || BASE_DIR, 'src', 'server', 'index.js');
     logOutput(`Spawning with scriptPath: ${scriptPath}`);
     logOutput(`File exists: ${existsSync(scriptPath)}`);
     serverProcess = spawn('node', [scriptPath], {
