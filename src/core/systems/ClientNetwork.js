@@ -173,6 +173,7 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onPacket = e => {
+    logger.info('onPacket called')
     const [method, data] = readPacket(e.data)
     if (!method) {
       logger.error('Invalid packet received')
