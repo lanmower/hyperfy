@@ -1,5 +1,6 @@
 import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
 import { PlayerPhysics } from './player/PlayerPhysics.js'
+import { isBoolean } from 'lodash-es'
 
 export class PlayerLocalPhysicsBinding {
   static initializeCapsule(player) {
@@ -63,7 +64,6 @@ export class PlayerLocalPhysicsBinding {
   static toggleFlying(player, value) {
     if (!player.physics) return
 
-    const { isBoolean } = await import('lodash-es')
     value = isBoolean(value) ? value : !player.physics.flying
 
     if (player.physics.flying === value) return

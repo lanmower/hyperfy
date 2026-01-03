@@ -71,7 +71,9 @@ export class WorldTickLoop {
 
   update(delta) {
     this.invokeHotLifecycle('update', delta)
-    this.world.pluginHooks.execute('world:update', delta)
+    this.world.pluginHooks.execute('world:update', delta).catch(err => {
+      logger.error('Plugin hook error', { error: err.message, hook: 'world:update' })
+    })
 
     const updateStart = performance.now()
     this.invokeSystemLifecycle('update', delta)

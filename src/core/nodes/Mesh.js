@@ -1,6 +1,7 @@
 import * as THREE from '../extras/three.js'
 
-import { Node, getRef, secureRef } from './Node.js'
+import { Node } from './Node.js'
+import { getRef, secureRef } from './NodeProxy.js'
 import { getTrianglesFromGeometry } from '../extras/getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../extras/getTextureBytesFromMaterial.js'
 import { v } from '../utils/TempVectors.js'

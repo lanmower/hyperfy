@@ -1,7 +1,8 @@
 import { isBoolean } from 'lodash-es'
 import * as THREE from '../extras/three.js'
 
-import { getRef, Node } from './Node.js'
+import { Node } from './Node.js'
+import { getRef } from './NodeProxy.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'

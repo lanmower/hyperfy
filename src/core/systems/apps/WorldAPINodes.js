@@ -1,7 +1,7 @@
 import * as THREE from '../../extras/three.js'
 import { APIConfigBuilder } from '../../utils/api/index.js'
 import { ValidationHelper } from '../../utils/api/ValidationHelper.js'
-import { getRef } from '../../nodes/Node.js'
+import { getRef } from '../../nodes/NodeProxy.js'
 
 const b = new APIConfigBuilder('WorldAPINodes')
 

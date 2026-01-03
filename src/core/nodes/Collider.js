@@ -1,6 +1,7 @@
 import * as THREE from '../extras/three.js'
 
-import { getRef, Node, secureRef } from './Node.js'
+import { Node } from './Node.js'
+import { getRef, secureRef } from './NodeProxy.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { onSetRebuildIf  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
