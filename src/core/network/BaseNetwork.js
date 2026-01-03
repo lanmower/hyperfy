@@ -23,8 +23,16 @@ export class BaseNetwork extends System {
       },
       send: (socket, method, data) => {
         try {
+          if (!socket) {
+            logger.error('Send failed: socket is null', { method })
+            return
+          }
+          if (typeof socket.send !== 'function') {
+            logger.error('Send failed: socket.send is not a function', { method, socketType: typeof socket })
+            return
+          }
           const packet = writePacket(method, data)
-          socket?.send?.(packet)
+          socket.send(packet)
         } catch (err) {
           logger.error('Send failed', { method, error: err.message })
         }
@@ -32,8 +40,16 @@ export class BaseNetwork extends System {
       sendReliable: (socket, method, data) => {
         return new Promise((resolve, reject) => {
           try {
+            if (!socket) {
+              logger.error('SendReliable failed: socket is null', { method })
+              return reject(new Error('Socket is null'))
+            }
+            if (typeof socket.send !== 'function') {
+              logger.error('SendReliable failed: socket.send is not a function', { method, socketType: typeof socket })
+              return reject(new Error('Socket send is not a function'))
+            }
             const packet = writePacket(method, data)
-            socket?.send?.(packet)
+            socket.send(packet)
             resolve()
           } catch (err) {
             logger.error('SendReliable failed', { method, error: err.message })
