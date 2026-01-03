@@ -23,6 +23,8 @@ export class UnifiedLoader extends System {
     this.results = new Map()
     this.preloadItems = []
     this.isServer = typeof window === 'undefined'
+    this.maxCacheSize = 100
+    this.cacheAccessOrder = []
     if (!this.isServer) {
       this.handlers = new AssetHandlers(this, world)
     }
@@ -108,7 +110,14 @@ export class UnifiedLoader extends System {
         return typeHandler(url, file, key)
       })
       .then(result => {
+        if (this.results.size >= this.maxCacheSize) {
+          const lruKey = this.cacheAccessOrder.shift()
+          if (lruKey) {
+            this.results.delete(lruKey)
+          }
+        }
         this.results.set(key, result)
+        this.cacheAccessOrder.push(key)
         return result
       })
       .catch(err => {

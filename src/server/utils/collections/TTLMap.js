@@ -20,6 +20,20 @@ export class TTLMap {
     return this.store.get(key)
   }
 
+  getAndExtend(key, ttl = this.defaultTTL) {
+    const value = this.store.get(key)
+    if (value !== undefined) {
+      if (this.timers.has(key)) {
+        clearTimeout(this.timers.get(key))
+      }
+      const timer = setTimeout(() => {
+        this.delete(key)
+      }, ttl)
+      this.timers.set(key, timer)
+    }
+    return value
+  }
+
   has(key) {
     return this.store.has(key)
   }

@@ -25,6 +25,8 @@ export class WebSocketManager extends BaseManager {
     this.messageQueue = []
     this.inactivityTimer = null
     this.requestTimeouts = new Map()
+    this.messageSequence = 0
+    this.expectedSequence = 0
   }
 
   init(wsUrl, name, avatar) {
@@ -145,6 +147,18 @@ export class WebSocketManager extends BaseManager {
         return
       }
 
+      const sequenceInfo = this.extractSequenceFromPacket(e.data)
+      if (sequenceInfo && this.expectedSequence > 0) {
+        const gap = (sequenceInfo.sequence - this.expectedSequence + 65536) % 65536
+        if (gap > 0 && gap < 256) {
+          this.logger.warn('Message sequence gap detected', { expected: this.expectedSequence, received: sequenceInfo.sequence, gap })
+        }
+      }
+      if (sequenceInfo) {
+        this.expectedSequence = (sequenceInfo.sequence + 1) % 65536
+        e.data = sequenceInfo.payload
+      }
+
       this.logger.info('Message received', { size: e.data.byteLength })
       this.network.onPacket(e)
     }
@@ -243,8 +257,11 @@ export class WebSocketManager extends BaseManager {
       return false
     }
 
+    this.messageSequence = (this.messageSequence + 1) % 65536
+
     if (this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(packet)
+      const sequencedPacket = this.addSequenceToPacket(packet, this.messageSequence)
+      this.ws.send(sequencedPacket)
       this.lastActivityTime = Date.now()
       return true
     } else if (this.ws.readyState === WebSocket.CONNECTING) {
@@ -258,6 +275,30 @@ export class WebSocketManager extends BaseManager {
       }
       return false
     }
+  }
+
+  addSequenceToPacket(packet, sequence) {
+    if (packet instanceof ArrayBuffer) {
+      const view = new Uint8Array(packet)
+      const seqBuffer = new Uint8Array(2)
+      seqBuffer[0] = (sequence >> 8) & 0xFF
+      seqBuffer[1] = sequence & 0xFF
+      const combined = new Uint8Array(view.length + 2)
+      combined.set(seqBuffer, 0)
+      combined.set(view, 2)
+      return combined.buffer
+    }
+    return packet
+  }
+
+  extractSequenceFromPacket(packet) {
+    if (!(packet instanceof ArrayBuffer) || packet.byteLength < 2) {
+      return null
+    }
+    const view = new Uint8Array(packet)
+    const sequence = (view[0] << 8) | view[1]
+    const payload = packet.slice(2)
+    return { sequence, payload }
   }
 
   flushMessageQueue() {
