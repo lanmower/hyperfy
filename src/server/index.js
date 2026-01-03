@@ -1,6 +1,9 @@
 import 'dotenv-flow/config'
 import '../core/lockdown.js'
 import './bootstrap.js'
+import { validateEnvironment } from './config/EnvValidator.js'
+
+validateEnvironment()
 
 import path from 'path'
 import { fileURLToPath } from 'url'
