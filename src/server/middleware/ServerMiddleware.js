@@ -54,6 +54,11 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
     }
   })
 
+  await setupCompression(fastify)
+  setupCacheHeaders(fastify)
+  addETagSupport(fastify)
+  trackResponseTime(fastify)
+  enforcePerformanceBudgets(fastify)
 
   fastify.register(multipart, {
     limits: {
