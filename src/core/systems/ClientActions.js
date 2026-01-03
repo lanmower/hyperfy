@@ -1,32 +1,26 @@
 import * as THREE from '../extras/three.js'
 import { System } from './System.js'
-import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { EVENT } from '../constants/EventNames.js'
 import { isTouch } from '../../client/utils.js'
-import { clamp, BatchProcessor } from '../utils.js'
+import { clamp } from '../utils.js'
 import { CanvasDrawUtils } from './actions/CanvasDrawUtils.js'
-import { RenderConfig } from '../config/SystemConfig.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
+import { ClientActionsRegistry } from './ClientActionsRegistry.js'
 
 const logger = new StructuredLogger('ClientActions')
-
-const BATCH_SIZE = RenderConfig.ACTION_BATCH_SIZE
-const sizes = [128, 256, 512, 2048, 4096]
 const FORWARD = new THREE.Vector3(0, 0, 1)
 const { v1, v2, v3, v4, q1, e1 } = SharedVectorPool('ClientActions', 4, 1, 1)
+const sizes = [128, 256, 512, 2048, 4096]
 
 export class ClientActions extends System {
   static DEPS = { rig: 'rig', events: 'events', controls: 'controls' }
 
   constructor(world) {
     super(world)
-    this.nodes = []
-    this.cursor = 0
-    this.current = { node: null, distance: Infinity }
+    this.registry = new ClientActionsRegistry(this)
     this.actionNode = null
     this.cancelled = false
-    this.btnDown = false
     const width = 300, height = 44, pxToMeters = 0.01
     const max = Math.max(width, height)
     const size = sizes.find(s => s >= max)
@@ -44,62 +38,42 @@ export class ClientActions extends System {
   }
 
   start() {
-    this.control = this.controls.bind({ priority: ControlPriorities.ACTION })
+    this.registry.start(this.controls)
     this.mesh = this.getMesh()
   }
 
-  register(node) { this.nodes.push(node) }
+  register(node) {
+    this.registry.register(node)
+  }
 
   unregister(node) {
-    const idx = this.nodes.indexOf(node)
-    if (idx === -1) return
-    this.nodes.splice(idx, 1)
-    if (this.current.node === node) {
-      this.current.node = null
-      this.current.distance = Infinity
-      this.stop()
-    }
+    this.registry.unregister(node)
   }
 
   update(delta) {
-    const cameraPos = this.rig.position
-    this.btnDown = this.control.keyE.down || this.control.touchB.down || this.control.xrLeftTrigger.down || this.control.xrRightTrigger.down
-
-    if (this.current.node) {
-      const distance = this.current.node.worldPos.distanceTo(cameraPos)
-      if (distance > this.current.node._distance) {
-        this.current.node = null
-        this.current.distance = Infinity
-        this.events.emit(EVENT.action.changed, false)
-        this.stop()
-      } else {
-        this.current.distance = distance
-      }
-    }
-
-    let didChange
-    this.cursor = BatchProcessor.processBatchWithCursor(this.nodes, this.cursor, BATCH_SIZE, (node) => {
-      if (node.finished) return
-      if (this.current.node === node) return
-      const distance = node.worldPos.distanceTo(cameraPos)
-      if (distance <= node._distance && distance < this.current.distance) {
-        this.current.node = node
-        this.current.distance = distance
-        didChange = true
-      }
-    })
-    if (didChange) {
-      this.startAction(this.current.node)
-      this.events.emit(EVENT.action.changed, true)
-    }
-    this.updateAction(delta)
+    const btnDown = this.registry.update(delta, this.rig, this.events)
+    this.updateAction(delta, btnDown)
   }
 
-  drawBox(x, y, width, height, radius, color) { CanvasDrawUtils.drawBox(this.ctx, this.pr, x, y, width, height, radius, color) }
-  drawCircle(x, y, radius, color) { CanvasDrawUtils.drawCircle(this.ctx, this.pr, x, y, radius, color) }
-  drawPie(x, y, radius, percent, color, offset = 0) { CanvasDrawUtils.drawPie(this.ctx, this.pr, x, y, radius, percent, color, offset) }
-  measureText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') { return CanvasDrawUtils.measureText(this.ctx, this.pr, x, y, text, color, fontSize, fontWeight, font) }
-  drawText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') { CanvasDrawUtils.drawText(this.ctx, this.pr, x, y, text, color, fontSize, fontWeight, font) }
+  drawBox(x, y, width, height, radius, color) {
+    CanvasDrawUtils.drawBox(this.ctx, this.pr, x, y, width, height, radius, color)
+  }
+
+  drawCircle(x, y, radius, color) {
+    CanvasDrawUtils.drawCircle(this.ctx, this.pr, x, y, radius, color)
+  }
+
+  drawPie(x, y, radius, percent, color, offset = 0) {
+    CanvasDrawUtils.drawPie(this.ctx, this.pr, x, y, radius, percent, color, offset)
+  }
+
+  measureText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') {
+    return CanvasDrawUtils.measureText(this.ctx, this.pr, x, y, text, color, fontSize, fontWeight, font)
+  }
+
+  drawText(x, y, text, color, fontSize = 16, fontWeight = 400, font = 'Rubik') {
+    CanvasDrawUtils.drawText(this.ctx, this.pr, x, y, text, color, fontSize, fontWeight, font)
+  }
 
   getMesh() {
     if (this.mesh) return this.mesh
@@ -146,13 +120,12 @@ export class ClientActions extends System {
 
   startAction(node) {
     this.actionNode = node
-    this.btnDown = false
     node.progress = 0
     this.draw(node._label, node.progress / node._duration)
     this.world.stage.scene.add(this.mesh)
   }
 
-  updateAction(delta) {
+  updateAction(delta, btnDown) {
     if (!this.actionNode) return
     let distance
     if (this.world.xr.session && this.world.xr.camera) {
@@ -180,7 +153,7 @@ export class ClientActions extends System {
     let scaleFactor = baseScale * (worldToScreenFactor * clampedDistance) * 100
     if (this.world.xr.session) scaleFactor *= 0.2
     this.mesh.scale.setScalar(scaleFactor)
-    if (this.btnDown) {
+    if (btnDown) {
       if (this.actionNode.progress === 0) {
         this.cancelled = false
         try { this.actionNode._onStart() } catch (err) { logger.error('Failed to execute action start', { action: this.actionNode._label, error: err.message }) }
@@ -209,9 +182,7 @@ export class ClientActions extends System {
   }
 
   destroy() {
-    this.control.release()
-    this.control = null
+    this.registry.release()
     this.nodes = []
   }
 }
-
