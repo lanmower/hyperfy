@@ -134,6 +134,7 @@ export class ClientNetwork extends BaseNetwork {
 
   flush() {
     while (this.queue.length) {
+      let method, data
       try {
         const entry = this.queue.shift()
         if (!Array.isArray(entry) || entry.length < 2) {
@@ -145,16 +146,27 @@ export class ClientNetwork extends BaseNetwork {
           })
           continue
         }
-        const [method, data] = entry
+        ;[method, data] = entry
         if (!method) {
           logger.warn('Empty method in queue entry', { data })
           continue
         }
-        this[method]?.(data)
+        const handler = this[method]
+        if (typeof handler !== 'function') {
+          logger.warn('Handler not found or not a function', {
+            method,
+            handlerType: typeof handler,
+          })
+          continue
+        }
+        handler.call(this, data)
       } catch (err) {
         logger.error('Error flushing queue', {
+          method,
           error: err.message,
-          stack: err.stack,
+          errorType: err.name,
+          dataType: typeof data,
+          dataKeys: data && typeof data === 'object' ? Object.keys(data).slice(0, 10) : undefined,
         })
       }
     }
@@ -250,6 +262,13 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   onEntityEvent = event => {
+    if (!Array.isArray(event) || event.length < 4) {
+      logger.warn('Invalid onEntityEvent data', {
+        isArray: Array.isArray(event),
+        length: event?.length,
+      })
+      return
+    }
     const [id, version, name, data] = event
     const entity = this.world.entities.get(id)
     entity?.onEvent(version, name, data)
