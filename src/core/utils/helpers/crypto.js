@@ -28,10 +28,17 @@ async function getJWT() {
   return jwt.default
 }
 
-const jwtSecret = typeof process !== 'undefined' ? process.env.JWT_SECRET : null
+const jwtSecret = typeof process !== 'undefined' && process.env.JWT_SECRET
+  ? process.env.JWT_SECRET
+  : 'default-secret-key-INSECURE-change-in-production'
+
+if (!jwtSecret || jwtSecret === 'default-secret-key-INSECURE-change-in-production') {
+  console.warn('[SECURITY] WARNING: JWT_SECRET not configured - using insecure default key')
+}
 
 export async function createJWT(data) {
   const jwtLib = await getJWT()
+  if (!jwtSecret) throw new Error('JWT_SECRET not configured')
   return new Promise((resolve, reject) => {
     jwtLib.sign(data, jwtSecret, (err, token) => {
       if (err) return reject(err)
@@ -42,6 +49,7 @@ export async function createJWT(data) {
 
 export async function readJWT(token) {
   const jwtLib = await getJWT()
+  if (!jwtSecret) throw new Error('JWT_SECRET not configured')
   return new Promise((resolve, reject) => {
     jwtLib.verify(token, jwtSecret, (err, data) => {
       if (err) return reject(err)
