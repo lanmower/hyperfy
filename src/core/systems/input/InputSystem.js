@@ -1,62 +1,14 @@
 import * as THREE from '../../extras/three.js'
 import { System } from '../System.js'
-import { buttons } from '../../extras/buttons.js'
-import { bindRotations } from '../../extras/bindRotations.js'
 import { InputDispatcher } from './InputDispatcher.js'
 import { ComposableInputHandler } from './ComposableInputHandler.js'
 import { TouchInputHandler } from '../controls/TouchInputHandler.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
+import { buildControlTypes } from './InputSystemFactories.js'
+import { bindInputControl, releaseAllButtons, buildActions } from './InputSystemBinding.js'
 
 const logger = new StructuredLogger('InputSystem')
 const isBrowser = typeof window !== 'undefined'
-
-let actionIds = 0
-
-function createButton(controls, control, prop) {
-  const down = controls.buttonsDown.has(prop)
-  return { $button: true, down, pressed: down, released: false, capture: false, onPress: null, onRelease: null }
-}
-
-function createVector() {
-  return { $vector: true, value: new THREE.Vector3(), capture: false }
-}
-
-function createValue() {
-  return { $value: true, value: null, capture: false }
-}
-
-function createPointer(controls) {
-  const coords = new THREE.Vector3()
-  const position = new THREE.Vector3()
-  const delta = new THREE.Vector3()
-  return {
-    get coords() { return coords.copy(controls.pointer.coords) },
-    get position() { return position.copy(controls.pointer.position) },
-    get delta() { return delta.copy(controls.pointer.delta) },
-    get locked() { return controls.pointer.locked },
-    lock() { controls.lockPointer() },
-    unlock() { controls.unlockPointer() },
-  }
-}
-
-function createScreen(controls) {
-  return {
-    $screen: true,
-    get width() { return controls.screen.width },
-    get height() { return controls.screen.height },
-  }
-}
-
-function createCamera(controls) {
-  const world = controls.world
-  if (!world || !world.camera) return { $camera: true, position: new THREE.Vector3(), quaternion: new THREE.Quaternion(), rotation: new THREE.Euler(0, 0, 0, 'YXZ'), zoom: 0, write: false }
-  const position = new THREE.Vector3().copy(world.rig.position)
-  const quaternion = new THREE.Quaternion().copy(world.rig.quaternion)
-  const rotation = new THREE.Euler(0, 0, 0, 'YXZ').copy(world.rig.rotation)
-  bindRotations(quaternion, rotation)
-  const zoom = world.camera.position.z
-  return { $camera: true, position, quaternion, rotation, zoom, write: false }
-}
 
 export class InputSystem extends System {
   static DEPS = { rig: 'rig', events: 'events', camera: 'camera' }
@@ -77,12 +29,7 @@ export class InputSystem extends System {
     this.dispatcher.registerHandler('pointer', ComposableInputHandler.createPointerHandler(this))
     this.dispatcher.registerHandler('keyboard', ComposableInputHandler.createKeyboardHandler(this))
     this.dispatcher.registerHandler('xr', ComposableInputHandler.createXRHandler(this))
-    this.controlTypes = {
-      mouseLeft: createButton, mouseRight: createButton, touchStick: createVector, scrollDelta: createValue,
-      pointer: createPointer, screen: createScreen, camera: createCamera, xrLeftStick: createVector,
-      xrLeftTrigger: createButton, xrLeftBtn1: createButton, xrLeftBtn2: createButton, xrRightStick: createVector,
-      xrRightTrigger: createButton, xrRightBtn1: createButton, xrRightBtn2: createButton, touchA: createButton, touchB: createButton,
-    }
+    this.controlTypes = buildControlTypes()
   }
 
   start() {}
@@ -140,71 +87,15 @@ export class InputSystem extends System {
   }
 
   bind(options = {}) {
-    const entries = {}
-    let reticleSupressor
-    const control = {
-      options, entries, actions: null,
-      api: {
-        hideReticle: (value = true) => {
-          if (reticleSupressor && value) return
-          if (!reticleSupressor && !value) return
-          if (reticleSupressor) { reticleSupressor?.(); reticleSupressor = null }
-          else reticleSupressor = this.world.ui.suppressReticle()
-        },
-        setActions: value => {
-          if (value !== null && !Array.isArray(value)) throw new Error('[control] actions must be null or array')
-          control.actions = value
-          if (value) { for (const action of value) action.id = ++actionIds }
-          this.buildActions()
-        },
-        release: () => {
-          reticleSupressor?.()
-          const idx = this.controls.indexOf(control)
-          if (idx === -1) return
-          this.controls.splice(idx, 1)
-          options.onRelease?.()
-        },
-      },
-    }
-    const idx = this.controls.findIndex(c => c.options.priority <= options.priority)
-    if (idx === -1) this.controls.push(control)
-    else this.controls.splice(idx, 0, control)
-    return new Proxy(control, {
-      get: (target, prop) => {
-        if (prop in target.api) return target.api[prop]
-        if (prop in entries) return entries[prop]
-        if (buttons.has(prop)) { entries[prop] = createButton(this, control, prop); return entries[prop] }
-        const createType = this.controlTypes[prop]
-        if (createType) { entries[prop] = createType(this, control, prop); return entries[prop] }
-        return undefined
-      },
-    })
+    return bindInputControl(this, options)
   }
 
   releaseAllButtons() {
-    for (const control of this.controls) {
-      for (const key in control.entries) {
-        const value = control.entries[key]
-        if (value.$button && value.down) { value.released = true; value.down = false; value.onRelease?.() }
-      }
-    }
+    releaseAllButtons(this)
   }
 
   buildActions() {
-    this.actions = []
-    for (const control of this.controls) {
-      const actions = control.actions
-      if (actions) {
-        for (const action of actions) {
-          if (!action.type === 'custom') {
-            const idx = this.actions.findIndex(a => a.type === action.type)
-            if (idx !== -1) continue
-          }
-          this.actions.push(action)
-        }
-      }
-    }
-    this.events.emit('actions', this.actions)
+    buildActions(this)
   }
 
   setTouchBtn(prop, down) {

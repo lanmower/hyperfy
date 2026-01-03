@@ -1,34 +1,19 @@
 import * as THREE from '../../extras/three.js'
-import { PhysicsConfig } from '../../config/SystemConfig.js'
-import { Layers } from '../../extras/Layers.js'
 import { PlayerPlatformTracker } from './PlayerPlatformTracker.js'
 import { PlayerPhysicsState } from './PlayerPhysicsState.js'
+import { PlayerPhysicsCalculations } from './PlayerPhysicsCalculations.js'
+import { PlayerPhysicsGroundDetection } from './PlayerPhysicsGroundDetection.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
-const RAD2DEG = 180 / Math.PI
-const UP = new THREE.Vector3(0, 1, 0)
-const DOWN = new THREE.Vector3(0, -1, 0)
-
-const { v1, v2, v3, v4 } = SharedVectorPool('PlayerPhysics', 4, 0)
+const { v1 } = SharedVectorPool('PlayerPhysics', 1, 0)
 
 export class PlayerPhysics {
   constructor(world, player) {
     this.world = world
     this.player = player
 
-    this.mass = player.mass
-    this.gravity = PhysicsConfig.GRAVITY
-    this.jumpHeight = PhysicsConfig.JUMP_HEIGHT
-    this.effectiveGravity = this.mass * this.gravity
-
-    this.grounded = false
-    this.groundAngle = 0
-    this.groundNormal = new THREE.Vector3(0, 1, 0)
-    this.groundSweepRadius = PhysicsConfig.GROUND_DETECTION_RADIUS
-
     this.jumped = false
     this.jumping = false
-    this.justLeftGround = false
     this.falling = false
     this.fallTimer = 0
     this.fallDistance = 0
@@ -44,23 +29,11 @@ export class PlayerPhysics {
       prevTransform: new THREE.Matrix4(),
     }
 
-    this.slipping = false
-
-    this.pushForce = null
-    this.pushForceInit = false
-
-    this.flying = false
-    this.flyForce = PhysicsConfig.FLY_FORCE_MULTIPLIER
-    this.flyDrag = PhysicsConfig.FLY_DRAG
-    this.flyDir = new THREE.Vector3()
-
+    this.lastJumpAt = 0
     this.materialMax = null
 
-    this.lastJumpAt = 0
-
-    this.frameCount = 0
-    this.groundCheckInterval = 2
-
+    this.calculations = new PlayerPhysicsCalculations(player.mass)
+    this.groundDetection = new PlayerPhysicsGroundDetection(world, player)
     this.platformTracker = new PlayerPlatformTracker(world, player, this.platform)
     this.physicsState = new PlayerPhysicsState(world, player, this)
   }
@@ -76,7 +49,7 @@ export class PlayerPhysics {
       return
     }
 
-    if (!this.flying) {
+    if (!this.calculations.flying) {
       this.updateStandardPhysics(delta, snare)
     } else {
       this.updateFlyingPhysics(delta)
@@ -103,12 +76,12 @@ export class PlayerPhysics {
   }
 
   updateStandardPhysics(delta, snare) {
-    this.frameCount++
-    this.platformTracker.update(this.grounded)
+    this.groundDetection.update(this.groundDetection.grounded)
+    this.platformTracker.update(this.groundDetection.grounded)
 
-    if (this.frameCount % this.groundCheckInterval === 0 || this.jumping || this.falling) {
-      this.detectGround()
-      this.handleSteepSlopes()
+    if (this.groundDetection.shouldCheckGround(this.jumping, this.falling)) {
+      this.groundDetection.detectGround()
+      this.groundDetection.handleSteepSlopes()
     }
 
     this.physicsState.updateMaterialFriction()
@@ -118,123 +91,31 @@ export class PlayerPhysics {
     this.physicsState.handleJump()
   }
 
-  detectGround() {
-    const geometry = this.player.groundSweepGeometry
-    const pose = this.player.capsule.getGlobalPose()
-    const origin = v1.copy(pose.p)
-    origin.y += this.groundSweepRadius + PhysicsConfig.GROUND_SWEEP_OFFSET
-    const direction = DOWN
-    const maxDistance = PhysicsConfig.GROUND_SWEEP_OFFSET + PhysicsConfig.GROUND_SWEEP_DISTANCE
-    const hitMask = Layers.environment.group | Layers.prop.group
-
-    const sweepHit = this.world.physics.sweep(
-      geometry,
-      origin,
-      direction,
-      maxDistance,
-      hitMask
-    )
-
-    if (sweepHit) {
-      this.justLeftGround = false
-      this.grounded = true
-      this.groundNormal.copy(sweepHit.normal)
-      this.groundAngle = UP.angleTo(this.groundNormal) * RAD2DEG
-    } else {
-      this.justLeftGround = !!this.grounded
-      this.grounded = false
-      this.groundNormal.copy(UP)
-      this.groundAngle = 0
-    }
-  }
-
-  handleSteepSlopes() {
-    if (this.grounded && this.groundAngle > 60) {
-      this.justLeftGround = false
-      this.grounded = false
-      this.groundNormal.copy(UP)
-      this.groundAngle = 0
-      this.slipping = true
-    } else {
-      this.slipping = false
-    }
-  }
-
   updateGravityAndVelocity(delta, snare) {
     const PHYSX = this.world.PHYSX || globalThis.PHYSX
     if (!PHYSX) return
 
-    if (this.grounded) {
-      if (this.platform.actor) {
-        const isStatic = this.platform.actor instanceof PHYSX.PxRigidStatic
-        const isKinematic = this.platform.actor
-          .getRigidBodyFlags?.()
-          .isSet(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC)
-
-        if (!isKinematic && !isStatic) {
-          const amount = -PhysicsConfig.GRAVITY * PhysicsConfig.GRAVITY_PLATFORM_FACTOR
-          const force = v1.set(0, amount, 0)
-          PHYSX.PxRigidBodyExt.prototype.addForceAtPos(
-            this.platform.actor,
-            force.toPxVec3(),
-            this.player.capsule.getGlobalPose().p,
-            PHYSX.PxForceModeEnum.eFORCE,
-            true
-          )
-        }
-      }
-    } else {
-      const force = v1.set(0, -this.effectiveGravity, 0)
-      this.player.capsule.addForce(force.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
-    }
+    const groundState = this.groundDetection.getGroundState()
+    this.calculations.applyGravity(
+      groundState.grounded,
+      this.platform,
+      this.player.capsule,
+      PHYSX
+    )
 
     const velocity = v1.copy(this.player.capsule.getLinearVelocity())
 
-    const dragCoeff = PhysicsConfig.DRAG_COEFFICIENT * delta
-    const perpComponent = v2.copy(this.groundNormal).multiplyScalar(velocity.dot(this.groundNormal))
-    const parallelComponent = v3.copy(velocity).sub(perpComponent)
-    parallelComponent.multiplyScalar(1 - dragCoeff)
-    velocity.copy(parallelComponent.add(perpComponent))
+    this.calculations.applyDrag(
+      velocity,
+      delta,
+      groundState.groundNormal,
+      groundState.grounded,
+      this.jumping
+    )
 
-    if (this.grounded && !this.jumping) {
-      const projectedLength = velocity.dot(this.groundNormal)
-      const projectedVector = v2.copy(this.groundNormal).multiplyScalar(projectedLength)
-      velocity.sub(projectedVector)
-    }
-
-    if (this.justLeftGround && !this.jumping) {
-      velocity.y = PhysicsConfig.FALL_VELOCITY
-    }
-
-    if (this.slipping) {
-      velocity.y -= PhysicsConfig.SLIPPING_GRAVITY
-    }
-
-    if (this.pushForce) {
-      if (!this.pushForceInit) {
-        this.pushForceInit = true
-        if (this.pushForce.y) {
-          this.jumped = true
-          this.jumping = false
-          this.falling = false
-          this.airJumped = false
-          this.airJumping = false
-        }
-      }
-      velocity.add(this.pushForce)
-
-      const drag = PhysicsConfig.PUSH_DRAG
-      const decayFactor = 1 - drag * delta
-      if (decayFactor < 0) {
-        this.pushForce.set(0, 0, 0)
-      } else {
-        this.pushForce.multiplyScalar(Math.max(decayFactor, 0))
-      }
-
-      if (this.pushForce.length() < 0.01) {
-        this.pushForce = null
-      }
-    }
+    this.calculations.applyFallVelocity(velocity, groundState.justLeftGround, this.jumping)
+    this.calculations.applySlippingGravity(velocity, groundState.slipping)
+    this.calculations.applyPushForce(velocity, delta)
 
     this.player.capsule.setLinearVelocity(velocity.toPxVec3())
   }
@@ -244,27 +125,21 @@ export class PlayerPhysics {
     if (!PHYSX) return
 
     if (this.moving || this.player.jumpDown || this.player.control?.keyC?.down) {
-      const flySpeed = this.flyForce * (this.player.running ? 2 : 1)
-      const force = v1.copy(this.flyDir).multiplyScalar(flySpeed)
-
-      if (this.player.jumpDown) {
-        force.y = flySpeed
-      } else if (this.player.control?.keyC?.down) {
-        force.y = -flySpeed
-      }
-
+      const force = this.calculations.calculateFlyingForce(
+        this.moving,
+        this.player.jumpDown,
+        this.player.control?.keyC?.down,
+        this.player.running
+      )
       this.player.capsule.addForce(force.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
     }
 
-    const velocity = v2.copy(this.player.capsule.getLinearVelocity())
-    const dragForce = v3.copy(velocity).multiplyScalar(-this.flyDrag * delta)
-    this.player.capsule.addForce(dragForce.toPxVec3(), PHYSX.PxForceModeEnum.eFORCE, true)
-
-    const zeroAngular = v4.set(0, 0, 0)
-    this.player.capsule.setAngularVelocity(zeroAngular.toPxVec3())
+    const velocity = v1.copy(this.player.capsule.getLinearVelocity())
+    this.calculations.applyFlyingDrag(velocity, delta, this.player.capsule, PHYSX)
+    this.calculations.stopAngularRotation(this.player.capsule, PHYSX)
 
     if (!this.world.builder?.enabled) {
-      this.flying = false
+      this.calculations.flying = false
     }
   }
 
@@ -273,14 +148,12 @@ export class PlayerPhysics {
   }
 
   push(force) {
-    const v1 = new THREE.Vector3()
-    this.pushForce = v1.copy(force)
-    this.pushForceInit = false
+    this.calculations.push(force)
   }
 
   getState() {
     return {
-      grounded: this.grounded,
+      grounded: this.groundDetection.grounded,
       falling: this.falling,
       jumping: this.jumping,
       fallDistance: this.fallDistance,

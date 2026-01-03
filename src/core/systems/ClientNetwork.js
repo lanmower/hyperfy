@@ -1,18 +1,16 @@
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
-import { NetworkCore } from '../network/NetworkCore.js'
 import { WebSocketManager } from './network/WebSocketManager.js'
 import { SnapshotProcessor } from './network/SnapshotProcessor.js'
 import { ClientPacketHandlers } from './network/ClientPacketHandlers.js'
 import { MessageHandler } from '../plugins/core/MessageHandler.js'
-import { storage } from '../storage.js'
-import { Compressor } from './network/Compressor.js'
 import { clientTimeoutManager } from './network/TimeoutManager.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 import { TimeoutConfig } from '../config/TimeoutConfig.js'
-import { readPacket } from '../packets.js'
 import { createClientNetworkHandlers } from './network/ClientNetworkHandlers.js'
+import { ClientNetworkState } from './ClientNetworkState.js'
+import { ClientNetworkSync } from './ClientNetworkSync.js'
 
 const logger = new StructuredLogger('ClientNetwork')
 
@@ -32,51 +30,86 @@ export class ClientNetwork extends BaseNetwork {
 
   constructor(world) {
     super(world, clientNetworkHandlers)
-    this.apiUrl = null
-    this.id = null
-    this.isClient = true
-    this.serverTimeOffset = 0
     this.protocol.isClient = true
     this.protocol.flushTarget = this
     this.assetsUrl = world.assetsUrl
-    this.compressor = new Compressor()
-    this.core = new NetworkCore()
     this.wsManager = new WebSocketManager(this)
     this.snapshotProcessor = new SnapshotProcessor(this)
     this.packetHandlers = new ClientPacketHandlers(this)
-    this.offlineMode = false
-    this.lastKnownState = null
     this.timeoutManager = clientTimeoutManager
-    this.queue = []
-    this.initialized = false
+    this.networkState = new ClientNetworkState()
+    this.networkSync = new ClientNetworkSync(this.networkState, this.wsManager)
     this.handlers = createClientNetworkHandlers(this)
   }
 
+  get id() {
+    return this.networkState.id
+  }
+
+  set id(value) {
+    this.networkState.id = value
+  }
+
+  get apiUrl() {
+    return this.networkState.apiUrl
+  }
+
+  set apiUrl(value) {
+    this.networkState.apiUrl = value
+  }
+
+  get maxUploadSize() {
+    return this.networkState.maxUploadSize
+  }
+
+  set maxUploadSize(value) {
+    this.networkState.maxUploadSize = value
+  }
+
+  get offlineMode() {
+    return this.networkState.offlineMode
+  }
+
+  set offlineMode(value) {
+    this.networkState.offlineMode = value
+  }
+
+  get initialized() {
+    return this.networkState.initialized
+  }
+
+  set initialized(value) {
+    this.networkState.initialized = value
+  }
+
+  get isClient() {
+    return true
+  }
+
+  get serverTimeOffset() {
+    return this.networkState.serverTimeOffset
+  }
+
   init({ wsUrl, name, avatar }) {
-    if (this.initialized) {
+    if (this.networkState.initialized) {
       logger.warn('ClientNetwork.init already called, skipping duplicate initialization', { wsUrl })
       return
     }
-    this.initialized = true
+    this.networkState.markInitialized()
     logger.info('ClientNetwork.init called', { wsUrl, name, avatar })
     if (!wsUrl) {
       logger.warn('No WebSocket URL provided, running in offline mode', {})
-      this.offlineMode = true
+      this.networkState.offlineMode = true
       return
     }
 
-    // Set up reconnect handler to clear stale state
     this.wsManager.network = this
     this.wsManager.network.onReconnect = () => this.onReconnect()
     this.wsManager.init(wsUrl, name, avatar)
   }
 
   onReconnect() {
-    // Clear stale queue entries accumulated during disconnection
-    if (this.queue.length > 0) {
-      logger.warn('Clearing stale queue entries on reconnect', { count: this.queue.length })
-      this.queue = []
-    }
+    this.networkSync.clearQueue()
     logger.info('Client reconnected, requesting full snapshot')
   }
 
@@ -85,12 +118,12 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   send(method, data) {
-    if (this.offlineMode) return
+    if (this.networkState.offlineMode) return
     this.protocol.send(this.wsManager, method, data)
   }
 
   sendReliable(method, data, onAck) {
-    if (this.offlineMode) {
+    if (this.networkState.offlineMode) {
       onAck?.()
       return Promise.resolve()
     }
@@ -114,7 +147,7 @@ export class ClientNetwork extends BaseNetwork {
       data.append('hash', hash)
       data.append('type', type)
 
-      const response = await fetch(`${this.apiUrl}/upload`, {
+      const response = await fetch(`${this.networkState.apiUrl}/upload`, {
         method: 'POST',
         body: data,
       })
@@ -130,7 +163,7 @@ export class ClientNetwork extends BaseNetwork {
 
   async checkHash(hash) {
     try {
-      const response = await fetch(`${this.apiUrl}/hash/${hash}`)
+      const response = await fetch(`${this.networkState.apiUrl}/hash/${hash}`)
       return response.ok
     } catch (err) {
       logger.error('Check hash failed', { error: err.message })
@@ -143,194 +176,23 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   setServerTime(t) {
-    this.serverTimeOffset = performance.now() - t
-    logger.info('Server time synchronized', { offset: this.serverTimeOffset })
+    this.networkState.setServerTime(t)
   }
 
   getTime() {
-    return performance.now() - this.serverTimeOffset
-  }
-
-  enqueue(method, data) {
-    this.queue.push([method, data])
+    return this.networkState.getTime()
   }
 
   flush() {
-    while (this.queue.length) {
-      let method, data
-      try {
-        const entry = this.queue.shift()
-        if (!Array.isArray(entry) || entry.length < 2) {
-          logger.warn('Invalid queue entry dropped', {
-            entryType: typeof entry,
-            isArray: Array.isArray(entry),
-            length: entry?.length,
-            entry: entry && typeof entry === 'object' ? Object.keys(entry).slice(0, 5) : String(entry).slice(0, 100),
-          })
-          continue
-        }
-        ;[method, data] = entry
-        if (!method) {
-          logger.warn('Empty method in queue entry', { data })
-          continue
-        }
-        const handler = this[method]
-        if (typeof handler !== 'function') {
-          logger.warn('Handler not found or not a function', {
-            method,
-            handlerType: typeof handler,
-          })
-          continue
-        }
-        handler.call(this, data)
-      } catch (err) {
-        logger.error('Error flushing queue', {
-          method,
-          error: err.message,
-          errorType: err.name,
-          dataType: typeof data,
-          dataKeys: data && typeof data === 'object' ? Object.keys(data).slice(0, 10) : undefined,
-        })
-      }
-    }
+    this.networkSync.flush(this)
   }
 
   onPacket = e => {
-    const [method, data] = readPacket(e.data)
-    if (!method) {
-      logger.error('Invalid packet received')
-      return
-    }
-
-    logger.info('Packet method received', { method })
-
-    // Handle compression envelope (whether compressed or not)
-    let finalData = data
-    const hasCompressionEnvelope = data && typeof data === 'object' && typeof data.compressed === 'boolean'
-
-    if (hasCompressionEnvelope) {
-      if (data.compressed) {
-        logger.info('Decompressing packet', { method })
-        try {
-          finalData = this.compressor.decompress(data)
-          logger.info('Decompression successful', { method, dataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData).slice(0, 10) : typeof finalData })
-        } catch (err) {
-          logger.error('Failed to decompress packet data', {
-            method,
-            error: err.message,
-          })
-          if (data.data && typeof data.data === 'object') {
-            logger.info('Falling back to uncompressed data')
-            finalData = data.data
-          } else {
-            return
-          }
-        }
-      } else {
-        // Uncompressed but still wrapped in envelope - unwrap it
-        if (data.data === undefined) {
-          logger.error('Uncompressed envelope missing data field', { method })
-          return
-        }
-        finalData = data.data
-        logger.info('Unwrapped uncompressed envelope', {
-          method,
-          dataType: typeof finalData,
-          dataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData).slice(0, 10) : 'not-object'
-        })
-      }
-    }
-
-    this.enqueue(method, finalData)
+    this.networkSync.onPacket(e, this)
   }
 
-  onSnapshot(data) {
-    // Handle two types of snapshot packets:
-    // 1. Full snapshot (initial connection): has collections, settings, blueprints, entities, etc.
-    // 2. Frame update (periodic): has only time and frame for synchronization
-
-    const isFullSnapshot = data.collections || data.entities || data.blueprints
-    const isFrameUpdate = data.time !== undefined && data.frame !== undefined && !isFullSnapshot
-
-    if (isFrameUpdate) {
-      // Just a frame sync update, update server time offset only
-      if (data.time !== undefined) {
-        this.serverTimeOffset = data.time - performance.now()
-      }
-      return
-    }
-
-    // Handle full snapshot
-    if (!isFullSnapshot) {
-      logger.warn('Snapshot packet missing expected data', {
-        hasCollections: !!data.collections,
-        hasEntities: !!data.entities,
-        hasBlueprints: !!data.blueprints,
-        hasTime: data.time !== undefined,
-        hasFrame: data.frame !== undefined,
-        dataKeys: data && typeof data === 'object' ? Object.keys(data) : 'not-object',
-      })
-      return
-    }
-
-    if (!data.id || typeof data.serverTime !== 'number') {
-      logger.error('Snapshot missing required fields', {
-        hasId: !!data.id,
-        serverTimeType: typeof data.serverTime,
-        idType: typeof data.id,
-      })
-      return
-    }
-
-    this.id = data.id
-    this.serverTimeOffset = data.serverTime - performance.now()
-    this.apiUrl = data.apiUrl || ''
-    this.maxUploadSize = data.maxUploadSize || 0
-    this.world.assetsUrl = data.assetsUrl || ''
-
-    if (this.world.loader) {
-      if (data.settings && data.settings.avatar) {
-        this.world.loader.preload('avatar', data.settings.avatar.url)
-      }
-
-      for (const item of data.blueprints || []) {
-        if (item.preload && !item.disabled) {
-          if (item.model) {
-            const type = item.model.endsWith('.vrm') ? 'avatar' : 'model'
-            this.world.loader.preload(type, item.model)
-          }
-          if (item.script) {
-            this.world.loader.preload('script', item.script)
-          }
-          for (const value of Object.values(item.props || {})) {
-            if (value === undefined || value === null || !value?.url || !value?.type) continue
-            this.world.loader.preload(value.type, value.url)
-          }
-        }
-      }
-
-      for (const item of data.entities || []) {
-        if (item.type === 'player' && item.owner === this.id) {
-          const url = item.sessionAvatar || item.avatar
-          this.world.loader.preload('avatar', url)
-        }
-      }
-
-      if (this.world.loader.execPreload) {
-        this.world.loader.execPreload()
-      }
-    }
-
-    if (data.collections) this.world.collections.deserialize(data.collections)
-    if (data.settings) this.world.settings.deserialize(data.settings)
-    if (data.hasAdminCode !== undefined) this.world.settings.setHasAdminCode(data.hasAdminCode)
-    if (data.chat) this.world.chat.deserialize(data.chat)
-    if (data.blueprints) this.world.blueprints.deserialize(data.blueprints)
-    if (data.entities) this.world.entities.deserialize(data.entities)
-    if (data.livekit) this.world.livekit?.deserialize(data.livekit)
-    storage.set('authToken', data.authToken)
-
-    logger.info('Full snapshot received', { id: this.id })
+  onSnapshot = data => {
+    this.networkSync.onSnapshot(data, this.world)
   }
 
   onSettingsModified = data => this.handlers.onSettingsModified(data)
@@ -353,6 +215,6 @@ export class ClientNetwork extends BaseNetwork {
 
   destroy() {
     this.wsManager.disconnect()
-    this.core = null
+    this.networkState.core = null
   }
 }
