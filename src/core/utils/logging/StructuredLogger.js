@@ -1,4 +1,7 @@
+// Core logger orchestrator with context and handler management.
 import { LogLevels, LogLevelNames, getLevelValue, shouldLog } from './LogLevels.js'
+import { buildLogStructure } from './StructuredLoggerFormatters.js'
+import { defaultConsoleHandler } from './StructuredLoggerTransports.js'
 
 export class StructuredLogger {
   constructor(category = 'App', options = {}) {
@@ -48,18 +51,8 @@ export class StructuredLogger {
   }
 
   formatLog(level, message, context = {}) {
-    const timestamp = this.includeTimestamp ? new Date().toISOString() : null
-    const levelName = LogLevelNames[level] || 'UNKNOWN'
     const fullContext = { ...this.getContext(), ...context }
-
-    return {
-      timestamp,
-      level: levelName,
-      category: this.category,
-      message,
-      context: Object.keys(fullContext).length ? fullContext : null,
-      metadata: this.metadata
-    }
+    return buildLogStructure(level, message, this.category, fullContext, this.metadata, this.includeTimestamp)
   }
 
   log(level, message, context = {}) {
@@ -199,52 +192,4 @@ export class StructuredLogger {
   }
 }
 
-export function defaultConsoleHandler(logEntry) {
-  const { timestamp, level, category, message, context } = logEntry
-
-  const prefix = [
-    timestamp && `[${timestamp}]`,
-    `[${level}]`,
-    `[${category}]`
-  ].filter(Boolean).join(' ')
-
-  const logMessage = context ? `${message} ${JSON.stringify(context)}` : message
-
-  if (level === 'TRACE' || level === 'DEBUG') {
-    console.debug(`${prefix} ${logMessage}`)
-  } else if (level === 'INFO') {
-    console.log(`${prefix} ${logMessage}`)
-  } else if (level === 'WARN') {
-    console.warn(`${prefix} ${logMessage}`)
-  } else if (level === 'ERROR' || level === 'FATAL') {
-    console.error(`${prefix} ${logMessage}`)
-  }
-}
-
-export function createLogBuffer(maxSize = 1000) {
-  const buffer = []
-
-  return {
-    handler: (logEntry) => {
-      buffer.push({
-        ...logEntry,
-        timestamp: logEntry.timestamp || Date.now()
-      })
-      if (buffer.length > maxSize) {
-        buffer.shift()
-      }
-    },
-    getAll: () => [...buffer],
-    getByLevel: (level) => buffer.filter(e => e.level === level),
-    getLast: (count) => buffer.slice(-count),
-    clear: () => buffer.length = 0,
-    stats: () => ({ size: buffer.length, maxSize })
-  }
-}
-
-export function createFileHandler(filePath) {
-  // Placeholder for file handler - would use fs in Node.js
-  return (logEntry) => {
-    // Implementation depends on platform (Node.js vs Browser)
-  }
-}
+export { defaultConsoleHandler, createLogBuffer, createFileHandler } from './StructuredLoggerTransports.js'
