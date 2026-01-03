@@ -54,4 +54,11 @@ export class NetworkCore {
       socket?.send?.(event, data)
     }
   }
+
+  destroy() {
+    this.timeouts.forEach(timeout => clearTimeout(timeout))
+    this.timeouts.clear()
+    this.sockets.clear()
+    this.handlers.clear()
+  }
 }

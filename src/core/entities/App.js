@@ -266,6 +266,7 @@ export class App extends BaseEntity {
 
     this.unbuild()
 
+    this.utilities?.clearTimeouts()
     this.blueprintLoader = null
     this.scriptExecutor = null
     this.eventManager = null

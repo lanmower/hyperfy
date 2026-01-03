@@ -113,6 +113,7 @@ export class Client extends System {
   destroy() {
     this.graphics.renderer.setAnimationLoop(null)
     worker?.postMessage('stop')
+    worker?.terminate()
     worker = null
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
   }

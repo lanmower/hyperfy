@@ -126,6 +126,15 @@ export class Socket {
     if (!this.closed && this.ws) {
       this.ws.terminate()
     }
+    this.destroy()
     this.network.onDisconnect(this, code)
+  }
+
+  destroy() {
+    if (this.ws) {
+      this.ws.removeAllListeners('message')
+      this.ws.removeAllListeners('pong')
+      this.ws.removeAllListeners('close')
+    }
   }
 }

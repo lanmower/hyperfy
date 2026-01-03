@@ -6,6 +6,7 @@ const logger = new StructuredLogger('AppUtilities')
 export class AppUtilities {
   constructor(app) {
     this.app = app
+    this.timeoutIds = new Set()
   }
 
   fetch = async (url, options = {}) => {
@@ -47,7 +48,13 @@ export class AppUtilities {
       if (hook.dead) return
       fn()
     }, ms)
+    this.timeoutIds.add(timerId)
     return timerId
+  }
+
+  clearTimeouts() {
+    this.timeoutIds.forEach(id => clearTimeout(id))
+    this.timeoutIds.clear()
   }
 
   getDeadHook = () => {

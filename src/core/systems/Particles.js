@@ -115,4 +115,12 @@ export class Particles extends System {
   onXRSession = session => {
     this.uOrientationFull.value = session && this.xr?.camera ? this.xr.camera.quaternion : this.rig.quaternion
   }
+
+  destroy() {
+    if (this.worker) {
+      this.worker.terminate()
+      this.worker = null
+    }
+    worker = null
+  }
 }
