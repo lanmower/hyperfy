@@ -18,18 +18,30 @@ class FallbackCompartment {
 
   evaluate(source) {
     this.validateScript(source)
-    const fn = new Function(...Object.keys(this.globals), `return (${source})`)
-    return fn(...Object.values(this.globals))
+    const paramNames = Object.keys(this.globals)
+    const paramValues = Object.values(this.globals)
+    const wrappedCode = `'use strict'; return (${source})`
+    const fn = new Function(...paramNames, wrappedCode)
+    return fn(...paramValues)
   }
 
   validateScript(code) {
     const blocklist = [
       /Object\.prototype/g,
+      /Object\s*\[\s*['"]prototype['"]\s*\]/g,
       /globalThis\./g,
       /__proto__/g,
+      /\['__proto__'\]/g,
+      /\["__proto__"\]/g,
       /constructor\s*\[/g,
+      /\['constructor'\]/g,
+      /\["constructor"\]/g,
+      /\.constructor\s*\[/g,
       /require\(/g,
       /eval\(/g,
+      /Function\s*\(/g,
+      /import\s*\(/g,
+      /import\s+/g,
     ]
 
     for (const pattern of blocklist) {
