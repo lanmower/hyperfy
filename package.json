@@ -17,7 +17,12 @@
     "webgl",
     "real-time"
   ],
-  "scripts": {},
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "build": "node scripts/build.mjs",
+    "build:client": "node scripts/build-client.mjs",
+    "start": "node scripts/start.mjs"
+  },
   "dependencies": {
     "@babel/standalone": "^7.28.5",
     "@fastify/compress": "^8.0.1",
@@ -60,6 +65,7 @@
     "yoga-layout": "^3.2.1"
   },
   "devDependencies": {
+    "esbuild": "^0.27.2",
     "esbuild-wasm": "^0.27.2",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
