@@ -1,4 +1,3 @@
-import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
 import { clientNetworkHandlers } from '../config/HandlerRegistry.js'
@@ -13,6 +12,7 @@ import { clientTimeoutManager } from './network/TimeoutManager.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 import { TimeoutConfig } from '../config/TimeoutConfig.js'
 import { readPacket } from '../packets.js'
+import { createClientNetworkHandlers } from './network/ClientNetworkHandlers.js'
 
 const logger = new StructuredLogger('ClientNetwork')
 
@@ -49,6 +49,7 @@ export class ClientNetwork extends BaseNetwork {
     this.timeoutManager = clientTimeoutManager
     this.queue = []
     this.initialized = false
+    this.handlers = createClientNetworkHandlers(this)
   }
 
   init({ wsUrl, name, avatar }) {
@@ -332,115 +333,23 @@ export class ClientNetwork extends BaseNetwork {
     logger.info('Full snapshot received', { id: this.id })
   }
 
-  onSettingsModified = data => {
-    this.world.settings.set(data.key, data.value)
-  }
-
-  onChatAdded = msg => {
-    this.world.chat.add(msg, false)
-  }
-
-  onChatCleared = () => {
-    this.world.chat.clear()
-  }
-
-  onBlueprintAdded = blueprint => {
-    this.world.blueprints.add(blueprint)
-  }
-
-  onBlueprintModified = change => {
-    this.world.blueprints.modify(change)
-  }
-
-  onEntityAdded = data => {
-    this.world.entities.add(data)
-  }
-
-  onEntityModified = data => {
-    const entity = this.world.entities.get(data.id)
-    if (!entity) {
-      logger.error('onEntityModified: entity not found', { id: data.id })
-      return
-    }
-    try {
-      entity.modify(data)
-    } catch (err) {
-      logger.error('Error modifying entity', { id: data.id, error: err.message })
-    }
-  }
-
-  onEntityEvent = event => {
-    if (!Array.isArray(event) || event.length < 4) {
-      logger.warn('Invalid onEntityEvent data', {
-        isArray: Array.isArray(event),
-        length: event?.length,
-      })
-      return
-    }
-    const [id, version, name, data] = event
-    if (typeof id !== 'string' || typeof version !== 'number' || typeof name !== 'string') {
-      logger.warn('Invalid onEntityEvent types', {
-        idType: typeof id,
-        versionType: typeof version,
-        nameType: typeof name,
-      })
-      return
-    }
-    const entity = this.world.entities.get(id)
-    if (!entity) {
-      logger.warn('onEntityEvent: entity not found', { id })
-      return
-    }
-    try {
-      entity.onEvent(version, name, data)
-    } catch (err) {
-      logger.error('Error processing entity event', { id, name, error: err.message })
-    }
-  }
-
-  onEntityRemoved = id => {
-    this.world.entities.remove(id)
-  }
-
-  onPlayerTeleport = data => {
-    this.world.entities.player?.teleport(data)
-  }
-
-  onPlayerPush = data => {
-    this.world.entities.player?.push(data.force)
-  }
-
-  onPlayerSessionAvatar = data => {
-    this.world.entities.player?.setSessionAvatar(data.avatar)
-  }
-
-  onLiveKitLevel = data => {
-    this.world.livekit.setLevel(data.playerId, data.level)
-  }
-
-  onMute = data => {
-    this.world.livekit.setMuted(data.playerId, data.muted)
-  }
-
-  onPong = time => {
-    this.world.stats?.onPong(time)
-  }
-
-  onKick = code => {
-    this.world.emit('kick', code)
-  }
-
-  onClose = code => {
-    this.world.chat.add({
-      id: uuid(),
-      from: null,
-      fromId: null,
-      body: 'You have been disconnected.',
-      createdAt: moment().toISOString(),
-    })
-    this.world.emit('disconnect', code || true)
-    logger.info('Disconnected', { code })
-  }
+  onSettingsModified = data => this.handlers.onSettingsModified(data)
+  onChatAdded = msg => this.handlers.onChatAdded(msg)
+  onChatCleared = () => this.handlers.onChatCleared()
+  onBlueprintAdded = blueprint => this.handlers.onBlueprintAdded(blueprint)
+  onBlueprintModified = change => this.handlers.onBlueprintModified(change)
+  onEntityAdded = data => this.handlers.onEntityAdded(data)
+  onEntityModified = data => this.handlers.onEntityModified(data)
+  onEntityEvent = event => this.handlers.onEntityEvent(event)
+  onEntityRemoved = id => this.handlers.onEntityRemoved(id)
+  onPlayerTeleport = data => this.handlers.onPlayerTeleport(data)
+  onPlayerPush = data => this.handlers.onPlayerPush(data)
+  onPlayerSessionAvatar = data => this.handlers.onPlayerSessionAvatar(data)
+  onLiveKitLevel = data => this.handlers.onLiveKitLevel(data)
+  onMute = data => this.handlers.onMute(data)
+  onPong = time => this.handlers.onPong(time)
+  onKick = code => this.handlers.onKick(code)
+  onClose = code => this.handlers.onClose(code)
 
   destroy() {
     this.wsManager.disconnect()
