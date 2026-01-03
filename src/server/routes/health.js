@@ -1,5 +1,11 @@
 import { performance } from 'perf_hooks'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 import { LoggerFactory } from '../../core/utils/logging/index.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const logger = LoggerFactory.get('Routes.Health')
 
@@ -12,6 +18,17 @@ export function registerStatusAPI(fastify, world) {
       const circuitBreakerManager = fastify.circuitBreakerManager
       const rateLimiterManager = fastify.rateLimiterManager
 
+      const getPerformanceMetrics = () => {
+        try {
+          if (world.performanceMonitor && typeof world.performanceMonitor.getMetrics === 'function') {
+            return world.performanceMonitor.getMetrics()
+          }
+        } catch (e) {
+          // ignore
+        }
+        return {}
+      }
+
       const status = {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
@@ -22,7 +39,7 @@ export function registerStatusAPI(fastify, world) {
           entities: world.entities?.items?.size || 0,
           players: world.players?.items?.size || 0,
         },
-        performance: world.performanceMonitor?.getMetrics() || {},
+        performance: getPerformanceMetrics(),
         circuits: circuitBreakerManager?.getStats() || {},
         timeouts: timeoutManager?.getStats() || {},
         rateLimits: rateLimiterManager?.getStats() || {},
@@ -71,8 +88,19 @@ export function registerStatusAPI(fastify, world) {
       const circuitBreakerManager = fastify.circuitBreakerManager
       const rateLimiterManager = fastify.rateLimiterManager
 
+      const getPerformanceMetrics = () => {
+        try {
+          if (world.performanceMonitor && typeof world.performanceMonitor.getMetrics === 'function') {
+            return world.performanceMonitor.getMetrics()
+          }
+        } catch (e) {
+          // ignore
+        }
+        return {}
+      }
+
       const metrics = {
-        performance: world.performanceMonitor?.getMetrics() || {},
+        performance: getPerformanceMetrics(),
         memory: process.memoryUsage(),
         circuits: circuitBreakerManager?.getStats() || {},
         timeouts: timeoutManager?.getStats() || {},

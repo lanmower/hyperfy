@@ -76,8 +76,8 @@ await registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConf
 await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker)
 
 await registerRoutes(fastify, world, initializer.assetsDir)
-registerStaticAssets(fastify, __dirname, initializer.assetsDir, world)
 registerEnvEndpoint(fastify)
+registerStaticAssets(fastify, __dirname, initializer.assetsDir, world)
 
 let hmr = null
 if (process.env.NODE_ENV === 'development') {

@@ -33,20 +33,7 @@ export async function setupCompression(fastify, options = {}) {
   await fastify.register(compress, {
     threshold: config.threshold,
     encodings: ['gzip', 'deflate'],
-    customEncodings: [],
     exclude: config.exclude,
-    zlib: {
-      level: 6,
-    },
-    brotliOptions: {
-      params: {
-        [11]: 24,
-        [12]: 22,
-      },
-    },
-    onUnsupportedEncoding: (encoding) => {
-      return 'gzip'
-    },
   })
 
   fastify.addHook('onSend', async (request, reply) => {

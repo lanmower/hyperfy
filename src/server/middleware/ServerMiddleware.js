@@ -19,7 +19,7 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
   fastify.register(createErrorHandler(logger, errorTracker))
   fastify.register(createTimeoutMiddleware(timeoutManager))
 
-  fastify.addHook('onSend', async (request, reply) => {
+  fastify.addHook('onRequest', async (request, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff')
     reply.header('X-Frame-Options', 'SAMEORIGIN')
     reply.header('X-XSS-Protection', '1; mode=block')
@@ -54,11 +54,6 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
     }
   })
 
-  await setupCompression(fastify)
-  setupCacheHeaders(fastify)
-  addETagSupport(fastify)
-  trackResponseTime(fastify)
-  enforcePerformanceBudgets(fastify)
 
   fastify.register(multipart, {
     limits: {

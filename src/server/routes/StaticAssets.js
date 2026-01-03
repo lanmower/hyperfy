@@ -102,18 +102,7 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   })
   */
 
-  // Serve public assets
-  fastify.register(statics, {
-    root: publicDir,
-    prefix: '/',
-    decorateReply: false,
-    setHeaders: res => {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-      res.setHeader('Pragma', 'no-cache')
-      res.setHeader('Expires', '0')
-    },
-  })
-
+  // Serve /assets/* static files
   fastify.register(statics, {
     root: assetsDir,
     prefix: '/assets/',
@@ -121,6 +110,16 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     setHeaders: res => {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
       res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString())
+    },
+  })
+
+  // Serve public/*.* static files (CSS, JS, images, etc) but only specific extensions
+  fastify.register(statics, {
+    root: publicDir,
+    prefix: '/public/',
+    decorateReply: false,
+    setHeaders: res => {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     },
   })
 }
