@@ -178,7 +178,22 @@ export class ClientNetwork extends BaseNetwork {
       logger.error('Invalid packet received')
       return
     }
-    this.enqueue(method, data)
+
+    // Decompress data if compressed
+    let finalData = data
+    if (data && typeof data === 'object' && data.compressed) {
+      try {
+        finalData = this.compressor.decompress(data)
+      } catch (err) {
+        logger.error('Failed to decompress packet data', {
+          method,
+          error: err.message,
+        })
+        return
+      }
+    }
+
+    this.enqueue(method, finalData)
   }
 
   onSnapshot(data) {
