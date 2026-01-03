@@ -15,6 +15,11 @@ export class WorldSaveManager {
     const now = moment().toISOString()
     for (const id of this.serverNetwork.dirtyBlueprints) {
       const blueprint = this.serverNetwork.blueprints.get(id)
+      if (!blueprint) {
+        logger.warn('Blueprint not found in save, skipping', { blueprintId: id })
+        this.serverNetwork.dirtyBlueprints.delete(id)
+        continue
+      }
       try {
         await this.serverNetwork.persistence.saveBlueprint(blueprint.id, blueprint, now, now)
         counts.upsertedBlueprints++
@@ -35,9 +40,13 @@ export class WorldSaveManager {
           logger.error('Failed to save entity', { entityId: entity.data.id, error: err.message })
         }
       } else {
-        await this.serverNetwork.persistence.deleteEntity(id)
-        counts.deletedApps++
-        this.serverNetwork.dirtyApps.delete(id)
+        try {
+          await this.serverNetwork.persistence.deleteEntity(id)
+          counts.deletedApps++
+          this.serverNetwork.dirtyApps.delete(id)
+        } catch (err) {
+          logger.error('Failed to delete entity', { entityId: id, error: err.message })
+        }
       }
     }
     const didSave = counts.upsertedBlueprints > 0 || counts.upsertedApps > 0 || counts.deletedApps > 0
