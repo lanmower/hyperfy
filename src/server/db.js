@@ -13,7 +13,7 @@ async function initSqlite(dbPath) {
   } catch {
     const initSqlJs = await import('sql.js').then(m => m.default)
     const SQL = await initSqlJs()
-    return createSqlJsDb(SQL)
+    return createSqlJsDb(SQL, dbPath)
   }
 
   const dir = path.dirname(dbPath)
@@ -36,8 +36,38 @@ async function initSqlite(dbPath) {
   }
 }
 
-function createSqlJsDb(SQL) {
-  const db = new SQL.Database()
+function createSqlJsDb(SQL, dbPath) {
+  let db
+  let lastSave = 0
+  const SAVE_INTERVAL = 1000
+
+  const loadDb = () => {
+    try {
+      if (fs.existsSync(dbPath)) {
+        const buffer = fs.readFileSync(dbPath)
+        db = new SQL.Database(buffer)
+      } else {
+        db = new SQL.Database()
+      }
+    } catch {
+      db = new SQL.Database()
+    }
+  }
+
+  const saveDb = (force = false) => {
+    const now = Date.now()
+    if (force || now - lastSave >= SAVE_INTERVAL) {
+      const data = db.export()
+      const buffer = Buffer.from(data)
+      const dir = path.dirname(dbPath)
+      fs.ensureDirSync(dir)
+      fs.writeFileSync(dbPath, buffer)
+      lastSave = now
+    }
+  }
+
+  loadDb()
+
   return {
     query: async (sql, params = []) => {
       const stmt = db.prepare(sql)
@@ -65,15 +95,19 @@ function createSqlJsDb(SQL) {
       stmt.bind(params)
       stmt.step()
       stmt.free()
+      saveDb(true)
     },
     run: async (sql, params = []) => {
       const stmt = db.prepare(sql)
       stmt.bind(params)
       stmt.step()
       stmt.free()
+      saveDb(true)
       return null
     },
-    close: async () => {}
+    close: async () => {
+      saveDb(true)
+    }
   }
 }
 
@@ -114,11 +148,17 @@ async function initPostgres(connectionString) {
 async function initSchema(db) {
   const isPostgres = dbType === 'postgres'
 
-  const tableExists = await db.queryOne(
-    isPostgres
-      ? `SELECT 1 FROM information_schema.tables WHERE table_name = 'config'`
-      : `SELECT name FROM sqlite_master WHERE type='table' AND name='config'`
-  )
+  let tableExists = false
+  try {
+    const result = await db.queryOne(
+      isPostgres
+        ? `SELECT 1 FROM information_schema.tables WHERE table_name = 'config'`
+        : `SELECT name FROM sqlite_master WHERE type='table' AND name='config'`
+    )
+    tableExists = !!result
+  } catch {
+    tableExists = false
+  }
 
   if (tableExists) return
 
