@@ -56,8 +56,8 @@ export class AdminRouteBuilder {
 
   createListRoute(fastify, path, listFunc, description) {
     this.createRoute(fastify, 'get', path, async (request, reply, fastify) => {
-      const page = parseInt(request.query.page) || 1
-      const limit = parseInt(request.query.limit) || 20
+      const page = parseInt(request.query.page, 10) || 1
+      const limit = parseInt(request.query.limit, 10) || 20
       const { items, total } = await listFunc(fastify, page, limit)
       return reply.code(200).send({
         success: true,

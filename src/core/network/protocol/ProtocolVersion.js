@@ -160,7 +160,7 @@ export class ProtocolVersion {
   }
 
   static getCompatibleVersions() {
-    return Object.keys(this.VERSIONS).map(v => parseInt(v))
+    return Object.keys(this.VERSIONS).map(v => parseInt(v, 10))
   }
 
   static getVersionInfo(version) {
@@ -178,13 +178,13 @@ export class ProtocolVersion {
       },
       changes: versionData.changes,
       canMigrateTo: Object.keys(this.VERSIONS)
-        .map(v => parseInt(v))
+        .map(v => parseInt(v, 10))
         .filter(v => this.canMigrate(version, v)),
     }
   }
 
   static getAllVersionInfo() {
-    return Object.keys(this.VERSIONS).map(v => this.getVersionInfo(parseInt(v)))
+    return Object.keys(this.VERSIONS).map(v => this.getVersionInfo(parseInt(v, 10)))
   }
 }
 

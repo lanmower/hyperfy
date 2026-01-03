@@ -54,7 +54,7 @@ try {
 
 const fastify = Fastify({
   logger: { level: 'error' },
-  trust: parseInt(process.env.TRUST_PROXY_HOPS) || 1,
+  trust: parseInt(process.env.TRUST_PROXY_HOPS, 10) || 1,
   bodyLimit: 52428800,
 })
 

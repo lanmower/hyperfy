@@ -118,7 +118,7 @@ export function registerStatusPageRoutes(fastify, statusPageData) {
 
   fastify.get('/api/status/history', async (request, reply) => {
     try {
-      const limit = parseInt(request.query.limit) || 100
+      const limit = parseInt(request.query.limit, 10) || 100
       const history = statusPageData.getIncidentHistory(limit)
       return reply.code(200).send({
         history,

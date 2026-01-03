@@ -6,7 +6,7 @@ import { StructuredLogger } from '../../utils/logging/index.js'
 
 const logger = new StructuredLogger('ServerLifecycleManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
-const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
+const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60', 10)
 
 export class ServerLifecycleManager {
   constructor(network) {
@@ -18,7 +18,7 @@ export class ServerLifecycleManager {
     this.network.fileStorage = new FileStorage(assetsDir, db)
     this.network.fileUploader = new FileUploader(
       this.network.fileStorage,
-      parseInt(env.PUBLIC_MAX_UPLOAD_SIZE || 50 * 1024 * 1024)
+      parseInt(env.PUBLIC_MAX_UPLOAD_SIZE || 50 * 1024 * 1024, 10)
     )
     this.network.commandHandler = new CommandHandler(this.network.world, db)
     this.network.persistence = new WorldPersistence(db, this.network.fileUploader)

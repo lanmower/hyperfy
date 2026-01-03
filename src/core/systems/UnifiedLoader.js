@@ -113,6 +113,7 @@ export class UnifiedLoader extends System {
       })
       .catch(err => {
         logger.error('Load failed', { type, url, error: err.message })
+        this.promises.delete(key)
         throw err
       })
 

@@ -4,32 +4,32 @@ const env = typeof process !== 'undefined' && process.env ? process.env : {}
 
 const MasterConfig = {
   network: {
-    requestTimeout: parseInt(env.HYPERFY_NETWORK_REQUEST_TIMEOUT ?? 30000),
-    inactivityTimeout: parseInt(env.HYPERFY_NETWORK_INACTIVITY_TIMEOUT ?? 300000),
-    databaseQueryTimeout: parseInt(env.HYPERFY_NETWORK_DB_QUERY_TIMEOUT ?? 5000),
-    connectionTimeout: parseInt(env.HYPERFY_NETWORK_CONN_TIMEOUT ?? 10000),
-    fetchDefaultTimeout: parseInt(env.HYPERFY_NETWORK_FETCH_TIMEOUT ?? 30000),
-    aiHealthCheckInterval: parseInt(env.HYPERFY_NETWORK_AI_HEALTH_INTERVAL ?? 30000),
-    aiHealthCheckTimeout: parseInt(env.HYPERFY_NETWORK_AI_HEALTH_TIMEOUT ?? 5000),
-    deploymentRetryDelay: parseInt(env.HYPERFY_NETWORK_DEPLOYMENT_RETRY ?? 2000),
-    wsMaxMessageSize: parseInt(env.HYPERFY_NETWORK_WS_MAX_SIZE ?? 1024 * 1024),
-    wsInvalidMessageThreshold: parseInt(env.HYPERFY_NETWORK_WS_INVALID_THRESHOLD ?? 10),
-    wsInvalidMessageWindow: parseInt(env.HYPERFY_NETWORK_WS_INVALID_WINDOW ?? 60000),
-    wsMessageQueueMax: parseInt(env.HYPERFY_NETWORK_WS_QUEUE_MAX ?? 100),
-    inactivityCheckInterval: parseInt(env.HYPERFY_NETWORK_INACTIVITY_CHECK ?? 60000),
-    reconnectDelay: parseInt(env.HYPERFY_NETWORK_RECONNECT_DELAY ?? 1000),
-    maxReconnectAttempts: parseInt(env.HYPERFY_NETWORK_MAX_RECONNECT ?? 10),
-    maxReconnectDelay: parseInt(env.HYPERFY_NETWORK_MAX_RECONNECT_DELAY ?? 30000),
-    gracefulShutdown: parseInt(env.HYPERFY_NETWORK_GRACEFUL_SHUTDOWN ?? 30000),
+    requestTimeout: parseInt(env.HYPERFY_NETWORK_REQUEST_TIMEOUT ?? 30000, 10),
+    inactivityTimeout: parseInt(env.HYPERFY_NETWORK_INACTIVITY_TIMEOUT ?? 300000, 10),
+    databaseQueryTimeout: parseInt(env.HYPERFY_NETWORK_DB_QUERY_TIMEOUT ?? 5000, 10),
+    connectionTimeout: parseInt(env.HYPERFY_NETWORK_CONN_TIMEOUT ?? 10000, 10),
+    fetchDefaultTimeout: parseInt(env.HYPERFY_NETWORK_FETCH_TIMEOUT ?? 30000, 10),
+    aiHealthCheckInterval: parseInt(env.HYPERFY_NETWORK_AI_HEALTH_INTERVAL ?? 30000, 10),
+    aiHealthCheckTimeout: parseInt(env.HYPERFY_NETWORK_AI_HEALTH_TIMEOUT ?? 5000, 10),
+    deploymentRetryDelay: parseInt(env.HYPERFY_NETWORK_DEPLOYMENT_RETRY ?? 2000, 10),
+    wsMaxMessageSize: parseInt(env.HYPERFY_NETWORK_WS_MAX_SIZE ?? 1024 * 1024, 10),
+    wsInvalidMessageThreshold: parseInt(env.HYPERFY_NETWORK_WS_INVALID_THRESHOLD ?? 10, 10),
+    wsInvalidMessageWindow: parseInt(env.HYPERFY_NETWORK_WS_INVALID_WINDOW ?? 60000, 10),
+    wsMessageQueueMax: parseInt(env.HYPERFY_NETWORK_WS_QUEUE_MAX ?? 100, 10),
+    inactivityCheckInterval: parseInt(env.HYPERFY_NETWORK_INACTIVITY_CHECK ?? 60000, 10),
+    reconnectDelay: parseInt(env.HYPERFY_NETWORK_RECONNECT_DELAY ?? 1000, 10),
+    maxReconnectAttempts: parseInt(env.HYPERFY_NETWORK_MAX_RECONNECT ?? 10, 10),
+    maxReconnectDelay: parseInt(env.HYPERFY_NETWORK_MAX_RECONNECT_DELAY ?? 30000, 10),
+    gracefulShutdown: parseInt(env.HYPERFY_NETWORK_GRACEFUL_SHUTDOWN ?? 30000, 10),
   },
 
   security: {
-    maxScriptSize: parseInt(env.HYPERFY_SECURITY_MAX_SCRIPT ?? 1024 * 1024),
-    maxStringLiteral: parseInt(env.HYPERFY_SECURITY_MAX_STRING ?? 100 * 1024),
-    maxUrlLength: parseInt(env.HYPERFY_SECURITY_MAX_URL ?? 2048),
-    maxPropertyDepth: parseInt(env.HYPERFY_SECURITY_MAX_DEPTH ?? 10),
-    maxAdminAttempts: parseInt(env.HYPERFY_SECURITY_MAX_ADMIN_ATTEMPTS ?? 5),
-    adminLockoutTime: parseInt(env.HYPERFY_SECURITY_ADMIN_LOCKOUT ?? 300000),
+    maxScriptSize: parseInt(env.HYPERFY_SECURITY_MAX_SCRIPT ?? 1024 * 1024, 10),
+    maxStringLiteral: parseInt(env.HYPERFY_SECURITY_MAX_STRING ?? 100 * 1024, 10),
+    maxUrlLength: parseInt(env.HYPERFY_SECURITY_MAX_URL ?? 2048, 10),
+    maxPropertyDepth: parseInt(env.HYPERFY_SECURITY_MAX_DEPTH ?? 10, 10),
+    maxAdminAttempts: parseInt(env.HYPERFY_SECURITY_MAX_ADMIN_ATTEMPTS ?? 5, 10),
+    adminLockoutTime: parseInt(env.HYPERFY_SECURITY_ADMIN_LOCKOUT ?? 300000, 10),
   },
 
   rateLimits: {
@@ -41,27 +41,27 @@ const MasterConfig = {
   },
 
   uploads: {
-    maxFileSize: parseInt(env.HYPERFY_UPLOADS_MAX_FILE ?? 50 * 1024 * 1024),
+    maxFileSize: parseInt(env.HYPERFY_UPLOADS_MAX_FILE ?? 50 * 1024 * 1024, 10),
   },
 
   avatar: {
-    maxFileSize: parseInt(env.HYPERFY_AVATAR_MAX_FILE ?? 50 * 1024 * 1024),
-    maxTextureBytes: parseInt(env.HYPERFY_AVATAR_MAX_TEXTURE ?? 32 * 1024 * 1024),
-    maxTriangles: parseInt(env.HYPERFY_AVATAR_MAX_TRIANGLES ?? 100000),
+    maxFileSize: parseInt(env.HYPERFY_AVATAR_MAX_FILE ?? 50 * 1024 * 1024, 10),
+    maxTextureBytes: parseInt(env.HYPERFY_AVATAR_MAX_TEXTURE ?? 32 * 1024 * 1024, 10),
+    maxTriangles: parseInt(env.HYPERFY_AVATAR_MAX_TRIANGLES ?? 100000, 10),
   },
 
   rendering: {
     previewFOV: parseFloat(env.HYPERFY_RENDERING_FOV ?? 70),
     previewAspectRatio: parseFloat(env.HYPERFY_RENDERING_ASPECT ?? 16 / 9),
-    previewWidth: parseInt(env.HYPERFY_RENDERING_WIDTH ?? 1080),
-    previewHeight: parseInt(env.HYPERFY_RENDERING_HEIGHT ?? 900),
+    previewWidth: parseInt(env.HYPERFY_RENDERING_WIDTH ?? 1080, 10),
+    previewHeight: parseInt(env.HYPERFY_RENDERING_HEIGHT ?? 900, 10),
     hdriUrl: env.HYPERFY_RENDERING_HDRI ?? '/day2.hdr',
   },
 
   maintenance: {
-    rateLimitCleanupInterval: parseInt(env.HYPERFY_MAINTENANCE_RATELIMIT_CLEANUP ?? 60000),
-    logRotationInterval: parseInt(env.HYPERFY_MAINTENANCE_LOG_ROTATION ?? 86400000),
-    cacheWarmerInterval: parseInt(env.HYPERFY_MAINTENANCE_CACHE_WARMER ?? 300000),
+    rateLimitCleanupInterval: parseInt(env.HYPERFY_MAINTENANCE_RATELIMIT_CLEANUP ?? 60000, 10),
+    logRotationInterval: parseInt(env.HYPERFY_MAINTENANCE_LOG_ROTATION ?? 86400000, 10),
+    cacheWarmerInterval: parseInt(env.HYPERFY_MAINTENANCE_CACHE_WARMER ?? 300000, 10),
   },
 }
 

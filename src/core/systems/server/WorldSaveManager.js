@@ -3,7 +3,7 @@ import { StructuredLogger } from '../../utils/logging/index.js'
 
 const logger = new StructuredLogger('WorldSaveManager')
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
-const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60')
+const SAVE_INTERVAL = parseInt(env.SAVE_INTERVAL || '60', 10)
 
 export class WorldSaveManager {
   constructor(serverNetwork) {
@@ -13,7 +13,8 @@ export class WorldSaveManager {
   save = async () => {
     const counts = { upsertedBlueprints: 0, upsertedApps: 0, deletedApps: 0 }
     const now = moment().toISOString()
-    for (const id of this.serverNetwork.dirtyBlueprints) {
+    const dirtyBlueprintIds = Array.from(this.serverNetwork.dirtyBlueprints)
+    for (const id of dirtyBlueprintIds) {
       const blueprint = this.serverNetwork.blueprints.get(id)
       if (!blueprint) {
         logger.warn('Blueprint not found in save, skipping', { blueprintId: id })
@@ -28,7 +29,8 @@ export class WorldSaveManager {
         logger.error('Failed to save blueprint', { blueprintId: blueprint.id, error: err.message })
       }
     }
-    for (const id of this.serverNetwork.dirtyApps) {
+    const dirtyAppIds = Array.from(this.serverNetwork.dirtyApps)
+    for (const id of dirtyAppIds) {
       const entity = this.serverNetwork.entities.get(id)
       if (entity) {
         if (entity.data.uploader || entity.data.mover) continue

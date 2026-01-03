@@ -53,7 +53,7 @@ export class ServerInitializer {
 
   setupShutdownManager(logger) {
     return new ShutdownManager(logger, {
-      gracefulTimeout: parseInt(process.env.SHUTDOWN_TIMEOUT) || 30000,
+      gracefulTimeout: parseInt(process.env.SHUTDOWN_TIMEOUT, 10) || 30000,
       forceTimeout: 5000,
     })
   }
@@ -76,34 +76,34 @@ export class ServerInitializer {
 
   setupTimeoutManager() {
     const timeoutManager = new TimeoutManager()
-    if (process.env.HTTP_TIMEOUT) timeoutManager.setTimeouts({ http: parseInt(process.env.HTTP_TIMEOUT) })
-    if (process.env.WS_TIMEOUT) timeoutManager.setTimeouts({ websocket: parseInt(process.env.WS_TIMEOUT) })
-    if (process.env.UPLOAD_TIMEOUT) timeoutManager.setTimeouts({ upload: parseInt(process.env.UPLOAD_TIMEOUT) })
-    if (process.env.DB_TIMEOUT) timeoutManager.setTimeouts({ database: parseInt(process.env.DB_TIMEOUT) })
+    if (process.env.HTTP_TIMEOUT) timeoutManager.setTimeouts({ http: parseInt(process.env.HTTP_TIMEOUT, 10) })
+    if (process.env.WS_TIMEOUT) timeoutManager.setTimeouts({ websocket: parseInt(process.env.WS_TIMEOUT, 10) })
+    if (process.env.UPLOAD_TIMEOUT) timeoutManager.setTimeouts({ upload: parseInt(process.env.UPLOAD_TIMEOUT, 10) })
+    if (process.env.DB_TIMEOUT) timeoutManager.setTimeouts({ database: parseInt(process.env.DB_TIMEOUT, 10) })
     return timeoutManager
   }
 
   setupCircuitBreakerManager() {
     const manager = new CircuitBreakerManager()
     manager.register('database', {
-      failureThreshold: parseInt(process.env.DB_CIRCUIT_FAILURE_THRESHOLD) || 5,
-      successThreshold: parseInt(process.env.DB_CIRCUIT_SUCCESS_THRESHOLD) || 2,
-      timeout: parseInt(process.env.DB_CIRCUIT_TIMEOUT) || 60000,
+      failureThreshold: parseInt(process.env.DB_CIRCUIT_FAILURE_THRESHOLD, 10) || 5,
+      successThreshold: parseInt(process.env.DB_CIRCUIT_SUCCESS_THRESHOLD, 10) || 2,
+      timeout: parseInt(process.env.DB_CIRCUIT_TIMEOUT, 10) || 60000,
     })
     manager.register('storage', {
-      failureThreshold: parseInt(process.env.STORAGE_CIRCUIT_FAILURE_THRESHOLD) || 5,
-      successThreshold: parseInt(process.env.STORAGE_CIRCUIT_SUCCESS_THRESHOLD) || 2,
-      timeout: parseInt(process.env.STORAGE_CIRCUIT_TIMEOUT) || 60000,
+      failureThreshold: parseInt(process.env.STORAGE_CIRCUIT_FAILURE_THRESHOLD, 10) || 5,
+      successThreshold: parseInt(process.env.STORAGE_CIRCUIT_SUCCESS_THRESHOLD, 10) || 2,
+      timeout: parseInt(process.env.STORAGE_CIRCUIT_TIMEOUT, 10) || 60000,
     })
     manager.register('websocket', {
-      failureThreshold: parseInt(process.env.WS_CIRCUIT_FAILURE_THRESHOLD) || 10,
-      successThreshold: parseInt(process.env.WS_CIRCUIT_SUCCESS_THRESHOLD) || 3,
-      timeout: parseInt(process.env.WS_CIRCUIT_TIMEOUT) || 30000,
+      failureThreshold: parseInt(process.env.WS_CIRCUIT_FAILURE_THRESHOLD, 10) || 10,
+      successThreshold: parseInt(process.env.WS_CIRCUIT_SUCCESS_THRESHOLD, 10) || 3,
+      timeout: parseInt(process.env.WS_CIRCUIT_TIMEOUT, 10) || 30000,
     })
     manager.register('upload', {
-      failureThreshold: parseInt(process.env.UPLOAD_CIRCUIT_FAILURE_THRESHOLD) || 5,
-      successThreshold: parseInt(process.env.UPLOAD_CIRCUIT_SUCCESS_THRESHOLD) || 2,
-      timeout: parseInt(process.env.UPLOAD_CIRCUIT_TIMEOUT) || 90000,
+      failureThreshold: parseInt(process.env.UPLOAD_CIRCUIT_FAILURE_THRESHOLD, 10) || 5,
+      successThreshold: parseInt(process.env.UPLOAD_CIRCUIT_SUCCESS_THRESHOLD, 10) || 2,
+      timeout: parseInt(process.env.UPLOAD_CIRCUIT_TIMEOUT, 10) || 90000,
     })
     return manager
   }

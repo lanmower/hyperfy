@@ -149,7 +149,7 @@ async function promptForVersion(versions) {
     console.log(`  ${index + 1}. ${version}`)
   })
 
-  const index = parseInt(process.argv[2]) - 1
+  const index = parseInt(process.argv[2], 10) - 1
   if (isNaN(index) || index < 0 || index >= versions.length) {
     await log('fail', 'Invalid version selection')
     return null

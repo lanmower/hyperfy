@@ -1,6 +1,6 @@
 const env = typeof process !== 'undefined' && process.env ? process.env : {}
 const getFloat = (key, def) => parseFloat(env[key] ?? def)
-const getInt = (key, def) => parseInt(env[key] ?? def)
+const getInt = (key, def) => parseInt(env[key] ?? def, 10)
 
 export const PhysicsConfig = {
   CAPSULE_RADIUS: getFloat('PHYSICS_CAPSULE_RADIUS', 0.3),
@@ -171,22 +171,22 @@ export const BuilderConfig = {
   SNAP_DEGREES: 5,
   SNAP_DISTANCE: 1,
   PROJECT_MAX: 500,
-  TRANSFORM_LIMIT: parseInt(env.BUILDER_TRANSFORM_LIMIT ?? 50),
+  TRANSFORM_LIMIT: parseInt(env.BUILDER_TRANSFORM_LIMIT ?? 50, 10),
 }
 
 
 export const NametagConfig = {
-  RESOLUTION: parseInt(env.NAMETAG_RESOLUTION ?? 2),
-  GRID_COLS: parseInt(env.NAMETAG_GRID_COLS ?? 5),
-  GRID_ROWS: parseInt(env.NAMETAG_GRID_ROWS ?? 20),
-  WIDTH: parseInt(env.NAMETAG_WIDTH ?? 200),
-  HEIGHT: parseInt(env.NAMETAG_HEIGHT ?? 35),
+  RESOLUTION: parseInt(env.NAMETAG_RESOLUTION ?? 2, 10),
+  GRID_COLS: parseInt(env.NAMETAG_GRID_COLS ?? 5, 10),
+  GRID_ROWS: parseInt(env.NAMETAG_GRID_ROWS ?? 20, 10),
+  WIDTH: parseInt(env.NAMETAG_WIDTH ?? 200, 10),
+  HEIGHT: parseInt(env.NAMETAG_HEIGHT ?? 35, 10),
 }
 
 
 export const RenderConfig = {
-  ACTION_BATCH_SIZE: parseInt(env.RENDER_ACTION_BATCH ?? 500),
-  LOD_BATCH_SIZE: parseInt(env.RENDER_LOD_BATCH ?? 1000),
+  ACTION_BATCH_SIZE: parseInt(env.RENDER_ACTION_BATCH ?? 500, 10),
+  LOD_BATCH_SIZE: parseInt(env.RENDER_LOD_BATCH ?? 1000, 10),
 }
 
 
