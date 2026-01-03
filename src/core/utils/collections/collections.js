@@ -6,18 +6,35 @@ export function findById(collection, id) {
 }
 
 export function updateById(collection, id, updates) {
+  if (!updates || typeof updates !== 'object') return null
   if (collection instanceof Map) {
     const item = collection.get(id)
-    if (item) Object.assign(item, updates)
+    if (item) {
+      for (const key in updates) {
+        if (updates.hasOwnProperty(key) && !['__proto__', 'constructor', 'prototype'].includes(key)) {
+          item[key] = updates[key]
+        }
+      }
+    }
     return item
   }
   if (Array.isArray(collection)) {
     const item = collection.find(x => x.id === id)
-    if (item) Object.assign(item, updates)
+    if (item) {
+      for (const key in updates) {
+        if (updates.hasOwnProperty(key) && !['__proto__', 'constructor', 'prototype'].includes(key)) {
+          item[key] = updates[key]
+        }
+      }
+    }
     return item
   }
   if (collection[id]) {
-    Object.assign(collection[id], updates)
+    for (const key in updates) {
+      if (updates.hasOwnProperty(key) && !['__proto__', 'constructor', 'prototype'].includes(key)) {
+        collection[id][key] = updates[key]
+      }
+    }
     return collection[id]
   }
 }

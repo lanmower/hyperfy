@@ -22,7 +22,13 @@ export class WorldPersistence extends PersistenceBase {
 
   async loadSettings() {
     const row = await this.db('config').where('key', 'settings').cacheAs('getConfigValue').first()
-    return row ? JSON.parse(row.value) : {}
+    if (!row) return {}
+    try {
+      return JSON.parse(row.value)
+    } catch (err) {
+      logger.error('Failed to parse settings', { error: err.message })
+      return {}
+    }
   }
 
   async saveSettings(settings) {
@@ -99,8 +105,12 @@ export class WorldPersistence extends PersistenceBase {
   async exportBlueprints(blueprints) {
     const exported = []
     for (const blueprint of blueprints) {
-      const data = typeof blueprint === 'string' ? JSON.parse(blueprint) : blueprint
-      exported.push(data)
+      try {
+        const data = typeof blueprint === 'string' ? JSON.parse(blueprint) : blueprint
+        exported.push(data)
+      } catch (err) {
+        logger.error('Failed to parse blueprint during export', { error: err.message })
+      }
     }
     return exported
   }
@@ -121,8 +131,12 @@ export class WorldPersistence extends PersistenceBase {
   async exportEntities(entities) {
     const exported = []
     for (const entity of entities) {
-      const data = typeof entity === 'string' ? JSON.parse(entity) : entity
-      exported.push(data)
+      try {
+        const data = typeof entity === 'string' ? JSON.parse(entity) : entity
+        exported.push(data)
+      } catch (err) {
+        logger.error('Failed to parse entity during export', { error: err.message })
+      }
     }
     return exported
   }
@@ -146,11 +160,36 @@ export class WorldPersistence extends PersistenceBase {
     const settings = await this.loadSettings()
     const spawn = await this.loadSpawn()
 
+    const blueprintData = blueprints.map(b => {
+      try {
+        return JSON.parse(b.data)
+      } catch (err) {
+        logger.error('Failed to parse blueprint during backup', { blueprintId: b.id, error: err.message })
+        return {}
+      }
+    })
+
+    const entityData = entities.map(e => {
+      try {
+        return JSON.parse(e.data)
+      } catch (err) {
+        logger.error('Failed to parse entity during backup', { entityId: e.id, error: err.message })
+        return {}
+      }
+    })
+
+    let spawnData = {}
+    try {
+      spawnData = JSON.parse(spawn)
+    } catch (err) {
+      logger.error('Failed to parse spawn during backup', { error: err.message })
+    }
+
     return {
-      blueprints: blueprints.map(b => JSON.parse(b.data)),
-      entities: entities.map(e => JSON.parse(e.data)),
+      blueprints: blueprintData,
+      entities: entityData,
       settings,
-      spawn: JSON.parse(spawn),
+      spawn: spawnData,
       timestamp: Date.now()
     }
   }

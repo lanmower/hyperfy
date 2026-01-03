@@ -16,12 +16,16 @@ function toRGB(color) {
 
 export function createNumericStarter(str) {
   if (str.includes('-')) {
-    const [start, end] = str.split('-').map(n => parseFloat(n))
-    return createNumericStarterLinear(start, end)
+    const parts = str.split('-').map(n => parseFloat(n))
+    if (parts.length >= 2) {
+      return createNumericStarterLinear(parts[0], parts[1])
+    }
   }
   if (str.includes('~')) {
-    const [from, to] = str.split('~').map(n => parseFloat(n))
-    return createNumericStarterRandom(from, to)
+    const parts = str.split('~').map(n => parseFloat(n))
+    if (parts.length >= 2) {
+      return createNumericStarterRandom(parts[0], parts[1])
+    }
   }
   const n = parseFloat(str)
   return createNumericStarterFixed(n)
@@ -53,12 +57,16 @@ function createNumericStarterFixed(n) {
 
 export function createColorStarter(str) {
   if (str.includes('-')) {
-    const [start, end] = str.split('-').map(toRGB)
-    return createColorStarterLinear(start, end)
+    const parts = str.split('-').map(toRGB)
+    if (parts.length >= 2) {
+      return createColorStarterLinear(parts[0], parts[1])
+    }
   }
   if (str.includes('~')) {
-    const [from, to] = str.split('~').map(toRGB)
-    return createColorStarterRandom(from, to)
+    const parts = str.split('~').map(toRGB)
+    if (parts.length >= 2) {
+      return createColorStarterRandom(parts[0], parts[1])
+    }
   }
   const rgb = toRGB(str)
   return createColorStarterFixed(rgb)

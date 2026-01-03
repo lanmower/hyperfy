@@ -58,11 +58,24 @@ export class BaseNetwork extends System {
         })
       },
       processPacket: (data) => {
+        if (!data || typeof data !== 'string') {
+          logger.error('Invalid packet data', { dataType: typeof data })
+          return
+        }
         try {
-          const { type, payload } = JSON.parse(data)
+          const parsed = JSON.parse(data)
+          if (!parsed || typeof parsed !== 'object') {
+            logger.error('Packet must be an object', { parsedType: typeof parsed })
+            return
+          }
+          const { type, payload } = parsed
+          if (!type || typeof type !== 'string') {
+            logger.error('Invalid packet type', { typeValue: type })
+            return
+          }
           this.protocol.enqueue(null, type, payload)
         } catch (err) {
-          logger.error('Failed to process packet', { error: err.message })
+          logger.error('Failed to process packet', { error: err.message, dataLength: data.length })
         }
       },
       getTime: () => {

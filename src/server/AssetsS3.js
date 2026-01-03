@@ -153,7 +153,11 @@ export class AssetsS3 {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     const hash = await hashFile(buffer)
-    const ext = file.name.split('.').pop().toLowerCase()
+    const parts = file.name.split('.')
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : 'bin'
+    if (!ext.match(/^[a-z0-9]{1,5}$/)) {
+      throw new Error('Invalid file extension')
+    }
     const filename = `${hash}.${ext}`
     const exists = await this.exists(filename)
     if (!exists) {

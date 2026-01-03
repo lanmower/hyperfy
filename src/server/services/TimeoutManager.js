@@ -17,7 +17,13 @@ export class TimeoutManager extends BaseManager {
   async initInternal() {}
 
   setTimeouts(config) {
-    Object.assign(this.timeouts, config)
+    if (!config || typeof config !== 'object') return
+    const allowed = ['http', 'websocket', 'database', 'upload', 'fetch']
+    for (const key of allowed) {
+      if (config.hasOwnProperty(key) && typeof config[key] === 'number') {
+        this.timeouts[key] = config[key]
+      }
+    }
   }
 
   getTimeout(type) {

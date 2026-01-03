@@ -125,11 +125,18 @@ export class Keyframe {
   }
 
   deserialize(data) {
-    const [time, value, inTangent, outTangent] = data.split(',')
-    this.time = parseFloat(time) || 0
-    this.value = parseFloat(value) || 0
-    this.inTangent = parseFloat(inTangent) || 0
-    this.outTangent = parseFloat(outTangent) || 0
+    const parts = data.split(',')
+    if (parts.length < 4) {
+      this.time = 0
+      this.value = 0
+      this.inTangent = 0
+      this.outTangent = 0
+    } else {
+      this.time = parseFloat(parts[0]) || 0
+      this.value = parseFloat(parts[1]) || 0
+      this.inTangent = parseFloat(parts[2]) || 0
+      this.outTangent = parseFloat(parts[3]) || 0
+    }
     this.id = ++ids
     this.inMagnitude = -0.1
     this.outMagnitude = 0.1

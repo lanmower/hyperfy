@@ -22,9 +22,16 @@ export class AssetsLocal {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     const hash = await hashFile(buffer)
-    const ext = file.name.split('.').pop().toLowerCase()
+    const parts = file.name.split('.')
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : 'bin'
+    if (!ext.match(/^[a-z0-9]{1,5}$/)) {
+      throw new Error('Invalid file extension')
+    }
     const filename = `${hash}.${ext}`
     const assetPath = path.join(this.dir, filename)
+    if (!assetPath.startsWith(path.resolve(this.dir))) {
+      throw new Error('Path traversal detected')
+    }
     const exists = await fs.exists(assetPath)
     if (!exists) {
       await fs.writeFile(assetPath, buffer)

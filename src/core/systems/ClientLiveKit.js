@@ -97,7 +97,12 @@ export class ClientLiveKit extends System {
         this.events.emit(EVENT.livekit, this.status)
       } else if (pub.source === 'screen_share') {
         if (isPublish) {
-          const metadata = JSON.parse(room.localParticipant.metadata || '{}')
+          let metadata = {}
+          try {
+            metadata = JSON.parse(room.localParticipant.metadata || '{}')
+          } catch (parseErr) {
+            logger.warn('Failed to parse local participant metadata', { error: parseErr.message })
+          }
           const targetId = metadata.screenTargetId
           this.status.screenshare = targetId
           const screen = this.createPlayerScreen({ playerId: this.network.id, targetId, track: pub.track, publication: pub })
@@ -127,7 +132,12 @@ export class ClientLiveKit extends System {
         }
       } else if (track.source === 'screen_share') {
         if (isSubscribe) {
-          const metadata = JSON.parse(participant.metadata || '{}')
+          let metadata = {}
+          try {
+            metadata = JSON.parse(participant.metadata || '{}')
+          } catch (parseErr) {
+            logger.warn('Failed to parse participant metadata', { playerId, error: parseErr.message })
+          }
           const targetId = metadata.screenTargetId
           const screen = this.createPlayerScreen({ playerId, targetId, track, publication: pub })
           this.addScreen(screen)

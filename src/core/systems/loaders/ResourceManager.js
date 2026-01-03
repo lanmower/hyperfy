@@ -43,9 +43,10 @@ export class ResourceManager extends BaseManager {
 
       const key = `${type}/${url}`
 
-      if (this.loading.has(key)) {
+      const existing = this.loading.get(key)
+      if (existing) {
         span?.setAttribute('cached', true)
-        return this.loading.get(key)
+        return existing
       }
 
       const promise = this.loader.load(type, url)
@@ -64,7 +65,12 @@ export class ResourceManager extends BaseManager {
           return null
         })
 
-      this.loading.set(key, promise)
+      try {
+        this.loading.set(key, promise)
+      } catch (mapErr) {
+        this.logger.error('Failed to cache resource', { type, url, error: mapErr.message })
+        span?.setAttribute('cacheError', true)
+      }
       span?.setAttribute('pending', true)
       return promise
     })

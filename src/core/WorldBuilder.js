@@ -36,7 +36,12 @@ export class WorldBuilder {
   }
 
   configure(options) {
-    Object.assign(this.options, options)
+    if (!options || typeof options !== 'object') return this
+    for (const key in options) {
+      if (options.hasOwnProperty(key) && !['__proto__', 'constructor', 'prototype'].includes(key)) {
+        this.options[key] = options[key]
+      }
+    }
     return this
   }
 
