@@ -14,6 +14,11 @@ const logger = new StructuredLogger('Scripts')
 class FallbackCompartment {
   constructor(globals) {
     this.globals = globals
+    this.sandboxAvailable = false
+    logger.warn('SECURITY BOUNDARY: No SES Compartment available, using unvetted Function() sandbox', {
+      context: 'FallbackCompartment initialization',
+      hasSES: false,
+    })
   }
 
   evaluate(source) {
@@ -46,13 +51,38 @@ class FallbackCompartment {
 
     for (const pattern of blocklist) {
       if (pattern.test(code)) {
+        logger.error('SECURITY VIOLATION: Script blocked by pattern matching', {
+          context: 'Script validation',
+          pattern: pattern.source,
+          blocked: true,
+        })
         throw new Error(`Script contains blocked pattern: ${pattern.source}`)
       }
     }
   }
 }
 
-const Compartment = typeof globalThis.Compartment === 'function' ? globalThis.Compartment : FallbackCompartment
+const CompartmentImpl = typeof globalThis.Compartment === 'function' ? globalThis.Compartment : FallbackCompartment
+
+class SecureCompartment {
+  constructor(globals) {
+    this.impl = new CompartmentImpl(globals)
+    const hasSES = typeof globalThis.Compartment === 'function'
+    if (!hasSES) {
+      logger.error('SECURITY BOUNDARY: Script execution without SES sandbox', {
+        context: 'SecureCompartment initialization',
+        sandboxStatus: 'FALLBACK',
+        risk: 'Prototype pollution possible if validation bypassed',
+      })
+    }
+  }
+
+  evaluate(source) {
+    return this.impl.evaluate(source)
+  }
+}
+
+const Compartment = SecureCompartment
 
 export class Scripts extends System {
   constructor(world) {
@@ -60,11 +90,11 @@ export class Scripts extends System {
     const scriptLogger = new StructuredLogger('ScriptExecution')
     this.compartment = new Compartment({
       console: {
-        log: (...args) => console.log(...args),
-        warn: (...args) => console.warn(...args),
-        error: (...args) => console.error(...args),
-        time: (...args) => console.time(...args),
-        timeEnd: (...args) => console.timeEnd(...args),
+        log: (...args) => scriptLogger.info('Script log', { args: args.join(' ') }),
+        warn: (...args) => scriptLogger.warn('Script warning', { args: args.join(' ') }),
+        error: (...args) => scriptLogger.error('Script error', { args: args.join(' ') }),
+        time: () => {},
+        timeEnd: () => {},
       },
       scriptLogger: {
         error: (message, context) => scriptLogger.error(message, context),
