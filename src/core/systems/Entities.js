@@ -92,8 +92,16 @@ export class Entities extends System {
   }
 
   deserialize(datas) {
+    if (!Array.isArray(datas)) {
+      logger.warn('Entities.deserialize() received non-array data', { dataType: typeof datas })
+      return
+    }
     for (const data of datas) {
-      this.add(data)
+      if (data && typeof data === 'object') {
+        this.add(data)
+      } else {
+        logger.warn('Invalid entity data in deserialization', { dataType: typeof data })
+      }
     }
   }
 

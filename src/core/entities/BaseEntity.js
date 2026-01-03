@@ -1,6 +1,7 @@
 
 import { uuid } from '../utils.js'
 import { StructuredLogger } from '../utils/logging/index.js'
+import { DeltaCodec } from '../systems/network/DeltaCodec.js'
 
 const logger = new StructuredLogger('BaseEntity')
 
@@ -34,7 +35,7 @@ export class BaseEntity {
   modify(updates) {
     const changes = {}
     for (const [key, value] of Object.entries(updates)) {
-      if (this.data[key] !== value) {
+      if (!DeltaCodec.equals(this.data[key], value)) {
         changes[key] = value
         this.data[key] = value
       }

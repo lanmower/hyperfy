@@ -196,7 +196,12 @@ export class ClientNetwork extends BaseNetwork {
             method,
             error: err.message,
           })
-          return
+          if (data.data && typeof data.data === 'object') {
+            logger.info('Falling back to uncompressed data')
+            finalData = data.data
+          } else {
+            return
+          }
         }
       } else {
         // Uncompressed but still wrapped in envelope - unwrap it
@@ -316,8 +321,15 @@ export class ClientNetwork extends BaseNetwork {
 
   onEntityModified = data => {
     const entity = this.world.entities.get(data.id)
-    if (!entity) return logger.error('onEntityModified: no entity found', { id: data.id })
-    entity.modify(data)
+    if (!entity) {
+      logger.error('onEntityModified: entity not found', { id: data.id })
+      return
+    }
+    try {
+      entity.modify(data)
+    } catch (err) {
+      logger.error('Error modifying entity', { id: data.id, error: err.message })
+    }
   }
 
   onEntityEvent = event => {
@@ -329,8 +341,24 @@ export class ClientNetwork extends BaseNetwork {
       return
     }
     const [id, version, name, data] = event
+    if (typeof id !== 'string' || typeof version !== 'number' || typeof name !== 'string') {
+      logger.warn('Invalid onEntityEvent types', {
+        idType: typeof id,
+        versionType: typeof version,
+        nameType: typeof name,
+      })
+      return
+    }
     const entity = this.world.entities.get(id)
-    entity?.onEvent(version, name, data)
+    if (!entity) {
+      logger.warn('onEntityEvent: entity not found', { id })
+      return
+    }
+    try {
+      entity.onEvent(version, name, data)
+    } catch (err) {
+      logger.error('Error processing entity event', { id, name, error: err.message })
+    }
   }
 
   onEntityRemoved = id => {

@@ -132,12 +132,20 @@ export class PlayerRemote extends BaseEntity {
       this.teleport++
     }
     if (data.hasOwnProperty('p')) {
-      this.data.position = data.p
-      this.position.push(data.p, this.teleport)
+      if (Array.isArray(data.p) && data.p.length === 3) {
+        this.data.position = data.p
+        this.position.push(data.p, this.teleport)
+      } else {
+        logger.warn('Invalid position data in PlayerRemote.modify()', { dataType: typeof data.p, length: Array.isArray(data.p) ? data.p.length : 'not-array' })
+      }
     }
     if (data.hasOwnProperty('q')) {
-      this.data.quaternion = data.q
-      this.quaternion.push(data.q, this.teleport)
+      if (Array.isArray(data.q) && data.q.length === 4) {
+        this.data.quaternion = data.q
+        this.quaternion.push(data.q, this.teleport)
+      } else {
+        logger.warn('Invalid quaternion data in PlayerRemote.modify()', { dataType: typeof data.q, length: Array.isArray(data.q) ? data.q.length : 'not-array' })
+      }
     }
     this.animationCtrl.updateAnimationFromData(data)
     if (data.hasOwnProperty('ef')) {

@@ -162,28 +162,33 @@ export class EntitySpawner {
     }
 
     let Entity
+    const isLocalPlayer = data.userId === this.entities.network.id
     if (data.type === 'player') {
-      Entity = Types[data.userId === this.entities.network.id ? 'playerLocal' : 'playerRemote']
-      logger.info('Creating player entity', { isLocal: data.userId === this.entities.network.id })
+      Entity = Types[isLocalPlayer ? 'playerLocal' : 'playerRemote']
+      logger.info('Creating player entity', { isLocal: isLocalPlayer })
     } else {
       Entity = Types[data.type]
     }
     logger.info('Entity class resolved', { entityClass: Entity?.name || 'unknown' })
     const entity = new Entity(this.world, data, local)
-    this.entities.items.set(entity.data.id, entity)
 
+    // Register entity atomically before emitting events
+    this.entities.items.set(entity.data.id, entity)
     if (data.type === 'player') {
       this.entities.players.set(entity.data.id, entity)
-      if (this.entities.network.isClient && data.userId !== this.entities.network.id) {
+      if (isLocalPlayer) {
+        this.entities.player = entity
+      }
+    }
+
+    // Emit events after entity is fully registered
+    if (data.type === 'player') {
+      if (this.entities.network.isClient && !isLocalPlayer) {
         if (this.entities.events) {
           this.entities.events.emit(EVENT.game.enter, { playerId: entity.data.id })
         }
       }
-    }
-
-    if (data.userId === this.entities.network.id) {
-      this.entities.player = entity
-      if (this.entities.events) {
+      if (isLocalPlayer && this.entities.events) {
         this.entities.events.emit(EVENT.player, entity)
       }
     }
