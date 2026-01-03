@@ -181,7 +181,8 @@ export class ClientNetwork extends BaseNetwork {
 
     // Decompress data if compressed
     let finalData = data
-    if (data && typeof data === 'object' && data.compressed === true) {
+    const isCompressed = data && typeof data === 'object' && data.compressed === true
+    if (isCompressed) {
       logger.info('Decompressing packet', { method, compressed: data.compressed })
       try {
         finalData = this.compressor.decompress(data)
@@ -193,6 +194,14 @@ export class ClientNetwork extends BaseNetwork {
         })
         return
       }
+    } else if (method === 'onSnapshot') {
+      // Log snapshot packet details for debugging
+      logger.debug('Snapshot packet received', {
+        hasCompressed: data?.hasOwnProperty('compressed'),
+        compressedValue: data?.compressed,
+        dataKeys: data && typeof data === 'object' ? Object.keys(data).slice(0, 10) : 'not-object',
+        dataType: typeof data,
+      })
     }
 
     this.enqueue(method, finalData)
