@@ -1,17 +1,13 @@
 import * as THREE from '../extras/three.js'
 
 import { Node } from './Node.js'
-import { v, q, m } from '../utils/TempVectors.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
-import { PhysicsForces } from './physics/PhysicsForces.js'
-import { PhysicsProperties } from './physics/PhysicsProperties.js'
 import { StateInitializer } from './base/StateInitializer.js'
 import { PhysicsSubsystemFactory } from './base/PhysicsSubsystemFactory.js'
 import { LifecycleHelper } from './base/LifecycleHelper.js'
-
-const _defaultScale = new THREE.Vector3(1, 1, 1)
+import { RigidBodyPhysicsIntegration } from './RigidBodyPhysics.js'
 
 const propertySchema = schema('mass', 'damping', 'angularDamping', 'friction', 'restitution', 'tag', 'trigger', 'convex')
   .add('type', { default: 'static', onSet() { this.markRebuild() } })
