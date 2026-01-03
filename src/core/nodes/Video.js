@@ -5,14 +5,13 @@ import { getRef, Node, secureRef } from './Node.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
-import { VideoRenderer } from './video/VideoRenderer.js'
-import { VideoAudioController } from './video/VideoAudioController.js'
-import { VideoInstanceManager } from './video/VideoInstanceManager.js'
 import { createVideoMaterialProxy } from './video/VideoMaterialProxy.js'
 import { isDistanceModel, isGroup, isFit, isPivot } from '../validation/TypeValidators.js'
 import { VideoHelper } from '../utils/helpers/Helpers.js'
 import { StateInitializer } from './base/StateInitializer.js'
 import { LifecycleHelper } from './base/LifecycleHelper.js'
+import { VideoLoaderController } from './VideoLoader.js'
+import { VideoPlaybackController } from './VideoPlayback.js'
 const { applyPivot } = VideoHelper
 
 const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'color', 'lit', 'doubleside', 'castShadow', 'receiveShadow', 'aspect', 'fit', 'width', 'height', 'pivot', 'volume', 'group', 'spatial', 'distanceModel', 'refDistance', 'maxDistance', 'rolloffFactor', 'coneInnerAngle', 'coneOuterAngle', 'coneOuterGain')
@@ -55,9 +54,8 @@ export class Video extends Node {
       StateInitializer.initLoadingState('n'),
       StateInitializer.initRenderingState()
     )
-    this.renderer = new VideoRenderer(this)
-    this.audioController = new VideoAudioController(this)
-    this.instanceManager = new VideoInstanceManager(this)
+    this.loader = new VideoLoaderController(this)
+    this.playback = new VideoPlaybackController(this)
   }
 
   async mount() {
