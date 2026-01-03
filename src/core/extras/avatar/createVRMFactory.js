@@ -1,83 +1,18 @@
-import * as THREE from '../three.js'
-import { DEG2RAD } from '../general.js'
 import { getTrianglesFromGeometry } from '../getTrianglesFromGeometry.js'
 import { getTextureBytesFromMaterial } from '../getTextureBytesFromMaterial.js'
-import { MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
-import { cloneGLB, getSkinnedMeshes, createCapsule } from './VRMUtilities.js'
-import { createAnimationSystem, createAimSystem } from './VRMControllers.js'
-import { Emotes } from '../playerEmotes.js'
-import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
-
-const { v1, v2 } = SharedVectorPool('createVRMFactory', 2)
-const material = new THREE.MeshBasicMaterial()
+import { preprocessVRMScene, setupSkinnedMeshes } from './VRMSceneProcessor.js'
+import { extractBoneGeometry, setupArmAngles } from './VRMBoneGeometry.js'
+import { createAvatar } from './VRMAvatarCreator.js'
 
 export function createVRMFactory(glb, setupMaterial) {
-  glb.scene.matrixAutoUpdate = false
-  glb.scene.matrixWorldAutoUpdate = false
-  const expressions = glb.scene.children.filter(n => n.type === 'VRMExpression') // prettier-ignore
-  for (const node of expressions) node.removeFromParent()
-  const vrmHumanoidRigs = glb.scene.children.filter(n => n.name === 'VRMHumanoidRig') // prettier-ignore
-  for (const node of vrmHumanoidRigs) node.removeFromParent()
-  const secondaries = glb.scene.children.filter(n => n.name === 'secondary') // prettier-ignore
-  for (const node of secondaries) node.removeFromParent()
-  glb.scene.traverse(obj => {
-    if (obj.isMesh) {
-      obj.castShadow = true
-      obj.receiveShadow = true
-    }
-  })
-  const bones = glb.userData.vrm.humanoid._rawHumanBones.humanBones
-  const hipsPosition = v1.setFromMatrixPosition(bones.hips.node.matrixWorld)
-  const rootPosition = v2.set(0, 0, 0) //setFromMatrixPosition(bones.root.node.matrixWorld)
-  const rootToHips = hipsPosition.y - rootPosition.y
-  const version = glb.userData.vrm.meta?.metaVersion
-  const skinnedMeshes = []
-  glb.scene.traverse(node => {
-    if (node.isSkinnedMesh) {
-      node.bindMode = THREE.DetachedBindMode
-      node.bindMatrix.copy(node.matrixWorld)
-      node.bindMatrixInverse.copy(node.bindMatrix).invert()
-      skinnedMeshes.push(node)
-    }
-    if (node.isMesh) {
-      if (node.geometry.computeBoundsTree) {
-        node.geometry.computeBoundsTree()
-      }
-      node.material.shadowSide = THREE.BackSide
-      setupMaterial(node.material)
-    }
-  })
-
-  const skeleton = skinnedMeshes[0].skeleton // should be same across all skinnedMeshes
-
-  const normBones = glb.userData.vrm.humanoid._normalizedHumanBones.humanBones
-  const leftArm = normBones.leftUpperArm.node
-  leftArm.rotation.z = 75 * DEG2RAD
-  const rightArm = normBones.rightUpperArm.node
-  rightArm.rotation.z = -75 * DEG2RAD
-  glb.userData.vrm.humanoid.update(0)
+  preprocessVRMScene(glb)
+  const skinnedMeshes = setupSkinnedMeshes(glb, setupMaterial)
+  const { skeleton, rootToHips, height, headToHeight, version, normBones } = extractBoneGeometry(glb, skinnedMeshes)
+  setupArmAngles(glb, normBones)
   skeleton.update()
 
-  let height = 0.5 // minimum
-  for (const mesh of skinnedMeshes) {
-    if (!mesh.boundingBox) mesh.computeBoundingBox()
-    if (height < mesh.boundingBox.max.y) {
-      height = mesh.boundingBox.max.y
-    }
-  }
-
-  const headPos = normBones.head.node.getWorldPosition(new THREE.Vector3())
-  const headToHeight = height - headPos.y
-
-  const getBoneName = vrmBoneName => {
-    return glb.userData.vrm.humanoid.getRawBoneNode(vrmBoneName)?.name
-  }
-
-  const noop = () => {
-  }
-
   return {
-    create,
+    create: (matrix, hooks, node) => createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version),
     applyStats(stats) {
       glb.scene.traverse(obj => {
         if (obj.geometry && !stats.geometries.has(obj.geometry.uuid)) {
@@ -90,139 +25,5 @@ export function createVRMFactory(glb, setupMaterial) {
         }
       })
     },
-  }
-
-  function create(matrix, hooks, node) {
-    const vrm = cloneGLB(glb)
-    const tvrm = vrm.userData.vrm
-    const skinnedMeshes = getSkinnedMeshes(vrm.scene)
-    const skeleton = skinnedMeshes[0].skeleton // should be same across all skinnedMeshes
-    const rootBone = skeleton.bones[0] // should always be 0
-    rootBone.parent.remove(rootBone)
-    rootBone.updateMatrixWorld(true)
-    vrm.scene.matrix = matrix // synced!
-    vrm.scene.matrixWorld = matrix // synced!
-    hooks.scene.add(vrm.scene)
-
-    const getEntity = () => node?.ctx.entity
-
-    const cRadius = 0.3
-    const sItem = {
-      matrix,
-      geometry: createCapsule(cRadius, height - cRadius * 2),
-      material,
-      getEntity,
-    }
-    hooks.octree?.insert(sItem)
-
-
-
-    vrm.scene.traverse(o => {
-      o.getEntity = getEntity
-    })
-
-    const getBoneName = vrmBoneName => {
-      return glb.userData.vrm.humanoid.getRawBoneNode(vrmBoneName)?.name
-    }
-
-    const animationSystem = createAnimationSystem(skinnedMeshes, hooks, rootToHips, version, getBoneName)
-    const gazeController = createAimSystem(vrm.scene.matrixWorld, glb.userData.vrm, skeleton)
-
-    animationSystem.poseSystem.addPose('idle', Emotes.IDLE)
-    animationSystem.poseSystem.addPose('walk', Emotes.WALK)
-    animationSystem.poseSystem.addPose('walkLeft', Emotes.WALK_LEFT)
-    animationSystem.poseSystem.addPose('walkBack', Emotes.WALK_BACK)
-    animationSystem.poseSystem.addPose('walkRight', Emotes.WALK_RIGHT)
-    animationSystem.poseSystem.addPose('run', Emotes.RUN)
-    animationSystem.poseSystem.addPose('runLeft', Emotes.RUN_LEFT)
-    animationSystem.poseSystem.addPose('runBack', Emotes.RUN_BACK)
-    animationSystem.poseSystem.addPose('runRight', Emotes.RUN_RIGHT)
-    animationSystem.poseSystem.addPose('jump', Emotes.JUMP)
-    animationSystem.poseSystem.addPose('fall', Emotes.FALL)
-    animationSystem.poseSystem.addPose('fly', Emotes.FLY)
-    animationSystem.poseSystem.addPose('talk', Emotes.TALK)
-
-    const mt = new THREE.Matrix4()
-    const getBoneTransform = boneName => {
-      const bone = gazeController.findBone(boneName)
-      if (!bone) return null
-      return mt.multiplyMatrices(vrm.scene.matrixWorld, bone.matrixWorld)
-    }
-
-    const updateRate = () => {
-      animationSystem.updateRate(vrm.scene.matrix, hooks.camera.matrixWorld)
-    }
-
-    const update = delta => {
-      const shouldUpdate = animationSystem.update(delta)
-      if (shouldUpdate) {
-        skeleton.bones.forEach(bone => bone.updateMatrixWorld())
-        skeleton.update = THREE.Skeleton.prototype.update
-        const loco = animationSystem.getLocomotionState()
-        const distance = animationSystem.getDistance()
-        const currentEmote = animationSystem.getCurrentEmote()
-        if (loco.gazeDir && distance < MAX_GAZE_DISTANCE && (currentEmote ? currentEmote.gaze : true)) {
-          gazeController.aimBone('neck', loco.gazeDir, delta, {
-            minAngle: -30,
-            maxAngle: 30,
-            smoothing: 0.4,
-            weight: 0.6,
-          })
-          gazeController.aimBone('head', loco.gazeDir, delta, {
-            minAngle: -30,
-            maxAngle: 30,
-            smoothing: 0.4,
-            weight: 0.6,
-          })
-        }
-      } else {
-        skeleton.update = noop
-      }
-    }
-
-
-    let firstPersonActive = false
-    const setFirstPerson = active => {
-      if (firstPersonActive === active) return
-      const head = gazeController.findBone('neck')
-      head.scale.setScalar(active ? 0 : 1)
-      firstPersonActive = active
-    }
-
-    const setLocomotion = (mode, axis, gazeDir) => {
-      animationSystem.setLocomotion(mode, axis, gazeDir)
-    }
-
-    const setEmote = url => {
-      animationSystem.setEmote(url)
-    }
-
-    return {
-      raw: vrm,
-      height,
-      headToHeight,
-      setEmote,
-      setFirstPerson,
-      update,
-      updateRate,
-      getBoneTransform,
-      setLocomotion,
-      setVisible(visible) {
-        vrm.scene.traverse(o => {
-          o.visible = visible
-        })
-      },
-      move(_matrix) {
-        matrix.copy(_matrix)
-        hooks.octree?.move(sItem)
-      },
-      disableRateCheck() {
-        animationSystem.disableRateCheck()
-      },
-      destroy() {
-        hooks.scene.remove(vrm.scene)
-        hooks.octree?.remove(sItem)
-      },
-    }
   }
 }
