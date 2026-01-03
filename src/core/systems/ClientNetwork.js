@@ -76,7 +76,11 @@ export class ClientNetwork extends BaseNetwork {
       return Promise.resolve()
     }
     const promise = this.protocol.sendReliable(this.wsManager, method, data)
-    if (onAck) promise.then(onAck)
+    if (onAck) {
+      promise.then(onAck).catch(err => {
+        logger.error('SendReliable promise rejected', { method, error: err.message })
+      })
+    }
     return promise
   }
 
