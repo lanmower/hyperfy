@@ -366,6 +366,8 @@
       "PHASE1_VERIFICATION.md",
       "PHASE2_VERIFICATION.md",
       "PHASE_3-5_CONVERGENCE.md",
+      "PHASE_6_7_CONVERGENCE_REPORT.md",
+      "PHASE_6_7_FINAL_REPORT.md",
       "PHASE_7_COMPLETION_SUMMARY.md",
       "6b7a8d95dd20ee8ddef74e1d4181b124ffec047d.webm",
       "index.html",
@@ -667,6 +669,9 @@
       "WebSocketValidator.js",
       "World.js",
       "WorldBuilder.js",
+      "WorldPluginManager.js",
+      "WorldSystemLifecycle.js",
+      "WorldTickLoop.js",
       "rollback.js",
       "validate-ci-config.js",
       "verify-deploy.js",
@@ -810,5 +815,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767428446130
+  "lastAnalyzed": 1767435654751
 }

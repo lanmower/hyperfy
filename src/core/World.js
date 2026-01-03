@@ -2,10 +2,13 @@ import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
 import { WorldConfig } from './config/SystemConfig.js'
 import { StructuredLogger } from './utils/logging/index.js'
-import { pluginRegistry, pluginHooks, createPluginAPI } from './plugins/index.js'
+import { pluginRegistry, pluginHooks } from './plugins/index.js'
 import { performanceMonitor, PerformanceBudget } from './performance/index.js'
 import { memoryAnalyzer } from './memory/index.js'
 import { eventAudit, eventRegistry } from './events/index.js'
+import { WorldTickLoop } from './WorldTickLoop.js'
+import { WorldSystemLifecycle } from './WorldSystemLifecycle.js'
+import { WorldPluginManager } from './WorldPluginManager.js'
 
 const logger = new StructuredLogger('World')
 
@@ -37,6 +40,10 @@ export class World extends EventEmitter {
     this.rig = new THREE.Object3D()
     this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
     this.rig.add(this.camera)
+
+    this.tickLoop = new WorldTickLoop(this)
+    this.systemLifecycle = new WorldSystemLifecycle(this)
+    this.pluginManager = new WorldPluginManager(this)
   }
 
   register(key, System) {
@@ -57,23 +64,7 @@ export class World extends EventEmitter {
   }
 
   async initializePlugins(pluginList = []) {
-    for (const pluginConfig of pluginList) {
-      const { name, plugin } = pluginConfig
-      if (!plugin) continue
-
-      const api = createPluginAPI(this, name)
-      plugin.api = api
-
-      try {
-        if (plugin.init) {
-          await Promise.resolve(plugin.init(api))
-        }
-        this.pluginRegistry.register(name, plugin)
-        logger.info('Plugin loaded', { name, version: plugin.version })
-      } catch (error) {
-        logger.error('Plugin initialization failed', { name, error: error.message })
-      }
-    }
+    return this.pluginManager.initializePlugins(pluginList)
   }
 
 
@@ -88,141 +79,25 @@ export class World extends EventEmitter {
     }
 
     await this.pluginHooks.execute('world:init', this)
-    await this.initializeSystems(options)
-    await this.startSystems()
+    await this.systemLifecycle.initializeSystems(options)
+    await this.systemLifecycle.startSystems()
     await this.pluginHooks.execute('world:start', this)
   }
 
-  async initializeSystems(options = {}) {
-    for (const key in this) {
-      const system = this[key]
-      if (system && typeof system.init === 'function') {
-        try {
-          await system.init(options)
-        } catch (err) {
-          logger.error(`System ${key} init failed`, { error: err.message })
-        }
-      }
-    }
-  }
-
-  async startSystems() {
-    for (const key in this) {
-      const system = this[key]
-      if (system && typeof system.start === 'function') {
-        try {
-          await system.start()
-        } catch (err) {
-          logger.error(`System ${key} start failed`, { error: err.message })
-        }
-      }
-    }
-  }
-
-  tick = time => {
-    this.preTick()
-    time /= 1000
-    let delta = time - this.time
-    if (delta < 0) delta = 0
-    if (delta > this.maxDeltaTime) {
-      delta = this.maxDeltaTime
-    }
-    this.frame++
-    this.time = time
-    this.accumulator += delta
-    const willFixedStep = this.accumulator >= this.fixedDeltaTime
-    this.preFixedUpdate(willFixedStep)
-    while (this.accumulator >= this.fixedDeltaTime) {
-      this.fixedUpdate(this.fixedDeltaTime)
-      this.postFixedUpdate(this.fixedDeltaTime)
-      this.accumulator -= this.fixedDeltaTime
-    }
-    const alpha = this.accumulator / this.fixedDeltaTime
-    this.preUpdate(alpha)
-    this.update(delta, alpha)
-    this.postUpdate(delta)
-    this.lateUpdate(delta, alpha)
-    this.postLateUpdate(delta)
-    this.commit()
-    this.postTick()
-  }
-
-  invokeSystemLifecycle(method, ...args) {
-    for (const key in this) {
-      const system = this[key]
-      system?.[method]?.(...args)
-    }
-  }
-
-  invokeHotLifecycle(method, ...args) {
-    for (const item of this.hot) {
-      item[method]?.(...args)
-    }
-  }
-
-  preTick() {
-    this.invokeSystemLifecycle('preTick')
-  }
-
-  preFixedUpdate(willFixedStep) {
-    this.invokeSystemLifecycle('preFixedUpdate', willFixedStep)
-  }
-
-  fixedUpdate(delta) {
-    this.invokeHotLifecycle('fixedUpdate', delta)
-    this.invokeSystemLifecycle('fixedUpdate', delta)
-  }
-
-  postFixedUpdate(delta) {
-    this.invokeSystemLifecycle('postFixedUpdate', delta)
-  }
-
-  preUpdate(alpha) {
-    this.invokeSystemLifecycle('preUpdate', alpha)
-  }
-
-  update(delta) {
-    this.invokeHotLifecycle('update', delta)
-    this.pluginHooks.execute('world:update', delta)
-
-    const updateStart = performance.now()
-    this.invokeSystemLifecycle('update', delta)
-    const updateDuration = performance.now() - updateStart
-
-    if (this.frame % 30 === 0) {
-      this.performanceMonitor.recordFramePhase('update', updateDuration)
-    }
-  }
-
-  postUpdate(delta) {
-    this.invokeSystemLifecycle('postUpdate', delta)
-  }
-
-  lateUpdate(delta) {
-    this.invokeHotLifecycle('lateUpdate', delta)
-
-    const lateUpdateStart = performance.now()
-    this.invokeSystemLifecycle('lateUpdate', delta)
-    const lateUpdateDuration = performance.now() - lateUpdateStart
-
-    if (this.frame % 30 === 0) {
-      this.performanceMonitor.recordFramePhase('lateUpdate', lateUpdateDuration)
-      this.performanceMonitor.recordEntityOperation('hot.lateUpdate', lateUpdateDuration, this.hot.size)
-    }
-  }
-
-  postLateUpdate(delta) {
-    this.invokeHotLifecycle('postLateUpdate', delta)
-    this.invokeSystemLifecycle('postLateUpdate', delta)
-  }
-
-  commit() {
-    this.invokeSystemLifecycle('commit')
-  }
-
-  postTick() {
-    this.invokeSystemLifecycle('postTick')
-  }
+  tick = time => this.tickLoop.tick(time)
+  preTick = () => this.tickLoop.preTick()
+  preFixedUpdate = willFixedStep => this.tickLoop.preFixedUpdate(willFixedStep)
+  fixedUpdate = delta => this.tickLoop.fixedUpdate(delta)
+  postFixedUpdate = delta => this.tickLoop.postFixedUpdate(delta)
+  preUpdate = alpha => this.tickLoop.preUpdate(alpha)
+  update = delta => this.tickLoop.update(delta)
+  postUpdate = delta => this.tickLoop.postUpdate(delta)
+  lateUpdate = delta => this.tickLoop.lateUpdate(delta)
+  postLateUpdate = delta => this.tickLoop.postLateUpdate(delta)
+  commit = () => this.tickLoop.commit()
+  postTick = () => this.tickLoop.postTick()
+  invokeSystemLifecycle = (method, ...args) => this.tickLoop.invokeSystemLifecycle(method, ...args)
+  invokeHotLifecycle = (method, ...args) => this.tickLoop.invokeHotLifecycle(method, ...args)
 
   setupMaterial = material => {
     this.environment.csm?.setupMaterial(material)
@@ -269,82 +144,23 @@ export class World extends EventEmitter {
     this.apps.inject(runtime)
   }
 
-  getPlugin(name) {
-    return this.pluginRegistry.getPlugin(name)
-  }
-
-  listPlugins() {
-    return this.pluginRegistry.listAllPlugins()
-  }
-
-  getPluginStats() {
-    return this.pluginRegistry.getPluginStats()
-  }
-
-  isPluginLoaded(name) {
-    return this.pluginRegistry.isPluginLoaded(name)
-  }
-
-  getPluginAPI(name) {
-    const plugin = this.pluginRegistry.getPlugin(name)
-    return plugin?.api || null
-  }
-
-  getAllHooks() {
-    return this.pluginHooks.getAllHooks()
-  }
-
-  getHookCount(name) {
-    return this.pluginHooks.getHookCount(name)
-  }
-
-  async loadDefaultPlugins() {
-    const { createDefaultPlugins } = await import('./plugins/defaultPlugins.js')
-    const plugins = createDefaultPlugins(this)
-    await this.initializePlugins(plugins)
-    return plugins
-  }
-
-  isPluginEnabled(name) {
-    return this.pluginRegistry.isPluginEnabled(name)
-  }
-
-  enablePlugin(name) {
-    const plugin = this.pluginRegistry.getPlugin(name)
-    if (plugin?.enable) {
-      plugin.enable()
-      return true
-    }
-    return false
-  }
-
-  disablePlugin(name) {
-    const plugin = this.pluginRegistry.getPlugin(name)
-    if (plugin?.disable) {
-      plugin.disable()
-      return true
-    }
-    return false
-  }
+  getPlugin = name => this.pluginManager.getPlugin(name)
+  listPlugins = () => this.pluginManager.listPlugins()
+  getPluginStats = () => this.pluginManager.getPluginStats()
+  isPluginLoaded = name => this.pluginManager.isPluginLoaded(name)
+  getPluginAPI = name => this.pluginManager.getPluginAPI(name)
+  getAllHooks = () => this.pluginManager.getAllHooks()
+  getHookCount = name => this.pluginManager.getHookCount(name)
+  loadDefaultPlugins = () => this.pluginManager.loadDefaultPlugins()
+  isPluginEnabled = name => this.pluginManager.isPluginEnabled(name)
+  enablePlugin = name => this.pluginManager.enablePlugin(name)
+  disablePlugin = name => this.pluginManager.disablePlugin(name)
 
   destroy() {
     this.pluginHooks.execute('world:destroy', this)
     this.pluginRegistry.getAllPlugins().forEach(plugin => {
       this.pluginRegistry.unregister(plugin.name)
     })
-    this.destroySystems()
-  }
-
-  destroySystems() {
-    for (const key in this) {
-      const system = this[key]
-      if (system && typeof system.destroy === 'function') {
-        try {
-          system.destroy()
-        } catch (err) {
-          logger.error(`System ${key} destroy failed`, { error: err.message })
-        }
-      }
-    }
+    this.systemLifecycle.destroySystems()
   }
 }
