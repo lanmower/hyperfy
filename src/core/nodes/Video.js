@@ -62,44 +62,28 @@ export class Video extends Node {
     LifecycleHelper.markMounted(this)
     if (this.ctx.world.network.isServer) return
     this._loading = true
-
     const n = ++this.n
-
-    this.instance = await this.instanceManager.loadInstance(n)
-
+    this.instance = await this.loader.loadInstance(n)
     if (this._visible) {
-      const material = this.renderer.createMaterial(this._lit, this._doubleside, this._color)
-
+      const material = this.playback.renderer.createMaterial(this._lit, this._doubleside, this._color)
       let geometry = this._geometry
       if (!geometry) {
         const dims = this.calculateDimensions(this.instance)
         geometry = this.createGeometry(dims.width, dims.height, this._pivot)
       }
-
-      this.mesh = this.renderer.createMesh(geometry, material, this._castShadow, this._receiveShadow)
+      this.mesh = this.playback.renderer.createMesh(geometry, material, this._castShadow, this._receiveShadow)
       this.ctx.world.stage.scene.add(this.mesh)
-      this.sItem = {
-        matrix: this.matrixWorld,
-        geometry,
-        material,
-        getEntity: () => this.ctx.entity,
-        node: this,
-      }
+      this.sItem = { matrix: this.matrixWorld, geometry, material, getEntity: () => this.ctx.entity, node: this }
       this.ctx.world.stage.octree.insert(this.sItem)
     }
-
     if (!this.instance) return
-
     await this.instance.prepare
     if (this.n !== n) return
-
-    this.instance.loop = this._loop
-    this.audioController.setupAudio(this.instance)
-
+    this.loader.configureInstance(this.instance, this._loop)
+    this.playback.audioController.setupAudio(this.instance)
     if (this._visible) {
       const material = this.mesh.material
       const result = this.updateGeometry(this.mesh.geometry, this.instance, this._width, this._height, this._pivot)
-
       material.color.set('white')
       material.uniforms.uVidAspect.value = result.vidAspect
       material.uniforms.uGeoAspect.value = result.geoAspect
@@ -107,10 +91,8 @@ export class Video extends Node {
       material.uniforms.uHasMap.value = 1
       material.uniforms.uFit.value = this._fit === 'cover' ? 1 : this._fit === 'contain' ? 2 : 0
       material.needsUpdate = true
-
       this._loading = false
       this._onLoad?.()
-
       if (this.shouldPlay) {
         this.instance.play()
         this.shouldPlay = false
@@ -125,15 +107,9 @@ export class Video extends Node {
       return
     }
     if (didMove) {
-      if (this.mesh) {
-        this.mesh.matrixWorld.copy(this.matrixWorld)
-      }
-      if (this.sItem) {
-        this.ctx.world.stage.octree.move(this.sItem)
-      }
-      if (this.pannerNode) {
-        this.audioController.updatePannerPosition()
-      }
+      if (this.mesh) this.mesh.matrixWorld.copy(this.matrixWorld)
+      if (this.sItem) this.ctx.world.stage.octree.move(this.sItem)
+      if (this.pannerNode) this.playback.updatePannerPosition()
     }
   }
 
@@ -146,18 +122,12 @@ export class Video extends Node {
       this.mesh.geometry.dispose()
       this.mesh = null
     }
-    if (this.instance) {
-      this.audioController.cleanup()
-    }
-    this.instanceManager.cleanup()
+    this.playback.cleanup()
+    this.loader.cleanup()
     if (this.sItem) {
       this.ctx.world.stage.octree.remove(this.sItem)
       this.sItem = null
     }
-  }
-
-  updatePannerPosition() {
-    this.audioController.updatePannerPosition()
   }
 
   copy(source, recursive) {
@@ -219,28 +189,26 @@ export class Video extends Node {
   }
 
   play(restartIfPlaying) {
-    if (this.instance) {
-      this.instance.play(restartIfPlaying)
-    } else {
-      this.shouldPlay = true
-    }
+    this.playback.play(restartIfPlaying)
   }
 
   pause() {
-    this.instance?.pause()
+    this.playback.pause()
   }
 
   stop() {
-    this.instance?.stop()
+    this.playback.stop()
   }
+
+  get loading() { return this._loading }
+  get duration() { return this.playback.getDuration() }
+  get playing() { return this.playback.isPlaying() }
+  get time() { return this.playback.getTime() }
+  set time(value) { this.playback.setTime(value) }
 
   getProxy() {
     return createSchemaProxy(this, propertySchema,
-      {
-        play: this.play,
-        pause: this.pause,
-        stop: this.stop,
-      },
+      { play: this.play, pause: this.pause, stop: this.stop },
       {
         loading: function() { return this.loading },
         duration: function() { return this.duration },

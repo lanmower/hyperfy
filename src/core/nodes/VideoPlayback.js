@@ -16,39 +16,12 @@ export class VideoPlaybackController {
     }
   }
 
-  pause() {
-    this.video.instance?.pause()
-  }
-
-  stop() {
-    this.video.instance?.stop()
-  }
-
-  getDuration() {
-    return this.video.instance ? this.video.instance.duration : 0
-  }
-
-  isPlaying() {
-    return this.video.instance ? this.video.instance.isPlaying : false
-  }
-
-  getTime() {
-    return this.video.instance ? this.video.instance.currentTime : 0
-  }
-
-  setTime(value) {
-    if (this.video.instance) {
-      this.video.instance.currentTime = value
-    }
-  }
-
-  updatePannerPosition() {
-    this.audioController.updatePannerPosition()
-  }
-
-  cleanup() {
-    if (this.video.instance) {
-      this.audioController.cleanup()
-    }
-  }
+  pause() { this.video.instance?.pause() }
+  stop() { this.video.instance?.stop() }
+  getDuration() { return this.video.instance ? this.video.instance.duration : 0 }
+  isPlaying() { return this.video.instance ? this.video.instance.isPlaying : false }
+  getTime() { return this.video.instance ? this.video.instance.currentTime : 0 }
+  setTime(value) { if (this.video.instance) this.video.instance.currentTime = value }
+  updatePannerPosition() { this.audioController.updatePannerPosition() }
+  cleanup() { if (this.video.instance) this.audioController.cleanup() }
 }
