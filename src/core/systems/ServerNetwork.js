@@ -150,6 +150,7 @@ export class ServerNetwork extends BaseNetwork {
 
   destroy() {
     if (this.socketIntervalId) clearInterval(this.socketIntervalId)
+    if (this.saveTimerId) clearTimeout(this.saveTimerId)
     if (this.hotReloadHandler && typeof process !== 'undefined' && process.removeListener) {
       process.removeListener('message', this.hotReloadHandler)
       this.hotReloadHandler = null
