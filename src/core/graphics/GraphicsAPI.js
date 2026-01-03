@@ -90,30 +90,26 @@ export class GraphicsAPI {
   }
 
   createLight(type = 'directional', props = {}) {
-    const defaults = {
-      color: props.color ?? 0xffffff,
-      intensity: props.intensity ?? 1,
-    }
-
+    const color = props.color ?? 0xffffff
+    const intensity = props.intensity ?? 1
     if (type === 'directional') {
-      const light = new THREE.DirectionalLight(defaults.color, defaults.intensity)
-      if (props.position) light.position.fromArray(props.position)
-      return light
+      const l = new THREE.DirectionalLight(color, intensity)
+      if (props.position) l.position.fromArray(props.position)
+      return l
     } else if (type === 'ambient') {
-      return new THREE.AmbientLight(defaults.color, defaults.intensity)
+      return new THREE.AmbientLight(color, intensity)
     } else if (type === 'point') {
-      const light = new THREE.PointLight(defaults.color, defaults.intensity)
-      if (props.distance) light.distance = props.distance
-      if (props.decay) light.decay = props.decay
-      return light
+      const l = new THREE.PointLight(color, intensity)
+      if (props.distance) l.distance = props.distance
+      if (props.decay) l.decay = props.decay
+      return l
     } else if (type === 'spot') {
-      const light = new THREE.SpotLight(defaults.color, defaults.intensity)
-      if (props.angle) light.angle = props.angle
-      if (props.penumbra) light.penumbra = props.penumbra
-      return light
+      const l = new THREE.SpotLight(color, intensity)
+      if (props.angle) l.angle = props.angle
+      if (props.penumbra) l.penumbra = props.penumbra
+      return l
     }
-
-    return new THREE.DirectionalLight(defaults.color, defaults.intensity)
+    return new THREE.DirectionalLight(color, intensity)
   }
 
   addToScene(scene, object) {
@@ -171,8 +167,7 @@ export class GraphicsAPI {
   }
 
   traverse(object, callback) {
-    if (!object) return
-    object.traverse(callback)
+    object?.traverse?.(callback)
   }
 
   getChildren(object) {
@@ -180,28 +175,18 @@ export class GraphicsAPI {
   }
 
   clone(object) {
-    if (!object) return null
-    return object.clone()
+    return object?.clone?.() || null
   }
 
   dispose(object) {
     if (!object) return
-
-    if (object.geometry) {
-      object.geometry.dispose()
+    object.geometry?.dispose?.()
+    if (Array.isArray(object.material)) {
+      object.material.forEach(m => m.dispose?.())
+    } else {
+      object.material?.dispose?.()
     }
-
-    if (object.material) {
-      if (Array.isArray(object.material)) {
-        object.material.forEach(m => m.dispose())
-      } else {
-        object.material.dispose()
-      }
-    }
-
-    if (object.dispose) {
-      object.dispose()
-    }
+    object.dispose?.()
   }
 }
 

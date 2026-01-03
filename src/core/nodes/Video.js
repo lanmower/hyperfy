@@ -147,46 +147,18 @@ export class Video extends Node {
     this.setDirty()
   }
 
-  get loading() {
-    return this._loading
-  }
-
-  get duration() {
-    return this.instance ? this.instance.duration : 0
-  }
-
-  get playing() {
-    return this.instance ? this.instance.isPlaying : false
-  }
-
-  get time() {
-    return this.instance ? this.instance.currentTime : 0
-  }
-
-  set time(value) {
-    if (this.instance) {
-      this.instance.currentTime = value
-    }
-  }
-
+  get loading() { return this._loading }
+  get duration() { return this.instance ? this.instance.duration : 0 }
+  get playing() { return this.instance ? this.instance.isPlaying : false }
+  get time() { return this.instance ? this.instance.currentTime : 0 }
+  set time(value) { if (this.instance) this.instance.currentTime = value }
   get material() {
-    if (!this._materialProxy) {
-      this._materialProxy = createVideoMaterialProxy(this)
-    }
+    if (!this._materialProxy) this._materialProxy = createVideoMaterialProxy(this)
     return this._materialProxy
   }
-
-  set material(value) {
-    throw new Error('[video] cannot set material')
-  }
-
-  get onLoad() {
-    return this._onLoad
-  }
-
-  set onLoad(value) {
-    this._onLoad = value
-  }
+  set material(value) { throw new Error('[video] cannot set material') }
+  get onLoad() { return this._onLoad }
+  set onLoad(value) { this._onLoad = value }
 
   play(restartIfPlaying) {
     this.playback.play(restartIfPlaying)
