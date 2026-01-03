@@ -29,63 +29,14 @@ export class RigidBody extends Node {
     super(data)
     initializeNode(this, 'rigidbody', propertySchema, {}, data)
     PhysicsSubsystemFactory.initializeRigidBodySubsystems(this)
+    this.physics = new RigidBodyPhysicsIntegration(this)
   }
 
   mount() {
     LifecycleHelper.markMounted(this)
     if (this.ctx.entity?.moving) return
-
-    this.matrixWorld.decompose(v[0], q[0], v[1])
-    this.transform = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-    v[0].toPxTransform(this.transform)
-    q[0].toPxTransform(this.transform)
-
-    if (this._type === 'static') {
-      this.actor = this.ctx.world.physics.physics.createRigidStatic(this.transform)
-    } else if (this._type === 'kinematic') {
-      this.actor = this.ctx.world.physics.physics.createRigidDynamic(this.transform)
-      this.actor.setRigidBodyFlag(PHYSX.PxRigidBodyFlagEnum.eKINEMATIC, true)
-      PHYSX.PxRigidBodyExt.prototype.setMassAndUpdateInertia(this.actor, this._mass)
-    } else if (this._type === 'dynamic') {
-      this.actor = this.ctx.world.physics.physics.createRigidDynamic(this.transform)
-      PHYSX.PxRigidBodyExt.prototype.setMassAndUpdateInertia(this.actor, this._mass)
-      if (this._centerOfMass) {
-        const pose = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-        this._centerOfMass.toPxTransform(pose)
-        this.actor.setCMassLocalPose(pose)
-      }
-      this.actor.setLinearDamping(this._linearDamping)
-      this.actor.setAngularDamping(this._angularDamping)
-    }
-
-    for (const shape of this.shapes) {
-      this.actor.attachShape(shape)
-    }
-
-    const playerId = this.ctx.entity?.isPlayer ? this.ctx.entity.data.id : null
-    this.actorHandle = this.ctx.world.physics.addActor(this.actor, {
-      onInterpolate: this._type === 'kinematic' || this._type === 'dynamic' ? this.onInterpolate : null,
-      node: this,
-      get tag() {
-        return this.node._tag
-      },
-      get playerId() {
-        return playerId
-      },
-      get onContactStart() {
-        return this.node._onContactStart
-      },
-      get onContactEnd() {
-        return this.node._onContactEnd
-      },
-      get onTriggerEnter() {
-        return this.node._onTriggerEnter
-      },
-      get onTriggerLeave() {
-        return this.node._onTriggerLeave
-      },
-    })
-
+    this.physics.createActor()
+    this.physics.registerActor()
     PhysicsSubsystemFactory.attachActor(this, this.actor)
   }
 
@@ -100,22 +51,9 @@ export class RigidBody extends Node {
     }
   }
 
-  onInterpolate = (position, quaternion) => {
-    if (this.parent) {
-      m[0].compose(position, quaternion, _defaultScale)
-      m[1].copy(this.parent.matrixWorld).invert()
-      m[2].multiplyMatrices(m[1], m[0])
-      m[2].decompose(this.position, this.quaternion, v[0])
-    } else {
-      this.position.copy(position)
-      this.quaternion.copy(quaternion)
-    }
-  }
-
   unmount() {
     if (this.actor) {
-      this.actorHandle?.destroy()
-      this.actorHandle = null
+      this.physics.destroy()
     }
     PhysicsSubsystemFactory.cleanupActor(this)
   }
