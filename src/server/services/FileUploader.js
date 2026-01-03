@@ -1,14 +1,13 @@
-import crypto from 'crypto'
-import { MasterConfig } from '../config/MasterConfig.js'
 import { FileStorage } from './FileStorage.js'
 import { UploadStats } from './uploader/UploadStats.js'
 import { BatchUploader } from './uploader/BatchUploader.js'
 import { formatBytes, formatDuration, exportStats } from './uploader/FormatUtils.js'
+import { FileUploaderValidation } from './FileUploaderValidation.js'
 
 export class FileUploader {
   constructor(storage, maxUploadSize = null) {
     this.storage = storage
-    this.maxUploadSize = maxUploadSize ?? MasterConfig.uploads.maxFileSize
+    this.validation = new FileUploaderValidation(maxUploadSize)
     this.uploads = new Map()
     this.stats = new UploadStats()
     this.batchUploader = new BatchUploader(this)
@@ -17,89 +16,45 @@ export class FileUploader {
     this.onError = null
   }
 
-  validateFile(buffer, filename) {
-    if (!buffer?.length) {
-      throw new Error('File buffer is empty')
-    }
-
-    if (buffer.length > this.maxUploadSize) {
-      throw new Error(`File size (${buffer.length} bytes) exceeds maximum allowed size (${this.maxUploadSize} bytes)`)
-    }
-
-    return true
-  }
-
-  async calculateHash(buffer) {
-    return crypto.createHash('sha256').update(buffer).digest('hex')
-  }
-
-  async checkExists(hash) {
-    return await this.storage.exists(hash)
-  }
-
   async uploadFile(buffer, filename, options = {}) {
-    const uploadId = options.uploadId || crypto.randomUUID()
-    const {
-      mimeType = 'application/octet-stream',
-      uploader = null,
-      onProgress = null,
-      metadata = {}
-    } = options
+    const uploadId = options.uploadId || this.validation.validateUploadOptions(options).uploadId
+    const validatedOptions = this.validation.validateUploadOptions(options)
 
     try {
-      this.validateFile(buffer, filename)
+      this.validation.validateFile(buffer, filename)
 
-      const hash = await this.calculateHash(buffer)
+      const hash = await this.validation.calculateHash(buffer)
       const size = buffer.length
 
-      const exists = await this.checkExists(hash)
+      const exists = await this.storage.exists(hash)
       if (exists) {
         const existingRecord = await this.storage.getRecord(hash)
-        const result = {
-          uploadId,
-          hash,
-          filename,
-          size,
-          deduplicated: true,
-          url: existingRecord.url,
-          record: existingRecord,
-          metadata
-        }
+        const result = this.validation.createDeduplicatedRecord(
+          hash, filename, size, existingRecord.url, uploadId, validatedOptions.metadata
+        )
 
-        this.uploads.set(uploadId, result)
+        this.uploads.set(uploadId, { ...result, record: existingRecord })
         this.stats.incrementTotal()
         this.stats.incrementSkipped()
         this.stats.addDeduplicatedBytes(size)
 
-        if (onProgress) onProgress(100)
+        if (options.onProgress) options.onProgress(100)
         if (this.onProgress) this.onProgress(uploadId, 100)
         if (this.onComplete) this.onComplete(uploadId, result)
 
         return result
       }
 
-      const uploadRecord = {
-        uploadId,
-        hash,
-        filename,
-        size,
-        mimeType,
-        uploader,
-        deduplicated: false,
-        metadata,
-        startTime: Date.now(),
-        progress: 0
-      }
-
+      const uploadRecord = this.validation.createUploadRecord(hash, filename, size, validatedOptions)
       this.uploads.set(uploadId, uploadRecord)
 
-      if (onProgress) onProgress(50)
+      if (options.onProgress) options.onProgress(50)
       if (this.onProgress) this.onProgress(uploadId, 50)
 
       const record = await this.storage.store(hash, filename, buffer, {
-        mimeType,
-        uploader,
-        ...metadata
+        mimeType: validatedOptions.mimeType,
+        uploader: validatedOptions.uploader,
+        ...validatedOptions.metadata,
       })
 
       uploadRecord.endTime = Date.now()
@@ -112,7 +67,7 @@ export class FileUploader {
       this.stats.incrementSuccessful()
       this.stats.addTotalBytes(size)
 
-      if (onProgress) onProgress(100)
+      if (options.onProgress) options.onProgress(100)
       if (this.onProgress) this.onProgress(uploadId, 100)
       if (this.onComplete) this.onComplete(uploadId, uploadRecord)
 
@@ -121,13 +76,6 @@ export class FileUploader {
     } catch (error) {
       this.stats.incrementTotal()
       this.stats.incrementFailed()
-
-      const errorRecord = {
-        uploadId,
-        filename,
-        error: error.message,
-        timestamp: Date.now()
-      }
 
       if (this.onError) this.onError(uploadId, error)
       throw error
@@ -176,7 +124,7 @@ export class FileUploader {
       progress: Math.round(totalProgress / total),
       active: active.length,
       total,
-      completed: total - active.length
+      completed: total - active.length,
     }
   }
 

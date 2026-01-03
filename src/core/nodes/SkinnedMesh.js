@@ -4,14 +4,9 @@ import { Node } from './Node.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import * as THREE from '../extras/three.js'
-import { isBoolean } from 'lodash-es'
 import { m } from '../utils/TempVectors.js'
 import { schema } from '../utils/validation/index.js'
-import { StructuredLogger } from '../utils/logging/index.js'
-
-const logger = new StructuredLogger('SkinnedMesh')
-
-const defaultStopOpts = { fade: 0.15 }
+import { AnimationManager } from './SkinnedMeshAnimation.js'
 
 const propertySchema = schema('castShadow', 'receiveShadow')
   .overrideAll({
@@ -19,61 +14,6 @@ const propertySchema = schema('castShadow', 'receiveShadow')
     receiveShadow: { default: true, onSet: function() { if (this.handle) { this.markRebuild(); this.setDirty() } } },
   })
   .build()
-
-function createAnimationManager(ctx, obj, clips, animations) {
-  let mixer = null
-  let action = null
-  const actions = {}
-
-  return {
-    get mixer() { return mixer },
-
-    play({ name, fade = 0.15, speed, loop = true }) {
-      if (!mixer) {
-        mixer = new THREE.AnimationMixer(obj)
-        ctx.world.setHot(ctx.node, true)
-      }
-      if (action?._clip.name === name) {
-        return
-      }
-      if (action) {
-        action.fadeOut(fade)
-      }
-      action = actions[name]
-      if (!action) {
-        const clip = clips[name]
-        if (!clip) return logger.warn('Animation not found', { animation: name })
-        action = mixer.clipAction(clip)
-        actions[name] = action
-      }
-      if (speed !== undefined) action.timeScale = speed
-      action.clampWhenFinished = !loop
-      action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-      action.reset().fadeIn(fade).play()
-    },
-
-    stop(opts = defaultStopOpts) {
-      if (!action) return
-      action.fadeOut(opts.fade)
-      action = null
-    },
-
-    update(delta) {
-      mixer?.update(delta)
-    },
-
-    cleanup() {
-      if (mixer) {
-        mixer.stopAllAction()
-        mixer.uncacheRoot(obj)
-        mixer = null
-        ctx.world.setHot(ctx.node, false)
-        Object.keys(clips).forEach(k => delete clips[k])
-        Object.keys(actions).forEach(k => delete actions[k])
-      }
-    }
-  }
-}
 
 export class SkinnedMesh extends Node {
   constructor(data = {}) {
@@ -96,7 +36,6 @@ export class SkinnedMesh extends Node {
     this.clips = {}
     this.bones = null
     this.animNames = []
-
     this.obj = SkeletonUtils.clone(this._object3d)
     this.obj.matrixWorld.copy(this.matrixWorld)
     this.obj.matrixAutoUpdate = false
@@ -112,7 +51,7 @@ export class SkinnedMesh extends Node {
       this.clips[clip.name] = clip
       this.animNames.push(clip.name)
     }
-    this.animManager = createAnimationManager({ world: this.ctx.world, node: this }, this.obj, this.clips, this._animations)
+    this.animManager = new AnimationManager({ world: this.ctx.world, node: this }, this.obj, this.clips, this._animations)
     this.needsRebuild = false
   }
 
