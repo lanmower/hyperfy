@@ -58,7 +58,19 @@ export class ClientNetwork extends BaseNetwork {
       return
     }
 
+    // Set up reconnect handler to clear stale state
+    this.wsManager.network = this
+    this.wsManager.network.onReconnect = () => this.onReconnect()
     this.wsManager.init(wsUrl, name, avatar)
+  }
+
+  onReconnect() {
+    // Clear stale queue entries accumulated during disconnection
+    if (this.queue.length > 0) {
+      logger.warn('Clearing stale queue entries on reconnect', { count: this.queue.length })
+      this.queue = []
+    }
+    logger.info('Client reconnected, requesting full snapshot')
   }
 
   preFixedUpdate() {
