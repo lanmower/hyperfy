@@ -1,4 +1,8 @@
 
+import { StructuredLogger } from '../logging/StructuredLogger.js'
+
+const logger = new StructuredLogger('crypto')
+
 export async function hashFileClient(file) {
   const buf = await file.arrayBuffer()
   const hashBuf = await crypto.subtle.digest('SHA-256', buf)
@@ -33,7 +37,7 @@ const jwtSecret = typeof process !== 'undefined' && process.env.JWT_SECRET
   : 'default-secret-key-INSECURE-change-in-production'
 
 if (!jwtSecret || jwtSecret === 'default-secret-key-INSECURE-change-in-production') {
-  console.warn('[SECURITY] WARNING: JWT_SECRET not configured - using insecure default key')
+  logger.warn('JWT_SECRET not configured - using insecure default key')
 }
 
 export async function createJWT(data) {

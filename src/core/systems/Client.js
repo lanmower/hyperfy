@@ -3,6 +3,9 @@ import { System } from './System.js'
 import * as THREE from '../extras/three.js'
 import { initYoga } from '../extras/yoga.js'
 
+const BYTES_PER_MB = 1048576
+const WORKER_RATE_MS = 200
+
 let worker
 
 export class Client extends System {
@@ -55,7 +58,7 @@ export class Client extends System {
       loaded() { return Array.from(world.loader?.results?.keys() || []) },
       memory() {
         const m = performance.memory
-        return m ? { used: (m.usedJSHeapSize / 1048576).toFixed(1) + 'MB', total: (m.totalJSHeapSize / 1048576).toFixed(1) + 'MB' } : null
+        return m ? { used: (m.usedJSHeapSize / BYTES_PER_MB).toFixed(1) + 'MB', total: (m.totalJSHeapSize / BYTES_PER_MB).toFixed(1) + 'MB' } : null
       },
       raycast(x, y) { return world.stage?.raycastPointer({ x, y }) }
     }
@@ -79,9 +82,8 @@ export class Client extends System {
 
   onVisibilityChange = () => {
     if (!worker) {
-      const WORKER_RATE = 1000 / 5
       const script = `
-        const rate = ${WORKER_RATE}
+        const rate = ${WORKER_RATE_MS}
         let intervalId = null;
         self.onmessage = e => {
           if (e.data === 'start' && !intervalId) {

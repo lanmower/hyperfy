@@ -1,4 +1,7 @@
 // Generates proxy objects from property schemas, eliminating getter/setter boilerplate
+import { StructuredLogger } from '../utils/logging/StructuredLogger.js'
+
+const logger = new StructuredLogger('SchemaProxyGenerator')
 
 export function createSchemaProxy(target, schema) {
   const proxy = {}
@@ -16,7 +19,7 @@ export function createSchemaProxy(target, schema) {
       if (descriptor.set) {
         const originalSet = descriptor.set
         descriptor.set = (value) => {
-          console.warn(`${key} is deprecated`)
+          logger.warn(`${key} is deprecated`)
           originalSet(value)
         }
       }
