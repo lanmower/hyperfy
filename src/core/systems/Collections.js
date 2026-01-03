@@ -7,8 +7,11 @@ export class Collections extends RegistrySystemBase {
 
   deserialize(data) {
     this.clear()
+    if (!Array.isArray(data)) return
     for (const coll of data) {
-      this.register(coll.id, coll)
+      if (coll && coll.id) {
+        this.register(coll.id, coll)
+      }
     }
   }
 

@@ -36,7 +36,14 @@ export function writePacket(name, data) {
 
 export function readPacket(packet) {
   try {
-    const [id, data] = packr.unpack(packet)
+    const unpacked = packr.unpack(packet)
+    if (!Array.isArray(unpacked) || unpacked.length < 2) {
+      throw new Error(`readPacket failed: invalid packet format (expected array with 2+ elements, got ${typeof unpacked}${Array.isArray(unpacked) ? ` length ${unpacked.length}` : ''})`)
+    }
+    const [id, data] = unpacked
+    if (typeof id !== 'number') {
+      throw new Error(`readPacket failed: invalid packet id type (expected number, got ${typeof id})`)
+    }
     const info = byId[id]
     if (!info) throw new Error(`readPacket failed: ${id} (id not found)`)
     return [info.method, data]

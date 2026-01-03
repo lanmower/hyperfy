@@ -43,6 +43,7 @@ export class Settings extends System {
   get effectiveRank() { return this.state.get('hasAdminCode') ? this.state.get('rank') : Ranks.ADMIN }
 
   deserialize(data) {
+    if (!data || typeof data !== 'object') return
     for (const [key, value] of Object.entries(data)) {
       this.state.set(key, value)
     }
