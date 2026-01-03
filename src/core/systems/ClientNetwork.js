@@ -181,35 +181,66 @@ export class ClientNetwork extends BaseNetwork {
 
     logger.info('Packet method received', { method })
 
-    // Decompress data if compressed
+    // Handle compression envelope (whether compressed or not)
     let finalData = data
-    const isCompressed = data && typeof data === 'object' && data.compressed === true
-    if (isCompressed) {
-      logger.info('Decompressing packet', { method, compressed: data.compressed })
-      try {
-        finalData = this.compressor.decompress(data)
-        logger.info('Decompression successful', { method })
-      } catch (err) {
-        logger.error('Failed to decompress packet data', {
+    const hasCompressionEnvelope = data && typeof data === 'object' && typeof data.compressed === 'boolean'
+
+    if (hasCompressionEnvelope) {
+      if (data.compressed) {
+        logger.info('Decompressing packet', { method })
+        try {
+          finalData = this.compressor.decompress(data)
+          logger.info('Decompression successful', { method, dataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData).slice(0, 10) : typeof finalData })
+        } catch (err) {
+          logger.error('Failed to decompress packet data', {
+            method,
+            error: err.message,
+          })
+          return
+        }
+      } else {
+        // Uncompressed but still wrapped in envelope - unwrap it
+        finalData = data.data
+        logger.info('Unwrapped uncompressed envelope', {
           method,
-          error: err.message,
+          dataType: typeof finalData,
+          dataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData).slice(0, 10) : 'not-object'
         })
-        return
       }
-    } else if (method === 'onSnapshot') {
-      // Log snapshot packet details for debugging
-      logger.info('Snapshot packet received (not compressed)', {
-        hasCompressed: data?.hasOwnProperty('compressed'),
-        compressedValue: data?.compressed,
-        dataKeys: data && typeof data === 'object' ? Object.keys(data).slice(0, 10) : 'not-object',
-        dataType: typeof data,
-      })
     }
 
     this.enqueue(method, finalData)
   }
 
   onSnapshot(data) {
+    // Handle two types of snapshot packets:
+    // 1. Full snapshot (initial connection): has collections, settings, blueprints, entities, etc.
+    // 2. Frame update (periodic): has only time and frame for synchronization
+
+    const isFullSnapshot = data.collections || data.entities || data.blueprints
+    const isFrameUpdate = data.time !== undefined && data.frame !== undefined && !isFullSnapshot
+
+    if (isFrameUpdate) {
+      // Just a frame sync update, update server time offset only
+      if (data.time !== undefined) {
+        this.serverTimeOffset = data.time - performance.now()
+      }
+      return
+    }
+
+    // Handle full snapshot
+    if (!isFullSnapshot) {
+      logger.warn('Snapshot packet missing expected data', {
+        hasCollections: !!data.collections,
+        hasEntities: !!data.entities,
+        hasBlueprints: !!data.blueprints,
+        hasTime: data.time !== undefined,
+        hasFrame: data.frame !== undefined,
+        dataKeys: data && typeof data === 'object' ? Object.keys(data) : 'not-object',
+      })
+      return
+    }
+
     this.id = data.id
     this.serverTimeOffset = data.serverTime - performance.now()
     this.apiUrl = data.apiUrl
@@ -256,7 +287,7 @@ export class ClientNetwork extends BaseNetwork {
     this.world.livekit?.deserialize(data.livekit)
     storage.set('authToken', data.authToken)
 
-    logger.info('Snapshot received', { id: this.id })
+    logger.info('Full snapshot received', { id: this.id })
   }
 
   onSettingsModified = data => {
