@@ -91,9 +91,9 @@ export class PlayerConnectionManager {
       const snapshot = {
         id: socket.id,
         serverTime: performance.now(),
-        assetsUrl: env.PUBLIC_ASSETS_URL,
-        apiUrl: env.PUBLIC_API_URL,
-        maxUploadSize: env.PUBLIC_MAX_UPLOAD_SIZE,
+        assetsUrl: env.PUBLIC_ASSETS_URL || '',
+        apiUrl: env.PUBLIC_API_URL || '',
+        maxUploadSize: parseInt(env.PUBLIC_MAX_UPLOAD_SIZE, 10) || 0,
         collections: this.serverNetwork.collections.serialize(),
         settings: this.serverNetwork.settings.serialize(),
         chat: this.serverNetwork.chat.serialize(),
