@@ -1,14 +1,7 @@
-import * as THREE from '../../extras/three.js'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
-import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
-import { VRMLoaderPlugin } from '../../libs/three-vrm/index.js'
-import { glbToNodes } from '../../extras/glbToNodes.js'
-import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { BaseAssetHandler } from './BaseAssetHandler.js'
 import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
+import { AssetHandlerTypes } from './AssetHandlerTypes.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
-import { createVideoFactory } from './VideoFactory.js'
-import { AssetResults } from './AssetResults.js'
 
 const logger = new StructuredLogger('AssetHandlers')
 
@@ -16,49 +9,26 @@ export class AssetHandlers extends BaseAssetHandler {
   constructor(clientLoader, world) {
     super()
     this.clientLoader = clientLoader
-    this.rgbeLoader = new RGBELoader()
-    this.texLoader = new THREE.TextureLoader()
-    this.gltfLoader = new GLTFLoader()
-    this.gltfLoader.register(exporter => new VRMLoaderPlugin(exporter))
-    this.audio = clientLoader.audio
-    this.scripts = clientLoader.scripts
     this.world = world
-    this.resolveURL = world.resolveURL
-    this.setupMaterial = world.setupMaterial
     this.results = clientLoader.results
-    this.fallbackManager = clientLoader.fallbackManager
-    this.vrmHooks = null
+    this.types = new AssetHandlerTypes(clientLoader, world)
     this.insertRegistry = new AssetHandlerRegistry()
   }
 
   setupHandlers() {
-    this.registry.register('video', (url, file, key) => this.handleVideo(url, file, key))
-    this.registry.register('hdr', (url, file, key) => this.handleHDR(url, file, key))
-    this.registry.register('image', (url, file, key) => this.handleImage(url, file, key))
-    this.registry.register('texture', (url, file, key) => this.handleTexture(url, file, key))
-    this.registry.register('model', (url, file, key) => this.handleModel(url, file, key))
-    this.registry.register('emote', (url, file, key) => this.handleEmote(url, file, key))
-    this.registry.register('avatar', (url, file, key) => this.handleAvatar(url, file, key))
-    this.registry.register('script', (url, file, key) => this.handleScript(url, file, key))
-    this.registry.register('audio', (url, file, key) => this.handleAudio(url, file, key))
+    this.registry.register('video', (url, file, key) => this.types.handleVideo(url, file, key))
+    this.registry.register('hdr', (url, file, key) => this.types.handleHDR(url, file, key))
+    this.registry.register('image', (url, file, key) => this.types.handleImage(url, file, key))
+    this.registry.register('texture', (url, file, key) => this.types.handleTexture(url, file, key))
+    this.registry.register('model', (url, file, key) => this.types.handleModel(url, file, key))
+    this.registry.register('emote', (url, file, key) => this.types.handleEmote(url, file, key))
+    this.registry.register('avatar', (url, file, key) => this.types.handleAvatar(url, file, key))
+    this.registry.register('script', (url, file, key) => this.types.handleScript(url, file, key))
+    this.registry.register('audio', (url, file, key) => this.types.handleAudio(url, file, key))
   }
 
   setVRMHooks(hooks) {
-    this.vrmHooks = hooks
-  }
-
-  async withFallback(type, url, key, promise) {
-    try {
-      return await promise
-    } catch (err) {
-      logger.error(`${type} error`, { url, error: err.message })
-      const fallback = this.fallbackManager?.getFallback(type, url, err)
-      if (fallback) {
-        this.results.set(key, fallback)
-        return fallback
-      }
-      throw err
-    }
+    this.types.setVRMHooks(hooks)
   }
 
   handle(type, url, file, key) {
