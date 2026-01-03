@@ -181,9 +181,11 @@ export class ClientNetwork extends BaseNetwork {
 
     // Decompress data if compressed
     let finalData = data
-    if (data && typeof data === 'object' && data.compressed) {
+    if (data && typeof data === 'object' && data.compressed === true) {
+      logger.info('Decompressing packet', { method, compressed: data.compressed })
       try {
         finalData = this.compressor.decompress(data)
+        logger.info('Decompression successful', { method })
       } catch (err) {
         logger.error('Failed to decompress packet data', {
           method,
