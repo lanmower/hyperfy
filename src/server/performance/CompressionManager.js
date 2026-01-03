@@ -31,17 +31,22 @@ export async function setupCompression(fastify, options = {}) {
   }
 
   await fastify.register(compress, {
-    threshold: config.threshold,
+    threshold: 10240,
     encodings: ['gzip', 'deflate'],
     exclude: config.exclude,
   })
 
   fastify.addHook('onSend', async (request, reply) => {
+    if (reply.sent) return
     const contentType = reply.getHeader('content-type') || ''
     const level = getCompressionLevel(contentType)
 
     if (level !== config.level && reply.getHeader('content-encoding') === 'gzip') {
-      reply.header('X-Compression-Level', level.toString())
+      try {
+        reply.header('X-Compression-Level', level.toString())
+      } catch (err) {
+        // Headers already sent, skip setting custom header
+      }
     }
   })
 }

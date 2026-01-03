@@ -45,16 +45,7 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     html = html.replaceAll('{desc}', desc)
     html = html.replaceAll('{image}', image)
 
-    const etag = generateETag(html)
-    reply.type('text/html')
-    reply.header('ETag', etag)
-    reply.header('Cache-Control', 'public, max-age=300, must-revalidate')
-
-    if (req.headers['if-none-match'] === etag) {
-      return reply.code(304).send()
-    }
-
-    reply.send(html)
+    reply.type('text/html').send(html)
   })
 
   // Buildless serving disabled - using bundled client.js instead

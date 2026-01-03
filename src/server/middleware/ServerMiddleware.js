@@ -54,7 +54,8 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
     }
   })
 
-  await setupCompression(fastify)
+  // Compression disabled due to conflicts with reply.send() in HTML route
+  // await setupCompression(fastify)
   setupCacheHeaders(fastify)
   addETagSupport(fastify)
   trackResponseTime(fastify)
