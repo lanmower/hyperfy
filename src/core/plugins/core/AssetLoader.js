@@ -91,4 +91,10 @@ export class AssetLoader {
       handlers: this.handlers.size,
     }
   }
+
+  destroy() {
+    this.cache.clear()
+    this.promises.clear()
+    this.handlers.clear()
+  }
 }

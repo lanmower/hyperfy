@@ -47,6 +47,12 @@ export class SystemIntegration {
   getDependencyGraph() {
     return this.registry.getDependencyGraph()
   }
+
+  destroy() {
+    this.registry = null
+    this.verifier = null
+    this.healthMonitor = null
+  }
 }
 
 export { SystemIntegrationRegistry, SystemIntegrationVerifier, HealthMonitor }

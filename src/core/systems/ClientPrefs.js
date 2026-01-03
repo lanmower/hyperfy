@@ -12,6 +12,7 @@ export class ClientPrefs extends System {
 
   constructor(world) {
     super(world)
+    this.persistTimer = null
 
     const data = storage.get('prefs', {})
 
@@ -51,21 +52,24 @@ export class ClientPrefs extends System {
   }
 
   async persist() {
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    storage.set('prefs', {
-      ui: this.state.get('ui'),
-      actions: this.state.get('actions'),
-      stats: this.state.get('stats'),
-      dpr: this.state.get('dpr'),
-      shadows: this.state.get('shadows'),
-      postprocessing: this.state.get('postprocessing'),
-      bloom: this.state.get('bloom'),
-      ao: this.state.get('ao'),
-      music: this.state.get('music'),
-      sfx: this.state.get('sfx'),
-      voice: this.state.get('voice'),
-      v: this.state.get('v')
-    })
+    if (this.persistTimer) clearTimeout(this.persistTimer)
+    this.persistTimer = setTimeout(() => {
+      storage.set('prefs', {
+        ui: this.state.get('ui'),
+        actions: this.state.get('actions'),
+        stats: this.state.get('stats'),
+        dpr: this.state.get('dpr'),
+        shadows: this.state.get('shadows'),
+        postprocessing: this.state.get('postprocessing'),
+        bloom: this.state.get('bloom'),
+        ao: this.state.get('ao'),
+        music: this.state.get('music'),
+        sfx: this.state.get('sfx'),
+        voice: this.state.get('voice'),
+        v: this.state.get('v')
+      })
+      this.persistTimer = null
+    }, 2000)
   }
 
   setUI(value) { this.modify('ui', value) }
@@ -80,5 +84,7 @@ export class ClientPrefs extends System {
   setSFX(value) { this.modify('sfx', value) }
   setVoice(value) { this.modify('voice', value) }
 
-  destroy() {}
+  destroy() {
+    if (this.persistTimer) clearTimeout(this.persistTimer)
+  }
 }

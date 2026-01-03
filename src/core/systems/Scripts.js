@@ -161,6 +161,10 @@ export class Scripts extends System {
     }
     return result
   }
+
+  destroy() {
+    this.compartment = null
+  }
 }
 
 function wrapRawCode(code) {

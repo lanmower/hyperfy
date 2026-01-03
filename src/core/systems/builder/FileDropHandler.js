@@ -97,4 +97,8 @@ export class FileDropHandler extends BaseBuilderHandler {
       createdAt: moment().toISOString(),
     })
   }
+
+  destroy() {
+    this.dropTarget = null
+  }
 }

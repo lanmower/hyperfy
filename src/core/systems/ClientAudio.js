@@ -65,39 +65,40 @@ export class ClientAudio extends System {
       this.lastDelta = 0
       this.queue = []
       this.unlocked = this.ctx.state !== 'suspended'
+      this.unlockedHandlers = {}
       if (!this.unlocked) {
         const complete = () => {
           this.unlocked = true
-        document.removeEventListener('click', unlock)
-        document.removeEventListener('touchstart', unlock)
-        document.removeEventListener('keydown', unlock)
-        while (this.queue.length) {
-          this.queue.pop()()
+          document.removeEventListener('click', this.unlockedHandlers.unlock)
+          document.removeEventListener('touchstart', this.unlockedHandlers.unlock)
+          document.removeEventListener('keydown', this.unlockedHandlers.unlock)
+          while (this.queue.length) {
+            this.queue.pop()()
+          }
         }
-      }
-      const unlock = async () => {
-        try {
-          await this.ctx.resume()
-          if (this.ctx.state !== 'running') throw new Error('Audio still suspended')
-          const video = document.createElement('video')
-          video.playsInline = true
-          video.muted = true
-          video.src = '/tiny.mp4'
-          video.play().then(() => {
-            video.pause()
-            video.remove()
-          }).catch((err) => {
-            logger.error('Failed to unlock audio context', { error: err.message })
-          })
-        } catch (err) {
-          logger.error('Audio context resume error', { error: err.message })
-        } finally {
-          complete()
+        this.unlockedHandlers.unlock = async () => {
+          try {
+            await this.ctx.resume()
+            if (this.ctx.state !== 'running') throw new Error('Audio still suspended')
+            const video = document.createElement('video')
+            video.playsInline = true
+            video.muted = true
+            video.src = '/tiny.mp4'
+            video.play().then(() => {
+              video.pause()
+              video.remove()
+            }).catch((err) => {
+              logger.error('Failed to unlock audio context', { error: err.message })
+            })
+          } catch (err) {
+            logger.error('Audio context resume error', { error: err.message })
+          } finally {
+            complete()
+          }
         }
-      }
-      document.addEventListener('click', unlock)
-      document.addEventListener('touchstart', unlock)
-      document.addEventListener('keydown', unlock)
+        document.addEventListener('click', this.unlockedHandlers.unlock)
+        document.addEventListener('touchstart', this.unlockedHandlers.unlock)
+        document.addEventListener('keydown', this.unlockedHandlers.unlock)
       }
     } catch (err) {
       logger.error('Failed to initialize AudioContext', { error: err.message })
@@ -151,11 +152,18 @@ export class ClientAudio extends System {
   }
 
   destroy() {
-    this.groupGains.music.disconnect()
-    this.groupGains.sfx.disconnect()
-    this.groupGains.voice.disconnect()
-    this.masterGain.disconnect()
-    this.ctx.close()
+    if (this.unlockedHandlers?.unlock) {
+      document.removeEventListener('click', this.unlockedHandlers.unlock)
+      document.removeEventListener('touchstart', this.unlockedHandlers.unlock)
+      document.removeEventListener('keydown', this.unlockedHandlers.unlock)
+    }
+    if (!this.degraded) {
+      this.groupGains.music.disconnect()
+      this.groupGains.sfx.disconnect()
+      this.groupGains.voice.disconnect()
+      this.masterGain.disconnect()
+      this.ctx.close()
+    }
     this.handles.clear()
     this.queue = []
   }

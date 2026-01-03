@@ -13,6 +13,7 @@ export class GizmoManager extends BaseManager {
     this.gizmoTarget = null
     this.gizmoHelper = null
     this.gizmoActive = false
+    this.gizmoHandlers = {}
   }
 
   attachGizmo(app, mode, localSpace) {
@@ -26,12 +27,14 @@ export class GizmoManager extends BaseManager {
     this.gizmo._gizmo.helper.rotate.scale.setScalar(0)
     this.gizmo._gizmo.helper.scale.scale.setScalar(0)
 
-    this.gizmo.addEventListener('mouseDown', () => {
+    this.gizmoHandlers.onMouseDown = () => {
       this.gizmoActive = true
-    })
-    this.gizmo.addEventListener('mouseUp', () => {
+    }
+    this.gizmoHandlers.onMouseUp = () => {
       this.gizmoActive = false
-    })
+    }
+    this.gizmo.addEventListener('mouseDown', this.gizmoHandlers.onMouseDown)
+    this.gizmo.addEventListener('mouseUp', this.gizmoHandlers.onMouseUp)
 
     this.gizmoTarget = new THREE.Object3D()
     this.gizmoHelper = this.gizmo.getHelper()
@@ -51,6 +54,8 @@ export class GizmoManager extends BaseManager {
 
     this.world.stage.scene.remove(this.gizmoTarget)
     this.world.stage.scene.remove(this.gizmoHelper)
+    this.gizmo.removeEventListener('mouseDown', this.gizmoHandlers.onMouseDown)
+    this.gizmo.removeEventListener('mouseUp', this.gizmoHandlers.onMouseUp)
     this.gizmo.detach()
     this.gizmo.disconnect()
     this.gizmo.dispose()
@@ -59,6 +64,7 @@ export class GizmoManager extends BaseManager {
     this.gizmoTarget = null
     this.gizmoHelper = null
     this.gizmoActive = false
+    this.gizmoHandlers = {}
   }
 
   disableRotationSnap() {

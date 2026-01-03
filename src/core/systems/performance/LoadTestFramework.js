@@ -53,6 +53,12 @@ export class LoadTestFramework {
   getResults() {
     return this.results
   }
+
+  destroy() {
+    this.tests = []
+    this.results = []
+    this.running = false
+  }
 }
 
 export function createLoadTests(world) {

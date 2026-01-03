@@ -19,4 +19,6 @@ export class ServerMonitor extends System {
       currentCPU: cpuPercent,
     }
   }
+
+  destroy() {}
 }

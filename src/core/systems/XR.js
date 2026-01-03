@@ -26,6 +26,7 @@ export class XR extends System {
     this.supportsVR = false
     this.supportsAR = false
     this.controllerModelFactory = new XRControllerModelFactory()
+    this.onSessionEndHandler = null
   }
 
   async init() {
@@ -43,7 +44,8 @@ export class XR extends System {
       logger.error('Failed to update XR frame rate', { error: err.message })
     }
     this.graphics.renderer.xr.setSession(session)
-    session.addEventListener('end', this.onSessionEnd)
+    this.onSessionEndHandler = this.onSessionEnd.bind(this)
+    session.addEventListener('end', this.onSessionEndHandler)
     this.session = session
     this.camera = this.graphics.renderer.xr.getCamera()
     this.events.emit('xrSession', session)
@@ -67,5 +69,11 @@ export class XR extends System {
     this.controller1Model = null
     this.controller2Model = null
     this.events.emit('xrSession', null)
+  }
+
+  destroy() {
+    if (this.session && this.onSessionEndHandler) {
+      this.session.removeEventListener('end', this.onSessionEndHandler)
+    }
   }
 }

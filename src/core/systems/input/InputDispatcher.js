@@ -36,4 +36,9 @@ export class InputDispatcher {
   removeListener(target, eventType, handler) {
     target.removeEventListener(eventType, handler)
   }
+
+  destroy() {
+    this.handlers.clear()
+    this.activeStrategy = null
+  }
 }

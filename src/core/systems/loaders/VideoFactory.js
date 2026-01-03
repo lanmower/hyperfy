@@ -71,28 +71,22 @@ export class VideoFactory extends BaseFactory {
           return new Promise(async resolve => {
             let playing = false
             let data = false
-            elem.addEventListener(
-              'loadeddata',
-              async () => {
-                if (playing) elem.pause()
-                data = true
-                width = elem.videoWidth
-                height = elem.videoHeight
-                duration = elem.duration
-                ready = true
-                resolve()
-              },
-              { once: true }
-            )
-            elem.addEventListener(
-              'loadedmetadata',
-              async () => {
-                if (data) return
-                elem.play()
-                playing = true
-              },
-              { once: true }
-            )
+            const loadedDataHandler = async () => {
+              if (playing) elem.pause()
+              data = true
+              width = elem.videoWidth
+              height = elem.videoHeight
+              duration = elem.duration
+              ready = true
+              resolve()
+            }
+            const loadedMetadataHandler = async () => {
+              if (data) return
+              elem.play()
+              playing = true
+            }
+            elem.addEventListener('loadeddata', loadedDataHandler, { once: true })
+            elem.addEventListener('loadedmetadata', loadedMetadataHandler, { once: true })
           })
         })()
       }
