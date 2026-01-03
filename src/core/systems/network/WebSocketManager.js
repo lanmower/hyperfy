@@ -156,8 +156,17 @@ export class WebSocketManager extends BaseManager {
       this.setupInactivityMonitor()
 
       if (this.isReconnecting) {
-        this.logger.info('Reconnected successfully, requesting full snapshot')
+        this.logger.info('Reconnected successfully, clearing stale queue and requesting full snapshot')
+        // Clear stale messages from queue during disconnection to prevent state corruption
+        const staleCount = this.messageQueue.length
+        this.messageQueue = []
+        if (staleCount > 0) {
+          this.logger.warn('Cleared stale messages from queue', { count: staleCount })
+        }
         this.network.onReconnect?.()
+      } else {
+        // On initial connection, flush any queued messages
+        this.flushMessageQueue()
       }
       this.reconnectAttempts = 0
     }
