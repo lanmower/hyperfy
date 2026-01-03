@@ -51,21 +51,33 @@ export class ServerNetwork extends BaseNetwork {
     this.playerConnectionManager = new PlayerConnectionManager(this)
     this.builderCommandHandler = new BuilderCommandHandler(this)
     this.socketIntervalId = setInterval(() => this.socketManager.checkSockets(), PING_RATE * 1000)
+    this.initialized = false
+    this.hotReloadHandler = null
     this.setupHotReload()
   }
 
   setupHotReload() {
     if (typeof process !== 'undefined' && process.on) {
-      process.on('message', msg => {
+      // Remove previous handler if exists to prevent duplication
+      if (this.hotReloadHandler) {
+        process.removeListener('message', this.hotReloadHandler)
+      }
+      this.hotReloadHandler = msg => {
         if (msg?.type === 'hotReload') {
           logger.info('Broadcasting hot reload to clients', {})
           this.send('hotReload', { timestamp: Date.now() })
         }
-      })
+      }
+      process.on('message', this.hotReloadHandler)
     }
   }
 
   init(config) {
+    if (this.initialized) {
+      logger.warn('ServerNetwork.init already called, skipping duplicate initialization', { config })
+      return
+    }
+    this.initialized = true
     this.lifecycleManager.init(config)
   }
 
@@ -138,6 +150,10 @@ export class ServerNetwork extends BaseNetwork {
 
   destroy() {
     if (this.socketIntervalId) clearInterval(this.socketIntervalId)
+    if (this.hotReloadHandler && typeof process !== 'undefined' && process.removeListener) {
+      process.removeListener('message', this.hotReloadHandler)
+      this.hotReloadHandler = null
+    }
     this.socketManager?.destroy?.()
     this.lifecycleManager?.destroy?.()
     this.core = null

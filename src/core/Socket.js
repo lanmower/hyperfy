@@ -121,9 +121,11 @@ export class Socket {
   }
 
   disconnect(code) {
-    if (!this.closed) return this.ws.terminate()
     if (this.disconnected) return
     this.disconnected = true
+    if (!this.closed && this.ws) {
+      this.ws.terminate()
+    }
     this.network.onDisconnect(this, code)
   }
 }

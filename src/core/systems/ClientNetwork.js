@@ -48,9 +48,15 @@ export class ClientNetwork extends BaseNetwork {
     this.lastKnownState = null
     this.timeoutManager = clientTimeoutManager
     this.queue = []
+    this.initialized = false
   }
 
   init({ wsUrl, name, avatar }) {
+    if (this.initialized) {
+      logger.warn('ClientNetwork.init already called, skipping duplicate initialization', { wsUrl })
+      return
+    }
+    this.initialized = true
     logger.info('ClientNetwork.init called', { wsUrl, name, avatar })
     if (!wsUrl) {
       logger.warn('No WebSocket URL provided, running in offline mode', {})

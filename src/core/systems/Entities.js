@@ -1,6 +1,9 @@
 import { System } from './System.js'
 import { EntitySpawner } from './entities/EntitySpawner.js'
 import { EntityLifecycle } from './entities/EntityLifecycle.js'
+import { StructuredLogger } from '../utils/logging/index.js'
+
+const logger = new StructuredLogger('Entities')
 
 export class Entities extends System {
   static DEPS = {

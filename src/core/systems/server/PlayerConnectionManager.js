@@ -117,6 +117,7 @@ export class PlayerConnectionManager {
   }
 
   onModifyRank(socket, data) {
+    if (!socket.player) return
     if (!socket.player.isAdmin()) return
     const { playerId, rank } = data
     if (!playerId) return
@@ -129,15 +130,18 @@ export class PlayerConnectionManager {
   }
 
   onKick(socket, playerId) {
+    if (!socket.player) return
     const player = this.serverNetwork.entities.get(playerId)
     if (!player) return
     if (socket.player.data.rank <= player.data.rank) return
     const tSocket = this.serverNetwork.sockets.get(playerId)
+    if (!tSocket) return
     tSocket.send('kick', 'moderation')
     tSocket.disconnect()
   }
 
   onMute(socket, data) {
+    if (!socket.player) return
     const player = this.serverNetwork.entities.get(data.playerId)
     if (!player) return
     if (socket.player.data.rank <= player.data.rank) return
@@ -153,9 +157,11 @@ export class PlayerConnectionManager {
     }
 
     this.serverNetwork.livekit.clearModifiers(socket.id)
-    socket.player.destroy(true)
+    if (socket.player) {
+      socket.player.destroy(true)
+      this.serverNetwork.world.emit('exit', { playerId: socket.player.data.id })
+    }
     this.serverNetwork.sockets.delete(socket.id)
-    this.serverNetwork.world.emit('exit', { playerId: socket.player.data.id })
   }
 
   onPlayerTeleport(socket, data) {

@@ -269,6 +269,16 @@ export class WebSocketManager extends BaseManager {
     }
   }
 
+  simulateLag(amount) {
+    // For testing/debugging: artificially delay packet sends
+    // This helps expose timing-dependent bugs in network code
+    this._lagSimulation = Math.max(0, amount)
+  }
+
+  disconnect() {
+    return this.destroyInternal()
+  }
+
   async destroyInternal() {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)

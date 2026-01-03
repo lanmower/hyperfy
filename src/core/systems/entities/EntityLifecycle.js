@@ -46,9 +46,11 @@ export class EntityLifecycle {
   }
 
   destroy() {
-    this.entities.items.forEach(item => {
-      this.remove(item.data.id)
-    })
+    // Create array copy before iterating to avoid modification during iteration
+    const itemIds = Array.from(this.entities.items.keys())
+    for (const id of itemIds) {
+      this.remove(id)
+    }
     this.entities.items.clear()
     this.entities.players.clear()
     this.entities.hot.clear()
