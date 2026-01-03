@@ -465,6 +465,12 @@
       "App.js",
       "BaseEntity.js",
       "PlayerLocal.js",
+      "PlayerLocalCameraManager.js",
+      "PlayerLocalDelegates.js",
+      "PlayerLocalDestroy.js",
+      "PlayerLocalLifecycle.js",
+      "PlayerLocalPhysicsBinding.js",
+      "PlayerLocalState.js",
       "PlayerRemote.js",
       "EventAudit.js",
       "EventRegistry.js",
@@ -833,5 +839,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767437335741
+  "lastAnalyzed": 1767438172922
 }

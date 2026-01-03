@@ -1,41 +1,22 @@
 import { BaseEntity } from './BaseEntity.js'
-import { clamp } from '../utils.js'
-import * as THREE from '../extras/three.js'
-import { Layers } from '../extras/Layers.js'
-import { DEG2RAD, RAD2DEG } from '../extras/general.js'
-import { createNode } from '../extras/createNode.js'
-import { bindRotations } from '../extras/bindRotations.js'
-import { simpleCamLerp } from '../extras/simpleCamLerp.js'
-import { Emotes } from '../extras/playerEmotes.js'
-import { ControlPriorities } from '../extras/ControlPriorities.js'
-import { isBoolean, isNumber } from 'lodash-es'
+import { isBoolean } from 'lodash-es'
 import { hasRank, Ranks } from '../extras/ranks.js'
-import { PhysicsConfig } from '../config/SystemConfig.js'
-import { Modes } from '../constants/AnimationModes.js'
-import { PlayerPhysics } from './player/PlayerPhysics.js'
 import { PlayerController } from './player/PlayerController.js'
 import { PlayerChatBubble } from './player/PlayerChatBubble.js'
 import { PlayerInputProcessor } from './player/PlayerInputProcessor.js'
 import { AnimationController } from './player/AnimationController.js'
 import { NetworkSynchronizer } from './player/NetworkSynchronizer.js'
 import { PlayerControlBinder } from './player/PlayerControlBinder.js'
-import { PlayerCapsuleFactory } from './player/PlayerCapsuleFactory.js'
 import { PlayerAvatarManager } from './player/PlayerAvatarManager.js'
 import { PlayerStateManager } from './player/PlayerStateManager.js'
-import { EVENT } from '../constants/EventNames.js'
 import { StructuredLogger } from '../utils/logging/index.js'
-import { SharedVectorPool } from '../utils/SharedVectorPool.js'
+import { PlayerLocalState } from './PlayerLocalState.js'
+import { PlayerLocalPhysicsBinding } from './PlayerLocalPhysicsBinding.js'
+import { PlayerLocalCameraManager } from './PlayerLocalCameraManager.js'
+import { PlayerLocalDelegates } from './PlayerLocalDelegates.js'
+import { PlayerLocalLifecycle } from './PlayerLocalLifecycle.js'
+import { PlayerLocalDestroy } from './PlayerLocalDestroy.js'
 
-const UP = new THREE.Vector3(0, 1, 0)
-const DOWN = new THREE.Vector3(0, -1, 0)
-const FORWARD = new THREE.Vector3(0, 0, -1)
-const BACKWARD = new THREE.Vector3(0, 0, 1)
-const SCALE_IDENTITY = new THREE.Vector3(1, 1, 1)
-
-const { v1, v2, v3, v4, v5, v6, e1, q1, q2, q3, q4, m1, m2, m3 } = SharedVectorPool('PlayerLocal', 6, 4, 1, 3)
-
-const gazeTiltAngle = 10 * DEG2RAD
-const gazeTiltAxis = new THREE.Vector3(1, 0, 0)
 const logger = new StructuredLogger('PlayerLocal')
 
 export class PlayerLocal extends BaseEntity {
@@ -54,63 +35,17 @@ export class PlayerLocal extends BaseEntity {
   async init() {
     try {
       logger.info('init() started')
-      this.mass = PhysicsConfig.MASS
-      this.capsuleRadius = PhysicsConfig.CAPSULE_RADIUS
-      this.capsuleHeight = PhysicsConfig.CAPSULE_HEIGHT
 
-      this.firstPerson = false
-
-      this.mode = Modes.IDLE
-      this.axis = new THREE.Vector3()
-      this.gaze = new THREE.Vector3()
-
-      this.speaking = false
-
-      this.lastSendAt = 0
-
-      this.base = new THREE.Object3D()
-      this.base.position.fromArray(this.data.position)
-      this.base.quaternion.fromArray(this.data.quaternion)
-      this.world.stage.scene.add(this.base)
-
-      this.aura = new THREE.Object3D()
-      this.world.stage.scene.add(this.aura)
-
-      this.nametag = createNode('nametag', { label: '', health: this.data.health, active: false })
-      this.bubble = createNode('ui', {
-        id: 'bubble',
-        width: 300,
-        height: 512,
-        pivot: 'bottom-center',
-        billboard: 'full',
-        scaler: [3, 30],
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        active: false,
-      })
-      this.bubbleBox = createNode('uiview', {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        borderRadius: 10,
-        padding: 10,
-      })
-      this.bubbleText = createNode('uitext', {
-        color: 'white',
-        fontWeight: 100,
-        lineHeight: 1.4,
-        fontSize: 16,
-      })
-
-      this.avatar = null
-      this.avatarUrl = null
+      PlayerLocalState.initializeState(this)
+      PlayerLocalState.initializeSceneObjects(this)
+      PlayerLocalState.initializeUINodes(this)
 
       this.controller = new PlayerController(this)
       this.chatBubble = new PlayerChatBubble(this)
       this.inputProcessor = new PlayerInputProcessor(this)
       this.animationController = new AnimationController(this)
       this.networkSynchronizer = new NetworkSynchronizer(this)
-      this.effectOnEnd = null
       this.controlBinder = new PlayerControlBinder(this)
-      // PlayerCapsuleFactory is now static
 
       if (this.world.loader?.preloader) {
         logger.info('Waiting for preloader')
@@ -128,7 +63,10 @@ export class PlayerLocal extends BaseEntity {
 
       logger.info('About to call initCapsule')
       this.initCapsule()
-      logger.info('Capsule initialized', { capsule: !!this.capsule, physics: !!this.physics })
+      logger.info('Capsule initialized', {
+        capsule: !!this.capsule,
+        physics: !!this.physics,
+      })
 
       this.controlBinder.initControl()
       logger.info('Control binding initialized')
@@ -145,27 +83,25 @@ export class PlayerLocal extends BaseEntity {
     }
   }
 
-  getAvatarUrl() { return this.avatarManager.getAvatarUrl() }
-  async applyAvatar() { return this.avatarManager.applyAvatar() }
-
   initCapsule() {
-    const { capsule, capsuleHandle, material } = PlayerCapsuleFactory.create({ world: this.world, player: this })
-    this.capsule = capsule
-    this.capsuleHandle = capsuleHandle
-    this.material = material
-    if (this.capsule) {
-      this.physics = new PlayerPhysics(this.world, this)
-    }
+    PlayerLocalPhysicsBinding.initializeCapsule(this)
   }
 
-  get cam() { return this.controller.camera }
-  get camHeight() { return this.controller.camera.camHeight }
-  set camHeight(value) { this.controller.camera.camHeight = value }
+  getAvatarUrl() {
+    return this.avatarManager.getAvatarUrl()
+  }
 
-  get stick() { return this.controlBinder.stick }
-  set stick(value) { this.controlBinder.stick = value }
-  get pan() { return this.controlBinder.pan }
-  set pan(value) { this.controlBinder.pan = value }
+  async applyAvatar() {
+    return this.avatarManager.applyAvatar()
+  }
+
+  get cam() { return PlayerLocalDelegates.getCam(this) }
+  get camHeight() { return PlayerLocalDelegates.getCamHeight(this) }
+  set camHeight(value) { PlayerLocalDelegates.setCamHeight(this, value) }
+  get stick() { return PlayerLocalDelegates.getStick(this) }
+  set stick(value) { PlayerLocalDelegates.setStick(this, value) }
+  get pan() { return PlayerLocalDelegates.getPan(this) }
+  set pan(value) { PlayerLocalDelegates.setPan(this, value) }
 
   toggleFlying(value) {
     if (!this.physics) return
@@ -179,94 +115,36 @@ export class PlayerLocal extends BaseEntity {
     }
   }
 
-  getAnchorMatrix() { return this.data.effect?.anchorId ? this.world.anchors.get(this.data.effect.anchorId) : null }
+  getAnchorMatrix() {
+    return this.data.effect?.anchorId
+      ? this.world.anchors.get(this.data.effect.anchorId)
+      : null
+  }
+
+  _getEffectiveRank() {
+    return Math.max(this.data.rank, this.world.settings.effectiveRank)
+  }
+
   outranks(otherPlayer) {
-    const rank = Math.max(this.data.rank, this.world.settings.effectiveRank)
     const otherRank = Math.max(otherPlayer.data.rank, this.world.settings.effectiveRank)
-    return rank > otherRank
-  }
-  isAdmin() { return hasRank(Math.max(this.data.rank, this.world.settings.effectiveRank), Ranks.ADMIN) }
-  isBuilder() { return hasRank(Math.max(this.data.rank, this.world.settings.effectiveRank), Ranks.BUILDER) }
-  isMuted() { return this.world.livekit.isMuted(this.data.id) }
-
-  fixedUpdate(delta) { this.physics?.update(delta) }
-
-  update(delta) {
-    const freeze = this.data.effect?.freeze
-    const anchor = this.getAnchorMatrix()
-
-    this.inputProcessor.processCamera(delta)
-    this.inputProcessor.processZoom(delta)
-    this.inputProcessor.processStickActivation()
-    this.inputProcessor.processJump()
-    this.inputProcessor.processMovement(delta)
-
-    if (this.physics) {
-      this.physics.moving = this.physics.moveDir.length() > 0
-
-      if (this.data.effect?.cancellable && (this.physics.moving || this.jumpDown)) {
-        this.stateManager.setEffect(null)
-      }
-
-      if (freeze || anchor) {
-        this.physics.moveDir.set(0, 0, 0)
-        this.physics.moving = false
-      }
-    }
-
-    this.inputProcessor.processRunning()
-    this.inputProcessor.applyMovementRotation()
-    this.inputProcessor.applyBodyRotation(delta)
-
-    this.avatarManager.updateEmote()
-    this.mode = this.avatarManager.updateAnimationMode()
-    if (this.mode === undefined || this.mode === null) {
-      this.mode = Modes.IDLE
-    }
-    this.avatarManager.updateGaze()
-    this.avatarManager.applyAvatarLocomotion()
-    this.avatarManager.update(delta)
-
-    this.networkSynchronizer.sync(delta)
-    if (this.data.effect?.duration) {
-      this.data.effect.duration -= delta
-      if (this.data.effect.duration <= 0) {
-        this.stateManager.setEffect(null)
-      }
-    }
+    return this._getEffectiveRank() > otherRank
   }
 
-  lateUpdate(delta) {
-    const anchor = this.getAnchorMatrix()
-    if (anchor) {
-      this.base.position.setFromMatrixPosition(anchor)
-      this.base.quaternion.setFromRotationMatrix(anchor)
-      const pose = this.capsule.getGlobalPose()
-      this.base.position.toPxTransform(pose)
-      this.capsuleHandle.snap(pose)
-    }
-    this.cam.position.copy(this.base.position)
-    if (!this.world.xr?.session) {
-      this.cam.position.y += this.camHeight
-      if (!this.firstPerson) {
-        const forward = v1.copy(FORWARD).applyQuaternion(this.cam.quaternion)
-        const right = v2.crossVectors(forward, UP).normalize()
-        this.cam.position.add(right.multiplyScalar(0.3))
-      }
-    }
-    if (this.world.xr?.session) {
-      if (this.control?.camera) {
-        this.control.camera.position.copy(this.cam.position)
-        this.control.camera.quaternion.copy(this.cam.quaternion)
-      }
-    } else if (this.control?.camera) {
-      simpleCamLerp(this.world, this.control.camera, this.cam, delta)
-      window.__DEBUG__.cameraDist = this.control.camera.position.distanceTo(this.cam.position)
-      window.__DEBUG__.cameraZoom = this.control.camera.zoom
-    }
-
-    this.avatarManager.syncTransform()
+  isAdmin() {
+    return hasRank(this._getEffectiveRank(), Ranks.ADMIN)
   }
+
+  isBuilder() {
+    return hasRank(this._getEffectiveRank(), Ranks.BUILDER)
+  }
+
+  isMuted() {
+    return this.world.livekit.isMuted(this.data.id)
+  }
+
+  fixedUpdate(delta) { PlayerLocalLifecycle.fixedUpdate(this, delta) }
+  update(delta) { PlayerLocalLifecycle.update(this, delta) }
+  lateUpdate(delta) { PlayerLocalLifecycle.lateUpdate(this, delta) }
 
   teleport(...args) { return this.stateManager.teleport(...args) }
   setEffect(...args) { return this.stateManager.setEffect(...args) }
@@ -278,82 +156,7 @@ export class PlayerLocal extends BaseEntity {
   modify(...args) { return this.stateManager.modify(...args) }
 
   destroy(local) {
-    if (this.controller) {
-      this.controller.clear()
-      this.controller.destroy()
-      this.controller = null
-    }
-
-    this.avatarManager.destroy()
-    this.avatarManager = null
-
-    if (this.chatBubble?.chatTimer) {
-      clearTimeout(this.chatBubble.chatTimer)
-    }
-
-    if (this.effectOnEnd) {
-      this.effectOnEnd = null
-    }
-
-    if (this.controlBinder?.stick) {
-      this.controlBinder.stick = null
-    }
-
-    if (this.controlBinder?.pan) {
-      this.controlBinder.pan = null
-    }
-
-    if (this.control) {
-      this.control.release()
-      this.control = null
-    }
-
-    if (this.capsule && this.capsuleHandle && this.world.physics) {
-      this.world.physics.removeActor(this.capsuleHandle)
-      this.capsule = null
-      this.capsuleHandle = null
-    }
-
-    if (this.material) {
-      this.material = null
-    }
-
-    if (this.base && this.world.stage?.scene) {
-      this.world.stage.scene.remove(this.base)
-      this.base = null
-    }
-
-    if (this.aura && this.world.stage?.scene) {
-      this.world.stage.scene.remove(this.aura)
-      this.aura = null
-    }
-
-    if (this.avatar?.raw?.scene && this.base) {
-      this.base.remove(this.avatar.raw.scene)
-    }
-
-    this.nametag = null
-    this.bubble = null
-    this.bubbleBox = null
-    this.bubbleText = null
-    this.avatar = null
-    this.avatarUrl = null
-
-    this.physics = null
-    this.chatBubble = null
-    this.inputProcessor = null
-    this.animationController = null
-    this.networkSynchronizer = null
-    this.effectOnEnd = null
-    this.controlBinder = null
-    // capsuleFactory removed
-
-    this.pushForce = null
-    this.stick = null
-    this.pan = null
-
-    this.stateManager = null
-
+    PlayerLocalDestroy.destroyAll(this)
     super.destroy(local)
   }
 }
