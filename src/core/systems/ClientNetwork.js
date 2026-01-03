@@ -1,4 +1,3 @@
-import moment from 'moment'
 import { uuid } from '../utils.js'
 import { hashFile } from '../utils-client.js'
 import { BaseNetwork } from '../network/BaseNetwork.js'
@@ -68,16 +67,15 @@ export class ClientNetwork extends BaseNetwork {
 
   send(method, data) {
     if (this.offlineMode) return
-    this.protocol.send(this.wsManager.socket, method, data)
+    this.protocol.send(this.wsManager, method, data)
   }
 
   sendReliable(method, data, onAck) {
-    if (this.offlineMode) return
     if (this.offlineMode) {
       onAck?.()
-      return
+      return Promise.resolve()
     }
-    const promise = this.protocol.sendReliable(this.wsManager.socket, method, data)
+    const promise = this.protocol.sendReliable(this.wsManager, method, data)
     if (onAck) promise.then(onAck)
     return promise
   }
@@ -122,11 +120,12 @@ export class ClientNetwork extends BaseNetwork {
   }
 
   setServerTime(t) {
-    this.serverTimeOffset = moment.now() - t
+    this.serverTimeOffset = performance.now() - t
+    logger.info('Server time synchronized', { offset: this.serverTimeOffset })
   }
 
   getTime() {
-    return moment.now() - this.serverTimeOffset
+    return performance.now() - this.serverTimeOffset
   }
 
   enqueue(method, data) {
@@ -138,19 +137,25 @@ export class ClientNetwork extends BaseNetwork {
       try {
         const entry = this.queue.shift()
         if (!Array.isArray(entry) || entry.length < 2) {
-          if (entry && !Array.isArray(entry)) {
-            logger.error('Invalid queue entry type', { type: typeof entry })
-          }
+          logger.warn('Invalid queue entry dropped', {
+            entryType: typeof entry,
+            isArray: Array.isArray(entry),
+            length: entry?.length,
+            entry: entry && typeof entry === 'object' ? Object.keys(entry).slice(0, 5) : String(entry).slice(0, 100),
+          })
           continue
         }
         const [method, data] = entry
         if (!method) {
-          logger.warn('Empty method in queue entry')
+          logger.warn('Empty method in queue entry', { data })
           continue
         }
         this[method]?.(data)
       } catch (err) {
-        logger.error('Error flushing queue', { error: err.message })
+        logger.error('Error flushing queue', {
+          error: err.message,
+          stack: err.stack,
+        })
       }
     }
   }

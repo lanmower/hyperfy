@@ -70,7 +70,10 @@ export class Compressor {
       return payload?.data || payload
     }
 
-    if (!hasZlib) return null
+    if (!hasZlib) {
+      logger.warn('Zlib not available - cannot decompress')
+      throw new Error('Decompression unavailable: zlib not loaded')
+    }
 
     try {
       const buffer = Buffer.from(payload.data, 'base64')
@@ -78,8 +81,11 @@ export class Compressor {
       const data = JSON.parse(decompressed.toString())
       return data
     } catch (err) {
-      logger.error('Decompression failed', { error: err.message })
-      return null
+      logger.error('Decompression failed', {
+        error: err.message,
+        type: err.code || err.name,
+      })
+      throw new Error(`Decompression failed: ${err.message}`)
     }
   }
 

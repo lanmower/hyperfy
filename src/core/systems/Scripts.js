@@ -15,9 +15,28 @@ class FallbackCompartment {
   constructor(globals) {
     this.globals = globals
   }
+
   evaluate(source) {
+    this.validateScript(source)
     const fn = new Function(...Object.keys(this.globals), `return (${source})`)
     return fn(...Object.values(this.globals))
+  }
+
+  validateScript(code) {
+    const blocklist = [
+      /Object\.prototype/g,
+      /globalThis\./g,
+      /__proto__/g,
+      /constructor\s*\[/g,
+      /require\(/g,
+      /eval\(/g,
+    ]
+
+    for (const pattern of blocklist) {
+      if (pattern.test(code)) {
+        throw new Error(`Script contains blocked pattern: ${pattern.source}`)
+      }
+    }
   }
 }
 
@@ -48,9 +67,23 @@ export class Scripts extends System {
         keys: Object.keys,
         values: Object.values,
         entries: Object.entries,
-        assign: Object.assign,
+        assign: (target, ...sources) => {
+          for (const source of sources) {
+            for (const key of Object.keys(source)) {
+              if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+                target[key] = source[key]
+              }
+            }
+          }
+          return target
+        },
         create: Object.create,
-        defineProperty: Object.defineProperty,
+        defineProperty: (obj, prop, desc) => {
+          if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
+            throw new Error(`Cannot define property: ${prop}`)
+          }
+          return Object.defineProperty(obj, prop, desc)
+        },
         getOwnPropertyNames: Object.getOwnPropertyNames,
         getOwnPropertyDescriptor: Object.getOwnPropertyDescriptor,
       },

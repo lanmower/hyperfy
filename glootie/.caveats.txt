@@ -1,3 +1,21 @@
 [cav_1767357671281_jrk2v] esbuild platform mismatch: @esbuild/linux-x64 package remains in node_modules despite Windows-only npm installs. This prevents bundling on Windows. Workaround: Either use esbuild-wasm or rebuild entire node_modules on Windows with --force flag (Recorded: 1/2/2026)
 
 [cav_1767360387544_9mert] React Client Rendering Issue: Bundle loads successfully but Client component throws "Cannot read properties of null (reading 'useRef')" when React hooks execute. Root cause appears to be related to how esbuild bundles React and its dependencies (lucide-react, livekit-client) together. Previous attempts to use React from CDN (esm.sh) also failed with similar errors. Current workaround: Bundle React with the client code, but rendering still fails. Investigation shows: (1) Server and HMR working correctly, (2) Client bundle building and loading, (3) Module resolution correct, (4) Core systems initializing properly. Issue is isolated to React component rendering layer. May require: simplifying Client component, using different React version, or investigating esbuild bundling strategy for React. (Recorded: 1/2/2026)
+
+[cav_1767411775404_9954l] CRITICAL: BufferedLerpVector3 and BufferedLerpQuaternion interpolation methods are empty stubs (update(delta, speed) {}). Multiplayer movement will appear as teleports without smooth interpolation. Must implement actual lerp logic using vector/quaternion interpolation (e.g., THREE.js lerp or similar). Affects all moving entities.
+
+CRITICAL: Compressor.decompress() returns null on decompression failure. SnapshotProcessor.process() will crash when accessing properties on null. Must add null-check or return error object. Add try-catch in SnapshotProcessor.process() around decompress() call. Packet corruption causes unexpected disconnections.
+
+CRITICAL: Scripts.js FallbackCompartment uses new Function() which does not sandbox. User scripts can execute prototype pollution attacks. Replace with proper SES Compartment (check if globalThis.Compartment available). new Function() fallback is unsafe for production user scripts.
+
+CRITICAL: Server time synchronization mixes moment.now() (epoch-based) with performance.now() (relative to page load). ClientNetwork.js:125 uses moment.now(), SnapshotProcessor.js:30 uses performance.now(), getTime() uses moment.now(). Must standardize to performance.now() everywhere. Causes clock skew, animation jitter, network state divergence.
+
+HIGH: ClientNetwork.flush() silently skips invalid queue entries without telemetry. Network packets with corrupted headers cause silent data loss. Add structured logging when entries dropped. Consider logging dropped method names for debugging network issues.
+
+HIGH: SnapshotCodec calculates serverTime at encode (line 6) but uses it at decode (line 21) after network latency. Offset calculation does not account for travel time. Timestamp should be sent with packet and latency measured via ping/pong separately.
+
+MEDIUM: ClientNetwork.sendReliable() has unreachable code - offlineMode checked twice (lines 75-77). First check returns, second never executed. onAck callback never fires in offline mode. Causes frozen UI waiting for callback. Remove first return or combine checks.
+
+MEDIUM: Compressor.js requires('zlib') at module load time. If compression called immediately after Compressor instantiation, hasZlib might still be false. Module require may not complete before first compress() call. Consider async initialization or lazy-load pattern.
+
+MEDIUM: BufferedLerpVector3/Quaternion target/current object references cause issues if not properly updated. If update() method reads stale current/target, interpolation will fail. Ensure target is always set before update() called. Add validation that target is set. (Recorded: 1/3/2026)

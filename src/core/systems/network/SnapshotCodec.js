@@ -18,7 +18,7 @@ export class SnapshotCodec {
   static decode(data, network) {
     return {
       id: data.id,
-      serverTimeOffset: data.serverTime - performance.now(),
+      serverTime: data.serverTime,
       apiUrl: data.apiUrl,
       maxUploadSize: data.maxUploadSize,
       assetsUrl: data.assetsUrl,
