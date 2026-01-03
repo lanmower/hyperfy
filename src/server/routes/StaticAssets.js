@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import * as Babel from '@babel/standalone'
+import { generateETag } from '../performance/CachingStrategy.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.join(__dirname, '../../..')
@@ -28,7 +29,6 @@ async function transformCode(code, filepath) {
 }
 
 export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
-  // Serve index.html
   fastify.get('/', async (req, reply) => {
     const title = world.settings.title || 'World'
     const desc = world.settings.desc || ''
@@ -44,7 +44,17 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     html = html.replaceAll('{title}', title)
     html = html.replaceAll('{desc}', desc)
     html = html.replaceAll('{image}', image)
-    reply.type('text/html').send(html)
+
+    const etag = generateETag(html)
+    reply.type('text/html')
+    reply.header('ETag', etag)
+    reply.header('Cache-Control', 'public, max-age=300, must-revalidate')
+
+    if (req.headers['if-none-match'] === etag) {
+      return reply.code(304).send()
+    }
+
+    reply.send(html)
   })
 
   // Buildless serving disabled - using bundled client.js instead

@@ -1,5 +1,4 @@
 import cors from '@fastify/cors'
-import compress from '@fastify/compress'
 import multipart from '@fastify/multipart'
 import ws from '@fastify/websocket'
 import { LoggerFactory } from '../../core/utils/logging/index.js'
@@ -7,12 +6,15 @@ import { createRequestIdMiddleware, createErrorHandler } from './RequestTracking
 import { createTimeoutMiddleware } from './TimeoutMiddleware.js'
 import { ErrorResponses } from './ErrorResponses.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
+import { setupCompression } from '../performance/CompressionManager.js'
+import { setupCacheHeaders, addETagSupport } from '../performance/CachingStrategy.js'
+import { trackResponseTime, enforcePerformanceBudgets } from '../performance/PerformanceMiddleware.js'
 
 const logger = LoggerFactory.get('ServerMiddleware')
 
 const isHealthEndpoint = (url) => url.startsWith('/health') || url === '/metrics'
 
-export function registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager) {
+export async function registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager) {
   fastify.register(createRequestIdMiddleware())
   fastify.register(createErrorHandler(logger, errorTracker))
   fastify.register(createTimeoutMiddleware(timeoutManager))
@@ -52,7 +54,12 @@ export function registerMiddleware(fastify, timeoutManager, logger, errorTracker
     }
   })
 
-  fastify.register(compress)
+  await setupCompression(fastify)
+  setupCacheHeaders(fastify)
+  addETagSupport(fastify)
+  trackResponseTime(fastify)
+  enforcePerformanceBudgets(fastify)
+
   fastify.register(multipart, {
     limits: {
       fileSize: 200 * 1024 * 1024,

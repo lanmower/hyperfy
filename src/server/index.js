@@ -69,7 +69,7 @@ fastify.statusPageData = statusPageData
 fastify.corsConfig = corsConfig
 fastify.shutdownManager = shutdownManager
 
-registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager)
+await registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager)
 await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker)
 
 await registerRoutes(fastify, world, initializer.assetsDir)
