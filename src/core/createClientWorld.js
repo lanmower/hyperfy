@@ -6,6 +6,7 @@ import { ClientGraphics } from './systems/ClientGraphics.js'
 import { ClientEnvironment } from './systems/ClientEnvironment.js'
 import { ClientNetwork } from './systems/ClientNetwork.js'
 import { ClientUI } from './systems/ClientUI.js'
+import { ClientPointer } from './systems/ClientPointer.js'
 import { Events } from './systems/Events.js'
 import { Settings } from './systems/Settings.js'
 import { Stage } from './systems/Stage.js'
@@ -34,6 +35,7 @@ export function createClientWorld() {
   world.register('livekit', ClientLiveKit)
   world.register('controls', InputSystem)
   world.register('ui', ClientUI)
+  world.register('pointer', ClientPointer)
   world.register('network', ClientNetwork)
   return world
 }

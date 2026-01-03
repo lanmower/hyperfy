@@ -21,6 +21,19 @@ export class ClientUI extends System {
     }
     this.lastAppPane = 'app'
     this.control = null
+    this.ui = null
+  }
+
+  init() {
+    if (typeof document !== 'undefined') {
+      this.ui = document.createElement('div')
+      this.ui.style.position = 'fixed'
+      this.ui.style.top = '0'
+      this.ui.style.left = '0'
+      this.ui.style.pointerEvents = 'none'
+      this.ui.style.zIndex = '1000'
+      document.body.appendChild(this.ui)
+    }
   }
 
   start() {
@@ -115,5 +128,9 @@ export class ClientUI extends System {
   destroy() {
     this.control?.release()
     this.control = null
+    if (this.ui && this.ui.parentNode) {
+      this.ui.parentNode.removeChild(this.ui)
+    }
+    this.ui = null
   }
 }
