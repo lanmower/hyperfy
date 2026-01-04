@@ -30,7 +30,13 @@ export class Socket {
     try {
       const packet = MessageHandler.encode(name, data)
       logger.info('Socket.send() encoding packet', { name, packetSize: packet.byteLength || packet.length, wsType: typeof this.ws, wsReadyState: this.ws?.readyState })
-      const result = this.ws.send(packet)
+      let binaryData = packet
+      if (Buffer.isBuffer(packet)) {
+        binaryData = packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength)
+      } else if (packet instanceof Uint8Array) {
+        binaryData = packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength)
+      }
+      const result = this.ws.send(binaryData)
       logger.info('Socket.send() packet sent to WebSocket', { name, sendResult: result })
     } catch (err) {
       logger.error('Socket.send() failed', { name, error: err.message, errorType: err.constructor.name })
@@ -38,7 +44,15 @@ export class Socket {
   }
 
   sendPacket(packet) {
-    this.ws.send(packet)
+    if (Buffer.isBuffer(packet)) {
+      this.ws.send(packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength))
+    } else if (packet instanceof ArrayBuffer) {
+      this.ws.send(packet)
+    } else if (packet instanceof Uint8Array) {
+      this.ws.send(packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength))
+    } else {
+      this.ws.send(packet)
+    }
   }
 
   ping() {
