@@ -22,6 +22,14 @@ import { Snaps } from './systems/Snaps.js'
 import { Wind } from './systems/Wind.js'
 import { XR } from './systems/XR.js'
 import { ClientAI } from './systems/ClientAI.js'
+import { Collections } from './systems/Collections.js'
+import { Settings } from './systems/Settings.js'
+import { BlueprintManager } from './systems/BlueprintManager.js'
+import { Entities } from './systems/Entities.js'
+import { Chat } from './systems/Chat.js'
+import { Events } from './systems/Events.js'
+import { Stage } from './systems/Stage.js'
+import { Avatars } from './systems/Avatars.js'
 
 export function createClientWorld() {
   const world = new World()
@@ -30,9 +38,17 @@ export function createClientWorld() {
   world.register('pointer', ClientPointer)
   world.register('prefs', ClientPrefs)
   world.register('controls', InputSystem)
-  world.register('network', ClientNetwork)
+  world.register('events', Events)
+  world.register('settings', Settings)
+  world.register('collections', Collections)
   world.register('loader', UnifiedLoader)
+  world.register('blueprints', BlueprintManager)
+  world.register('entities', Entities)
+  world.register('avatars', Avatars)
+  world.register('chat', Chat)
+  world.register('network', ClientNetwork)
   world.register('graphics', ClientGraphics)
+  world.register('stage', Stage)
   world.register('environment', ClientEnvironment)
   world.register('audio', ClientAudio)
   world.register('stats', ClientStats)
