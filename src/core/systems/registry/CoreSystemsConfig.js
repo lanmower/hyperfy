@@ -2,6 +2,7 @@ import { Anchors } from '../Anchors.js'
 import { Apps } from '../Apps.js'
 import { Avatars } from '../Avatars.js'
 import { BlueprintManager } from '../BlueprintManager.js'
+import { CameraController } from '../CameraController.js'
 import { Chat } from '../Chat.js'
 import { ClientBuilder } from '../ClientBuilder.js'
 import { InputSystem } from '../input/InputSystem.js'
@@ -146,6 +147,12 @@ export const coreSystemsConfig = [
     class: InputSystem,
     platforms: ['client'],
     priority: 21,
+  },
+  {
+    name: 'cameraController',
+    class: CameraController,
+    platforms: ['client'],
+    priority: 20.5,
   },
   {
     name: 'builder',

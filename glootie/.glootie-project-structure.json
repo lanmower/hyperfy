@@ -324,6 +324,7 @@
       ".env.example",
       ".env.local",
       ".gitignore",
+      "FINAL_SUCCESS.png",
       ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
@@ -343,11 +344,6 @@
       "README.md",
       "render-test.png",
       "RENDER_TEST_GUIDE.md",
-      "scene-test-final.png",
-      "scene-test-fixed.png",
-      "scene-test.png",
-      "scene-test2.png",
-      "scene-visibility-test.png",
       "build-client.mjs",
       "build.mjs",
       "dev-server.mjs",
@@ -644,6 +640,7 @@
       "BlueprintOrchestrator.js",
       "BlueprintResourceLoader.js",
       "BlueprintValidator.js",
+      "CameraController.js",
       "Chat.js",
       "Client.js",
       "ClientActions.js",
@@ -886,5 +883,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767551373732
+  "lastAnalyzed": 1767552557320
 }
