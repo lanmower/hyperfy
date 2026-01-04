@@ -105,16 +105,13 @@ export function generateETag(content) {
 }
 
 export function addETagSupport(fastify) {
-  fastify.addHook('onSend', async (request, reply) => {
+  fastify.addHook('onSend', async (request, reply, payload) => {
     if (reply.sent) return
 
     const contentType = reply.getHeader('content-type')
     if (!contentType || !contentType.includes('application/json')) {
-      return
+      return payload
     }
-
-    const payload = reply.getPayload?.()
-    if (!payload) return
 
     const etag = generateETag(payload)
     if (etag) {
@@ -122,12 +119,15 @@ export function addETagSupport(fastify) {
         reply.header('ETag', etag)
 
         if (request.headers['if-none-match'] === etag) {
-          reply.code(304).send()
+          reply.code(304)
+          return ''
         }
       } catch (err) {
         // Headers already sent, skip
       }
     }
+
+    return payload
   })
 }
 
