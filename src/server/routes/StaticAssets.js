@@ -72,13 +72,12 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     }
   })
 
-  // Serve node_modules files directly (buildless)
+  // Serve node_modules files directly (buildless) - no transform
   fastify.get('/node_modules/*', async (req, reply) => {
     const filepath = path.join(rootDir, 'node_modules', req.params['*'])
     try {
       const code = await fs.readFile(filepath, 'utf-8')
-      const transformed = await transformCode(code, filepath)
-      reply.type('application/javascript').send(transformed)
+      reply.type('application/javascript').send(code)
     } catch (err) {
       reply.code(404).send(`Not found: ${req.params['*']}`)
     }
