@@ -37,7 +37,10 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
   fastify.addHook('onRequest', async (request, reply) => {
     if (shutdownManager.isShuttingDown) {
       if (!isHealthEndpoint(request.url)) {
-        return ErrorResponseBuilder.sendError(reply, 'SERVICE_UNAVAILABLE', 'Server is shutting down')
+        const err = new Error('Server is shutting down')
+        err.statusCode = 503
+        err.code = 'SERVICE_UNAVAILABLE'
+        throw err
       }
     }
 
@@ -49,7 +52,10 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
           method: request.method,
         })
         corsConfig.logRejectedRequest(origin)
-        return ErrorResponseBuilder.sendError(reply, 'PERMISSION_DENIED', `CORS policy violation: Origin ${origin} is not allowed`)
+        const err = new Error(`CORS policy violation: Origin ${origin} is not allowed`)
+        err.statusCode = 403
+        err.code = 'PERMISSION_DENIED'
+        throw err
       }
     }
   })
