@@ -29,6 +29,7 @@ export class PlayerRemote extends BaseEntity {
 
   async init() {
     if (!this.world.isClient) return
+    if (this.world.graphics?.app) return
     this.base = new THREE.Object3D()
     this.base.position.fromArray(this.data.position)
     this.base.quaternion.fromArray(this.data.quaternion)

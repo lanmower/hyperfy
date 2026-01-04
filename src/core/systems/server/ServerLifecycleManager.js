@@ -76,6 +76,21 @@ export class ServerLifecycleManager {
       logger.info('Creating and adding scene entity', { sceneEntityId })
       try {
         this.network.entities.add(sceneEntity, true)
+        const meadowBlueprint = this.network.blueprints.get('1gBgzpneVh')
+        if (meadowBlueprint) {
+          const meadowId = 'meadow-' + Date.now()
+          const meadowEntity = {
+            id: meadowId,
+            type: 'app',
+            blueprint: '1gBgzpneVh',
+            position: [0, 0, 0],
+            quaternion: [0, 0, 0, 1],
+            scale: [1, 1, 1],
+            userId: null,
+          }
+          logger.info('Creating meadow app entity', { meadowId })
+          this.network.entities.add(meadowEntity, true)
+        }
       } catch (err) {
         logger.error('Failed to add scene entity', { error: err.message })
       }

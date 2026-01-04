@@ -23,6 +23,7 @@ export class Stage extends System {
     this.raycastHits = []
     this.materialCache = new Map()
     this.meshInserter = new MeshInserter(this)
+    this.pcEntities = new Map()
   }
 
   init({ viewport }) {
@@ -118,7 +119,7 @@ export class Stage extends System {
         },
       }
     }
-    return this.meshInserter.insertSingle({
+    const handle = this.meshInserter.insertSingle({
       geometry: options.geometry,
       material: materialWithProxy,
       castShadow: options.castShadow,
@@ -126,6 +127,10 @@ export class Stage extends System {
       node: options.node,
       matrix: options.matrix,
     })
+    if (handle && options.node) {
+      this.pcEntities.set(options.node, handle)
+    }
+    return handle
   }
 
   insertSingle(options) {

@@ -19,10 +19,14 @@ import { ClientLiveKit } from './systems/ClientLiveKit.js'
 import { Avatars } from './systems/Avatars.js'
 import { PostProcessingController } from './systems/graphics/PostProcessingController.js'
 import { CameraController } from './CameraController.js'
+import { PlayerCapsuleRenderer } from './systems/PlayerCapsuleRenderer.js'
+import { HUDOverlay } from './systems/HUDOverlay.js'
 
 export function createClientWorld() {
   console.log('[CREATE_CLIENT_WORLD] Starting world creation with correct system order')
   const world = new World()
+  world.isClient = true
+  world.isServer = false
   world.register('settings', Settings)
   world.register('collections', Collections)
   world.register('events', Events)
@@ -39,6 +43,8 @@ export function createClientWorld() {
   world.register('livekit', ClientLiveKit)
   world.register('controls', InputSystem)
   world.register('cameraController', CameraController)
+  world.register('playerCapsuleRenderer', PlayerCapsuleRenderer)
+  world.register('hud', HUDOverlay)
   world.register('ui', ClientUI)
   world.register('pointer', ClientPointer)
   world.register('network', ClientNetwork)

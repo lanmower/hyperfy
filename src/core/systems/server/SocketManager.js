@@ -66,7 +66,7 @@ export class SocketManager {
     const combined = new Uint8Array(seqArray.length + packetArray.length)
     combined.set(seqArray, 0)
     combined.set(packetArray, seqArray.length)
-    return combined.buffer
+    return Buffer.from(combined)
   }
 
   sendTo(socketId, name, data) {

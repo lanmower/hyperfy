@@ -668,11 +668,13 @@
       "Entities.js",
       "ErrorSystem.js",
       "EventListenerManager.js",
+      "HUDOverlay.js",
       "LODs.js",
       "Nametags.js",
       "NodeClient.js",
       "NodeEnvironment.js",
       "Physics.js",
+      "PlayerCapsuleRenderer.js",
       "RegistrySystemBase.js",
       "Scripts.js",
       "Server.js",
@@ -873,5 +875,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767555119095
+  "lastAnalyzed": 1767557176358
 }
