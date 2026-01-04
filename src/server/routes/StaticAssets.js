@@ -14,6 +14,7 @@ const publicDir = path.join(clientDir, 'public')
 async function transformCode(code, filepath) {
   if (!filepath.endsWith('.js')) return code
   if (typeof code !== 'string') return code
+  if (filepath.includes('node_modules')) return code
 
   try {
     const result = Babel.transform(code, {
@@ -72,12 +73,13 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     }
   })
 
-  // Serve node_modules files directly (buildless) - no transform
+  // Serve node_modules files directly (buildless)
   fastify.get('/node_modules/*', async (req, reply) => {
     const filepath = path.join(rootDir, 'node_modules', req.params['*'])
     try {
       const code = await fs.readFile(filepath, 'utf-8')
-      reply.type('application/javascript').send(code)
+      const transformed = await transformCode(code, filepath)
+      reply.type('application/javascript').send(transformed)
     } catch (err) {
       reply.code(404).send(`Not found: ${req.params['*']}`)
     }
