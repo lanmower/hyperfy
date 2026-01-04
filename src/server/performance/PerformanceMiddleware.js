@@ -150,6 +150,7 @@ export function registerPerformanceEndpoints(fastify) {
 
 export function enforcePerformanceBudgets(fastify, options = {}) {
   fastify.addHook('onSend', async (request, reply) => {
+    if (reply.sent) return
     if (options.enforceStrict && request._performanceStart) {
       const end = process.hrtime.bigint()
       const duration = Number(end - request._performanceStart) / 1000000

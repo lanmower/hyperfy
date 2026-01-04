@@ -89,7 +89,7 @@ export class AppBuilder {
       }
       this.app.floorCollider.createFloorColliderIfNeeded(this.app.root)
       const runScript =
-        (this.app.mode === Modes.ACTIVE && script && !crashed) || (this.app.mode === Modes.MOVING && this.app.keepActive)
+        !blueprint.scene && ((this.app.mode === Modes.ACTIVE && script && !crashed) || (this.app.mode === Modes.MOVING && this.app.keepActive))
       if (runScript) {
         const blueprintProps = NullSafetyHelper.getBlueprintProps(this.app)
         const success = this.app.scriptExecutor.executeScript(
