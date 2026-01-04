@@ -54,7 +54,7 @@ export class ClientEnvironment extends System {
         logger.info('Loading base environment model', { model: this.baseEnvironment.model })
         const modelAsset = await new Promise((resolve, reject) => {
           const asset = new pc.Asset('baseEnvironment', 'model', { url: this.baseEnvironment.model })
-          asset.on('load', () => resolve(asset.resource))
+          asset.on('load', () => resolve(asset))
           asset.on('error', reject)
           app.assets.add(asset)
           app.assets.load(asset)
@@ -62,7 +62,9 @@ export class ClientEnvironment extends System {
         const modelEntity = new pc.Entity('baseEnvironment')
         modelEntity.addComponent('model', { asset: modelAsset })
         app.root.addChild(modelEntity)
-        logger.info('Base environment model loaded and added to scene')
+        logger.info('Base environment model loaded and added to scene', {
+          meshInstances: modelEntity.model?.meshInstances?.length || 0
+        })
       } catch (err) {
         logger.error('Failed to load base environment model', { error: err.message })
       }
