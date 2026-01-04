@@ -12,7 +12,7 @@ const billboardModeInts = { full: 0, y: 1, direction: 2 }
 let worker = null
 function getWorker() {
   if (!worker) {
-    worker = new Worker(window.PARTICLES_PATH)
+    worker = new Worker(window.PARTICLES_PATH, { type: 'module' })
   }
   return worker
 }
