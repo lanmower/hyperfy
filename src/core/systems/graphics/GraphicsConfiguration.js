@@ -10,26 +10,50 @@ export class GraphicsConfiguration {
     this.prefHandlers = {
       'dpr': (value) => {
         renderer.setPixelRatio(value)
-        this.graphics.resize(this.graphics.renderState.width, this.graphics.renderState.height)
+        if (this.graphics.resize) {
+          this.graphics.resize(this.graphics.width, this.graphics.height)
+        }
       },
       'postprocessing': (value) => {
-        this.graphics.usePostprocessing = value
+        if (this.postProcessing) {
+          this.graphics.usePostprocessing = value
+        }
       },
       'bloom': (value) => {
-        this.graphics.bloomEnabled = value
-        this.postProcessing.updateEffects(value)
+        if (this.postProcessing) {
+          this.postProcessing.setBloomIntensity(value ? 0.5 : 0)
+        }
       },
-      'ao': (value) => {
-        this.postProcessing.aoPass.enabled = value && settings.get('ao')
+      'ssao': (value) => {
+        if (this.postProcessing) {
+          this.postProcessing.setSSAOIntensity(value ? 1.0 : 0)
+        }
       },
+      'fxaa': (value) => {
+        if (this.postProcessing) {
+          this.postProcessing.toggleFXAA(value)
+        }
+      }
     }
   }
 
   setupSettingHandlers(settings, prefs) {
     this.settingHandlers = {
-      'ao': (value) => {
-        this.postProcessing.aoPass.enabled = value && prefs.state.get('ao')
+      'bloom': (value) => {
+        if (this.postProcessing) {
+          this.postProcessing.setBloomIntensity(value ? 0.5 : 0)
+        }
       },
+      'ssao': (value) => {
+        if (this.postProcessing) {
+          this.postProcessing.setSSAOIntensity(value ? 1.0 : 0)
+        }
+      },
+      'fxaa': (value) => {
+        if (this.postProcessing) {
+          this.postProcessing.toggleFXAA(value)
+        }
+      }
     }
   }
 

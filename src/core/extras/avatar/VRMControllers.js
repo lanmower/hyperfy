@@ -1,4 +1,4 @@
-import * as THREE from '../three.js'
+import * as pc from '../../playcanvas.js'
 import { DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX } from './VRMFactoryConfig.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
@@ -11,7 +11,7 @@ const logger = new StructuredLogger('VRMControllers')
 const { v1, v2 } = SharedVectorPool('VRMControllers', 2, 0)
 
 export function createAnimationSystem(skinnedMeshes, hooks, rootToHips, version, getBoneName) {
-  const mixer = new THREE.AnimationMixer(skinnedMeshes[0])
+  const mixer = { clips: {}, actions: {} }
   const poseSystem = createPoseSystem(mixer, hooks, rootToHips, version, getBoneName)
   const blender = createLocomotionBlender(poseSystem)
 
@@ -24,14 +24,14 @@ export function createAnimationSystem(skinnedMeshes, hooks, rootToHips, version,
 
   const loco = {
     mode: Modes.IDLE,
-    axis: new THREE.Vector3(),
+    axis: new pc.Vec3(),
     gazeDir: null,
   }
 
   const setEmote = url => {
     if (currentEmote?.url === url) return
     if (currentEmote) {
-      currentEmote.action?.fadeOut(0.15)
+      currentEmote.action?.stop()
       currentEmote = null
     }
     if (!url) return
@@ -43,9 +43,9 @@ export function createAnimationSystem(skinnedMeshes, hooks, rootToHips, version,
     if (emotes[url]) {
       currentEmote = emotes[url]
       if (currentEmote.action) {
-        currentEmote.action.clampWhenFinished = !loop
-        currentEmote.action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
-        currentEmote.action.reset().fadeIn(0.15).play()
+        currentEmote.action.speed = speed
+        currentEmote.action.loop = loop
+        currentEmote.action.play()
         poseSystem.clear()
       }
     } else {
@@ -54,12 +54,11 @@ export function createAnimationSystem(skinnedMeshes, hooks, rootToHips, version,
       currentEmote = emote
       hooks.loader.load('emote', url).then(emo => {
         const clip = emo.toClip({ rootToHips, version, getBoneName })
-        const action = mixer.clipAction(clip)
-        action.timeScale = speed
+        mixer.clips[url] = clip
+        const action = { clip, speed, loop, playing: false, play() { this.playing = true }, stop() { this.playing = false } }
+        mixer.actions[url] = action
         emote.action = action
         if (currentEmote === emote) {
-          action.clampWhenFinished = !loop
-          action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce)
           action.play()
           poseSystem.clear()
         }
@@ -69,7 +68,7 @@ export function createAnimationSystem(skinnedMeshes, hooks, rootToHips, version,
 
   const setLocomotion = (mode, axis, gazeDir) => {
     loco.mode = mode
-    loco.axis = axis
+    loco.axis.copy(axis)
     loco.gazeDir = gazeDir
   }
 
@@ -86,7 +85,15 @@ export function createAnimationSystem(skinnedMeshes, hooks, rootToHips, version,
     elapsed += delta
     const should = rateCheck ? elapsed >= rate : true
     if (should) {
-      mixer.update(elapsed)
+      for (const key in mixer.actions) {
+        const action = mixer.actions[key]
+        if (action.playing) {
+          action.clip.time = (action.clip.time || 0) + delta * action.speed
+          if (!action.loop && action.clip.time >= action.clip.duration) {
+            action.stop()
+          }
+        }
+      }
       elapsed = 0
       if (!currentEmote) {
         blender.blend(loco.mode, loco.axis)

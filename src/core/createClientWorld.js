@@ -17,6 +17,7 @@ import { BlueprintManager } from './systems/BlueprintManager.js'
 import { Entities } from './systems/Entities.js'
 import { ClientLiveKit } from './systems/ClientLiveKit.js'
 import { Avatars } from './systems/Avatars.js'
+import { PostProcessingController } from './systems/graphics/PostProcessingController.js'
 
 export function createClientWorld() {
   const world = new World()
@@ -32,6 +33,7 @@ export function createClientWorld() {
   world.register('prefs', ClientPrefs)
   world.register('environment', ClientEnvironment)
   world.register('graphics', ClientGraphics)
+  world.register('postProcessing', PostProcessingController)
   world.register('livekit', ClientLiveKit)
   world.register('controls', InputSystem)
   world.register('ui', ClientUI)

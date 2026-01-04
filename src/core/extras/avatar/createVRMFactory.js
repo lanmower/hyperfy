@@ -14,16 +14,23 @@ export function createVRMFactory(glb, setupMaterial) {
   return {
     create: (matrix, hooks, node) => createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version),
     applyStats(stats) {
-      glb.scene.traverse(obj => {
-        if (obj.geometry && !stats.geometries.has(obj.geometry.uuid)) {
-          stats.geometries.add(obj.geometry.uuid)
-          stats.triangles += getTrianglesFromGeometry(obj.geometry)
+      function traverse(entity) {
+        if (entity.model && entity.model.asset && entity.model.asset.resource) {
+          const mesh = entity.model.asset.resource
+          if (mesh.geometry && !stats.geometries.has(mesh.geometry.uuid)) {
+            stats.geometries.add(mesh.geometry.uuid)
+            stats.triangles += getTrianglesFromGeometry(mesh.geometry)
+          }
+          if (mesh.material && !stats.materials.has(mesh.material.uuid)) {
+            stats.materials.add(mesh.material.uuid)
+            stats.textureBytes += getTextureBytesFromMaterial(mesh.material)
+          }
         }
-        if (obj.material && !stats.materials.has(obj.material.uuid)) {
-          stats.materials.add(obj.material.uuid)
-          stats.textureBytes += getTextureBytesFromMaterial(obj.material)
+        for (let i = 0; i < entity.children.length; i++) {
+          traverse(entity.children[i])
         }
-      })
+      }
+      traverse(glb.scene)
     },
   }
 }

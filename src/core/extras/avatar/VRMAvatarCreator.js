@@ -1,23 +1,24 @@
 // VRM avatar instantiation and setup
-import * as THREE from '../three.js'
+import * as pc from '../../playcanvas.js'
 import { MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
 import { cloneGLB, getSkinnedMeshes, createCapsule } from './VRMUtilities.js'
 import { createAnimationSystem, createAimSystem } from './VRMControllers.js'
 import { Emotes } from '../playerEmotes.js'
 
-const material = new THREE.MeshBasicMaterial()
+const material = new pc.Material()
 
 export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version) {
   const vrm = cloneGLB(glb)
   const tvrm = vrm.userData.vrm
   const skinnedMeshes = getSkinnedMeshes(vrm.scene)
-  const skeleton = skinnedMeshes[0].skeleton
-  const rootBone = skeleton.bones[0]
-  rootBone.parent.remove(rootBone)
-  rootBone.updateMatrixWorld(true)
-  vrm.scene.matrix = matrix
-  vrm.scene.matrixWorld = matrix
-  hooks.scene.add(vrm.scene)
+  const skeleton = skinnedMeshes[0].model.skinInstances[0].skin
+  const rootBoneEntity = skeleton.bones[0]
+  const rootBoneParent = rootBoneEntity.parent
+  if (rootBoneParent) {
+    rootBoneParent.removeChild(rootBoneEntity)
+  }
+  vrm.scene.setLocalMatrix(matrix)
+  hooks.scene.addChild(vrm.scene)
 
   const getEntity = () => node?.ctx.entity
 
@@ -30,35 +31,44 @@ export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headT
   }
   hooks.octree?.insert(sItem)
 
-  vrm.scene.traverse(o => {
-    o.getEntity = getEntity
-  })
+  function traverse(entity) {
+    entity.getEntity = getEntity
+    for (let i = 0; i < entity.children.length; i++) {
+      traverse(entity.children[i])
+    }
+  }
+  traverse(vrm.scene)
 
   const getBoneName = vrmBoneName => {
     return glb.userData.vrm.humanoid.getRawBoneNode(vrmBoneName)?.name
   }
 
   const animationSystem = createAnimationSystem(skinnedMeshes, hooks, rootToHips, version, getBoneName)
-  const gazeController = createAimSystem(vrm.scene.matrixWorld, glb.userData.vrm, skeleton)
+  const gazeController = createAimSystem(vrm.scene.getWorldTransform(), glb.userData.vrm, skeleton)
 
   setupDefaultPoses(animationSystem)
 
-  const mt = new THREE.Matrix4()
+  const mt = new pc.Mat4()
   const getBoneTransform = boneName => {
     const bone = gazeController.findBone(boneName)
     if (!bone) return null
-    return mt.multiplyMatrices(vrm.scene.matrixWorld, bone.matrixWorld)
+    mt.mul2(vrm.scene.getWorldTransform(), bone.getWorldTransform())
+    return mt
   }
 
   const updateRate = () => {
-    animationSystem.updateRate(vrm.scene.matrix, hooks.camera.matrixWorld)
+    animationSystem.updateRate(vrm.scene.getLocalMatrix(), hooks.camera.getWorldTransform())
   }
 
   const update = delta => {
     const shouldUpdate = animationSystem.update(delta)
     if (shouldUpdate) {
-      skeleton.bones.forEach(bone => bone.updateMatrixWorld())
-      skeleton.update = THREE.Skeleton.prototype.update
+      for (let i = 0; i < skeleton.bones.length; i++) {
+        const bone = skeleton.bones[i]
+        if (bone.updateMatrices) {
+          bone.updateMatrices()
+        }
+      }
       const loco = animationSystem.getLocomotionState()
       const distance = animationSystem.getDistance()
       const currentEmote = animationSystem.getCurrentEmote()
@@ -76,8 +86,6 @@ export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headT
           weight: 0.6,
         })
       }
-    } else {
-      skeleton.update = () => {}
     }
   }
 
@@ -85,7 +93,8 @@ export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headT
   const setFirstPerson = active => {
     if (firstPersonActive === active) return
     const head = gazeController.findBone('neck')
-    head.scale.setScalar(active ? 0 : 1)
+    const scale = active ? 0 : 1
+    head.setLocalScale(scale, scale, scale)
     firstPersonActive = active
   }
 
@@ -108,19 +117,24 @@ export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headT
     getBoneTransform,
     setLocomotion,
     setVisible(visible) {
-      vrm.scene.traverse(o => {
-        o.visible = visible
-      })
+      function setVis(entity) {
+        entity.enabled = visible
+        for (let i = 0; i < entity.children.length; i++) {
+          setVis(entity.children[i])
+        }
+      }
+      setVis(vrm.scene)
     },
     move(_matrix) {
       matrix.copy(_matrix)
+      vrm.scene.setLocalMatrix(_matrix)
       hooks.octree?.move(sItem)
     },
     disableRateCheck() {
       animationSystem.disableRateCheck()
     },
     destroy() {
-      hooks.scene.remove(vrm.scene)
+      hooks.scene.removeChild(vrm.scene)
       hooks.octree?.remove(sItem)
     },
   }

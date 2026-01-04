@@ -1,9 +1,7 @@
 // VRM scene preprocessing - cleanup and shadow setup
-import * as THREE from '../three.js'
+import * as pc from '../../playcanvas.js'
 
 export function preprocessVRMScene(glb) {
-  glb.scene.matrixAutoUpdate = false
-  glb.scene.matrixWorldAutoUpdate = false
   const expressions = glb.scene.children.filter(n => n.type === 'VRMExpression')
   for (const node of expressions) node.removeFromParent()
   const vrmHumanoidRigs = glb.scene.children.filter(n => n.name === 'VRMHumanoidRig')
@@ -12,8 +10,13 @@ export function preprocessVRMScene(glb) {
   for (const node of secondaries) node.removeFromParent()
   glb.scene.traverse(obj => {
     if (obj.isMesh) {
-      obj.castShadow = true
-      obj.receiveShadow = true
+      const model = obj.getComponent('model')
+      if (model) {
+        for (let i = 0; i < model.meshInstances.length; i++) {
+          model.meshInstances[i].castShadow = true
+          model.meshInstances[i].receiveShadow = true
+        }
+      }
     }
   })
 }
@@ -22,16 +25,22 @@ export function setupSkinnedMeshes(glb, setupMaterial) {
   const skinnedMeshes = []
   glb.scene.traverse(node => {
     if (node.isSkinnedMesh) {
-      node.bindMode = THREE.DetachedBindMode
-      node.bindMatrix.copy(node.matrixWorld)
-      node.bindMatrixInverse.copy(node.bindMatrix).invert()
-      skinnedMeshes.push(node)
+      const skinInstance = node.skinInstance
+      if (skinInstance) {
+        const worldMat = node.getWorldTransform()
+        const bindMat = new pc.Mat4()
+        bindMat.copy(worldMat)
+        skinInstance.bones[0]._parent.setLocalTransform(bindMat)
+        skinnedMeshes.push(node)
+      }
     }
     if (node.isMesh) {
-      if (node.geometry.computeBoundsTree) {
-        node.geometry.computeBoundsTree()
+      const model = node.getComponent('model')
+      if (model) {
+        for (let i = 0; i < model.meshInstances.length; i++) {
+          model.meshInstances[i].receiveShadow = true
+        }
       }
-      node.material.shadowSide = THREE.BackSide
       setupMaterial(node.material)
     }
   })

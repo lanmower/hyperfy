@@ -1,4 +1,4 @@
-import * as THREE from '../three.js'
+import * as pc from '../../playcanvas.js'
 import { getQueryParams } from './VRMUtilities.js'
 import { Modes } from '../../constants/AnimationModes.js'
 
@@ -60,7 +60,7 @@ export function createPoseSystem(mixer, hooks, rootToHips, version, getBoneName)
     const lerpSpeed = 16
     for (const key in poses) {
       const pose = poses[key]
-      const weight = THREE.MathUtils.lerp(pose.weight, pose.target, 1 - Math.exp(-lerpSpeed * delta))
+      const weight = pc.math.lerp(pose.weight, pose.target, 1 - Math.exp(-lerpSpeed * delta))
       pose.setWeight(weight)
     }
   }
