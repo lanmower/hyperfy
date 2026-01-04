@@ -41,16 +41,13 @@ export class ClientEnvironment extends System {
 
     const ground = new pc.Entity('ground')
     ground.setLocalPosition(0, -2, 0)
-    ground.addComponent('model', { type: 'asset' })
-
-    const model = new pc.Model()
     const meshInstance = new pc.MeshInstance(mesh, material)
-    model.meshInstances.push(meshInstance)
-    ground.model.model = model
+    ground.addComponent('render', {
+      type: 'asset',
+      meshInstances: [meshInstance]
+    })
 
     app.root.addChild(ground)
-
-    logger.info('Ground created:', ground.model?.meshInstances?.length || 0, 'meshes')
 
     if (this.baseEnvironment?.model) {
       try {

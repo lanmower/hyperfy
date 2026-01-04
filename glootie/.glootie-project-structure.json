@@ -818,7 +818,9 @@
       "mp-walk.glb",
       "scene.hyp",
       "scene.hyp.bak",
+      "SUCCESS.png",
       "test-final.png",
+      "test-no-mesh.png",
       "test-render-fixed.png",
       "test-render-refresh.png",
       "test-render.png",
@@ -884,5 +886,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767551008030
+  "lastAnalyzed": 1767551373732
 }
