@@ -39,6 +39,25 @@ export class ClientEnvironment extends System {
     })
     app.root.addChild(ambientLight)
 
+    if (this.baseEnvironment?.model) {
+      try {
+        logger.info('Loading base environment model', { model: this.baseEnvironment.model })
+        const modelAsset = await new Promise((resolve, reject) => {
+          const asset = new pc.Asset('baseEnvironment', 'model', { url: this.baseEnvironment.model })
+          asset.on('load', () => resolve(asset.resource))
+          asset.on('error', reject)
+          app.assets.add(asset)
+          app.assets.load(asset)
+        })
+        const modelEntity = new pc.Entity('baseEnvironment')
+        modelEntity.addComponent('model', { asset: modelAsset })
+        app.root.addChild(modelEntity)
+        logger.info('Base environment model loaded and added to scene')
+      } catch (err) {
+        logger.error('Failed to load base environment model', { error: err.message })
+      }
+    }
+
     const settings = {
       hdr: this.baseEnvironment?.hdr,
       sunDirection: this.baseEnvironment?.sunDirection || [0.5, 1, 0.5],

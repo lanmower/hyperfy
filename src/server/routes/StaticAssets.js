@@ -110,6 +110,16 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     },
   })
+
+  // Serve root-level static files from public directory (base-environment.glb, favicon.svg, etc)
+  fastify.register(statics, {
+    root: publicDir,
+    constraints: {},
+    decorateReply: false,
+    setHeaders: res => {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    },
+  })
 }
 
 export function registerEnvEndpoint(fastify) {
