@@ -74,19 +74,6 @@ export class AppBuilder {
         this.app.root.scale.fromArray(this.app.data.scale || [1, 1, 1])
       }
       this.app.root.activate?.({ world: this.app.world, entity: this.app, moving: !!this.app.data.mover })
-      if (scene && this.app.world.stage) {
-        this.app.threeScene = scene
-        if (blueprint.scene) {
-          scene.position.set(0, 0, 0)
-          scene.quaternion.set(0, 0, 0, 1)
-          scene.scale.set(1, 1, 1)
-        } else {
-          scene.position.fromArray(this.app.data.position || [0, 0, 0])
-          scene.quaternion.fromArray(this.app.data.quaternion || [0, 0, 0, 1])
-          scene.scale.fromArray(this.app.data.scale || [1, 1, 1])
-        }
-        this.app.world.stage.scene.add(scene)
-      }
       this.app.floorCollider.createFloorColliderIfNeeded(this.app.root)
       if (!blueprint.scene) {
         const runScript = (this.app.mode === Modes.ACTIVE && script && !crashed) || (this.app.mode === Modes.MOVING && this.app.keepActive)
@@ -139,10 +126,6 @@ export class AppBuilder {
     this.app.control?.release()
     this.app.control = null
     this.deactivateAllNodes()
-    if (this.app.threeScene && this.app.world.stage) {
-      this.app.world.stage.scene.remove(this.app.threeScene)
-    }
-    this.app.threeScene = null
     this.app.eventManager.clearEventListeners()
     this.app.world.setHot(this.app, false)
     this.app.scriptExecutor.cleanup()

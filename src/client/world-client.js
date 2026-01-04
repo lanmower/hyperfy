@@ -25,6 +25,13 @@ export function Client({ wsUrl, onSetup }) {
     const init = async () => {
       const viewport = viewportRef.current
       const ui = uiRef.current
+
+      if (!viewport || viewport.offsetWidth === 0) {
+        console.warn('[WORLD-CLIENT] Viewport not ready, retrying...')
+        setTimeout(init, 100)
+        return
+      }
+
       const baseEnvironment = {
         model: '/base-environment.glb',
         bg: null,
@@ -43,7 +50,7 @@ export function Client({ wsUrl, onSetup }) {
         if (wsUrl instanceof Promise) wsUrl = await wsUrl
       }
       const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: window.env?.PUBLIC_ASSETS_URL || '/assets' }
-      console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl, assetsUrl: config.assetsUrl })
+      console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl, assetsUrl: config.assetsUrl, vpWidth: viewport.offsetWidth, vpHeight: viewport.offsetHeight })
       onSetup?.(world, config)
       await world.init(config)
 
@@ -58,28 +65,40 @@ export function Client({ wsUrl, onSetup }) {
   return (
     <div
       className='App'
-      css={css`
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 100vh;
-        height: 100dvh;
-        .App__viewport {
-          position: absolute;
-          inset: 0;
-        }
-        .App__ui {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          user-select: none;
-          display: ${ui.visible ? 'block' : 'none'};
-        }
-      `}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100vh',
+      }}
     >
-      <div className='App__viewport' ref={viewportRef}>
-        <div className='App__ui' ref={uiRef}>
+      <div
+        className='App__viewport'
+        ref={viewportRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <div
+          className='App__ui'
+          ref={uiRef}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            display: ui.visible ? 'block' : 'none',
+          }}
+        >
           <CoreUI world={world} />
         </div>
       </div>

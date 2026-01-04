@@ -29,7 +29,13 @@ export class ClientGraphics extends System {
     this.height = viewport.offsetHeight || window.innerHeight
     this.aspect = this.width / this.height
 
-    this.app = new pc.Application(viewport, {
+    const canvas = document.createElement('canvas')
+    canvas.style.display = 'block'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    viewport.appendChild(canvas)
+
+    this.app = new pc.Application(canvas, {
       mouse: new pc.Mouse(viewport),
       touch: new pc.Touch(viewport),
       keyboard: new pc.Keyboard(window),
