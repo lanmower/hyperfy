@@ -88,21 +88,21 @@ export class AppBuilder {
         this.app.world.stage.scene.add(scene)
       }
       this.app.floorCollider.createFloorColliderIfNeeded(this.app.root)
-      const isServer = typeof window === 'undefined'
-      const runScript =
-        (blueprint.scene ? !isServer : true) && ((this.app.mode === Modes.ACTIVE && script && !crashed) || (this.app.mode === Modes.MOVING && this.app.keepActive))
-      if (runScript) {
-        const blueprintProps = NullSafetyHelper.getBlueprintProps(this.app)
-        const success = this.app.scriptExecutor.executeScript(
-          script,
-          blueprint,
-          blueprintProps,
-          this.app.utilities.setTimeout,
-          this.app.proxyManager.getWorldProxy.bind(this.app.proxyManager),
-          this.app.proxyManager.getAppProxy.bind(this.app.proxyManager),
-          this.app.utilities.fetch
-        )
-        if (!success) return this.app.crash()
+      if (!blueprint.scene) {
+        const runScript = (this.app.mode === Modes.ACTIVE && script && !crashed) || (this.app.mode === Modes.MOVING && this.app.keepActive)
+        if (runScript) {
+          const blueprintProps = NullSafetyHelper.getBlueprintProps(this.app)
+          const success = this.app.scriptExecutor.executeScript(
+            script,
+            blueprint,
+            blueprintProps,
+            this.app.utilities.setTimeout,
+            this.app.proxyManager.getWorldProxy.bind(this.app.proxyManager),
+            this.app.proxyManager.getAppProxy.bind(this.app.proxyManager),
+            this.app.utilities.fetch
+          )
+          if (!success) return this.app.crash()
+        }
       }
       if (this.app.mode === Modes.MOVING) {
         this.app.world.setHot(this.app, true)

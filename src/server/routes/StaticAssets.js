@@ -48,7 +48,7 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     reply.type('text/html').send(html)
   })
 
-  // Buildless serving disabled - using bundled client.js instead
+  // Buildless serving disabled - using bundled client.js for performance
   // The bundle includes all dependencies, so buildless routes are no longer needed
   /*
   // Serve src/client files directly (buildless)

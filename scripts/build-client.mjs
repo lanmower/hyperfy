@@ -26,6 +26,7 @@ async function build() {
       sourcemap: !isProduction,
       minify: isProduction,
       loader: {
+        '.js': 'jsx',
         '.glb': 'file',
         '.hdr': 'file',
         '.mp4': 'file',
@@ -33,6 +34,7 @@ async function build() {
         '.wasm': 'file',
         '.png': 'file',
       },
+      external: ['path', 'fs', 'fs-extra', 'stream', 'constants'],
       logLevel: 'info',
     }
 

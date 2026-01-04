@@ -121,7 +121,7 @@ export class ServerInitializer {
         collections.push({
           id: 'scene',
           name: 'Scene',
-          blueprints: [{ ...sceneApp.blueprint, id: '$scene' }],
+          blueprints: [{ ...sceneApp.blueprint, id: '$scene', scene: true }],
         })
         logger.info('Scene blueprint loaded from scene.hyp')
       }
