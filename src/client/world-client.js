@@ -7,9 +7,13 @@ import { CoreUI } from './components/CoreUI.js'
 export { System } from '../core/systems/System.js'
 
 export function Client({ wsUrl, onSetup }) {
+  console.log('[CLIENT_COMPONENT] Rendering Client component')
   const viewportRef = useRef()
   const uiRef = useRef()
-  const world = useMemo(() => createClientWorld(), [])
+  const world = useMemo(() => {
+    console.log('[USEMEMO] Creating client world')
+    return createClientWorld()
+  }, [])
   const [ui, setUI] = useState(world.ui.state)
   useEffect(() => {
     world.on('ui', setUI)

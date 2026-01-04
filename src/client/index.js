@@ -1,9 +1,13 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { Client } from './world-client.js'
+import * as pc from '../core/extras/playcanvas.js'
 
 // Make React global for JSX transform (which uses React.createElement)
 globalThis.React = React
+
+// Make PlayCanvas global
+window.pc = pc
 
 function App() {
   // Phase 2: Network initialization

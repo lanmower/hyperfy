@@ -1,7 +1,49 @@
 import { StructuredLogger } from '../logging/index.js'
-import GenericPool from 'generic-pool'
 
 const logger = new StructuredLogger('ObjectPool')
+
+// Simple fallback pool that works on client and server without generic-pool
+class SimplePool {
+  constructor(factory, maxSize) {
+    this.factory = factory
+    this.maxSize = maxSize
+    this.available = []
+    this.inUse = 0
+  }
+
+  async acquire() {
+    if (this.available.length > 0) {
+      this.inUse++
+      return this.available.pop()
+    }
+    if (this.inUse < this.maxSize) {
+      this.inUse++
+      return this.factory()
+    }
+    await new Promise(r => setTimeout(r, 10))
+    return this.acquire()
+  }
+
+  async release(item) {
+    this.inUse--
+    if (item && typeof item === 'object') {
+      this.available.push(item)
+    }
+  }
+
+  async drain() {}
+  async clear() {
+    this.available = []
+  }
+
+  availableObjectsCount() {
+    return this.available.length
+  }
+
+  waitingClientsCount() {
+    return this.inUse
+  }
+}
 
 export class ObjectPool {
   constructor(Factory, initialSize = 10, name = 'ObjectPool') {
@@ -11,24 +53,10 @@ export class ObjectPool {
     this.reused = 0
     this.returned = 0
 
-    this.pool = GenericPool.createPool({
-      create: async () => {
-        this.created++
-        return new Factory()
-      },
-      destroy: async (item) => {
-        if (item.dispose) {
-          item.dispose()
-        }
-      }
-    }, { max: initialSize * 2 })
-
-    for (let i = 0; i < initialSize; i++) {
-      this.pool.acquire().then(item => {
-        this.reused++
-        this.pool.release(item)
-      })
-    }
+    this.pool = new SimplePool(() => {
+      this.created++
+      return new Factory()
+    }, initialSize * 2)
 
     logger.debug(`${name} created`, { initialSize, factoryName: Factory.name })
   }

@@ -69,7 +69,8 @@
         "@firebolt-dev/css": "/node_modules/@firebolt-dev/css/dist/index.js",
         "lodash-es": "/node_modules/lodash-es/lodash.js",
         "stylis": "/node_modules/stylis/index.js",
-        "eventemitter3": "/node_modules/eventemitter3/index.mjs"
+        "eventemitter3": "/node_modules/eventemitter3/index.mjs",
+        "playcanvas": "/node_modules/playcanvas/build/playcanvas.mjs"
       }
     }
     </script>
@@ -84,6 +85,6 @@
   <body>
     <div id="root"></div>
     <script src="/env.js?v={buildId}"></script>
-    <script src="/public/dist/client.js"></script>
+    <script type="module" src="/src/client/index.js?v={buildId}"></script>
   </body>
 </html>

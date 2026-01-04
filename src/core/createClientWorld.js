@@ -20,6 +20,7 @@ import { Avatars } from './systems/Avatars.js'
 import { PostProcessingController } from './systems/graphics/PostProcessingController.js'
 
 export function createClientWorld() {
+  console.log('[CREATE_CLIENT_WORLD] Starting world creation with correct system order')
   const world = new World()
   world.register('settings', Settings)
   world.register('collections', Collections)
@@ -29,10 +30,10 @@ export function createClientWorld() {
   world.register('blueprints', BlueprintManager)
   world.register('entities', Entities)
   world.register('avatars', Avatars)
+  world.register('graphics', ClientGraphics)
   world.register('stage', Stage)
   world.register('prefs', ClientPrefs)
   world.register('environment', ClientEnvironment)
-  world.register('graphics', ClientGraphics)
   world.register('postProcessing', PostProcessingController)
   world.register('livekit', ClientLiveKit)
   world.register('controls', InputSystem)

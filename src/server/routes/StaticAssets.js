@@ -48,9 +48,6 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
     reply.type('text/html').send(html)
   })
 
-  // Buildless serving disabled - using bundled client.js for performance
-  // The bundle includes all dependencies, so buildless routes are no longer needed
-  /*
   // Serve src/client files directly (buildless)
   fastify.get('/src/client/*', async (req, reply) => {
     const filepath = path.join(clientDir, req.params['*'])
@@ -91,7 +88,6 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   fastify.get('/src/server/*', async (req, reply) => {
     reply.type('application/javascript').send('export const SecurityConfig = {}; export default {};')
   })
-  */
 
   // Serve /assets/* static files
   fastify.register(statics, {

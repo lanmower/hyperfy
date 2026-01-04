@@ -8,18 +8,18 @@ const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
 const nodeEnv = process.env.NODE_ENV || 'production'
 const isProduction = nodeEnv === 'production'
-const buildDir = path.join(rootDir, 'build')
+const distDir = path.join(rootDir, 'src/client/public/dist')
 const watch = process.argv.includes('--watch')
 
 console.log(`[build-client] NODE_ENV=${nodeEnv} watch=${watch}`)
 
 async function build() {
   try {
-    await fs.ensureDir(path.join(buildDir, 'public'))
+    await fs.ensureDir(distDir)
 
     const config = {
       entryPoints: [path.join(rootDir, 'src/client/index.js')],
-      outfile: path.join(buildDir, 'public/client.js'),
+      outfile: path.join(distDir, 'client.js'),
       bundle: true,
       format: 'iife',
       platform: 'browser',
