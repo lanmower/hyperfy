@@ -51,13 +51,22 @@ export class SocketManager {
   }
 
   wrapWithSequence(packet, socket) {
-    if (!packet || !(packet instanceof ArrayBuffer || Buffer.isBuffer(packet))) return packet
+    if (!packet) return packet
+    const isArrayBuffer = packet instanceof ArrayBuffer
+    const isBuffer = Buffer.isBuffer(packet)
+    if (!isArrayBuffer && !isBuffer) return packet
+
     socket._sendSequence = ((socket._sendSequence || 0) + 1) % 65536
     const seq = socket._sendSequence
-    const seqBuffer = Buffer.allocUnsafe(2)
-    seqBuffer[0] = (seq >> 8) & 0xFF
-    seqBuffer[1] = seq & 0xFF
-    return Buffer.concat([seqBuffer, Buffer.isBuffer(packet) ? packet : Buffer.from(packet)])
+    const seqArray = new Uint8Array(2)
+    seqArray[0] = (seq >> 8) & 0xFF
+    seqArray[1] = seq & 0xFF
+
+    const packetArray = isBuffer ? new Uint8Array(packet) : new Uint8Array(packet)
+    const combined = new Uint8Array(seqArray.length + packetArray.length)
+    combined.set(seqArray, 0)
+    combined.set(packetArray, seqArray.length)
+    return combined.buffer
   }
 
   sendTo(socketId, name, data) {
