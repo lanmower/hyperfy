@@ -143,6 +143,7 @@ export class ServerNetwork extends BaseNetwork {
       const snapshot = {
         time: this.world.time,
         frame: this.world.frame,
+        entities: this.entities.serialize(),
       }
       this.send('snapshot', snapshot)
     }
