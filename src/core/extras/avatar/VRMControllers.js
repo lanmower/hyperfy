@@ -1,4 +1,4 @@
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 import { DIST_MIN_RATE, DIST_MAX_RATE, DIST_MIN, DIST_MAX } from './VRMFactoryConfig.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'

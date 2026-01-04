@@ -1,5 +1,5 @@
 import { isBoolean, isNumber, isString } from 'lodash-es'
-import * as THREE from '../extras/three.js'
+import * as pc from '../extras/playcanvas.js'
 
 import { Node } from './Node.js'
 import { getRef, secureRef } from './NodeProxy.js'
@@ -23,7 +23,7 @@ const propertySchema = schema('screenId', 'src', 'linked', 'loop', 'visible', 'c
     visible: { onSet() { this.markRebuild(); this.setDirty() } },
     color: { onSet() { this.markRebuild(); this.setDirty() } },
     lit: { onSet() { this.markRebuild(); this.setDirty() } },
-    doubleside: { onSet(v) { if (this.mesh) { this.mesh.material.side = v ? THREE.DoubleSide : THREE.FrontSide; this.mesh.material.needsUpdate = true } } },
+    doubleside: { onSet(v) { if (this.material) { this.material.twoSided = v; this.material.update() } } },
     castShadow: { onSet(v) { if (this.mesh) this.mesh.castShadow = v } },
     receiveShadow: { onSet(v) { if (this.mesh) this.mesh.receiveShadow = v } },
     aspect: { onSet() { this.markRebuild(); this.setDirty() } },

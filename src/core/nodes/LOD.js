@@ -1,5 +1,5 @@
 import { isBoolean } from 'lodash-es'
-import * as THREE from '../extras/three.js'
+import { Vec3 } from '../extras/playcanvas.js'
 
 import { Node } from './Node.js'
 import { getRef } from './NodeProxy.js'
@@ -7,7 +7,6 @@ import { initializeNode } from './base/NodeConstructorHelper.js'
 import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'
-import { v } from '../utils/TempVectors.js'
 
 const defaults = {
   scaleAware: true,
@@ -47,12 +46,14 @@ export class LOD extends Node {
       this.prevLod.node.active = false
       this.prevLod = null
     }
-    const cameraPos = v[0].setFromMatrixPosition(this.ctx.world.camera.matrixWorld)
-    const itemPos = v[1].setFromMatrixPosition(this.matrixWorld)
-    let distance = cameraPos.distanceTo(itemPos)
+    const cameraPos = new Vec3()
+    const itemPos = new Vec3()
+    cameraPos.copy(this.ctx.world.camera.getLocalPosition ? this.ctx.world.camera.getLocalPosition() : this.ctx.world.camera.position)
+    itemPos.copy(this.getLocalPosition())
+    let distance = cameraPos.distance(itemPos)
     if (this._scaleAware) {
-      v[2].setFromMatrixScale(this.matrixWorld)
-      const avgScale = (v[2].x + v[2].y + v[2].z) / 3
+      const scale = this.getLocalScale()
+      const avgScale = (scale.x + scale.y + scale.z) / 3
       distance = distance / avgScale
     }
     const lod = this.lods.find(lod => distance <= lod.maxDistance)

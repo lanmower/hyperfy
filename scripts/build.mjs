@@ -51,6 +51,7 @@ async function buildClient() {
         'url',
         'child_process',
         'worker_threads',
+        'node:worker_threads',
       ],
       loader: {
         '.glb': 'file',

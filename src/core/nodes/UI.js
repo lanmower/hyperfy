@@ -1,4 +1,4 @@
-import * as THREE from '../extras/three.js'
+import * as pc from '../extras/playcanvas.js'
 import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
 import Yoga from 'yoga-layout'
 
@@ -82,14 +82,13 @@ export class UI extends Node {
   constructor(data = {}) {
     super(data)
     initializeNode(this, 'ui', propertySchema, {}, data)
-    this._offset = new THREE.Vector3().fromArray(data.offset || defaults.offset)
+    this._offset = new pc.Vec3(...(data.offset || defaults.offset))
     StateInitializer.mergeState(this, StateInitializer.initRenderingState())
     this.ui = this
     this.renderer = new UIRenderer(this)
     this.layoutManager = new UILayoutManager(this)
     this.billboardController = new UIBillboardController(this)
     this.layout = new UILayoutCalculations(this)
-    this._offset._onChange = () => this.rebuild()
   }
 
   build() {
@@ -178,7 +177,7 @@ export class UI extends Node {
   }
 
   set offset(value) {
-    if (!value || !value.isVector3) {
+    if (!value || !(value instanceof pc.Vec3)) {
       throw new Error(`[ui] offset invalid`)
     }
     this._offset.copy(value)

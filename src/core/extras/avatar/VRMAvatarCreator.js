@@ -1,5 +1,5 @@
 // VRM avatar instantiation and setup
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 import { MAX_GAZE_DISTANCE } from './VRMFactoryConfig.js'
 import { cloneGLB, getSkinnedMeshes, createCapsule } from './VRMUtilities.js'
 import { createAnimationSystem, createAimSystem } from './VRMControllers.js'

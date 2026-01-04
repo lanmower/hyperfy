@@ -1,4 +1,4 @@
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 import { getQueryParams } from './VRMUtilities.js'
 import { Modes } from '../../constants/AnimationModes.js'
 

@@ -338,6 +338,13 @@
       "LICENSE",
       "package-lock.json",
       "package.json",
+      "PHASE_5C_PORT_REPORT.md",
+      "PHASE_6_ARCHITECTURE.md",
+      "PHASE_6_EXECUTION_REPORT.md",
+      "PHASE_6_INDEX.md",
+      "PHASE_6_PARTICLE_SYSTEM_COMPLETION.md",
+      "PHASE_6_README.md",
+      "PHASE_6_TECHNICAL_SUMMARY.md",
       "README.md",
       "build-client.mjs",
       "build.mjs",
@@ -843,5 +850,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767532157984
+  "lastAnalyzed": 1767534133464
 }

@@ -73,61 +73,63 @@ export function addWind(mesh, world) {
   const uniforms = world.wind.uniforms
   if (mesh.material.hasWind) return
   mesh.material.hasWind = true
-  mesh.material.onBeforeCompile = shader => {
-    if (!shader.defines) shader.defines = {}
-    shader.defines.USE_WIND = 1
-    shader.uniforms.time = uniforms.time
-    shader.uniforms.strength = uniforms.strength
-    shader.uniforms.direction = uniforms.direction
-    shader.uniforms.speed = uniforms.speed
-    shader.uniforms.noiseScale = uniforms.noiseScale
-    shader.uniforms.ampScale = uniforms.ampScale
-    shader.uniforms.freqMultiplier = uniforms.freqMultiplier
 
-    const height = mesh.geometry.boundingBox.max.y * mesh.scale.y
+  if (mesh.material.onBeforeCompile && typeof mesh.material.onBeforeCompile === 'function') {
+    mesh.material.onBeforeCompile = shader => {
+      if (!shader.defines) shader.defines = {}
+      shader.defines.USE_WIND = 1
+      shader.uniforms.time = uniforms.time
+      shader.uniforms.strength = uniforms.strength
+      shader.uniforms.direction = uniforms.direction
+      shader.uniforms.speed = uniforms.speed
+      shader.uniforms.noiseScale = uniforms.noiseScale
+      shader.uniforms.ampScale = uniforms.ampScale
+      shader.uniforms.freqMultiplier = uniforms.freqMultiplier
 
-    shader.uniforms.height = { value: height }
-    shader.uniforms.stiffness = { value: 0 }
+      const height = mesh.geometry.boundingBox?.max?.y ? mesh.geometry.boundingBox.max.y * mesh.scale.y : 1
 
+      shader.uniforms.height = { value: height }
+      shader.uniforms.stiffness = { value: 0 }
 
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <common>',
-      `
-      uniform float time;
-      uniform float strength;
-      uniform vec3 direction;
-      uniform float speed;
-      uniform float noiseScale;
-      uniform float ampScale;
-      uniform float freqMultiplier;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `
+        uniform float time;
+        uniform float strength;
+        uniform vec3 direction;
+        uniform float speed;
+        uniform float noiseScale;
+        uniform float ampScale;
+        uniform float freqMultiplier;
 
-      uniform float height;
-      uniform float stiffness;
+        uniform float height;
+        uniform float stiffness;
 
-      ${snoise}
+        ${snoise}
 
-      #include <common>
-      `
-    )
+        #include <common>
+        `
+      )
 
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <begin_vertex>',
-      `
-      #include <begin_vertex>
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
 
-      #ifdef USE_WIND
-        vec4 worldPos = vec4(position, 1.0);
-        #ifdef USE_INSTANCING
-          worldPos = instanceMatrix * worldPos;
+        #ifdef USE_WIND
+          vec4 worldPos = vec4(position, 1.0);
+          #ifdef USE_INSTANCING
+            worldPos = instanceMatrix * worldPos;
+          #endif
+          worldPos = modelMatrix * worldPos;
+
+          float heightFactor = position.y / height;
+          float noiseFactor = snoise(worldPos.xyz * noiseScale + time * speed);
+          vec3 displacement = sin(time * freqMultiplier + worldPos.xyz) * noiseFactor * ampScale * heightFactor * (1.0 - stiffness);
+          transformed += strength * displacement * direction;
         #endif
-        worldPos = modelMatrix * worldPos;
-
-        float heightFactor = position.y / height;
-        float noiseFactor = snoise(worldPos.xyz * noiseScale + time * speed);
-        vec3 displacement = sin(time * freqMultiplier + worldPos.xyz) * noiseFactor * ampScale * heightFactor * (1.0 - stiffness);
-        transformed += strength * displacement * direction;
-      #endif
-      `
-    )
+        `
+      )
+    }
   }
 }

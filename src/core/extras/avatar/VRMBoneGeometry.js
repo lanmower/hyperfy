@@ -1,4 +1,4 @@
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 import { DEG2RAD } from '../general.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 

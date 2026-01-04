@@ -1,5 +1,5 @@
 // VRM scene preprocessing - cleanup and shadow setup
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 
 export function preprocessVRMScene(glb) {
   const expressions = glb.scene.children.filter(n => n.type === 'VRMExpression')

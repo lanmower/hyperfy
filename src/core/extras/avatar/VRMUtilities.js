@@ -1,4 +1,4 @@
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 
 function cloneEntity(entity) {
   const cloned = new pc.Entity(entity.name)

@@ -1,8 +1,8 @@
-import * as THREE from '../../extras/three.js'
+import * as pc from '../../extras/playcanvas.js'
 import { clamp } from '../../utils.js'
 import { v, q, e } from '../../utils/TempVectors.js'
 
-const FORWARD = new THREE.Vector3(0, 0, 1)
+const FORWARD = new pc.Vec3(0, 0, 1)
 
 export class UIBillboardController {
   constructor(parent) {
@@ -28,7 +28,12 @@ export class UIBillboardController {
     this.applyScaler(sca, distance, world)
 
     p.matrixWorld.compose(pos, qua, sca)
-    p.mesh.matrixWorld.copy(p.matrixWorld)
+    if (p.entity) {
+      const pos2 = p.matrixWorld.getTranslation(new pc.Vec3())
+      const rot = p.matrixWorld.getRotation(new pc.Quat())
+      p.entity.setLocalPosition(pos2)
+      p.entity.setLocalRotation(rot)
+    }
     if (p.sItem) {
       world.stage.octree.move(p.sItem)
     }

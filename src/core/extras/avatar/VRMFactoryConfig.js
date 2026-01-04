@@ -1,4 +1,4 @@
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 
 export const DIST_MIN_RATE = 1 / 5
 export const DIST_MAX_RATE = 1 / 60

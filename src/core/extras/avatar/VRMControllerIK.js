@@ -1,4 +1,4 @@
-import * as pc from '../../playcanvas.js'
+import * as pc from '../playcanvas.js'
 import { AimAxis, UpAxis } from './VRMFactoryConfig.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'

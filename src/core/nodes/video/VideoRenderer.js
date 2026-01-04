@@ -1,5 +1,4 @@
-import * as THREE from '../../extras/three.js'
-import CustomShaderMaterial from '../../libs/three-custom-shader-material/index.js'
+import * as pc from '../../extras/playcanvas.js'
 import { VideoHelper } from '../../utils/helpers/Helpers.js'
 
 export class VideoRenderer {
@@ -8,110 +7,46 @@ export class VideoRenderer {
   }
 
   createMaterial(lit, doubleside, color) {
-    const uniforms = {
-      uMap: { value: null },
-      uHasMap: { value: 0 },
-      uVidAspect: { value: 1 },
-      uGeoAspect: { value: 1 },
-      uFit: { value: 0 },
-      uColor: { value: new THREE.Color(color) },
-      uOffset: { value: new THREE.Vector2(0, 0) },
-    }
-    const material = new CustomShaderMaterial({
-      baseMaterial: lit ? THREE.MeshStandardMaterial : THREE.MeshBasicMaterial,
-      ...(lit ? { roughness: 1, metalness: 0 } : {}),
-      side: doubleside ? THREE.DoubleSide : THREE.FrontSide,
-      uniforms,
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D uMap;
-        uniform float uHasMap;
-        uniform float uVidAspect;
-        uniform float uGeoAspect;
-        uniform float uFit;
-        uniform vec3 uColor;
-        uniform vec2 uOffset;
-
-        varying vec2 vUv;
-
-        vec4 sRGBToLinear(vec4 color) {
-          return vec4(pow(color.rgb, vec3(2.2)), color.a);
-        }
-
-        vec4 LinearToSRGB(vec4 color) {
-            return vec4(pow(color.rgb, vec3(1.0 / 2.2)), color.a);
-        }
-
-        void main() {
-          float aspect = uGeoAspect / uVidAspect;
-
-          vec2 uv = vUv;
-
-          uv = uv + uOffset;
-
-          if (abs(uFit - 1.0) < 0.01) {
-            uv = uv - 0.5;
-
-            if (aspect > 1.0) {
-              uv.y /= aspect;
-            } else {
-              uv.x *= aspect;
-            }
-
-            uv = uv + 0.5;
-          }
-          else if (abs(uFit - 2.0) < 0.01) {
-            uv = uv - 0.5;
-
-            if (aspect > 1.0) {
-              uv.x *= aspect;
-            } else {
-              uv.y /= aspect;
-            }
-
-            uv = uv + 0.5;
-          }
-
-          vec2 uvClamped = clamp(uv, 0.0, 1.0);
-          vec4 col = texture2D(uMap, uvClamped);
-
-          if (uFit >= 1.5) {
-            const float EPS = 0.005;
-            bool outside = uv.x < -EPS || uv.x > 1.0 + EPS || uv.y < -EPS || uv.y > 1.0 + EPS;
-            if (outside) {
-              col = vec4(uColor, 1.0);
-            }
-          }
-
-          csm_DiffuseColor = sRGBToLinear(col);
-        }
-      `,
-    })
-    this.video.ctx.world.setupMaterial(material)
+    const material = new pc.StandardMaterial()
+    material.diffuse.set(1, 1, 1)
+    material.emissive.set(0, 0, 0)
+    material.metalness = lit ? 0 : 0
+    material.roughness = lit ? 1 : 1
+    material.opacity = 1
+    material.transparent = false
+    material.twoSided = doubleside
+    material._uVidAspect = 1
+    material._uGeoAspect = 1
+    material._uFit = 0
+    material._uColor = new pc.Color(1, 1, 1)
+    material._uOffset = new pc.Vec2(0, 0)
+    material.update()
     return material
   }
 
   createGeometry(width, height, pivot) {
-    const geometry = new THREE.PlaneGeometry(width, height)
+    const gd = this.video.ctx.world.graphics.app.graphicsDevice
+    const geometry = pc.createPlane(gd, { halfExtents: new pc.Vec3(width / 2, height / 2, 0) })
     geometry._oWidth = width
     geometry._oHeight = height
-    VideoHelper.applyPivot(geometry, width, height, pivot)
     return geometry
   }
 
   createMesh(geometry, material, castShadow, receiveShadow) {
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.castShadow = castShadow
-    mesh.receiveShadow = receiveShadow
-    mesh.matrixWorld.copy(this.video.matrixWorld)
-    mesh.matrixAutoUpdate = false
-    mesh.matrixWorldAutoUpdate = false
-    return mesh
+    const gd = this.video.ctx.world.graphics.app.graphicsDevice
+    const entity = new pc.Entity('video')
+    entity.addComponent('render', {
+      type: 'asset',
+      meshInstances: [new pc.MeshInstance(geometry, material)]
+    })
+    const pos = this.video.matrixWorld.getTranslation(new pc.Vec3())
+    const rot = this.video.matrixWorld.getRotation(new pc.Quat())
+    entity.setLocalPosition(pos)
+    entity.setLocalRotation(rot)
+    this.video.ctx.world.stage.scene.addChild(entity)
+    entity._castShadow = castShadow
+    entity._receiveShadow = receiveShadow
+    return entity
   }
 
   updateGeometry(currentGeometry, instance, width, height, pivot) {
@@ -130,12 +65,13 @@ export class VideoRenderer {
         width = height * vidAspect
       }
       if (currentGeometry._oWidth !== width || currentGeometry._oHeight !== height) {
-        const newGeometry = new THREE.PlaneGeometry(width, height)
-        VideoHelper.applyPivot(newGeometry, width, height, pivot)
+        const gd = this.video.ctx.world.graphics.app.graphicsDevice
+        const newGeometry = pc.createPlane(gd, { halfExtents: new pc.Vec3(width / 2, height / 2, 0) })
+        newGeometry._oWidth = width
+        newGeometry._oHeight = height
         if (this.video.mesh) {
-          this.video.mesh.geometry = newGeometry
+          this.video.mesh.meshInstances[0].mesh = newGeometry
         }
-        currentGeometry.dispose()
         return { newGeometry, vidAspect, geoAspect: width / height }
       }
       geoAspect = width / height

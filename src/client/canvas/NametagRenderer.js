@@ -1,18 +1,21 @@
-import * as THREE from '../../core/extras/three.js'
+import * as pc from '../../core/extras/playcanvas.js'
 import { fillRoundRect } from '../../core/extras/roundRect.js'
 import * as Config from '../../core/config/NametagConfig.js'
 
 export class NametagRenderer {
-  constructor() {
+  constructor(graphicsDevice) {
     const domCanvas = document.createElement('canvas')
     domCanvas.width = Config.WIDTH * Config.GRID_COLS
     domCanvas.height = Config.HEIGHT * Config.GRID_ROWS
     this.canvas = domCanvas
     this.ctx = domCanvas.getContext('2d')
-    this.texture = new THREE.CanvasTexture(domCanvas)
-    this.texture.colorSpace = THREE.SRGBColorSpace
-    this.texture.flipY = false
-    this.texture.needsUpdate = true
+    this.gd = graphicsDevice
+    this.texture = new pc.Texture(graphicsDevice, {
+      width: domCanvas.width,
+      height: domCanvas.height,
+      format: pc.PIXELFORMAT_R8_G8_B8_A8,
+      autoMipmap: true
+    })
   }
 
   draw(nametag) {
@@ -45,7 +48,7 @@ export class NametagRenderer {
       const barWidth = (Config.HEALTH_WIDTH - Config.HEALTH_BORDER * 2) * perc
       fillRoundRect(this.ctx, healthLeft + Config.HEALTH_BORDER, healthTop + Config.HEALTH_BORDER, barWidth, Config.HEALTH_HEIGHT - Config.HEALTH_BORDER * 2, Config.HEALTH_BORDER_RADIUS, '#229710')
     }
-    this.texture.needsUpdate = true
+    this.texture.setSource(this.canvas)
   }
 
   fitText(text, maxWidth) {
@@ -69,6 +72,6 @@ export class NametagRenderer {
     const x = col * Config.WIDTH
     const y = row * Config.HEIGHT
     this.ctx.clearRect(x, y, Config.WIDTH, Config.HEIGHT)
-    this.texture.needsUpdate = true
+    this.texture.setSource(this.canvas)
   }
 }

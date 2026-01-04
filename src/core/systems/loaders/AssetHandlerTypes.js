@@ -1,4 +1,3 @@
-import * as THREE from '../../extras/three.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader } from '../../libs/gltfloader/GLTFLoader.js'
 import { VRMLoaderPlugin } from '../../libs/three-vrm/index.js'
@@ -7,6 +6,7 @@ import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { createVideoFactory } from './VideoFactory.js'
 import { AssetResults } from './AssetResults.js'
+import * as pc from '../../extras/playcanvas.js'
 
 const logger = new StructuredLogger('AssetHandlerTypes')
 
@@ -21,10 +21,10 @@ export class AssetHandlerTypes {
     this.audio = clientLoader.audio
     this.scripts = clientLoader.scripts
     this.rgbeLoader = new RGBELoader()
-    this.texLoader = new THREE.TextureLoader()
     this.gltfLoader = new GLTFLoader()
     this.gltfLoader.register(exporter => new VRMLoaderPlugin(exporter))
     this.vrmHooks = null
+    this.gd = world.gd || null
   }
 
   setVRMHooks(hooks) {
@@ -55,14 +55,28 @@ export class AssetHandlerTypes {
       : this.clientLoader.fetchArrayBuffer(url)
     return loadPromise.then(buffer => {
       const result = this.rgbeLoader.parse(buffer)
-      const texture = new THREE.DataTexture(result.data, result.width, result.height, result.format)
-      texture.colorSpace = THREE.LinearSRGBColorSpace
-      texture.minFilter = THREE.LinearFilter
-      texture.magFilter = THREE.LinearFilter
-      texture.generateMipmaps = false
-      texture.flipY = true
-      texture.type = result.type
-      texture.needsUpdate = true
+      let texture = null
+      if (this.gd) {
+        const pcTexture = new pc.Texture(this.gd, {
+          width: result.width,
+          height: result.height,
+          format: pc.PIXELFORMAT_RGBA32F,
+          mipmaps: false,
+          addressU: pc.ADDRESS_CLAMP_TO_EDGE,
+          addressV: pc.ADDRESS_CLAMP_TO_EDGE
+        })
+        if (result.data) pcTexture.setData(result.data)
+        texture = pcTexture
+      } else {
+        const canvas = document.createElement('canvas')
+        canvas.width = result.width
+        canvas.height = result.height
+        const ctx = canvas.getContext('2d')
+        const imageData = ctx.createImageData(result.width, result.height)
+        if (result.data) imageData.data.set(result.data)
+        ctx.putImageData(imageData, 0, 0)
+        texture = canvas.toDataURL()
+      }
       if (key) this.results.set(key, texture)
       return texture
     })
@@ -83,7 +97,22 @@ export class AssetHandlerTypes {
     return new Promise(resolve => {
       const img = new Image()
       img.onload = () => {
-        const texture = this.texLoader.load(img.src)
+        let texture = null
+        if (this.gd) {
+          texture = new pc.Texture(this.gd, {
+            width: img.width,
+            height: img.height,
+            format: pc.PIXELFORMAT_RGBA8
+          })
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0)
+          texture.setData(ctx.getImageData(0, 0, img.width, img.height).data)
+        } else {
+          texture = img
+        }
         this.results.set(key, texture)
         resolve(texture)
         URL.revokeObjectURL(img.src)
