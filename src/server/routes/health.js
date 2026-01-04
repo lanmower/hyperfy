@@ -163,27 +163,32 @@ export function registerStatusPageRoutes(fastify, statusPageData) {
   })
 
   fastify.get('/status/stream', { skipBodyParser: true }, async (request, reply) => {
-    await reply.raw.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    })
+    reply.type('text/event-stream')
+    reply.header('Cache-Control', 'no-cache')
+    reply.header('Connection', 'keep-alive')
 
-    const sendUpdate = () => {
+    // Send initial data immediately, which triggers header sending
+    const initialStatus = statusPageData.getSummary()
+    reply.raw.write(`data: ${JSON.stringify(initialStatus)}\n\n`)
+
+    // Set up periodic updates
+    const interval = setInterval(() => {
       try {
         const status = statusPageData.getSummary()
         reply.raw.write(`data: ${JSON.stringify(status)}\n\n`)
       } catch (err) {
         fastify.logger?.error(`SSE update failed: ${err.message}`)
       }
-    }
+    }, 10000)
 
-    sendUpdate()
-    const interval = setInterval(sendUpdate, 10000)
-
+    // Clean up on client disconnect
     request.raw.on('close', () => {
       clearInterval(interval)
+      reply.raw.end()
     })
+
+    // Prevent Fastify from trying to send a response
+    reply.sent = true
   })
 
   fastify.get('/status', async (request, reply) => {
