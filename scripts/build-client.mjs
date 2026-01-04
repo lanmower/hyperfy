@@ -34,7 +34,7 @@ async function build() {
         '.wasm': 'file',
         '.png': 'file',
       },
-      external: ['path', 'fs', 'fs-extra', 'stream', 'constants'],
+      external: ['path', 'fs', 'fs-extra', 'stream', 'constants', 'node:worker_threads', 'worker_threads'],
       logLevel: 'info',
     }
 

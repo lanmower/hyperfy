@@ -80,8 +80,11 @@ export class World extends EventEmitter {
     }
 
     await this.pluginHooks.execute('world:init', this)
+    logger.info('About to initialize systems')
     await this.systemLifecycle.initializeSystems(options)
+    logger.info('Systems initialized, about to start')
     await this.systemLifecycle.startSystems()
+    logger.info('Systems started')
     await this.pluginHooks.execute('world:start', this)
   }
 

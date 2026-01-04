@@ -8,14 +8,16 @@ export class WorldSystemLifecycle {
   }
 
   async initializeSystems(options = {}) {
-    for (const key in this.world) {
+    const keys = Object.keys(this.world).filter(k => this.world[k] && typeof this.world[k].init === 'function')
+    logger.info(`Initializing ${keys.length} systems: ${keys.join(', ')}`)
+    for (const key of keys) {
       const system = this.world[key]
-      if (system && typeof system.init === 'function') {
-        try {
-          await system.init(options)
-        } catch (err) {
-          logger.error(`System ${key} init failed`, { error: err.message })
-        }
+      try {
+        logger.info(`System ${key} init starting`)
+        await system.init(options)
+        logger.info(`System ${key} init complete`)
+      } catch (err) {
+        logger.error(`System ${key} init failed`, { error: err.message, stack: err.stack })
       }
     }
   }
