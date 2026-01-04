@@ -162,8 +162,8 @@ export function registerStatusPageRoutes(fastify, statusPageData) {
     }
   })
 
-  fastify.get('/status/stream', async (request, reply) => {
-    reply.raw.writeHead(200, {
+  fastify.get('/status/stream', { skipBodyParser: true }, async (request, reply) => {
+    await reply.raw.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
