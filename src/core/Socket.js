@@ -43,7 +43,7 @@ export class Socket {
       } else {
         logger.error('Socket.send() packet is unknown type', { name, type: typeof packet, constructor: packet?.constructor?.name })
       }
-      const result = this.ws.send(binaryData)
+      const result = this.ws.send(binaryData, { binary: true })
       logger.info('Socket.send() packet sent to WebSocket', { name, sendResult: result, sentType: typeof binaryData })
     } catch (err) {
       logger.error('Socket.send() failed', { name, error: err.message, errorType: err.constructor.name })
@@ -52,11 +52,11 @@ export class Socket {
 
   sendPacket(packet) {
     if (typeof Buffer !== 'undefined' && Buffer.isBuffer(packet)) {
-      this.ws.send(packet)
+      this.ws.send(packet, { binary: true })
     } else if (packet instanceof Uint8Array) {
-      this.ws.send(Buffer.from(packet))
+      this.ws.send(Buffer.from(packet), { binary: true })
     } else if (packet instanceof ArrayBuffer) {
-      this.ws.send(Buffer.from(packet))
+      this.ws.send(Buffer.from(packet), { binary: true })
     } else {
       this.ws.send(packet)
     }

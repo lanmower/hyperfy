@@ -22,7 +22,7 @@ export class PlayerConnectionManager {
       const { isNumber } = await import('lodash-es')
       if (isNumber(playerLimit) && playerLimit > 0 && this.serverNetwork.sockets.size >= playerLimit) {
         const packet = MessageHandler.encode('kick', 'player_limit')
-        ws.send(packet)
+        ws.send(packet, { binary: true })
         ws.disconnect()
         return
       }
@@ -66,7 +66,7 @@ export class PlayerConnectionManager {
       if (this.serverNetwork.sockets.has(socket.id)) {
         logger.error('Duplicate socket connection attempt - race condition prevented', { userId: socket.id })
         const packet = MessageHandler.encode('kick', 'duplicate_user')
-        ws.send(packet)
+        ws.send(packet, { binary: true })
         ws.disconnect()
         return
       }
