@@ -1,105 +1,109 @@
-import * as THREE from '../../extras/three.js'
-import { isNumber, isString } from 'lodash-es'
+import * as pc from '../../extras/playcanvas.js'
 
 export class SkyManager {
-  constructor(environment) {
-    this.environment = environment
-    this.skys = []
-    this.sky = null
-    this.skyN = 0
-    this.skyInfo = null
+  constructor(app) {
+    this.app = app
+    this.skyboxEntity = null
+    this.environmentTexture = null
+    this.sunLight = null
   }
 
-  addSky(node) {
-    const handle = {
-      node,
-      destroy: () => {
-        const idx = this.skys.indexOf(handle)
-        if (idx === -1) return
-        this.skys.splice(idx, 1)
-        this.update()
-      },
+  async initWithHDR(hdrImagePath) {
+    try {
+      const texture = await new Promise((resolve, reject) => {
+        const asset = new pc.Asset('hdr', 'cubemap', { url: hdrImagePath })
+        asset.on('load', () => resolve(asset.resource))
+        asset.on('error', reject)
+        this.app.assets.add(asset)
+        this.app.assets.load(asset)
+      })
+
+      this.app.scene.skyboxIntensity = 1.0
+      this.app.scene.envAtlas = texture
+      this.app.scene.gammaCorrection = pc.GAMMA_SRGB
+      this.app.scene.toneMapping = pc.TONEMAP_FILMIC
+
+      this.environmentTexture = texture
+      return texture
+    } catch (err) {
+      console.error('Failed to load HDR:', err)
     }
-    this.skys.push(handle)
-    this.update()
-    return handle
   }
 
-  async update(sunDirection, sunIntensity, sunColor) {
-    if (!this.sky) {
-      const geometry = new THREE.SphereGeometry(1000, 60, 40)
-      const material = new THREE.MeshBasicMaterial({ side: THREE.BackSide })
-      this.sky = new THREE.Mesh(geometry, material)
-      if (this.sky.geometry.computeBoundsTree) {
-        this.sky.geometry.computeBoundsTree()
-      }
-      this.sky.material.fog = false
-      this.sky.material.toneMapped = false
-      this.sky.material.needsUpdate = true
-      this.sky.matrixAutoUpdate = false
-      this.sky.matrixWorldAutoUpdate = false
-      this.sky.visible = false
-      this.environment.stage.scene.add(this.sky)
+  setIntensity(intensity) {
+    this.app.scene.skyboxIntensity = Math.max(0, Math.min(1, intensity))
+  }
+
+  async setBackgroundImage(imagePath) {
+    try {
+      const texture = await new Promise((resolve, reject) => {
+        const asset = new pc.Asset('bg', 'texture', { url: imagePath })
+        asset.on('load', () => resolve(asset.resource))
+        asset.on('error', reject)
+        this.app.assets.add(asset)
+        this.app.assets.load(asset)
+      })
+
+      this.app.scene.envAtlas = texture
+      this.environmentTexture = texture
+    } catch (err) {
+      console.error('Failed to load background image:', err)
     }
-    const base = this.environment.base
-    const node = this.skys[this.skys.length - 1]?.node
-    const bgUrl = node?._bg || base.bg
-    const hdrUrl = node?._hdr || base.hdr
-    const rotationY = isNumber(node?._rotationY) ? node._rotationY : base.rotationY
-    const finalSunDirection = node?._sunDirection || sunDirection
-    const finalSunIntensity = isNumber(node?._sunIntensity) ? node._sunIntensity : sunIntensity
-    const finalSunColor = isString(node?._sunColor) ? node._sunColor : sunColor
-    const fogNear = isNumber(node?._fogNear) ? node._fogNear : base.fogNear
-    const fogFar = isNumber(node?._fogFar) ? node._fogFar : base.fogFar
-    const fogColor = isString(node?._fogColor) ? node._fogColor : base.fogColor
-    const n = ++this.skyN
-    let bgTexture
-    if (bgUrl) bgTexture = await this.environment.loader.load('texture', bgUrl)
-    let hdrTexture
-    if (hdrUrl) hdrTexture = await this.environment.loader.load('hdr', hdrUrl)
-    if (n !== this.skyN) return
-    if (bgTexture) {
-      bgTexture.minFilter = bgTexture.magFilter = THREE.LinearFilter
-      bgTexture.mapping = THREE.EquirectangularReflectionMapping
-      bgTexture.colorSpace = THREE.SRGBColorSpace
-      this.sky.material.map = bgTexture
-      this.sky.visible = true
-    } else {
-      this.sky.visible = false
-    }
-    if (hdrTexture) {
-      hdrTexture.mapping = THREE.EquirectangularReflectionMapping
-      this.environment.stage.scene.environment = hdrTexture
-    }
-    this.environment.stage.scene.environmentRotation.y = rotationY
-    this.sky.rotation.y = rotationY
-    this.sky.matrixWorld.compose(this.sky.position, this.sky.quaternion, this.sky.scale)
-    if (finalSunDirection && finalSunIntensity !== undefined && finalSunColor) {
-      this.skyInfo = {
-        bgUrl,
-        hdrUrl,
-        rotationY,
-        sunDirection: finalSunDirection,
-        sunIntensity: finalSunIntensity,
-        sunColor: finalSunColor,
-        fogNear,
-        fogFar,
-        fogColor,
+  }
+
+  setFog(near, far, color = [1, 1, 1]) {
+    this.app.scene.fogStart = near
+    this.app.scene.fogEnd = far
+    this.app.scene.fogColor = new pc.Color(color[0], color[1], color[2])
+    this.app.scene.fog = pc.FOG_LINEAR
+  }
+
+  disableFog() {
+    this.app.scene.fog = pc.FOG_NONE
+  }
+
+  setSun(direction, intensity = 1.0, color = [1, 1, 1]) {
+    let sunLight = null
+    for (const entity of this.app.root.children) {
+      if (entity.name === 'sun') {
+        sunLight = entity
+        break
       }
     }
-    if (isNumber(fogNear) && isNumber(fogFar) && fogColor) {
-      const color = new THREE.Color(fogColor)
-      this.environment.stage.scene.fog = new THREE.Fog(color, fogNear, fogFar)
-    } else {
-      this.environment.stage.scene.fog = null
+
+    if (!sunLight) {
+      sunLight = new pc.Entity('sun')
+      sunLight.addComponent('light', {
+        type: 'directional',
+        castShadows: true,
+        shadowResolution: 2048,
+        shadowDistance: 500,
+        numCascades: 3
+      })
+      this.app.root.addChild(sunLight)
     }
+
+    const dir = new pc.Vec3(direction[0], direction[1], direction[2]).normalize()
+    const angle = Math.atan2(dir.x, dir.z)
+    const elevation = Math.acos(dir.y)
+
+    sunLight.setLocalEulerAngles(
+      Math.PI / 2 - elevation,
+      angle,
+      0
+    )
+
+    const light = sunLight.light
+    light.intensity = intensity
+    light.color = new pc.Color(color[0], color[1], color[2])
+
+    this.sunLight = sunLight
+    return sunLight
   }
 
-  updatePosition(rigPosition) {
-    if (this.sky) {
-      this.sky.position.x = rigPosition.x
-      this.sky.position.z = rigPosition.z
-      this.sky.matrixWorld.setPosition(this.sky.position)
+  setRotation(y = 0) {
+    if (this.skyboxEntity) {
+      this.skyboxEntity.setLocalEulerAngles(0, y, 0)
     }
   }
 }

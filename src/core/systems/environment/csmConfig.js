@@ -1,32 +1,28 @@
+/* Cascade shadow mapping configuration for PlayCanvas */
+
 export const csmLevels = {
   none: {
     cascades: 1,
-    shadowMapSize: 1024,
+    shadowResolution: 1024,
+    shadowDistance: 100,
     castShadow: false,
-    lightIntensity: 3,
   },
   low: {
     cascades: 1,
-    shadowMapSize: 2048,
+    shadowResolution: 2048,
+    shadowDistance: 200,
     castShadow: true,
-    lightIntensity: 3,
-    shadowBias: 0.0000009,
-    shadowNormalBias: 0.001,
   },
   med: {
     cascades: 3,
-    shadowMapSize: 1024,
+    shadowResolution: 1024,
+    shadowDistance: 500,
     castShadow: true,
-    lightIntensity: 1,
-    shadowBias: 0.000002,
-    shadowNormalBias: 0.002,
   },
   high: {
     cascades: 3,
-    shadowMapSize: 2048,
+    shadowResolution: 2048,
+    shadowDistance: 500,
     castShadow: true,
-    lightIntensity: 1,
-    shadowBias: 0.000003,
-    shadowNormalBias: 0.002,
   },
 }

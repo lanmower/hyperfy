@@ -1,4 +1,3 @@
-import * as THREE from 'three'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { css } from '@firebolt-dev/css'
 
@@ -28,9 +27,9 @@ export function Client({ wsUrl, onSetup }) {
         hdr: '/assets/62db0ffbcea86b5e9ba23fb5da739b160e8abfd3b390235fed5ac436750e1e2e.hdr',
         sky: '/assets/179d71586e675efc4af04185e1b2d3e6b7f4a5b707f1ef5e9b6497c5660ecab7.webp',
         rotationY: 0,
-        sunDirection: new THREE.Vector3(-1, -2, -2).normalize(),
+        sunDirection: [-1, -2, -2],
         sunIntensity: 1,
-        sunColor: 0xffffff,
+        sunColor: [1, 1, 1],
         fogNear: null,
         fogFar: null,
         fogColor: null,

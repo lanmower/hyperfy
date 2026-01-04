@@ -1,86 +1,96 @@
-import * as THREE from '../extras/three.js'
+import * as pc from '../extras/playcanvas.js'
 import { System } from './System.js'
-import { csmLevels } from './environment/csmConfig.js'
-import { patchFogShader } from './environment/shaderPatches.js'
+import { StructuredLogger } from '../utils/logging/index.js'
 import { EnvironmentController } from './environment/EnvironmentController.js'
 
-patchFogShader()
+const logger = new StructuredLogger('ClientEnvironment')
 
 export class ClientEnvironment extends System {
   static DEPS = {
-    stage: 'stage',
-    rig: 'rig',
-    loader: 'loader',
+    graphics: 'graphics',
     events: 'events',
     prefs: 'prefs',
-    camera: 'camera',
-  }
-
-  static EVENTS = {
-    prefChanged: 'onPrefChanged',
-    graphicsResize: 'onGraphicsResize',
   }
 
   constructor(world) {
     super(world)
-    this.csmLevels = csmLevels
     this.controller = null
   }
 
-  init({ baseEnvironment }) {
-    this.base = baseEnvironment
+  async init({ baseEnvironment }) {
+    logger.info('ClientEnvironment.init called')
+    this.baseEnvironment = baseEnvironment
   }
 
   async start() {
-    this.controller = new EnvironmentController(this)
+    logger.info('ClientEnvironment.start called')
+    const app = this.graphics.app
+    logger.info('Graphics app available', { appReady: !!app })
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
-    this.stage.scene.add(ambientLight)
+    this.controller = new EnvironmentController(app)
+    logger.info('EnvironmentController created')
 
-    await this.controller.buildCSM(this.prefs.state.get('shadows'))
-    this.controller.updateSky(this.base.sunDirection, this.base.sunIntensity, this.base.sunColor)
-  }
+    const ambientLight = new pc.Entity('ambient')
+    ambientLight.addComponent('light', {
+      type: 'omni',
+      color: new pc.Color(1, 1, 1),
+      intensity: 0.6,
+      range: 1000
+    })
+    app.root.addChild(ambientLight)
 
-  async buildCSM(shadowLevel) {
-    await this.controller?.buildCSM(shadowLevel)
-  }
-
-  updateCSM(shadowLevel, sunDirection, sunIntensity, sunColor) {
-    this.controller?.updateCSM(shadowLevel, sunDirection, sunIntensity, sunColor)
-  }
-
-  addSky(node) {
-    return this.controller?.addSky(node)
-  }
-
-  async updateSky(sunDirection, sunIntensity, sunColor) {
-    return this.controller?.updateSky(sunDirection, sunIntensity, sunColor)
-  }
-
-  updateSkyPosition(rigPosition) {
-    this.controller?.updateSkyPosition(rigPosition)
-  }
-
-  update(delta) {
-    this.controller?.tick()
-  }
-
-  lateUpdate(delta) {
-    this.updateSkyPosition(this.rig.position)
-  }
-
-  onPrefChanged = async ({ key, value }) => {
-    if (key === 'shadows') {
-      await this.buildCSM(value)
-      const skyInfo = this.controller?.skyInfo
-      if (skyInfo) {
-        this.updateCSM(value, skyInfo.sunDirection, skyInfo.sunIntensity, skyInfo.sunColor)
+    const settings = {
+      hdr: this.baseEnvironment?.hdr,
+      sunDirection: this.baseEnvironment?.sunDirection || [0.5, 1, 0.5],
+      sunIntensity: this.baseEnvironment?.sunIntensity || 1.0,
+      sunColor: this.baseEnvironment?.sunColor || [1, 1, 1],
+      fog: this.baseEnvironment?.fogNear && {
+        near: this.baseEnvironment.fogNear,
+        far: this.baseEnvironment.fogFar,
+        color: this.baseEnvironment.fogColor || [0.5, 0.5, 0.5]
       }
-      this.updateSky(this.base.sunDirection, this.base.sunIntensity, this.base.sunColor)
     }
+
+    await this.controller.initialize(settings)
   }
 
-  onGraphicsResize = () => {
-    this.controller?.updateFrustums()
+  setShadowResolution(resolution) {
+    this.controller?.setShadowResolution(resolution)
+  }
+
+  setShadowDistance(distance) {
+    this.controller?.setShadowDistance(distance)
+  }
+
+  setNumCascades(num) {
+    this.controller?.setNumCascades(num)
+  }
+
+  setShadowsEnabled(enabled) {
+    this.controller?.setShadowsEnabled(enabled)
+  }
+
+  setSkyIntensity(intensity) {
+    this.controller?.setSkyIntensity(intensity)
+  }
+
+  setFog(near, far, color) {
+    this.controller?.setFog(near, far, color)
+  }
+
+  disableFog() {
+    this.controller?.disableFog()
+  }
+
+  setSunDirection(direction, intensity, color) {
+    this.controller?.setSunDirection(direction, intensity, color)
+  }
+
+  update(delta) {}
+
+  lateUpdate(delta) {}
+
+  destroy() {
+    this.controller = null
   }
 }

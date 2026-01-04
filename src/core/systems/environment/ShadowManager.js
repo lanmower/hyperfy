@@ -1,75 +1,54 @@
-import * as THREE from '../../extras/three.js'
-
-let CSM = null
-let csmLoading = null
-
-async function loadCSM() {
-  if (CSM) return CSM
-  if (csmLoading) return csmLoading
-  csmLoading = import('../../libs/csm/CSM.js').then(module => {
-    CSM = module.CSM
-    csmLoading = null
-    return CSM
-  })
-  return csmLoading
-}
+import * as pc from '../../extras/playcanvas.js'
 
 export class ShadowManager {
-  constructor(environment) {
-    this.environment = environment
-    this.csm = null
+  constructor(app) {
+    this.app = app
+    this.sunLight = null
+    this.initialized = false
   }
 
-  async build(shadowLevel) {
-    const options = this.environment.csmLevels[shadowLevel] || this.environment.csmLevels.med
-    if (this.csm) {
-      this.csm.updateCascades(options.cascades)
-      this.csm.updateShadowMapSize(options.shadowMapSize)
-      return
-    }
-    const CSMClass = await loadCSM()
-    this.csm = new CSMClass({
-      mode: 'practical',
-      cascades: 3,
-      maxCascades: 3,
-      shadowMapSize: 2048,
-      maxFar: 100,
-      lightIntensity: 1,
-      lightDirection: new THREE.Vector3(0, -1, 0).normalize(),
-      fade: true,
-      parent: this.environment.stage.scene,
-      camera: this.environment.camera,
-      ...options,
-    })
-    if (!options.castShadow) {
-      for (const light of this.csm.lights) {
-        light.castShadow = false
-      }
+  init(sunLight) {
+    this.sunLight = sunLight
+    this.initialized = true
+
+    const light = sunLight.light
+    light.castShadows = true
+    light.shadowType = pc.SHADOW_PCF3
+    light.shadowResolution = 2048
+    light.shadowDistance = 500
+    light.numCascades = 3
+    light.cascadeSplits = [0.1, 0.3, 1.0]
+
+    return this
+  }
+
+  setShadowResolution(resolution = 2048) {
+    if (this.sunLight && this.sunLight.light) {
+      this.sunLight.light.shadowResolution = resolution
     }
   }
 
-  update(shadowLevel, sunDirection, sunIntensity, sunColor) {
-    if (!this.csm) return
-    const options = this.environment.csmLevels[shadowLevel] || this.environment.csmLevels.med
-    this.csm.lightDirection = sunDirection
-    this.csm.updateCascades(options.cascades)
-    this.csm.updateShadowMapSize(options.shadowMapSize)
-    for (const light of this.csm.lights) {
-      light.intensity = sunIntensity
-      light.color.set(sunColor)
-      light.castShadow = options.castShadow
+  setShadowDistance(distance = 500) {
+    if (this.sunLight && this.sunLight.light) {
+      this.sunLight.light.shadowDistance = distance
     }
   }
 
-  tick() {
-    if (this.csm) {
-      this.csm.update()
+  setNumCascades(num = 3) {
+    if (this.sunLight && this.sunLight.light) {
+      this.sunLight.light.numCascades = Math.max(1, Math.min(4, num))
     }
   }
 
-  updateFrustums() {
-    if (this.csm) {
-      this.csm.updateFrustums()
+  setCascadeSplits(splits = [0.1, 0.3, 1.0]) {
+    if (this.sunLight && this.sunLight.light) {
+      this.sunLight.light.cascadeSplits = splits
+    }
+  }
+
+  setShadowsEnabled(enabled = true) {
+    if (this.sunLight && this.sunLight.light) {
+      this.sunLight.light.castShadows = enabled
     }
   }
 }

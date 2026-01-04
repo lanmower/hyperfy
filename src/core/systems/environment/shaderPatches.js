@@ -1,14 +1,5 @@
-import * as THREE from '../../extras/three.js'
+/* PlayCanvas fog is handled natively by the engine - no shader patches needed */
 
 export function patchFogShader() {
-  THREE.ShaderChunk.fog_vertex = `
-#ifdef USE_FOG
-
-
-  vFogDepth = length( mvPosition );
-
-
-
-#endif
-`
+  // No-op for PlayCanvas - fog is built-in
 }

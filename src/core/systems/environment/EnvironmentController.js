@@ -1,69 +1,113 @@
-/* Unified environment management for sky and shadows */
+/* Unified environment management for sky, shadows, and fog */
 
 import { SkyManager } from './SkyManager.js'
 import { ShadowManager } from './ShadowManager.js'
 
 export class EnvironmentController {
-  constructor(environment) {
-    this.environment = environment
-    this.shadowManager = new ShadowManager(environment)
-    this.skyManager = new SkyManager(environment)
+  constructor(app) {
+    this.app = app
+    this.shadowManager = new ShadowManager(app)
+    this.skyManager = new SkyManager(app)
   }
 
-  async buildCSM(shadowLevel) {
-    return this.shadowManager.build(shadowLevel)
+  async initialize(settings = {}) {
+    const hdrPath = settings.hdr || '/assets/environments/default.hdr'
+
+    try {
+      await this.skyManager.initWithHDR(hdrPath)
+    } catch (err) {
+      console.warn('HDR environment not found, using defaults')
+    }
+
+    const sunLight = this.skyManager.setSun(
+      settings.sunDirection || [0.5, 1, 0.5],
+      settings.sunIntensity || 1.0,
+      settings.sunColor || [1, 1, 1]
+    )
+
+    this.shadowManager.init(sunLight)
+
+    if (settings.fog) {
+      this.skyManager.setFog(
+        settings.fog.near || 100,
+        settings.fog.far || 1000,
+        settings.fog.color || [0.5, 0.5, 0.5]
+      )
+    }
   }
 
-  updateCSM(shadowLevel, sunDirection, sunIntensity, sunColor) {
-    return this.shadowManager.update(shadowLevel, sunDirection, sunIntensity, sunColor)
+  configureFromSettings(settings) {
+    if (!settings.environment) return
+
+    const env = settings.environment
+
+    if (env.hdr) {
+      this.skyManager.initWithHDR(env.hdr)
+    } else if (env.background) {
+      this.skyManager.setBackgroundImage(env.background)
+    }
+
+    if (env.sun) {
+      this.skyManager.setSun(
+        env.sun.direction || [0.5, 1, 0.5],
+        env.sun.intensity || 1.0,
+        env.sun.color || [1, 1, 1]
+      )
+    }
+
+    if (env.fog) {
+      this.skyManager.setFog(
+        env.fog.near || 100,
+        env.fog.far || 1000,
+        env.fog.color || [0.5, 0.5, 0.5]
+      )
+    }
+
+    if (env.shadows) {
+      this.shadowManager.setShadowResolution(env.shadows.resolution || 2048)
+      this.shadowManager.setNumCascades(env.shadows.cascades || 3)
+    }
   }
 
-  addSky(node) {
-    return this.skyManager.addSky(node)
+  setShadowResolution(resolution) {
+    this.shadowManager.setShadowResolution(resolution)
   }
 
-  async updateSky(sunDirection, sunIntensity, sunColor) {
-    return this.skyManager.update(sunDirection, sunIntensity, sunColor)
+  setShadowDistance(distance) {
+    this.shadowManager.setShadowDistance(distance)
   }
 
-  updateSkyPosition(rigPosition) {
-    return this.skyManager.updatePosition(rigPosition)
+  setNumCascades(num) {
+    this.shadowManager.setNumCascades(num)
   }
 
-  get skyInfo() {
-    return this.skyManager.skyInfo
+  setShadowsEnabled(enabled) {
+    this.shadowManager.setShadowsEnabled(enabled)
   }
 
-  tick() {
-    this.shadowManager.tick()
+  setSkyIntensity(intensity) {
+    this.skyManager.setIntensity(intensity)
   }
 
-  updateFrustums() {
-    this.shadowManager.updateFrustums()
+  setFog(near, far, color) {
+    this.skyManager.setFog(near, far, color)
   }
 
-  setSky(sky) {
-    this.skyManager = sky
+  disableFog() {
+    this.skyManager.disableFog()
   }
 
-  setShadows(shadows) {
-    this.shadowManager = shadows
+  setSunDirection(direction, intensity, color) {
+    this.skyManager.setSun(direction, intensity, color)
   }
 
-  update(deltaTime) {
-    if (this.skyManager) this.skyManager.update(deltaTime)
-    if (this.shadowManager) this.shadowManager.update(deltaTime)
-  }
-
-  getSkyIntensity() {
-    return this.skyManager?.intensity || 1
-  }
-
-  getShadowMapSize() {
-    return this.shadowManager?.mapSize || 1024
-  }
-
-  setAmbientLight(intensity) {
-    if (this.shadowManager) this.shadowManager.setAmbient(intensity)
+  serialize() {
+    return {
+      environment: {
+        fogStart: this.app.scene.fogStart,
+        fogEnd: this.app.scene.fogEnd,
+        fogColor: this.app.scene.fogColor
+      }
+    }
   }
 }

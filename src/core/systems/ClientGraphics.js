@@ -1,5 +1,8 @@
 import * as pc from '../extras/playcanvas.js'
 import { System } from './System.js'
+import { StructuredLogger } from '../utils/logging/index.js'
+
+const logger = new StructuredLogger('ClientGraphics')
 
 export class ClientGraphics extends System {
   static DEPS = {
@@ -20,6 +23,7 @@ export class ClientGraphics extends System {
   }
 
   async init({ viewport }) {
+    logger.info('ClientGraphics.init called')
     this.viewport = viewport
     this.width = viewport.offsetWidth || window.innerWidth
     this.height = viewport.offsetHeight || window.innerHeight
@@ -51,11 +55,14 @@ export class ClientGraphics extends System {
     this.pcCamera = cameraEntity.camera
 
     this.app.start()
+    logger.info('PlayCanvas app started', { width: this.width, height: this.height })
 
     window.addEventListener('resize', () => this.resize())
   }
 
-  start() {}
+  start() {
+    logger.info('ClientGraphics.start called')
+  }
 
   resize() {
     this.width = this.viewport.offsetWidth || window.innerWidth
