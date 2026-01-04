@@ -1,24 +1,23 @@
-import * as THREE from '../../extras/three.js'
+import * as pc from '../../extras/playcanvas.js'
 import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 import { PARTICLE_ATTRIBUTES } from './ParticleGeometryBuilder.js'
 
 const { v1, v2 } = SharedVectorPool('EmitterController', 2)
-const arr1 = []
-const arr2 = []
 
 export class EmitterController {
-  constructor(id, node, mesh, worker, next, attributes, camera, stage) {
+  constructor(id, node, meshInstances, worker, next, buffers, camera, stage) {
     this.id = id
     this.node = node
-    this.mesh = mesh
+    this.meshInstances = meshInstances
     this.worker = worker
     this.next = next
-    this.attributes = attributes
+    this.buffers = buffers
     this.camera = camera
     this.stage = stage
     this.matrixWorld = node.matrixWorld
     this.pending = false
     this.skippedDelta = 0
+    this.particleCount = 0
   }
 
   send(msg, transfers) {
@@ -34,13 +33,11 @@ export class EmitterController {
     if (msg.op === 'update') {
       const n = msg.n
       for (const [name, size] of Object.entries(PARTICLE_ATTRIBUTES)) {
-        const attr = this.attributes[name]
-        this.next[name] = attr.array
-        attr.array = msg[name]
-        attr.addUpdateRange(0, n * size)
-        attr.needsUpdate = true
+        this.next[name] = this.buffers[name]
+        this.buffers[name] = msg[name]
       }
-      this.mesh.count = n
+      this.particleCount = n
+      this.updateMeshInstances(n)
       this.pending = false
     }
     if (msg.op === 'end') {
@@ -48,12 +45,30 @@ export class EmitterController {
     }
   }
 
-  update(delta) {
-    const camPosition = v1.setFromMatrixPosition(this.camera.matrixWorld)
-    const worldPosition = v2.setFromMatrixPosition(this.matrixWorld)
+  updateMeshInstances(count) {
+    for (let i = 0; i < this.meshInstances.length; i++) {
+      const mi = this.meshInstances[i]
+      if (i < count) {
+        const aPos = this.buffers.aPosition
+        const pos = new pc.Vec3(aPos[i * 3], aPos[i * 3 + 1], aPos[i * 3 + 2])
+        if (mi.node) {
+          mi.node.setLocalPosition(pos)
+        }
+        mi.visible = true
+      } else {
+        mi.visible = false
+      }
+    }
+  }
 
-    const distance = camPosition.distanceTo(worldPosition)
-    this.mesh.renderOrder = -distance
+  update(delta) {
+    const camPos = this.camera.getLocalPosition ? this.camera.getLocalPosition() : new pc.Vec3()
+    const worldPos = this.matrixWorld.getTranslation(new pc.Vec3())
+
+    const distance = camPos.distance(worldPos)
+    for (const mi of this.meshInstances) {
+      if (mi) mi.renderOrder = -distance
+    }
 
     if (this.pending) {
       this.skippedDelta += delta
@@ -63,8 +78,8 @@ export class EmitterController {
       const msgData = {
         op: 'update',
         delta,
-        camPosition: camPosition.toArray(arr1),
-        matrixWorld: this.matrixWorld.toArray(arr2),
+        camPosition: [camPos.x, camPos.y, camPos.z],
+        matrixWorld: this.matrixWorld.data,
       }
       const transfers = []
       for (const name of Object.keys(PARTICLE_ATTRIBUTES)) {
@@ -80,8 +95,5 @@ export class EmitterController {
   destroy(emittersMap) {
     emittersMap.delete(this.id)
     this.worker.postMessage({ op: 'destroy', emitterId: this.id })
-    this.stage.scene.remove(this.mesh)
-    this.mesh.material.dispose()
-    this.mesh.geometry.dispose()
   }
 }

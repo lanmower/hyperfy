@@ -1,5 +1,5 @@
 import { System } from './System.js'
-import * as THREE from '../extras/three.js'
+import * as pc from '../extras/playcanvas.js'
 import { uuid } from '../utils.js'
 import { ParticleGeometryBuilder } from './particles/ParticleGeometryBuilder.js'
 import { ParticleMaterialFactory } from './particles/ParticleMaterialFactory.js'
@@ -7,7 +7,6 @@ import { EmitterController } from './particles/EmitterController.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 
 const logger = new StructuredLogger('Particles')
-const e1 = new THREE.Euler(0, 0, 0, 'YXZ')
 const billboardModeInts = { full: 0, y: 1, direction: 2 }
 
 let worker = null
@@ -35,8 +34,8 @@ export class Particles extends System {
   constructor(world) {
     super(world)
     this.worker = null
-    this.uOrientationFull = { value: this.rig.quaternion }
-    this.uOrientationY = { value: new THREE.Quaternion() }
+    this.uOrientationFull = new pc.Quat()
+    this.uOrientationY = new pc.Quat()
     this.emitters = new Map()
   }
 
@@ -52,36 +51,44 @@ export class Particles extends System {
   createEmitter(node) {
     const id = uuid()
     const config = node.getConfig()
-    const { geometry, attributes } = ParticleGeometryBuilder.create(node._max)
+    const { geometry, buffers } = ParticleGeometryBuilder.create(node._max)
     const next = ParticleGeometryBuilder.createNextBuffers(node._max)
+
     const uniforms = {
-      uTexture: { value: new THREE.Texture() },
-      uBillboard: { value: billboardModeInts[node._billboard] },
+      uBillboard: billboardModeInts[node._billboard],
       uOrientation: node._billboard === 'full' ? this.uOrientationFull : this.uOrientationY,
     }
-    this.loader.load('texture', node._image).then(texture => {
-      texture.colorSpace = THREE.SRGBColorSpace
-      uniforms.uTexture.value = texture
+
+    const material = ParticleMaterialFactory.create({ node, uniforms, loader: this.loader })
+
+    const entity = new pc.Entity('particle-emitter')
+    entity.addComponent('render', {
+      type: 'asset',
+      meshInstances: Array(node._max).fill(null).map(() => new pc.MeshInstance(geometry, material))
     })
-    const material = ParticleMaterialFactory.create(node, uniforms, this.loader)
-    const mesh = new THREE.InstancedMesh(geometry, material, node._max)
-    mesh._node = node
-    mesh.count = 0
-    mesh.instanceMatrix.needsUpdate = true
-    mesh.frustumCulled = false
-    mesh.matrixAutoUpdate = false
-    mesh.matrixWorldAutoUpdate = false
-    this.stage.scene.add(mesh)
-    const controller = new EmitterController(id, node, mesh, this.worker, next, attributes, this.camera, this.stage)
+
+    const pos = node.matrixWorld.getTranslation(new pc.Vec3())
+    const rot = node.matrixWorld.getRotation(new pc.Quat())
+    entity.setLocalPosition(pos)
+    entity.setLocalRotation(rot)
+    entity.castShadow = false
+    entity.receiveShadow = false
+
+    this.stage.scene.addChild(entity)
+
+    const controller = new EmitterController(id, node, entity.render.meshInstances, this.worker, next, buffers, this.camera, this.stage)
+
     const handle = {
       id,
       node,
+      entity,
       send: controller.send.bind(controller),
       setEmitting: controller.setEmitting.bind(controller),
       onMessage: controller.onMessage.bind(controller),
       update: controller.update.bind(controller),
       destroy: controller.destroy.bind(controller),
     }
+
     this.worker.postMessage({ op: 'create', id, ...config })
     return handle
   }
@@ -93,10 +100,16 @@ export class Particles extends System {
   }
 
   update(delta) {
-    e1.setFromQuaternion(this.uOrientationFull.value)
-    e1.x = 0
-    e1.z = 0
-    this.uOrientationY.value.setFromEuler(e1)
+    const rigQuat = this.rig.getLocalRotation?.() || new pc.Quat()
+
+    this.uOrientationFull.copy(rigQuat)
+
+    const eulerX = Math.atan2(2 * (rigQuat.w * rigQuat.x + rigQuat.y * rigQuat.z), 1 - 2 * (rigQuat.x * rigQuat.x + rigQuat.y * rigQuat.y))
+    const eulerZ = Math.atan2(2 * (rigQuat.w * rigQuat.z + rigQuat.x * rigQuat.y), 1 - 2 * (rigQuat.y * rigQuat.y + rigQuat.z * rigQuat.z))
+
+    const temp = new pc.Quat()
+    temp.setFromEulerAngles(0, 0, 0)
+    this.uOrientationY.copy(temp)
 
     this.emitters.forEach(emitter => {
       emitter.update(delta)
@@ -113,7 +126,11 @@ export class Particles extends System {
   }
 
   onXRSession = session => {
-    this.uOrientationFull.value = session && this.xr?.camera ? this.xr.camera.quaternion : this.rig.quaternion
+    if (session && this.xr?.camera) {
+      this.uOrientationFull.copy(this.xr.camera.getLocalRotation?.() || new pc.Quat())
+    } else {
+      this.uOrientationFull.copy(this.rig.getLocalRotation?.() || new pc.Quat())
+    }
   }
 
   destroy() {
