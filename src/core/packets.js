@@ -36,6 +36,11 @@ export function writePacket(name, data) {
 
 export function readPacket(packet) {
   try {
+    const isArrayBuffer = packet instanceof ArrayBuffer
+    const isBuffer = typeof Buffer !== 'undefined' && Buffer.isBuffer(packet)
+    if (!isArrayBuffer && !isBuffer) {
+      throw new Error(`readPacket failed: invalid packet type (expected ArrayBuffer or Buffer, got ${typeof packet})`)
+    }
     const unpacked = packr.unpack(packet)
     if (!Array.isArray(unpacked) || unpacked.length < 2) {
       throw new Error(`readPacket failed: invalid packet format (expected array with 2+ elements, got ${typeof unpacked}${Array.isArray(unpacked) ? ` length ${unpacked.length}` : ''})`)

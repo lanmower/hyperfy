@@ -34,8 +34,10 @@ export class MessageHandler {
 
   static decode(packet) {
     try {
-      if (!(packet instanceof ArrayBuffer)) {
-        logger.error('Decode security error: not ArrayBuffer', { type: typeof packet })
+      const isArrayBuffer = packet instanceof ArrayBuffer
+      const isBuffer = typeof Buffer !== 'undefined' && Buffer.isBuffer(packet)
+      if (!isArrayBuffer && !isBuffer) {
+        logger.error('Decode security error: not ArrayBuffer or Buffer', { type: typeof packet, isAB: isArrayBuffer, isBuf: isBuffer })
         return [null, null]
       }
 

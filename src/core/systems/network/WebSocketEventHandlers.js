@@ -50,14 +50,6 @@ export class WebSocketEventHandlers {
   createOpenHandler() {
     return () => {
       this.manager.logger.info('WebSocket opened', { wsType: typeof this.manager.ws, wsReadyState: this.manager.ws?.readyState })
-      // Send a test ping to verify the connection works both ways
-      try {
-        const testPing = new Uint8Array([0, 0])  // Send minimal packet to test
-        this.manager.ws.send(testPing)
-        this.manager.logger.info('Test ping sent from client to verify bidirectional connection')
-      } catch (err) {
-        this.manager.logger.warn('Failed to send test ping', { error: err.message })
-      }
       this.manager.network.protocol.isConnected = true
       this.manager.inactivityMonitor.reset()
       this.manager.setupInactivityMonitor()

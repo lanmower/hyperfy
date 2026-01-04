@@ -30,7 +30,8 @@ export class SocketManager {
       const packet = MessageHandler.encode(name, compressed)
       this.network.sockets.forEach(socket => {
         if (socket.id === ignoreSocketId) return
-        socket.sendPacket(packet)
+        const sequencedPacket = this.wrapWithSequence(packet, socket)
+        socket.sendPacket(sequencedPacket)
       })
     }
 
@@ -47,6 +48,16 @@ export class SocketManager {
         logger.error('Broadcast error', { name, error: err.message })
       })
     }
+  }
+
+  wrapWithSequence(packet, socket) {
+    if (!packet || !(packet instanceof ArrayBuffer || Buffer.isBuffer(packet))) return packet
+    socket._sendSequence = ((socket._sendSequence || 0) + 1) % 65536
+    const seq = socket._sendSequence
+    const seqBuffer = Buffer.allocUnsafe(2)
+    seqBuffer[0] = (seq >> 8) & 0xFF
+    seqBuffer[1] = seq & 0xFF
+    return Buffer.concat([seqBuffer, Buffer.isBuffer(packet) ? packet : Buffer.from(packet)])
   }
 
   sendTo(socketId, name, data) {
