@@ -14,7 +14,7 @@ const { v1, v2, v3, v4, q1, e1 } = SharedVectorPool('ClientActions', 4, 1, 1)
 const sizes = [128, 256, 512, 2048, 4096]
 
 export class ClientActions extends System {
-  static DEPS = { rig: 'rig', events: 'events', controls: 'controls' }
+  static DEPS = { events: 'events', controls: 'controls' }
 
   constructor(world) {
     super(world)
@@ -51,7 +51,8 @@ export class ClientActions extends System {
   }
 
   update(delta) {
-    const btnDown = this.registry.update(delta, this.rig, this.events)
+    const rig = this.world.cameraController?.camera || null
+    const btnDown = this.registry.update(delta, rig, this.events)
     this.updateAction(delta, btnDown)
   }
 

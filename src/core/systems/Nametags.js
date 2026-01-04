@@ -5,7 +5,7 @@ import * as Config from '../config/NametagConfig.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 
 export class Nametags extends System {
-  static DEPS = { rig: 'rig', stage: 'stage', events: 'events', graphics: 'graphics' }
+  static DEPS = { stage: 'stage', events: 'events', graphics: 'graphics' }
   static EVENTS = { xrSession: 'onXRSession' }
 
   constructor(world) {

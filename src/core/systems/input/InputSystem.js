@@ -11,7 +11,7 @@ const logger = new StructuredLogger('InputSystem')
 const isBrowser = typeof window !== 'undefined'
 
 export class InputSystem extends System {
-  static DEPS = { rig: 'rig', events: 'events', camera: 'camera' }
+  static DEPS = { events: 'events', camera: 'camera' }
   static EVENTS = { xrSession: 'onXRSession' }
 
   constructor(world) {
@@ -56,18 +56,21 @@ export class InputSystem extends System {
         if (value.$button) { value.pressed = false; value.released = false }
       }
     }
-    let written
-    for (const control of this.controls) {
-      const camera = control.entries.camera
-      if (camera?.write && !written && this.camera) {
-        this.rig.position.copy(camera.position)
-        this.rig.quaternion.copy(camera.quaternion)
-        this.camera.position.z = camera.zoom
-        written = true
-      } else if (camera && this.camera) {
-        camera.position.copy(this.rig.position)
-        camera.quaternion.copy(this.rig.quaternion)
-        camera.zoom = this.camera.position.z
+    const rig = this.world.cameraController?.camera
+    if (rig) {
+      let written
+      for (const control of this.controls) {
+        const camera = control.entries.camera
+        if (camera?.write && !written && this.camera) {
+          rig.position.copy(camera.position)
+          rig.quaternion.copy(camera.quaternion)
+          this.camera.position.z = camera.zoom
+          written = true
+        } else if (camera && this.camera) {
+          camera.position.copy(rig.position)
+          camera.quaternion.copy(rig.quaternion)
+          camera.zoom = this.camera.position.z
+        }
       }
     }
     const pointerHandler = this.dispatcher.handlers.get('pointer')

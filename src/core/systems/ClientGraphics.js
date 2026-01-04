@@ -57,20 +57,20 @@ export class ClientGraphics extends System {
       clearColor: new pc.Color(0.3, 0.4, 0.6, 1),
       priority: 0
     })
-    cameraEntity.setLocalPosition(0, 5, 10)
+    cameraEntity.setLocalPosition(0, 3.5, 20)
     cameraEntity.lookAt(0, 0, 0)
     this.app.root.addChild(cameraEntity)
     this.pcCamera = cameraEntity.camera
     this.app.scene.activeCameraEntity = cameraEntity
 
-    this.app.start()
-    logger.info('PlayCanvas app started', { width: this.width, height: this.height })
+    logger.info('PlayCanvas app initialized (not yet started)', { width: this.width, height: this.height })
 
     window.addEventListener('resize', () => this.resize())
   }
 
   start() {
-    logger.info('ClientGraphics.start called')
+    logger.info('ClientGraphics.start called - starting PlayCanvas app')
+    this.app.start()
   }
 
   resize() {

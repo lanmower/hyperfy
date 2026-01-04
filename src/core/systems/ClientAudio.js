@@ -10,7 +10,6 @@ const up = new THREE.Vector3(0, 1, 0)
 export class ClientAudio extends System {
   static DEPS = {
     events: 'events',
-    rig: 'rig',
     prefs: 'prefs',
   }
 
@@ -121,7 +120,8 @@ export class ClientAudio extends System {
 
   lateUpdate(delta) {
     if (this.degraded || !this.listener) return
-    const target = this.rig
+    const target = this.world.cameraController?.camera
+    if (!target) return
     const dir = v[0].set(0, 0, -1).applyQuaternion(target.quaternion)
     if (this.listener.positionX) {
       const endTime = this.ctx.currentTime + delta * 2

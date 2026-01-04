@@ -203,7 +203,9 @@
   "structure": {
     "directories": [
       ".git",
+      ".glootie",
       "glootie",
+      ".mcp-metadata",
       "code_search_index",
       "node_modules",
       "scripts",
@@ -324,6 +326,7 @@
       ".env.example",
       ".env.local",
       ".gitignore",
+      "debug-camera.mjs",
       "FINAL_SUCCESS.png",
       ".caveats.txt",
       ".glootie-project-structure.json",
@@ -439,6 +442,7 @@
       "monacoLoader.js",
       "utils.js",
       "world-client.js",
+      "CameraController.js",
       "HandlerRegistry.js",
       "NametagConfig.js",
       "SystemConfig.js",
@@ -640,7 +644,6 @@
       "BlueprintOrchestrator.js",
       "BlueprintResourceLoader.js",
       "BlueprintValidator.js",
-      "CameraController.js",
       "Chat.js",
       "Client.js",
       "ClientActions.js",
@@ -816,19 +819,6 @@
       "scene.hyp",
       "scene.hyp.bak",
       "SUCCESS.png",
-      "test-final.png",
-      "test-no-mesh.png",
-      "test-render-fixed.png",
-      "test-render-refresh.png",
-      "test-render.png",
-      "test10.png",
-      "test3.png",
-      "test4.png",
-      "test5.png",
-      "test6.png",
-      "test7.png",
-      "test8.png",
-      "test9.png",
       "179d71586e675efc4af04185e1b2d3e6b7f4a5b707f1ef5e9b6497c5660ecab7.webp",
       "1aa2381f0fb25ba2fe9941b62eb2cad1fe2c77afa0316df8828ba5eba5d3d374.glb",
       "2faa49a0505b0e7f143e2278e3aa4a5585cabe9e87cc850f3b9b3c1625b8ba69.glb",
@@ -883,5 +873,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767552685177
+  "lastAnalyzed": 1767555119095
 }
