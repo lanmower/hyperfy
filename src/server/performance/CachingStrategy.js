@@ -25,11 +25,16 @@ const CACHE_STRATEGIES = {
 
 export function setupCacheHeaders(fastify) {
   fastify.addHook('onSend', async (request, reply) => {
+    if (reply.sent) return
     const path = request.url.split('?')[0]
     const strategy = getCacheStrategy(path)
 
     if (strategy) {
-      applyCacheHeaders(reply, strategy)
+      try {
+        applyCacheHeaders(reply, strategy)
+      } catch (err) {
+        // Headers already sent, skip
+      }
     }
   })
 }
@@ -101,6 +106,8 @@ export function generateETag(content) {
 
 export function addETagSupport(fastify) {
   fastify.addHook('onSend', async (request, reply) => {
+    if (reply.sent) return
+
     const contentType = reply.getHeader('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       return
@@ -111,10 +118,14 @@ export function addETagSupport(fastify) {
 
     const etag = generateETag(payload)
     if (etag) {
-      reply.header('ETag', etag)
+      try {
+        reply.header('ETag', etag)
 
-      if (request.headers['if-none-match'] === etag) {
-        reply.code(304).send()
+        if (request.headers['if-none-match'] === etag) {
+          reply.code(304).send()
+        }
+      } catch (err) {
+        // Headers already sent, skip
       }
     }
   })

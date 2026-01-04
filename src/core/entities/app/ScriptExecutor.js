@@ -1,4 +1,5 @@
 import { StructuredLogger } from '../../utils/logging/index.js'
+import { HyperfyError } from '../../../server/utils/errors/HyperfyError.js'
 import { ScriptExecutorValidator } from './ScriptExecutorValidator.js'
 import { ScriptExecutorRuntime } from './ScriptExecutorRuntime.js'
 

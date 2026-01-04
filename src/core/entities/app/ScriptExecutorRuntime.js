@@ -1,4 +1,5 @@
 import { StructuredLogger } from '../../utils/logging/index.js'
+import { HyperfyError } from '../../../server/utils/errors/HyperfyError.js'
 
 const logger = new StructuredLogger('ScriptExecutorRuntime')
 
@@ -20,6 +21,7 @@ export class ScriptExecutorRuntime {
     try {
       return evaluated.exec(worldProxy, appProxy, fetchFn, safeProps, setTimeoutFn)
     } catch (execErr) {
+      logger.error('Script execution error:', { message: execErr.message, stack: execErr.stack })
       const hyperfyError = execErr instanceof HyperfyError ? execErr : new HyperfyError('SCRIPT_ERROR', `Script execution failed: ${execErr.message}`, { originalError: execErr.toString() })
       throw hyperfyError
     }

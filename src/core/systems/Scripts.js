@@ -23,8 +23,8 @@ class FallbackCompartment {
 
   evaluate(source) {
     this.validateScript(source)
-    const paramNames = Object.keys(this.globals)
-    const paramValues = Object.values(this.globals)
+    const paramNames = Object.keys(this.globals).filter(name => !['eval', 'arguments'].includes(name))
+    const paramValues = paramNames.map(name => this.globals[name])
     const wrappedCode = `'use strict'; return (${source})`
     const fn = new Function(...paramNames, wrappedCode)
     return fn(...paramValues)
