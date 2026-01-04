@@ -60,10 +60,9 @@ export function Client({ wsUrl, onSetup }) {
       onSetup?.(world, config)
       await world.init(config)
 
-      // Ensure graphics system has started
-      if (world.graphics && world.graphics.app && !world.graphics.app.isRunning) {
-        console.log('[WORLD-CLIENT] Starting PlayCanvas app...')
-        world.graphics.app.start()
+      console.log('[WORLD-CLIENT] World initialized, starting graphics...')
+      if (world.graphics && world.graphics.startApp) {
+        world.graphics.startApp()
       }
 
       const tick = (time) => {

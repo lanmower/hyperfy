@@ -31,25 +31,30 @@ export class CameraController extends System {
   }
 
   update(deltaTime) {
-    const camera = this.graphics.app.scene.activeCameraEntity
-    if (!camera) return
+    try {
+      if (!this.graphics?.app?.scene) return
+      const camera = this.graphics.app.scene.activeCameraEntity
+      if (!camera) return
 
-    this.velocity.set(0, 0, 0)
-    const pos = camera.getLocalPosition()
+      this.velocity.set(0, 0, 0)
+      const pos = camera.getLocalPosition()
 
-    if (this.keys['w'] || this.keys['arrowup']) this.velocity.z -= 1
-    if (this.keys['s'] || this.keys['arrowdown']) this.velocity.z += 1
-    if (this.keys['d'] || this.keys['arrowright']) this.velocity.x += 1
-    if (this.keys['a'] || this.keys['arrowleft']) this.velocity.x -= 1
-    if (this.keys[' ']) this.velocity.y += 1
-    if (this.keys['shift']) this.velocity.y -= 1
+      if (this.keys['w'] || this.keys['arrowup']) this.velocity.z -= 1
+      if (this.keys['s'] || this.keys['arrowdown']) this.velocity.z += 1
+      if (this.keys['d'] || this.keys['arrowright']) this.velocity.x += 1
+      if (this.keys['a'] || this.keys['arrowleft']) this.velocity.x -= 1
+      if (this.keys[' ']) this.velocity.y += 1
+      if (this.keys['shift']) this.velocity.y -= 1
 
-    const vel = this.velocity.length()
-    if (vel > 0) {
-      this.velocity.normalize()
-      this.velocity.scale(this.moveSpeed * deltaTime)
-      pos.add(this.velocity)
-      camera.setLocalPosition(pos)
+      const vel = this.velocity.length()
+      if (vel > 0) {
+        this.velocity.normalize()
+        this.velocity.scale(this.moveSpeed * deltaTime)
+        pos.add(this.velocity)
+        camera.setLocalPosition(pos)
+      }
+    } catch (err) {
+      logger.error('CameraController.update error', { error: err.message })
     }
   }
 

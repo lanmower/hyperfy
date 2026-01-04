@@ -69,14 +69,25 @@ export class ClientGraphics extends System {
   }
 
   start() {
-    logger.info('ClientGraphics.start called - starting PlayCanvas app')
+    logger.info('ClientGraphics.start called')
+  }
+
+  startApp() {
+    logger.info('ClientGraphics.startApp called - starting PlayCanvas app')
     if (!this.app) {
-      logger.error('ClientGraphics.start: app is not initialized!')
+      logger.error('ClientGraphics.startApp: app is not initialized!')
       return
     }
-    logger.info('About to call app.start()', { appExists: !!this.app })
-    this.app.start()
-    logger.info('app.start() completed', { isRunning: this.app.isRunning })
+    try {
+      logger.info('About to call app.start()', { appExists: !!this.app, isRunning: this.app.isRunning })
+      this.app.start()
+      logger.info('app.start() completed', { isRunning: this.app.isRunning })
+      if (!this.app.isRunning) {
+        logger.error('PlayCanvas app.start() did not start the render loop')
+      }
+    } catch (err) {
+      logger.error('Error starting PlayCanvas app', { error: err.message, stack: err.stack })
+    }
   }
 
   resize() {
