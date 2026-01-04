@@ -35,6 +35,7 @@ export class ClientActionsRegistry {
   }
 
   update(delta, rig, events) {
+    if (!rig) return false
     const cameraPos = rig.position
     const btnDown = this.control.keyE.down || this.control.touchB.down || this.control.xrLeftTrigger.down || this.control.xrRightTrigger.down
 
