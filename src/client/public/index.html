@@ -67,10 +67,23 @@
         "three/examples/jsm/": "https://esm.sh/three@r128/examples/jsm/",
         "three/addons/": "https://esm.sh/three@r128/examples/jsm/",
         "@firebolt-dev/css": "/node_modules/@firebolt-dev/css/dist/index.js",
+        "lodash": "/node_modules/lodash-es/lodash.js",
         "lodash-es": "/node_modules/lodash-es/lodash.js",
         "stylis": "/node_modules/stylis/index.js",
         "eventemitter3": "/node_modules/eventemitter3/index.mjs",
         "playcanvas": "/node_modules/playcanvas/build/playcanvas.mjs",
+        "msgpackr": "/node_modules/msgpackr/index.js",
+        "nanoid": "/src/client/public/stub-nanoid.js",
+        "moment": "/src/client/public/stub-moment.js",
+        "async-retry": "/src/client/public/stub-async-retry.js",
+        "p-queue": "/src/client/public/stub-p-queue.js",
+        "yoga-layout": "/src/client/public/stub-yoga-layout.js",
+        "hls.js": "/src/client/public/stub-hls.js",
+        "hls.js/dist/hls.js": "/src/client/public/stub-hls.js",
+        "lucide-react": "/node_modules/lucide-react/dist/esm/lucide-react.js",
+        "openai": "/src/client/public/stub-openai.js",
+        "hyperfy-error": "/src/client/public/stub-hyperfy-error.js",
+        "livekit-client": "/src/client/public/stub-livekit-client.js",
         "generic-pool": "/src/client/public/stub-generic-pool.js",
         "knex": "/src/client/public/stub-knex.js",
         "pg": "/src/client/public/stub-pg.js",
@@ -91,7 +104,6 @@
   <body>
     <div id="root"></div>
     <script src="/env.js?v={buildId}"></script>
-    <script src="/src/client/public/node-stubs.js?v={buildId}"></script>
-    <script type="module" src="/src/client/index.js?v={buildId}"></script>
+    <script src="/public/dist/client.js?v={buildId}"></script>
   </body>
 </html>

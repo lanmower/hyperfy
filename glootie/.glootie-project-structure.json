@@ -342,6 +342,11 @@
       "PHASE_6_README.md",
       "PHASE_6_TECHNICAL_SUMMARY.md",
       "README.md",
+      "scene-test-final.png",
+      "scene-test-fixed.png",
+      "scene-test.png",
+      "scene-test2.png",
+      "scene-visibility-test.png",
       "build-client.mjs",
       "build.mjs",
       "dev-server.mjs",
@@ -864,5 +869,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767546407380
+  "lastAnalyzed": 1767547428947
 }
