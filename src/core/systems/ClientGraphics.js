@@ -79,11 +79,12 @@ export class ClientGraphics extends System {
       return
     }
     try {
-      logger.info('About to call app.start()', { appExists: !!this.app, isRunning: this.app.isRunning })
-      this.app.start()
-      logger.info('app.start() completed', { isRunning: this.app.isRunning })
+      logger.info('About to check app state', { appExists: !!this.app, isRunning: this.app.isRunning })
       if (!this.app.isRunning) {
-        logger.error('PlayCanvas app.start() did not start the render loop')
+        this.app.start()
+        logger.info('app.start() called', { isRunning: this.app.isRunning })
+      } else {
+        logger.info('PlayCanvas app already running', { isRunning: this.app.isRunning })
       }
     } catch (err) {
       logger.error('Error starting PlayCanvas app', { error: err.message, stack: err.stack })

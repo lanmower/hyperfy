@@ -70,7 +70,9 @@ export class Client extends System {
   }
 
   start() {
-    this.graphics.renderer.setAnimationLoop(this.tick)
+    if (this.graphics.app) {
+      this.graphics.startApp()
+    }
     document.addEventListener('visibilitychange', this.onVisibilityChange)
   }
 
@@ -81,45 +83,21 @@ export class Client extends System {
   }
 
   onVisibilityChange = () => {
-    if (!worker) {
-      const script = `
-        const rate = ${WORKER_RATE_MS}
-        let intervalId = null;
-        self.onmessage = e => {
-          if (e.data === 'start' && !intervalId) {
-            intervalId = setInterval(() => {
-              self.postMessage(1);
-            }, rate);
-          }
-          if (e.data === 'stop' && intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
-          }
-        }
-      `
-      const blob = new Blob([script], { type: 'application/javascript' })
-      const blobUrl = URL.createObjectURL(blob)
-      worker = new Worker(blobUrl)
-      URL.revokeObjectURL(blobUrl)
-      worker.onmessage = () => {
-        const time = performance.now()
-        this.tick(time)
-      }
-    }
     if (document.hidden) {
-      this.graphics.renderer.setAnimationLoop(null)
-      worker.postMessage('start')
+      if (this.graphics.app?.isRunning) {
+        this.graphics.app.pause()
+      }
     } else {
-      worker.postMessage('stop')
-      this.graphics.renderer.setAnimationLoop(this.tick)
+      if (this.graphics.app && !this.graphics.app.isRunning) {
+        this.graphics.app.resume()
+      }
     }
   }
 
   destroy() {
-    this.graphics.renderer.setAnimationLoop(null)
-    worker?.postMessage('stop')
-    worker?.terminate()
-    worker = null
+    if (this.graphics.app?.isRunning) {
+      this.graphics.app.pause()
+    }
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
   }
 }

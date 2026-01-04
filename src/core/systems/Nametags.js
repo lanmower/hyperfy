@@ -29,7 +29,7 @@ export class Nametags extends System {
     this.material.diffuse.set(1, 1, 1)
     this.material.emissive.set(0, 0, 0)
     this.material.diffuseMap = this.renderer.texture
-    this.material.transparent = true
+    this.material.blendType = pc.BLEND_NORMAL
     this.material.depthWrite = false
     this.material.update()
     this.geometry = pc.createPlane(gd, { halfExtents: new pc.Vec3(0.5, 0.5 * Config.HEIGHT / Config.WIDTH, 0) })

@@ -6,4 +6,12 @@ export class ModeManager {
   setMode(mode) {
     this.currentMode = mode
   }
+
+  getMode() {
+    return this.currentMode
+  }
+
+  getModeLabel() {
+    return this.currentMode?.label || 'Select'
+  }
 }
