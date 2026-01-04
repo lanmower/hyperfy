@@ -20,7 +20,7 @@ export class XR extends System {
   constructor(world) {
     super(world)
     this.session = null
-    this.camera = null
+    this._xrCamera = null
     this.controller1Model = null
     this.controller2Model = null
     this.supportsVR = false
@@ -47,7 +47,7 @@ export class XR extends System {
     this.onSessionEndHandler = this.onSessionEnd.bind(this)
     session.addEventListener('end', this.onSessionEndHandler)
     this.session = session
-    this.camera = this.graphics.renderer.xr.getCamera()
+    this._xrCamera = this.graphics.renderer.xr.getCamera()
     this.events.emit('xrSession', session)
 
     this.controller1Model = this.graphics.renderer.xr.getControllerGrip(0)
@@ -65,7 +65,7 @@ export class XR extends System {
     this.rig.remove(this.controller1Model)
     this.rig.remove(this.controller2Model)
     this.session = null
-    this.camera = null
+    this._xrCamera = null
     this.controller1Model = null
     this.controller2Model = null
     this.events.emit('xrSession', null)

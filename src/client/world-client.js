@@ -14,7 +14,13 @@ export function Client({ wsUrl, onSetup }) {
     console.log('[USEMEMO] Creating client world')
     return createClientWorld()
   }, [])
-  const [ui, setUI] = useState(world.ui.state)
+  const [ui, setUI] = useState(() => {
+    try {
+      return world.ui?.state || { visible: true }
+    } catch (e) {
+      return { visible: true }
+    }
+  })
   useEffect(() => {
     world.on('ui', setUI)
     return () => {
@@ -68,46 +74,51 @@ export function Client({ wsUrl, onSetup }) {
     }
     init()
   }, [])
-  return (
-    <div
-      className='App'
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100%',
-        height: '100vh',
-      }}
-    >
+  try {
+    return (
       <div
-        className='App__viewport'
-        ref={viewportRef}
+        className='App'
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
           width: '100%',
-          height: '100%',
+          height: '100vh',
         }}
       >
         <div
-          className='App__ui'
-          ref={uiRef}
+          className='App__viewport'
+          ref={viewportRef}
           style={{
             position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            userSelect: 'none',
-            display: ui.visible ? 'block' : 'none',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100%',
           }}
         >
-          <CoreUI world={world} />
+          <div
+            className='App__ui'
+            ref={uiRef}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              userSelect: 'none',
+              display: ui?.visible !== false ? 'block' : 'none',
+            }}
+          >
+            {world.ui ? <CoreUI world={world} /> : null}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  } catch (err) {
+    console.error('[CLIENT] Render error:', err)
+    return <div style={{ width: '100%', height: '100%', backgroundColor: '#f00', color: '#fff' }}>Error: {err.message}</div>
+  }
 }

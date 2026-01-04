@@ -27,13 +27,14 @@ export class PostProcessingSetup {
   }
 
   createFXAAEffect() {
-    const device = this.app.graphicsDevice
+    const device = this.app?.graphicsDevice
     return {
       enabled: true,
       span: 8,
       reduce: 1/8,
       reduceMul: 1/8,
-      setEnabled(val) { this.enabled = val }
+      setEnabled(val) { this.enabled = val },
+      device
     }
   }
 

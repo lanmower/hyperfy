@@ -11,9 +11,20 @@ export class Nametags extends System {
   constructor(world) {
     super(world)
     this.logger = new StructuredLogger('Nametags')
-    const gd = world.graphics.app.graphicsDevice
-    this.renderer = new NametagRenderer(gd)
+    this.renderer = null
     this.nametags = []
+    this.material = null
+    this.geometry = null
+    this.mesh = null
+  }
+
+  init() {
+    const gd = this.world.graphics?.app?.graphicsDevice
+    if (!gd) {
+      this.logger.warn('Graphics device not available in init()')
+      return
+    }
+    this.renderer = new NametagRenderer(gd)
     this.material = new pc.StandardMaterial()
     this.material.diffuse.set(1, 1, 1)
     this.material.emissive.set(0, 0, 0)
@@ -32,7 +43,7 @@ export class Nametags extends System {
     this.count = 0
   }
 
-  start() { this.stage.scene.addChild(this.mesh) }
+  start() { if (this.mesh) this.stage.scene.addChild(this.mesh) }
 
   add({ name, health }) {
     const idx = this.nametags.length

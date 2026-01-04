@@ -27,6 +27,11 @@ export class ClientEnvironment extends System {
     const app = this.graphics.app
     logger.info('Graphics app available', { appReady: !!app })
 
+    if (!app || !app.graphicsDevice) {
+      logger.info('App or graphicsDevice not ready yet, deferring environment setup')
+      return
+    }
+
     this.controller = new EnvironmentController(app)
     logger.info('EnvironmentController created')
 

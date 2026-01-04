@@ -34,8 +34,21 @@ async function build() {
         '.wasm': 'file',
         '.png': 'file',
       },
+      alias: {
+        'yoga-layout': path.join(rootDir, 'src/client/public/stub-yoga-layout.js'),
+      },
       external: ['path', 'fs', 'fs-extra', 'stream', 'constants', 'node:worker_threads', 'worker_threads'],
       logLevel: 'info',
+      plugins: [
+        {
+          name: 'external-modules',
+          setup(build) {
+            build.onResolve({ filter: /^(fs-extra|fs|path|stream|constants|worker_threads|node:worker_threads)$/ }, args => {
+              return { path: args.path, external: true }
+            })
+          }
+        }
+      ]
     }
 
     if (watch) {

@@ -32,6 +32,11 @@ export class PlayerCapsuleRenderer extends System {
     if (!this.world.graphics.app) return
 
     const app = this.world.graphics.app
+    if (!app.graphicsDevice) {
+      logger.warn('Graphics device not ready for player capsule', { playerId: player.data.id })
+      return
+    }
+
     const capsuleEntity = new pc.Entity(`player-${player.data.id}`)
 
     const pos = player.data.position || [0, 0, 0]
