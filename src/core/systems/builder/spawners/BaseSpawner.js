@@ -1,7 +1,7 @@
 import { uuid } from '../../../utils-client.js'
 import { StructuredLogger } from '../../../utils/logging/index.js'
 import { BlueprintFactory } from '../../../factories/BlueprintFactory.js'
-import { NetworkUploadUtil } from '../../../utils/network/index.js'
+import { NetworkUploadUtil } from '../../../utils/network/NetworkUploadUtil.js'
 
 export class BaseSpawner {
   constructor(entitySpawner) {

@@ -76,16 +76,26 @@ export class World extends EventEmitter {
     logger.info('World.init() called', { assetsUrl: this.assetsUrl, assetsDir: this.assetsDir })
 
     if (options.plugins) {
+      logger.info('Initializing plugins...')
       await this.initializePlugins(options.plugins)
+      logger.info('Plugins initialized')
     }
 
+    logger.info('About to execute world:init hook')
     await this.pluginHooks.execute('world:init', this)
     logger.info('About to initialize systems')
     await this.systemLifecycle.initializeSystems(options)
-    logger.info('Systems initialized, about to start')
-    await this.systemLifecycle.startSystems()
-    logger.info('Systems started')
+    logger.info('Systems initialized, about to start systems')
+    try {
+      await this.systemLifecycle.startSystems()
+      logger.info('Systems started successfully')
+    } catch (err) {
+      logger.error('startSystems failed', { error: err.message, stack: err.stack })
+      throw err
+    }
+    logger.info('About to execute world:start hook')
     await this.pluginHooks.execute('world:start', this)
+    logger.info('World.init complete')
   }
 
   tick = time => this.tickLoop.tick(time)

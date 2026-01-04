@@ -30,6 +30,7 @@ import { Chat } from './systems/Chat.js'
 import { Events } from './systems/Events.js'
 import { Stage } from './systems/Stage.js'
 import { Avatars } from './systems/Avatars.js'
+import { HUDOverlay } from './systems/HUDOverlay.js'
 
 export function createClientWorld() {
   const world = new World()
@@ -63,5 +64,6 @@ export function createClientWorld() {
   world.register('wind', Wind)
   world.register('xr', XR)
   world.register('ai', ClientAI)
+  world.register('hud', HUDOverlay)
   return world
 }

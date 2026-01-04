@@ -23,16 +23,20 @@ export class WorldSystemLifecycle {
   }
 
   async startSystems() {
+    logger.info('startSystems: beginning')
     for (const key in this.world) {
       const system = this.world[key]
       if (system && typeof system.start === 'function') {
         try {
+          logger.info(`startSystems: starting ${key}`)
           await system.start()
+          logger.info(`startSystems: ${key} complete`)
         } catch (err) {
           logger.error(`System ${key} start failed`, { error: err.message })
         }
       }
     }
+    logger.info('startSystems: complete')
   }
 
   destroySystems() {

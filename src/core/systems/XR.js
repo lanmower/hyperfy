@@ -1,6 +1,6 @@
 import { System } from './System.js'
 import * as THREE from '../extras/three.js'
-import { XRControllerModelFactory } from 'three/addons'
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js'
 import { StructuredLogger } from '../utils/logging/index.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
 

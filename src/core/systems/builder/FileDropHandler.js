@@ -3,7 +3,7 @@ import { uuid } from '../../utils-client.js'
 import { BaseBuilderHandler } from './BaseBuilderHandler.js'
 import { FileExtractor } from './FileExtractor.js'
 import { EntitySpawner } from './EntitySpawner.js'
-import { getFileExtension } from '../utils/getFileExtension.js'
+import { getFileExtension } from '../../utils/getFileExtension.js'
 
 export class FileDropHandler extends BaseBuilderHandler {
   constructor(clientBuilder) {

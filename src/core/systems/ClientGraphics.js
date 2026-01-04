@@ -70,7 +70,13 @@ export class ClientGraphics extends System {
 
   start() {
     logger.info('ClientGraphics.start called - starting PlayCanvas app')
+    if (!this.app) {
+      logger.error('ClientGraphics.start: app is not initialized!')
+      return
+    }
+    logger.info('About to call app.start()', { appExists: !!this.app })
     this.app.start()
+    logger.info('app.start() completed', { isRunning: this.app.isRunning })
   }
 
   resize() {

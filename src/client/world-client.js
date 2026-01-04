@@ -54,6 +54,12 @@ export function Client({ wsUrl, onSetup }) {
       onSetup?.(world, config)
       await world.init(config)
 
+      // Ensure graphics system has started
+      if (world.graphics && world.graphics.app && !world.graphics.app.isRunning) {
+        console.log('[WORLD-CLIENT] Starting PlayCanvas app...')
+        world.graphics.app.start()
+      }
+
       const tick = (time) => {
         world.tick(time)
         requestAnimationFrame(tick)
