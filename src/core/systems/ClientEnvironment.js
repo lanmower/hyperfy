@@ -30,14 +30,27 @@ export class ClientEnvironment extends System {
     this.controller = new EnvironmentController(app)
     logger.info('EnvironmentController created')
 
-    const ambientLight = new pc.Entity('ambient')
-    ambientLight.addComponent('light', {
-      type: 'omni',
-      color: new pc.Color(1, 1, 1),
-      intensity: 0.6,
-      range: 1000
-    })
-    app.root.addChild(ambientLight)
+    app.scene.ambientLight = new pc.Color(1, 1, 1)
+    app.scene.ambientLightIntensity = 0.6
+
+    const material = new pc.StandardMaterial()
+    material.diffuse.set(0.2, 0.6, 0.2)
+    material.update()
+
+    const mesh = pc.createBox(app.graphicsDevice, { halfExtents: { x: 5, y: 0.5, z: 5 } })
+
+    const ground = new pc.Entity('ground')
+    ground.setLocalPosition(0, -2, 0)
+    ground.addComponent('model', { type: 'asset' })
+
+    const model = new pc.Model()
+    const meshInstance = new pc.MeshInstance(mesh, material)
+    model.meshInstances.push(meshInstance)
+    ground.model.model = model
+
+    app.root.addChild(ground)
+
+    logger.info('Ground created:', ground.model?.meshInstances?.length || 0, 'meshes')
 
     if (this.baseEnvironment?.model) {
       try {

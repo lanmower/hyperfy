@@ -29,7 +29,14 @@ export class Stage extends System {
   init({ viewport }) {
     this.viewport = viewport
     this.scene = this.world.graphics.app.root
-    this.scene.addChild(this.rig)
+    try {
+      this.scene.addChild(this.rig)
+    } catch (err) {
+      console.warn('Failed to add rig to scene:', err.message)
+      if (this.rig && !this.rig.parent) {
+        this.rig.parent = this.scene
+      }
+    }
   }
 
   update(delta) {

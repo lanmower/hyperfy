@@ -15,13 +15,6 @@ export class PostProcessingSetup {
   }
 
   createBloomEffect() {
-    const script = this.app.root.getComponent('script')
-    if (!script) {
-      const entity = new pc.Entity('bloomEffect')
-      entity.addComponent('script')
-      this.app.root.addChild(entity)
-    }
-
     return {
       enabled: true,
       intensity: 0.5,

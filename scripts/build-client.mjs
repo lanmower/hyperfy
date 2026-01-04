@@ -24,7 +24,7 @@ async function build() {
       format: 'iife',
       platform: 'browser',
       sourcemap: !isProduction,
-      minify: isProduction,
+      minify: false,
       loader: {
         '.js': 'jsx',
         '.glb': 'file',
