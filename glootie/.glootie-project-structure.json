@@ -3,8 +3,8 @@
   "framework": "react",
   "languages": [
     "unknown",
-    "json",
     "markdown",
+    "json",
     "javascript",
     "css",
     "html"
@@ -172,6 +172,10 @@
   ],
   "devDependencies": [
     [
+      "@playwright/test",
+      "^1.57.0"
+    ],
+    [
       "esbuild",
       "^0.27.2"
     ],
@@ -327,8 +331,14 @@
       ".env.example",
       ".env.local",
       ".gitignore",
-      "debug-camera.mjs",
+      "debug-dom.mjs",
+      "debug-init.mjs",
+      "debug-react-error.mjs",
+      "debug-visual-state.mjs",
+      "DIAGNOSTIC_REPORT.md",
+      "FEATURE_GAPS_FIXED.md",
       "FINAL_SUCCESS.png",
+      "FINAL_VALIDATION_REPORT.md",
       ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
@@ -337,6 +347,8 @@
       "MIGRATION_EXECUTIVE_SUMMARY.md",
       "package-lock.json",
       "package.json",
+      "PARITY_REPORT.md",
+      "PARITY_VALIDATION_SUMMARY.md",
       "PHASE_11_MIGRATION_REPORT.md",
       "PHASE_5C_PORT_REPORT.md",
       "PHASE_6_ARCHITECTURE.md",
@@ -348,6 +360,7 @@
       "README.md",
       "render-test.png",
       "RENDER_TEST_GUIDE.md",
+      "RENDER_TEST_RESULTS.md",
       "build-client.mjs",
       "build.mjs",
       "dev-server.mjs",
@@ -440,6 +453,7 @@
       "stub-sqlite3.js",
       "stub-yoga-layout.js",
       "tiny.mp4",
+      "test-bundle.mjs",
       "monacoLoader.js",
       "utils.js",
       "world-client.js",
@@ -822,7 +836,16 @@
       "scene.hyp",
       "scene.hyp.bak",
       "SUCCESS.png",
+      "SYSTEM_STATUS.md",
+      "test-rendering.mjs",
+      "test-visual-verification.mjs",
+      "TESTING_INDEX.md",
+      "TESTING_SUMMARY.md",
       "TEST_RESULTS.md",
+      "VERIFICATION_COMPLETE.md",
+      "VERIFICATION_REPORT.md",
+      "VERIFICATION_SUMMARY.txt",
+      "verify-playcanvas-final.mjs",
       "179d71586e675efc4af04185e1b2d3e6b7f4a5b707f1ef5e9b6497c5660ecab7.webp",
       "1aa2381f0fb25ba2fe9941b62eb2cad1fe2c77afa0316df8828ba5eba5d3d374.glb",
       "2faa49a0505b0e7f143e2278e3aa4a5585cabe9e87cc850f3b9b3c1625b8ba69.glb",
@@ -877,5 +900,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767559789307
+  "lastAnalyzed": 1767570341997
 }
