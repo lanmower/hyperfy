@@ -54,31 +54,22 @@ export class ClientNetworkSync {
   }
 
   onPacket(e, clientNetwork) {
-    logger.info('Raw packet received from WebSocket', { dataType: typeof e.data, dataSize: e.data?.length || e.data?.byteLength || 0 })
     const [method, data] = readPacket(e.data)
     if (!method) {
       logger.error('Invalid packet received', { dataType: typeof e.data, dataSize: e.data?.length || e.data?.byteLength || 0 })
       return
     }
 
-    logger.info('Packet method received', { method, dataType: typeof data })
-
     let finalData = data
     const hasCompressionEnvelope = data && typeof data === 'object' && typeof data.compressed === 'boolean'
 
     if (hasCompressionEnvelope) {
       if (data.compressed) {
-        logger.info('Decompressing packet', { method })
         try {
           finalData = this.state.compressor.decompress(data)
-          logger.info('Decompression successful', { method })
         } catch (err) {
-          logger.error('Failed to decompress packet data', {
-            method,
-            error: err.message,
-          })
+          logger.error('Failed to decompress packet data', { method, error: err.message })
           if (data.data && typeof data.data === 'object') {
-            logger.info('Falling back to uncompressed data')
             finalData = data.data
           } else {
             return
@@ -90,7 +81,6 @@ export class ClientNetworkSync {
           return
         }
         finalData = data.data
-        logger.info('Unwrapped uncompressed envelope', { method })
       }
     }
 

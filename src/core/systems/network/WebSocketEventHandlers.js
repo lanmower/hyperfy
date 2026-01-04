@@ -8,18 +8,11 @@ export class WebSocketEventHandlers {
 
   createMessageHandler() {
     return e => {
-      this.manager.logger.info('WebSocket message event received', { dataType: typeof e.data, dataSize: e.data?.byteLength || 0 })
       this.manager.inactivityMonitor.updateActivity()
 
       const validation = this.manager.validator.validateMessage(e.data)
       if (!validation.valid) {
-        this.manager.logger.error('[SECURITY] Message validation failed', {
-          error: validation.error,
-          size: e.data?.byteLength || 0,
-          type: typeof e.data,
-          preview: e.data instanceof ArrayBuffer ? new Uint8Array(e.data.slice(0, 100)) : null
-        })
-
+        this.manager.logger.error('[SECURITY] Message validation failed', { error: validation.error, size: e.data?.byteLength || 0 })
         if (this.manager.validator.trackInvalidMessage()) {
           this.manager.logger.error('[SECURITY] Too many invalid messages, disconnecting')
           this.manager.ws?.close(WS_POLICY_VIOLATION, 'Invalid message threshold exceeded')
@@ -33,14 +26,12 @@ export class WebSocketEventHandlers {
       if (sequenceInfo) {
         const seqValidation = this.manager.messageQueue.validateSequence(sequenceInfo.sequence)
         if (seqValidation.gap > 0 && seqValidation.gap < 256) {
-          this.manager.logger.warn('Message sequence gap detected', { expected: this.manager.messageQueue.expectedSequence, received: sequenceInfo.sequence, gap: seqValidation.gap })
+          this.manager.logger.warn('Message sequence gap detected', { gap: seqValidation.gap })
         }
         this.manager.messageQueue.setExpectedSequence(sequenceInfo.sequence)
         packetData = sequenceInfo.payload
       }
 
-      this.manager.logger.info('Message received', { size: packetData.byteLength })
-      // Create a modified event with the correct data
       const modifiedEvent = Object.create(e)
       Object.defineProperty(modifiedEvent, 'data', { value: packetData, enumerable: true })
       this.manager.network.onPacket(modifiedEvent)

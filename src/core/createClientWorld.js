@@ -21,9 +21,26 @@ import { PostProcessingController } from './systems/graphics/PostProcessingContr
 import { CameraController } from './CameraController.js'
 import { PlayerCapsuleRenderer } from './systems/PlayerCapsuleRenderer.js'
 import { HUDOverlay } from './systems/HUDOverlay.js'
+import { ClientActions } from './systems/ClientActions.js'
+import { ClientAudio } from './systems/ClientAudio.js'
+import { ClientStats } from './systems/ClientStats.js'
+import { ClientAI } from './systems/ClientAI.js'
+import { ClientTarget } from './systems/ClientTarget.js'
+import { Particles } from './systems/Particles.js'
+import { Nametags } from './systems/Nametags.js'
+import { LODs } from './systems/LODs.js'
+import { Wind } from './systems/Wind.js'
+import { XR } from './systems/XR.js'
+import { Snaps } from './systems/Snaps.js'
+import { ClientBuilder } from './systems/ClientBuilder.js'
+import { Animation } from './systems/Animation.js'
+import { Scripts } from './systems/Scripts.js'
+import { Anchors } from './systems/Anchors.js'
+import { Apps } from './systems/Apps.js'
+import { Physics } from './systems/Physics.js'
 
 export function createClientWorld() {
-  console.log('[CREATE_CLIENT_WORLD] Starting world creation with correct system order')
+  console.log('[CREATE_CLIENT_WORLD] Starting world creation with all systems')
   const world = new World()
   world.isClient = true
   world.isServer = false
@@ -48,5 +65,22 @@ export function createClientWorld() {
   world.register('ui', ClientUI)
   world.register('pointer', ClientPointer)
   world.register('network', ClientNetwork)
+  world.register('actions', ClientActions)
+  world.register('audio', ClientAudio)
+  world.register('stats', ClientStats)
+  world.register('ai', ClientAI)
+  world.register('target', ClientTarget)
+  world.register('particles', Particles)
+  world.register('nametags', Nametags)
+  world.register('lods', LODs)
+  world.register('wind', Wind)
+  world.register('xr', XR)
+  world.register('snaps', Snaps)
+  world.register('builder', ClientBuilder)
+  world.register('animation', Animation)
+  world.register('scripts', Scripts)
+  world.register('anchors', Anchors)
+  world.register('apps', Apps)
+  world.register('physics', Physics)
   return world
 }
