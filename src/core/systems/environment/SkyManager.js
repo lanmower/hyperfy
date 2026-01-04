@@ -9,12 +9,35 @@ export class SkyManager {
   }
 
   async initWithHDR(hdrImagePath) {
+    if (!hdrImagePath) {
+      hdrImagePath = '/day2.hdr'
+    }
+
     try {
+      const asset = new pc.Asset('hdr', 'texture', { url: hdrImagePath })
+      this.app.assets.add(asset)
+
+      console.log('Loading HDR as texture from path', { path: hdrImagePath })
+
       const texture = await new Promise((resolve, reject) => {
-        const asset = new pc.Asset('hdr', 'cubemap', { url: hdrImagePath })
-        asset.on('load', () => resolve(asset.resource))
-        asset.on('error', reject)
-        this.app.assets.add(asset)
+        const loadHandler = () => {
+          asset.off('load', loadHandler)
+          asset.off('error', errorHandler)
+          const tex = asset.resource
+          console.log('HDR texture loaded', { hasResource: !!tex, resourceType: tex?.type })
+          if (tex) {
+            resolve(tex)
+          } else {
+            reject(new Error('HDR asset loaded but resource is null'))
+          }
+        }
+        const errorHandler = (err) => {
+          asset.off('load', loadHandler)
+          asset.off('error', errorHandler)
+          reject(err)
+        }
+        asset.on('load', loadHandler)
+        asset.on('error', errorHandler)
         this.app.assets.load(asset)
       })
 
@@ -24,10 +47,20 @@ export class SkyManager {
       this.app.scene.toneMapping = pc.TONEMAP_FILMIC
 
       this.environmentTexture = texture
+      console.log('HDR applied to scene', { envAtlasSet: !!this.app.scene.envAtlas })
       return texture
     } catch (err) {
-      console.error('Failed to load HDR:', err)
+      console.error('Failed to load HDR:', err.message)
+      this.setFallbackSkyColor()
     }
+  }
+
+  setFallbackSkyColor() {
+    const cameraEntity = this.app.scene.activeCamera?.entity
+    if (cameraEntity?.camera) {
+      cameraEntity.camera.clearColor = new pc.Color(0.5, 0.7, 0.9, 1)
+    }
+    this.app.scene.skyboxIntensity = 0
   }
 
   setIntensity(intensity) {
