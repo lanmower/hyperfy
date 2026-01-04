@@ -7,7 +7,7 @@ export async function registerWorldNetwork(fastify, world, logger, shutdownManag
         return
       }
 
-      logger.info('WS Connection received')
+      logger.info('WS Connection received', { wsType: typeof ws, wsMethods: Object.getOwnPropertyNames(Object.getPrototypeOf(ws)).slice(0, 10) })
 
       ws.on('close', () => {
         logger.info('WS Connection closed')

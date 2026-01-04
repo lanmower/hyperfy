@@ -27,8 +27,14 @@ export class Socket {
   }
 
   send(name, data) {
-    const packet = MessageHandler.encode(name, data)
-    this.ws.send(packet)
+    try {
+      const packet = MessageHandler.encode(name, data)
+      logger.info('Socket.send() encoding packet', { name, packetSize: packet.byteLength || packet.length, wsType: typeof this.ws, wsReadyState: this.ws?.readyState })
+      const result = this.ws.send(packet)
+      logger.info('Socket.send() packet sent to WebSocket', { name, sendResult: result })
+    } catch (err) {
+      logger.error('Socket.send() failed', { name, error: err.message, errorType: err.constructor.name })
+    }
   }
 
   sendPacket(packet) {
@@ -80,6 +86,7 @@ export class Socket {
   }
 
   onMessage(packet) {
+    logger.info('Socket.onMessage() received packet', { socketId: this.id, size: packet?.length || 0, packetType: packet?.constructor?.name })
     const validation = this.validateMessage(packet)
     if (!validation.valid) {
       logger.error('Message validation failed for socket', {

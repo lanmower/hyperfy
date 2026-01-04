@@ -1,45 +1,75 @@
-import * as THREE from '../../extras/three.js'
+import * as pc from '../../extras/playcanvas.js'
 import { defaultSizes } from './PrimDefaults.js'
 
 const geometryCache = new Map()
 
 export function getGeometry(type, size) {
-  const key = `${type}${size}`
+  const key = `${type}${JSON.stringify(size)}`
   let geometry = geometryCache.get(key)
   if (!geometry) {
+    const device = pc.GraphicsDevice.instance
+    if (!device) {
+      throw new Error('[PrimGeometry] GraphicsDevice not initialized')
+    }
+
     switch (type) {
       case 'box': {
         const [width, height, depth] = size
-        geometry = new THREE.BoxGeometry(width, height, depth)
+        geometry = pc.createBox(device, {
+          halfExtents: new pc.Vec3(width / 2, height / 2, depth / 2)
+        })
         break
       }
       case 'sphere': {
         const [radius] = size
-        geometry = new THREE.SphereGeometry(radius, 20, 12)
+        geometry = pc.createSphere(device, {
+          radius: radius,
+          segments: 20
+        })
         break
       }
       case 'cylinder': {
-        const [radiusTop, radiusBtm, height] = size
-        geometry = new THREE.CylinderGeometry(radiusTop, radiusBtm, height, 20)
+        const [radiusTop, radiusBot, height] = size
+        geometry = pc.createCylinder(device, {
+          radius: (radiusTop + radiusBot) / 2,
+          height: height,
+          segments: 20
+        })
         break
       }
       case 'cone': {
         const [radius, height] = size
-        geometry = new THREE.ConeGeometry(radius, height, 16)
+        geometry = pc.createCone(device, {
+          baseRadius: radius,
+          peakRadius: 0,
+          height: height,
+          segments: 16
+        })
         break
       }
       case 'torus': {
         const [innerRadius, tubeRadius] = size
-        geometry = new THREE.TorusGeometry(innerRadius, tubeRadius, 12, 30)
+        geometry = pc.createTorus(device, {
+          tubeRadius: tubeRadius,
+          ringRadius: innerRadius,
+          segments: 20,
+          sides: 12
+        })
         break
       }
       case 'plane': {
         const [width, height] = size
-        geometry = new THREE.PlaneGeometry(width, height)
+        geometry = pc.createPlane(device, {
+          halfExtents: new pc.Vec2(width / 2, height / 2),
+          widthSegments: 1,
+          lengthSegments: 1
+        })
         break
       }
       default:
-        geometry = new THREE.BoxGeometry(1, 1, 1)
+        geometry = pc.createBox(device, {
+          halfExtents: new pc.Vec3(0.5, 0.5, 0.5)
+        })
     }
     geometryCache.set(key, geometry)
   }

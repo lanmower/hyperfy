@@ -1,121 +1,84 @@
-import * as THREE from '../extras/three.js'
+import * as pc from '../extras/playcanvas.js'
 import { System } from './System.js'
-import { PostProcessingSetup } from './graphics/PostProcessingSetup.js'
-import { GraphicsConfiguration } from './graphics/GraphicsConfiguration.js'
-import { RenderStateManager } from './graphics/RenderStateManager.js'
-import { ViewportResizer } from './graphics/ViewportResizer.js'
-import { XRGraphicsAdapter } from './graphics/XRGraphicsAdapter.js'
 
 export class ClientGraphics extends System {
   static DEPS = {
     camera: 'camera',
-    prefs: 'prefs',
     events: 'events',
     stage: 'stage',
-    settings: 'settings',
-  }
-
-  static EVENTS = {
-    prefChanged: 'onPrefChanged',
-    xrSession: 'onXRSession',
-    settingChanged: 'onSettingChanged',
   }
 
   constructor(world) {
     super(world)
-    this.renderer = new THREE.WebGLRenderer({
-      powerPreference: 'high-performance',
-      antialias: true,
-    })
+    this.app = null
     this.viewport = null
-    this.renderState = new RenderStateManager()
-    this.resizer = null
-    this.xrAdapter = null
-    this.usePostprocessing = false
-    this.bloomEnabled = false
-    this.postProcessing = new PostProcessingSetup(this)
-    this.configuration = null
+    this.pcCamera = null
+    this.width = 0
+    this.height = 0
+    this.aspect = 1
+    this.frameCount = 0
   }
 
   async init({ viewport }) {
     this.viewport = viewport
-    const width = viewport.offsetWidth || window.innerWidth
-    const height = viewport.offsetHeight || window.innerHeight
-    this.renderer.setSize(width, height)
-    this.maxAnisotropy = this.renderState.initialize(this.renderer, viewport, this.prefs.state.get('dpr'))
-    this.renderState.initializeXR(this.renderer)
-    this.viewport.appendChild(this.renderer.domElement)
+    this.width = viewport.offsetWidth || window.innerWidth
+    this.height = viewport.offsetHeight || window.innerHeight
+    this.aspect = this.width / this.height
 
-    this.camera.aspect = this.renderState.aspect
-    this.camera.updateProjectionMatrix()
+    this.app = new pc.Application(viewport, {
+      mouse: new pc.Mouse(viewport),
+      touch: new pc.Touch(viewport),
+      keyboard: new pc.Keyboard(window),
+      graphicsDeviceOptions: {
+        alpha: false,
+        antialias: true,
+        powerPreference: 'high-performance'
+      }
+    })
 
-    this.xrAdapter = new XRGraphicsAdapter(this.renderer, this.renderState)
+    this.app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW)
+    this.app.setCanvasResolution(pc.RESOLUTION_AUTO)
 
-    this.usePostprocessing = false
-    this.bloomEnabled = false
-    this.postProcessing.initialize(
-      this.renderer, this.stage, this.camera,
-      this.renderState.width, this.renderState.height,
-      this.settings, this.prefs
-    )
+    const cameraEntity = new pc.Entity('camera')
+    cameraEntity.addComponent('camera', {
+      fov: 75,
+      near: 0.1,
+      far: 1000,
+      clearColor: new pc.Color(0, 0, 0, 1)
+    })
+    cameraEntity.setLocalPosition(0, 1.6, 5)
+    this.app.root.addChild(cameraEntity)
+    this.pcCamera = cameraEntity.camera
 
-    this.configuration = new GraphicsConfiguration(this, this.postProcessing)
-    this.configuration.setupPrefHandlers(this.renderer, this.settings, this.prefs)
-    this.configuration.setupSettingHandlers(this.settings, this.prefs)
+    this.app.start()
 
-    this.resizer = new ViewportResizer(viewport, (w, h) => this.resize(w, h))
-    this.resizer.start()
+    window.addEventListener('resize', () => this.resize())
   }
-
-  get width() { return this.renderState.width }
-  get height() { return this.renderState.height }
-  get aspect() { return this.renderState.aspect }
-  get xrWidth() { return this.renderState.xrWidth }
-  get xrHeight() { return this.renderState.xrHeight }
-  get worldToScreenFactor() { return this.renderState.worldToScreenFactor }
 
   start() {}
 
-  resize(width, height) {
-    this.renderState.updateSize(width, height)
-    this.camera.aspect = this.renderState.aspect
-    this.camera.updateProjectionMatrix()
-    this.renderer.setSize(width, height)
-    this.postProcessing.setSize(width, height)
-    this.events.emit('graphicsResize', { width, height })
-    this.render()
+  resize() {
+    this.width = this.viewport.offsetWidth || window.innerWidth
+    this.height = this.viewport.offsetHeight || window.innerHeight
+    this.aspect = this.width / this.height
+    this.app.resizeCanvas(this.width, this.height)
+    this.events.emit('graphicsResize', { width: this.width, height: this.height })
   }
 
   render() {
-    this.frameCount = (this.frameCount || 0) + 1
-    if (!this.postProcessing.render(this.renderer, this.usePostprocessing)) {
-      this.renderer.render(this.stage.scene, this.camera)
-    }
-    this.xrAdapter?.checkDimensions()
+    this.frameCount++
   }
 
   commit() {
     this.render()
   }
 
-  preTick() {
-    this.renderState.updateWorldToScreenFactor(this.camera)
-  }
-
-  onPrefChanged = ({ key, value }) => {
-    this.configuration?.handlePrefChanged(key, value)
-  }
-
-  onXRSession = session => {
-    this.renderState.handleXRSession(session)
-  }
-
-  onSettingChanged = ({ key, value }) => {
-    this.configuration?.handleSettingChanged(key, value)
-  }
+  preTick() {}
 
   destroy() {
-    this.resizer?.stop()
-    this.viewport.removeChild(this.renderer.domElement)
+    if (this.app) {
+      this.app.destroy()
+    }
+    window.removeEventListener('resize', () => this.resize())
   }
 }

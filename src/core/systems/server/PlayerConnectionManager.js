@@ -104,10 +104,22 @@ export class PlayerConnectionManager {
         hasAdminCode: !!env.ADMIN_CODE,
       }
 
-      socket.send('snapshot', snapshot)
-
-      // Register socket BEFORE emitting events to ensure handlers can access it
+      // Register socket BEFORE sending snapshot to ensure it's ready
       this.serverNetwork.sockets.set(socket.id, socket)
+
+      logger.info('Sending snapshot to client', { socketId: socket.id, entityCount: this.serverNetwork.entities.size, wsProto: Object.getPrototypeOf(ws).constructor.name })
+      try {
+        // Send snapshot
+        const packet = MessageHandler.encode('snapshot', snapshot)
+        // The ws object from fastify-websocket has send() method on prototype
+        ws.send(packet, (err) => {
+          if (err) logger.error('ws.send error', { socketId: socket.id, error: err.message })
+          else logger.info('ws.send completed', { socketId: socket.id })
+        })
+        logger.info('Snapshot sent successfully', { socketId: socket.id })
+      } catch (err) {
+        logger.error('Failed to send snapshot', { socketId: socket.id, error: err.message })
+      }
 
       // Emit event AFTER full initialization and socket registration
       this.serverNetwork.world.emit(EVENT.game.enter, { playerId: socket.player.data.id })

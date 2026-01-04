@@ -1,14 +1,8 @@
-import * as THREE from '../extras/three.js'
+import * as pc from '../extras/playcanvas.js'
 import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
-import { createMaterialProxy } from '../systems/stage/MaterialProxy.js'
-import { isNumber } from 'lodash-es'
 import { MeshInserter } from './stage/MeshInserter.js'
-import { ObjectPool } from './stage/ObjectPool.js'
-import { StructuredLogger } from '../utils/logging/index.js'
-
-const logger = new StructuredLogger('Stage')
-const raycasterVec2 = new THREE.Vector2()
+import { isNumber } from 'lodash-es'
 
 export class Stage extends System {
   static DEPS = {
@@ -18,39 +12,28 @@ export class Stage extends System {
 
   constructor(world) {
     super(world)
-    this.scene = new THREE.Scene()
+    this.scene = null
     this.octree = new LooseOctree({
-      scene: this.scene,
-      center: new THREE.Vector3(0, 0, 0),
-      size: 10,
+      center: new pc.Vec3(0, 0, 0),
+      radius: 200,
     })
     this.defaultMaterial = null
     this.dirtyNodes = new Set()
     this.world = world
-    this.meshInserter = new MeshInserter(this)
-    this.objectPool = new ObjectPool()
-    this.raycaster = new THREE.Raycaster()
-    this.raycaster.firstHitOnly = true
+    this.viewport = null
     this.raycastHits = []
-    this.maskNone = new THREE.Layers()
-    this.maskNone.enableAll()
-    this.renderStats = {
-      drawCalls: 0,
-      triangles: 0,
-      points: 0,
-      lines: 0,
-    }
+    this.materialCache = new Map()
+    this.meshInserter = new MeshInserter(this)
   }
 
   init({ viewport }) {
     this.viewport = viewport
-    logger.info('Adding rig to scene', {})
-    this.scene.add(this.rig)
-    logger.info('Scene initialized', { childrenCount: this.scene.children.length })
+    this.scene = this.world.graphics.app.root
+    this.scene.addChild(this.rig)
   }
 
   update(delta) {
-    this.meshInserter.clean()
+    this.meshInserter.clean?.()
   }
 
   postUpdate() {
@@ -63,55 +46,25 @@ export class Stage extends System {
 
   createMaterial(options = {}) {
     const material = {}
-    let raw
+    let pcMat
 
-    if (options.raw) {
-      raw = options.raw.clone()
-      raw.onBeforeCompile = options.raw.onBeforeCompile
-    } else if (options.unlit) {
-      raw = new THREE.MeshBasicMaterial({
-        color: options.color || 'white',
-      })
+    if (options.unlit) {
+      pcMat = new pc.Material()
+      pcMat.emissive.set(options.color || new pc.Color(1, 1, 1))
     } else {
-      raw = new THREE.MeshStandardMaterial({
-        color: options.color || 'white',
-        metalness: isNumber(options.metalness) ? options.metalness : 0,
-        roughness: isNumber(options.roughness) ? options.roughness : 1,
-      })
+      pcMat = new pc.StandardMaterial()
+      pcMat.diffuse.set(options.color || new pc.Color(1, 1, 1))
+      pcMat.metalness = isNumber(options.metalness) ? options.metalness : 0
+      pcMat.roughness = isNumber(options.roughness) ? options.roughness : 1
     }
 
-    raw.shadowSide = THREE.BackSide
-
-    const textures = []
-    if (raw.map) {
-      raw.map = raw.map.clone()
-      textures.push(raw.map)
-    }
-    if (raw.emissiveMap) {
-      raw.emissiveMap = raw.emissiveMap.clone()
-      textures.push(raw.emissiveMap)
-    }
-    if (raw.normalMap) {
-      raw.normalMap = raw.normalMap.clone()
-      textures.push(raw.normalMap)
-    }
-    if (raw.bumpMap) {
-      raw.bumpMap = raw.bumpMap.clone()
-      textures.push(raw.bumpMap)
-    }
-    if (raw.roughnessMap) {
-      raw.roughnessMap = raw.roughnessMap.clone()
-      textures.push(raw.roughnessMap)
-    }
-    if (raw.metalnessMap) {
-      raw.metalnessMap = raw.metalnessMap.clone()
-      textures.push(raw.metalnessMap)
+    if (options.raw && options.raw.clone) {
+      pcMat = options.raw.clone()
     }
 
-    this.world.setupMaterial(raw)
-    const proxy = createMaterialProxy(raw, textures, material, this.world)
-    material.raw = raw
-    material.proxy = proxy
+    this.world.setupMaterial?.(pcMat)
+    material.raw = pcMat
+    material.pc = pcMat
     return material
   }
 
@@ -124,53 +77,132 @@ export class Stage extends System {
 
   clean() {
     for (const node of this.dirtyNodes) {
-      node.clean()
+      if (node.clean && typeof node.clean === 'function') {
+        node.clean()
+      }
     }
     this.dirtyNodes.clear()
   }
 
   insert(options) {
-    return this.meshInserter.insert(options)
+    return this.insertLinked(options)
   }
 
   insertLinked(options) {
-    return this.meshInserter.insertLinked(options)
+    const material = options.material || this.getDefaultMaterial()
+    const materialWithProxy = {
+      pc: material.pc || material.raw || material,
+      proxy: {
+        setColor: (color) => {
+          if (typeof color === 'string') {
+            const c = parseInt(color.replace('#', ''), 16)
+            material.pc?.diffuse?.set(
+              ((c >> 16) & 255) / 255,
+              ((c >> 8) & 255) / 255,
+              (c & 255) / 255
+            )
+          }
+        },
+        setEmissive: (color) => {
+          if (typeof color === 'string') {
+            const c = parseInt(color.replace('#', ''), 16)
+            material.pc?.emissive?.set(
+              ((c >> 16) & 255) / 255,
+              ((c >> 8) & 255) / 255,
+              (c & 255) / 255
+            )
+          }
+        },
+        setEmissiveIntensity: (value) => {
+          if (material.pc && material.pc.emissiveIntensity !== undefined) {
+            material.pc.emissiveIntensity = value
+          }
+        },
+      }
+    }
+    return this.meshInserter.insertSingle({
+      geometry: options.geometry,
+      material: materialWithProxy,
+      castShadow: options.castShadow,
+      receiveShadow: options.receiveShadow,
+      node: options.node,
+      matrix: options.matrix,
+    })
   }
 
   insertSingle(options) {
-    return this.meshInserter.insertSingle(options)
+    return this.insertLinked(options)
   }
 
-  raycastPointer(position, layers = this.maskNone, min = 0, max = Infinity) {
-    if (!this.viewport || typeof this.viewport.getBoundingClientRect !== 'function') throw new Error('no viewport')
-    const rect = this.viewport.getBoundingClientRect()
-    raycasterVec2.x = ((position.x - rect.left) / rect.width) * 2 - 1
-    raycasterVec2.y = -((position.y - rect.top) / rect.height) * 2 + 1
-    this.raycaster.setFromCamera(raycasterVec2, this.camera)
-    this.raycaster.layers = layers
-    this.raycaster.near = min
-    this.raycaster.far = max
-    this.raycastHits.length = 0
-    this.octree.raycast(this.raycaster, this.raycastHits)
-    return this.raycastHits
-  }
-
-  raycastReticle(layers = this.maskNone, min = 0, max = Infinity) {
-    if (!this.viewport) throw new Error('no viewport')
-    raycasterVec2.x = 0
-    raycasterVec2.y = 0
-    this.raycaster.setFromCamera(raycasterVec2, this.world.camera)
-    this.raycaster.layers = layers
-    this.raycaster.near = min
-    this.raycaster.far = max
-    this.raycastHits.length = 0
-    if (this.octree?.raycast) {
-      this.octree.raycast(this.raycaster, this.raycastHits)
+  raycastPointer(position, min = 0, max = Infinity) {
+    if (!this.viewport || typeof this.viewport.getBoundingClientRect !== 'function') {
+      throw new Error('no viewport')
     }
+
+    const rect = this.viewport.getBoundingClientRect()
+    const x = ((position.x - rect.left) / rect.width) * 2 - 1
+    const y = -((position.y - rect.top) / rect.height) * 2 + 1
+
+    const camComp = this.camera.camera
+    if (!camComp) return this.raycastHits
+
+    const ray = camComp.screenToWorld(
+      (position.x - rect.left),
+      (position.y - rect.top),
+      max
+    )
+
+    this.raycastHits.length = 0
+    this._raycastEntities(ray, this.scene, this.raycastHits, min, max)
     return this.raycastHits
+  }
+
+  raycastReticle(min = 0, max = Infinity) {
+    if (!this.viewport) throw new Error('no viewport')
+
+    const rect = this.viewport.getBoundingClientRect()
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+
+    const camComp = this.camera.camera
+    if (!camComp) return this.raycastHits
+
+    const ray = camComp.screenToWorld(centerX, centerY, max)
+
+    this.raycastHits.length = 0
+    this._raycastEntities(ray, this.scene, this.raycastHits, min, max)
+    return this.raycastHits
+  }
+
+  _raycastEntities(ray, entity, results, min, max) {
+    if (!entity) return
+
+    if (entity.model && entity.model.meshInstances && entity.model.meshInstances.length > 0) {
+      const mi = entity.model.meshInstances[0]
+      if (mi.aabb) {
+        const intersection = ray.intersectAABB(mi.aabb)
+        if (intersection) {
+          const dist = pc.Vec3.distance(ray.origin, entity.getWorldPosition())
+          if (dist >= min && dist <= max) {
+            results.push({
+              object: entity,
+              distance: dist,
+              point: ray.origin.clone().add(ray.direction.clone().scale(dist))
+            })
+          }
+        }
+      }
+    }
+
+    if (entity.children) {
+      for (let i = 0; i < entity.children.length; i++) {
+        this._raycastEntities(ray, entity.children[i], results, min, max)
+      }
+    }
   }
 
   destroy() {
-    this.meshInserter.clear()
+    this.materialCache.clear()
+    this.raycastHits.length = 0
   }
 }

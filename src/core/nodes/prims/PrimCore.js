@@ -1,4 +1,5 @@
 import * as THREE from '../../extras/three.js'
+import * as pc from '../../extras/playcanvas.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { Node } from '../Node.js'
 import { defaults } from './PrimDefaults.js'
@@ -12,6 +13,7 @@ const logger = new StructuredLogger('Prim')
 
 const { v1: _v1, v2: _v2, q1: _q1, m1: _m1, m2: _m2, m3: _m3 } = SharedVectorPool('Prim', 2, 1, 0, 3)
 const _defaultScale = new THREE.Vector3(1, 1, 1)
+const _pcDefaultScale = new pc.Vec3(1, 1, 1)
 
 let count = 0
 

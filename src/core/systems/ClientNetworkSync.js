@@ -54,13 +54,14 @@ export class ClientNetworkSync {
   }
 
   onPacket(e, clientNetwork) {
+    logger.info('Raw packet received from WebSocket', { dataType: typeof e.data, dataSize: e.data?.length || e.data?.byteLength || 0 })
     const [method, data] = readPacket(e.data)
     if (!method) {
-      logger.error('Invalid packet received')
+      logger.error('Invalid packet received', { dataType: typeof e.data, dataSize: e.data?.length || e.data?.byteLength || 0 })
       return
     }
 
-    logger.info('Packet method received', { method })
+    logger.info('Packet method received', { method, dataType: typeof data })
 
     let finalData = data
     const hasCompressionEnvelope = data && typeof data === 'object' && typeof data.compressed === 'boolean'

@@ -1,4 +1,5 @@
-import * as THREE from '../extras/three.js'
+// PlayCanvas object pooling
+import { Vec3, Quat, Mat4 } from '../extras/playcanvas.js'
 
 export class VectorPool {
   constructor(size = 1000) {
@@ -6,7 +7,7 @@ export class VectorPool {
     this.size = size
     this.index = 0
     for (let i = 0; i < size; i++) {
-      this.pool.push(new THREE.Vector3())
+      this.pool.push(new Vec3())
     }
   }
 
@@ -27,7 +28,7 @@ export class QuaternionPool {
     this.size = size
     this.index = 0
     for (let i = 0; i < size; i++) {
-      this.pool.push(new THREE.Quaternion())
+      this.pool.push(new Quat())
     }
   }
 
@@ -48,14 +49,14 @@ export class MatrixPool {
     this.size = size
     this.index = 0
     for (let i = 0; i < size; i++) {
-      this.pool.push(new THREE.Matrix4())
+      this.pool.push(new Mat4())
     }
   }
 
   get() {
     const matrix = this.pool[this.index]
     this.index = (this.index + 1) % this.size
-    return matrix.identity()
+    return matrix.setIdentity()
   }
 
   reset() {

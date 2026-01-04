@@ -54,10 +54,6 @@
       "^1.25.1"
     ],
     [
-      "@pixiv/three-vrm",
-      "^3.3.3"
-    ],
-    [
       "async-retry",
       "^1.3.3"
     ],
@@ -138,6 +134,10 @@
       "^4.0.0"
     ],
     [
+      "playcanvas",
+      "^2.14.4"
+    ],
+    [
       "postprocessing",
       "^6.36.4"
     ],
@@ -160,10 +160,6 @@
     [
       "sql.js",
       "^1.13.0"
-    ],
-    [
-      "three",
-      "^0.173.0"
     ],
     [
       "three-mesh-bvh",
@@ -254,11 +250,8 @@
       "graphics",
       "initialization",
       "libs",
-      "csm",
       "gltfloader",
       "stats-gl",
-      "three-custom-shader-material",
-      "three-vrm",
       "lifecycle",
       "memory",
       "mixins",
@@ -336,6 +329,7 @@
       ".env.example",
       ".env.local",
       ".gitignore",
+      ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
@@ -473,6 +467,7 @@
       "LerpQuaternion.js",
       "LerpVector3.js",
       "LooseOctree.js",
+      "playcanvas.js",
       "playerEmotes.js",
       "prng.js",
       "ranks.js",
@@ -791,20 +786,28 @@
       "mp-walk-left.glb",
       "mp-walk-right.glb",
       "mp-walk.glb",
+      "scene.hyp",
       "scene.hyp.bak",
+      "179d71586e675efc4af04185e1b2d3e6b7f4a5b707f1ef5e9b6497c5660ecab7.webp",
+      "1aa2381f0fb25ba2fe9941b62eb2cad1fe2c77afa0316df8828ba5eba5d3d374.glb",
       "2faa49a0505b0e7f143e2278e3aa4a5585cabe9e87cc850f3b9b3c1625b8ba69.glb",
       "2fecd2130b39ec39e00dce51c162247ce07500f419fbb188e0bf99b5cec415af.png",
       "378774dc69a8dc33c006d5c75c2d586070bfaa0aa42e0e4ba2ef74a2fd2aa81f.js",
       "39ad1b405cbf41a90825dadf0b554f3c3baba634636bb94a1057dd8ec0784c86.png",
+      "3d64ad66587920f17ac09164b42c4e441d5fc1320bc597bd1e6fd0b7a3631994.js",
       "3fb3a43c8c0be0b78a5ce5f357e43372d05c2024c3e37d08b5e9d08abe3f068b.js",
       "448d865815800831237e06e9d5817d74cb600dfa8e7fec74eb209d63fc46f0aa.js",
       "5298877b10d5aae7db40dde9c0ec421f374644c7c869e9c3696c3a95dd338ba5.js",
+      "62db0ffbcea86b5e9ba23fb5da739b160e8abfd3b390235fed5ac436750e1e2e.hdr",
       "70f1cabcf315fb6d19769609c0f2e9cc798a45165e19bf0e84c161643faef868.glb",
+      "7fc79ccbdc2b14f87b171e9ddb5002f828f6784573e93ef4b689fa2ebbf07109.txt",
       "8fab0105d67539618ed9b9a68b2952aefc870be4f40d4541f1f773583950ff44.mp4",
       "97fc7289a38b5b49357e6fbd74e7e77fc78493dbb1c0dbc850cb8e9db9fd2530.glb",
+      "a1fff0ffefb9eace7230c24e50731f0a91c62f9cefdfe77121c2f607125dffae.txt",
       "a737851aa49988665c40380007a8e3ef3fc7d5eb27cffcdf199ded87abcc7bcf.png",
       "daaace2f1b595664c0e6f5a10deb494efc13a850d3cf0804b297a634d2003803.png",
       "e7cfd8f907f8979fc32f3afabc0962c8d74ea484a61d150187fec23bd0c03a5c.glb",
+      "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2.txt",
       "Image.hyp",
       "manifest.json",
       "Model.hyp",
@@ -817,6 +820,7 @@
       ".env.example",
       ".env.local",
       ".gitignore",
+      ".caveats.txt",
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
@@ -838,5 +842,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767472486684
+  "lastAnalyzed": 1767528903504
 }

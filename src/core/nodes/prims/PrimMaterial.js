@@ -1,4 +1,4 @@
-import * as THREE from '../../extras/three.js'
+import * as pc from '../../extras/playcanvas.js'
 
 const materialCache = new Map()
 
@@ -9,20 +9,15 @@ export function getMaterial(props) {
     return materialCache.get(cacheKey)
   }
 
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    emissive: 0x000000,
-    emissiveIntensity: 0,
-    metalness: props.metalness,
-    roughness: props.roughness,
-    opacity: props.opacity,
-    transparent: props.opacity < 1,
-    side: props.doubleside ? THREE.DoubleSide : THREE.FrontSide,
-    shadowSide: THREE.BackSide,
-    polygonOffset: true,
-    polygonOffsetFactor: Math.random(),
-    polygonOffsetUnits: Math.random(),
-  })
+  const material = new pc.StandardMaterial()
+  material.diffuse.set(1, 1, 1)
+  material.emissive.set(0, 0, 0)
+  material.metalness = props.metalness
+  material.roughness = props.roughness
+  material.opacity = props.opacity
+  material.transparent = props.opacity < 1
+  material.twoSided = props.doubleside || false
+  material.update()
 
   materialCache.set(cacheKey, material)
   return material
@@ -31,10 +26,15 @@ export function getMaterial(props) {
 export function applyTexture(material, textureUrl, loader) {
   if (!material._texPromise) {
     material._texPromise = new Promise(async resolve => {
-      let texture = loader.get('texture', textureUrl)
-      if (!texture) texture = await loader.load('texture', textureUrl)
-      material.map = texture
-      material._texApplied = true
+      let texture = loader?.get('texture', textureUrl)
+      if (!texture && loader?.load) {
+        texture = await loader.load('texture', textureUrl)
+      }
+      if (texture) {
+        material.diffuseMap = texture
+        material._texApplied = true
+        material.update()
+      }
       resolve()
     })
   }

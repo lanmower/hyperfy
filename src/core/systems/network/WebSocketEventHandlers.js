@@ -8,6 +8,7 @@ export class WebSocketEventHandlers {
 
   createMessageHandler() {
     return e => {
+      this.manager.logger.info('WebSocket message event received', { dataType: typeof e.data, dataSize: e.data?.byteLength || 0 })
       this.manager.inactivityMonitor.updateActivity()
 
       const validation = this.manager.validator.validateMessage(e.data)
@@ -27,6 +28,7 @@ export class WebSocketEventHandlers {
         return
       }
 
+      let packetData = e.data
       const sequenceInfo = this.manager.messageQueue.extractSequenceFromPacket(e.data)
       if (sequenceInfo) {
         const seqValidation = this.manager.messageQueue.validateSequence(sequenceInfo.sequence)
@@ -34,17 +36,28 @@ export class WebSocketEventHandlers {
           this.manager.logger.warn('Message sequence gap detected', { expected: this.manager.messageQueue.expectedSequence, received: sequenceInfo.sequence, gap: seqValidation.gap })
         }
         this.manager.messageQueue.setExpectedSequence(sequenceInfo.sequence)
-        e.data = sequenceInfo.payload
+        packetData = sequenceInfo.payload
       }
 
-      this.manager.logger.info('Message received', { size: e.data.byteLength })
-      this.manager.network.onPacket(e)
+      this.manager.logger.info('Message received', { size: packetData.byteLength })
+      // Create a modified event with the correct data
+      const modifiedEvent = Object.create(e)
+      Object.defineProperty(modifiedEvent, 'data', { value: packetData, enumerable: true })
+      this.manager.network.onPacket(modifiedEvent)
     }
   }
 
   createOpenHandler() {
     return () => {
-      this.manager.logger.info('WebSocket opened')
+      this.manager.logger.info('WebSocket opened', { wsType: typeof this.manager.ws, wsReadyState: this.manager.ws?.readyState })
+      // Send a test ping to verify the connection works both ways
+      try {
+        const testPing = new Uint8Array([0, 0])  // Send minimal packet to test
+        this.manager.ws.send(testPing)
+        this.manager.logger.info('Test ping sent from client to verify bidirectional connection')
+      } catch (err) {
+        this.manager.logger.warn('Failed to send test ping', { error: err.message })
+      }
       this.manager.network.protocol.isConnected = true
       this.manager.inactivityMonitor.reset()
       this.manager.setupInactivityMonitor()
