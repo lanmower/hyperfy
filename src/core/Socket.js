@@ -29,27 +29,34 @@ export class Socket {
   send(name, data) {
     try {
       const packet = MessageHandler.encode(name, data)
-      logger.info('Socket.send() encoding packet', { name, packetSize: packet.byteLength || packet.length, wsType: typeof this.ws, wsReadyState: this.ws?.readyState })
+      logger.info('Socket.send() encoding packet', { name, packetSize: packet.byteLength || packet.length, packetType: packet?.constructor?.name, wsType: typeof this.ws, wsReadyState: this.ws?.readyState })
       let binaryData = packet
-      if (Buffer.isBuffer(packet)) {
-        binaryData = packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength)
+      if (typeof Buffer !== 'undefined' && Buffer.isBuffer(packet)) {
+        binaryData = packet
+        logger.info('Socket.send() packet is Buffer', { name, size: packet.length })
       } else if (packet instanceof Uint8Array) {
-        binaryData = packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength)
+        binaryData = Buffer.from(packet)
+        logger.info('Socket.send() packet is Uint8Array, converting to Buffer', { name, size: packet.length })
+      } else if (packet instanceof ArrayBuffer) {
+        binaryData = Buffer.from(packet)
+        logger.info('Socket.send() packet is ArrayBuffer, converting to Buffer', { name, size: packet.byteLength })
+      } else {
+        logger.error('Socket.send() packet is unknown type', { name, type: typeof packet, constructor: packet?.constructor?.name })
       }
       const result = this.ws.send(binaryData)
-      logger.info('Socket.send() packet sent to WebSocket', { name, sendResult: result })
+      logger.info('Socket.send() packet sent to WebSocket', { name, sendResult: result, sentType: typeof binaryData })
     } catch (err) {
       logger.error('Socket.send() failed', { name, error: err.message, errorType: err.constructor.name })
     }
   }
 
   sendPacket(packet) {
-    if (Buffer.isBuffer(packet)) {
-      this.ws.send(packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength))
-    } else if (packet instanceof ArrayBuffer) {
+    if (typeof Buffer !== 'undefined' && Buffer.isBuffer(packet)) {
       this.ws.send(packet)
     } else if (packet instanceof Uint8Array) {
-      this.ws.send(packet.buffer.slice(packet.byteOffset, packet.byteOffset + packet.byteLength))
+      this.ws.send(Buffer.from(packet))
+    } else if (packet instanceof ArrayBuffer) {
+      this.ws.send(Buffer.from(packet))
     } else {
       this.ws.send(packet)
     }

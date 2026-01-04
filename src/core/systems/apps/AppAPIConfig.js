@@ -13,8 +13,11 @@ const builders = [
 ]
 
 const config = builders.reduce((acc, builder) => {
-  Object.assign(acc, builder)
+  const built = builder.build()
+  if (built.getters) Object.assign(acc.getters = acc.getters || {}, built.getters)
+  if (built.setters) Object.assign(acc.setters = acc.setters || {}, built.setters)
+  if (built.methods) Object.assign(acc.methods = acc.methods || {}, built.methods)
   return acc
-}, {})
+}, { getters: {}, setters: {}, methods: {} })
 
 export const AppAPIConfig = config

@@ -107,15 +107,10 @@ export class PlayerConnectionManager {
       // Register socket BEFORE sending snapshot to ensure it's ready
       this.serverNetwork.sockets.set(socket.id, socket)
 
-      logger.info('Sending snapshot to client', { socketId: socket.id, entityCount: this.serverNetwork.entities.size, wsProto: Object.getPrototypeOf(ws).constructor.name })
+      logger.info('Sending snapshot to client', { socketId: socket.id, entityCount: this.serverNetwork.entities.size })
       try {
-        // Send snapshot
-        const packet = MessageHandler.encode('snapshot', snapshot)
-        // The ws object from fastify-websocket has send() method on prototype
-        ws.send(packet, (err) => {
-          if (err) logger.error('ws.send error', { socketId: socket.id, error: err.message })
-          else logger.info('ws.send completed', { socketId: socket.id })
-        })
+        // Send snapshot through Socket wrapper (not raw ws) to ensure proper ArrayBuffer conversion
+        socket.send('snapshot', snapshot)
         logger.info('Snapshot sent successfully', { socketId: socket.id })
       } catch (err) {
         logger.error('Failed to send snapshot', { socketId: socket.id, error: err.message })
