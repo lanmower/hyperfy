@@ -70,7 +70,13 @@
         "lodash-es": "/node_modules/lodash-es/lodash.js",
         "stylis": "/node_modules/stylis/index.js",
         "eventemitter3": "/node_modules/eventemitter3/index.mjs",
-        "playcanvas": "/node_modules/playcanvas/build/playcanvas.mjs"
+        "playcanvas": "/node_modules/playcanvas/build/playcanvas.mjs",
+        "generic-pool": "/src/client/public/stub-generic-pool.js",
+        "knex": "/src/client/public/stub-knex.js",
+        "pg": "/src/client/public/stub-pg.js",
+        "better-sqlite3": "/src/client/public/stub-better-sqlite3.js",
+        "mysql2": "/src/client/public/stub-mysql2.js",
+        "sqlite3": "/src/client/public/stub-sqlite3.js"
       }
     }
     </script>
@@ -85,6 +91,7 @@
   <body>
     <div id="root"></div>
     <script src="/env.js?v={buildId}"></script>
+    <script src="/src/client/public/node-stubs.js?v={buildId}"></script>
     <script type="module" src="/src/client/index.js?v={buildId}"></script>
   </body>
 </html>
