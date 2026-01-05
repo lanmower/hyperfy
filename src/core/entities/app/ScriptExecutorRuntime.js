@@ -1,5 +1,5 @@
 import { StructuredLogger } from '../../utils/logging/index.js'
-import { HyperfyError } from '../../../server/utils/errors/HyperfyError.js'
+import { HyperfyError } from '../../utils/errors/HyperfyError.js'
 
 const logger = new StructuredLogger('ScriptExecutorRuntime')
 

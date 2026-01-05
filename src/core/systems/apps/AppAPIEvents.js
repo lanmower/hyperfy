@@ -1,7 +1,7 @@
 import { APIConfigBuilder } from '../../utils/api/index.js'
 import { ValidationHelper } from '../../utils/api/ValidationHelper.js'
 import { SYSTEM_INTERNAL_EVENTS } from '../../utils/events/EventConstants.js'
-import { HyperfyError } from '../../../server/utils/errors/index.js'
+import { HyperfyError } from '../../utils/errors/HyperfyError.js'
 
 const b = new APIConfigBuilder('AppAPIConfig')
 

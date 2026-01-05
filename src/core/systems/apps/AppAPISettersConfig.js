@@ -2,7 +2,7 @@ import { isArray } from 'lodash-es'
 import { APIConfigBuilder } from '../../utils/api/index.js'
 import { ValidationHelper } from '../../utils/api/ValidationHelper.js'
 import { ControlPriorities } from '../../extras/ControlPriorities.js'
-import { HyperfyError } from '../../../server/utils/errors/index.js'
+import { HyperfyError } from '../../utils/errors/HyperfyError.js'
 import { FILE_TYPES } from './FieldTypeConstants.js'
 
 const fileRemaps = Object.fromEntries(FILE_TYPES.map(type => [
