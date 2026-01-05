@@ -15,9 +15,9 @@ const logger = LoggerFactory.get('ServerMiddleware')
 const isHealthEndpoint = (url) => url.startsWith('/health') || url === '/metrics'
 
 export async function registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager) {
-  fastify.register(createRequestIdMiddleware())
-  fastify.register(createErrorHandler(logger, errorTracker))
-  fastify.register(createTimeoutMiddleware(timeoutManager))
+  await fastify.register(createRequestIdMiddleware())
+  await fastify.register(createErrorHandler(logger, errorTracker))
+  await fastify.register(createTimeoutMiddleware(timeoutManager))
 
   fastify.addHook('onRequest', async (request, reply) => {
     try {
@@ -32,7 +32,7 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
   })
 
   const corsOptions = corsConfig.getCORSOptions()
-  fastify.register(cors, corsOptions)
+  await fastify.register(cors, corsOptions)
   logger.info('[CORS] CORS configuration registered', {
     origins: corsConfig.allowedOrigins.length,
     methods: corsConfig.allowedMethods.length,
@@ -71,10 +71,10 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
   trackResponseTime(fastify)
   enforcePerformanceBudgets(fastify)
 
-  fastify.register(multipart, {
+  await fastify.register(multipart, {
     limits: {
       fileSize: 200 * 1024 * 1024,
     },
   })
-  fastify.register(ws)
+  await fastify.register(ws)
 }

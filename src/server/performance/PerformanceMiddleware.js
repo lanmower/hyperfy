@@ -83,7 +83,7 @@ export function trackResponseTime(fastify, options = {}) {
     request._performanceStart = process.hrtime.bigint()
   })
 
-  fastify.addHook('onSend', async (request, reply) => {
+  fastify.addHook('onSend', (request, reply) => {
     if (!request._performanceStart) return
     if (reply.sent) return
 
@@ -152,7 +152,9 @@ export function registerPerformanceEndpoints(fastify) {
 
 export function enforcePerformanceBudgets(fastify, options = {}) {
   fastify.addHook('onSend', (request, reply) => {
-    if (reply.sent || reply.headersSent) return
+    if (reply.sent || reply.headersSent) {
+      return
+    }
     if (options.enforceStrict && request._performanceStart) {
       const end = process.hrtime.bigint()
       const duration = Number(end - request._performanceStart) / 1000000

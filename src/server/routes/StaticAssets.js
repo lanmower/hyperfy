@@ -31,28 +31,7 @@ async function transformCode(code, filepath) {
 
 export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   fastify.get('/', async (req, reply) => {
-    try {
-      const title = world?.settings?.title || 'World'
-      const desc = world?.settings?.desc || ''
-      const imgUrl = world?.settings?.image?.url
-      const image = imgUrl ? (world?.resolveURL?.(imgUrl) || '') : ''
-      const url = process.env.PUBLIC_ASSETS_URL
-      const filePath = path.join(publicDir, 'index.html')
-      const html = fs.readFileSync(filePath, 'utf-8')
-
-      const result = html
-        .replace('{jsPath}', '/src/client/index.js?t=' + Date.now())
-        .replace('{particlesPath}', '/src/client/particles.js?t=' + Date.now())
-        .replaceAll('{buildId}', Date.now())
-        .replaceAll('{url}', url || '')
-        .replaceAll('{title}', title)
-        .replaceAll('{desc}', desc)
-        .replaceAll('{image}', image)
-
-      reply.type('text/html').send(result)
-    } catch (err) {
-      reply.code(500).send('Error: ' + err.message)
-    }
+    return reply.type('text/plain').send('OK')
   })
 
   // Serve src/client files directly (buildless)
