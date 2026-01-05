@@ -840,6 +840,8 @@
       "scene.hyp.bak",
       "SUCCESS.png",
       "SYSTEM_STATUS.md",
+      "test-multiplayer.mjs",
+      "test-packet-fix.mjs",
       "TESTING_COMPLETE.md",
       "TESTING_INDEX.md",
       "TESTING_SUMMARY.md",
@@ -904,5 +906,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767599978027
+  "lastAnalyzed": 1767601071271
 }
