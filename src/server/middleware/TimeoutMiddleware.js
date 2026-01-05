@@ -3,7 +3,7 @@ import { createFastifyPlugin } from './PluginFactory.js'
 import { ErrorResponseBuilder } from '../utils/api/ErrorResponseBuilder.js'
 
 const logger = LoggerFactory.get('TimeoutMiddleware')
-const STATIC_PATHS = ['/assets/', '/dist/', '/', '/env.js', '/public/']
+const STATIC_PATHS = ['/assets/', '/', '/env.js', '/public/', '/src/']
 
 const isStaticPath = (path) => {
   const cleanPath = path.split('?')[0]
