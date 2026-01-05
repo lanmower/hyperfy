@@ -1,3 +1,3 @@
-export { default as MenuAppIndex } from './MenuAppIndex.js'
-export { default as MenuAppHeader } from './MenuAppHeader.js'
-export { default as MenuAppBody } from './MenuAppBody.js'
+export { MenuAppIndex } from './MenuAppIndex.js'
+export { MenuAppHeader } from './MenuAppHeader.js'
+export { MenuAppBody } from './MenuAppBody.js'
