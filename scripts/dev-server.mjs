@@ -41,16 +41,28 @@ function watchServerFiles(callback) {
     path.join(rootDir, 'src/core')
   ]
 
+  let debounceTimer = null
+  let ready = false
+
+  setTimeout(() => { ready = true }, 2000)
+
   const watchers = watchPaths.map(dirPath => {
     return fs.watch(dirPath, { recursive: true }, (eventType, filename) => {
-      if (filename && (filename.endsWith('.js') || filename.endsWith('.mjs'))) {
+      if (!ready) return
+      if (!filename || (!filename.endsWith('.js') && !filename.endsWith('.mjs'))) return
+
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
         console.log(`[dev-server] File changed: ${filename}`)
         callback()
-      }
+      }, 300)
     })
   })
 
-  return () => watchers.forEach(w => w.close())
+  return () => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    watchers.forEach(w => w.close())
+  }
 }
 
 async function main() {
@@ -80,15 +92,17 @@ async function main() {
     }
 
     function restartServer() {
+      if (isRestarting) return
       isRestarting = true
       console.log('[dev-server] Restarting server...')
 
       if (proc) {
-        proc.kill('SIGTERM')
-        proc.on('exit', () => {
+        proc.removeAllListeners('exit')
+        proc.once('exit', () => {
           isRestarting = false
           startServer()
         })
+        proc.kill('SIGTERM')
       } else {
         isRestarting = false
         startServer()
