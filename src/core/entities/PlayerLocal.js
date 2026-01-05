@@ -34,6 +34,7 @@ export class PlayerLocal extends BaseEntity {
 
   async init() {
     try {
+      this.isInitialized = false
       logger.info('init() started')
 
       PlayerLocalState.initializeState(this)
@@ -74,11 +75,13 @@ export class PlayerLocal extends BaseEntity {
       this.world.setHot(this, true)
       logger.info('Player marked as hot, emitting ready event')
       this.world.events.emit('ready', true)
+      this.isInitialized = true
       logger.info('init() completed')
     } catch (err) {
       logger.error('init() error', err)
       this.world.setHot(this, true)
       this.world.events.emit('ready', true)
+      this.isInitialized = true
       logger.info('Ready event emitted from catch block')
     }
   }

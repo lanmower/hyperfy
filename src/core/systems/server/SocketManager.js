@@ -30,8 +30,7 @@ export class SocketManager {
       const packet = MessageHandler.encode(name, compressed)
       this.network.sockets.forEach(socket => {
         if (socket.id === ignoreSocketId) return
-        const sequencedPacket = this.wrapWithSequence(packet, socket)
-        socket.sendPacket(sequencedPacket)
+        socket.sendPacket(packet)
       })
     }
 

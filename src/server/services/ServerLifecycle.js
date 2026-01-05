@@ -30,9 +30,8 @@ export async function startServer(fastify, port, logger, metrics, telemetry, shu
       gameLoopId = setTimeout(gameLoop, 1)
     }
 
-    // Temporarily disabled to test if game loop blocks HTTP
-    // gameLoopId = setTimeout(gameLoop, 1)
-    logger.info('Server game loop started (DISABLED FOR TESTING)', { targetFps: TARGET_FPS })
+    gameLoopId = setTimeout(gameLoop, 1)
+    logger.info('Server game loop started', { targetFps: TARGET_FPS })
 
     shutdownManager.addShutdownHandler('gameLoop', async () => {
       if (gameLoopId) {

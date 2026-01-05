@@ -23,10 +23,10 @@ export class PlayerLocalState {
     player.base = new THREE.Object3D()
     player.base.position.fromArray(player.data.position)
     player.base.quaternion.fromArray(player.data.quaternion)
-    player.world.stage.scene.add(player.base)
+    player.world.rig.add(player.base)
 
     player.aura = new THREE.Object3D()
-    player.world.stage.scene.add(player.aura)
+    player.world.rig.add(player.aura)
   }
 
   static initializeUINodes(player) {

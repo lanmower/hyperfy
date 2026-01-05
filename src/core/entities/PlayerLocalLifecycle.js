@@ -8,6 +8,7 @@ export class PlayerLocalLifecycle {
   }
 
   static update(player, delta) {
+    if (!player.isInitialized) return
     player.inputProcessor.processCamera(delta)
     player.inputProcessor.processZoom(delta)
     player.inputProcessor.processStickActivation()
