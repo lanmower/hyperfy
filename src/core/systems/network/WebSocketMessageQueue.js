@@ -35,7 +35,7 @@ export class WebSocketMessageQueue {
     let sentCount = 0
     while (this.messageQueue.length > 0) {
       const packet = this.dequeue()
-      ws.send(packet)
+      ws.send(packet, { binary: true })
       sentCount++
     }
     return sentCount

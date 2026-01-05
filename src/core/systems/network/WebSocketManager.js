@@ -116,7 +116,7 @@ export class WebSocketManager extends BaseManager {
 
     if (this.ws.readyState === WebSocket.OPEN) {
       const sequencedPacket = this.messageQueue.addSequenceToPacket(packet, sequence)
-      this.ws.send(sequencedPacket)
+      this.ws.send(sequencedPacket, { binary: true })
       this.inactivityMonitor.updateActivity()
       return true
     } else if (this.ws.readyState === WebSocket.CONNECTING) {
