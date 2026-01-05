@@ -355,7 +355,8 @@ class GLTFLoader extends Loader {
 			requestHeader: this.requestHeader,
 			manager: this.manager,
 			ktx2Loader: this.ktx2Loader,
-			meshoptDecoder: this.meshoptDecoder
+			meshoptDecoder: this.meshoptDecoder,
+			_serverMode: this._serverMode
 
 		} );
 
@@ -2440,7 +2441,9 @@ class GLTFParser {
 
 		}
 
-		if ( typeof createImageBitmap === 'undefined' || ( isSafari && safariVersion < 17 ) || ( isFirefox && firefoxVersion < 98 ) ) {
+		if ( this.options._serverMode ) {
+			this.textureLoader = { load() { return null }, loadAsync() { return Promise.resolve(null) }, setCrossOrigin() { return this }, setRequestHeader() { return this } };
+		} else if ( typeof createImageBitmap === 'undefined' || ( isSafari && safariVersion < 17 ) || ( isFirefox && firefoxVersion < 98 ) ) {
 
 			this.textureLoader = new TextureLoader( this.options.manager );
 

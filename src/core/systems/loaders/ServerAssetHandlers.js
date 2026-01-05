@@ -10,6 +10,13 @@ const logger = new StructuredLogger('ServerAssetHandlers')
 
 const isRemoteURL = url => url.startsWith('http://') || url.startsWith('https://')
 
+class NoOpTextureLoader {
+  load() { return null }
+  loadAsync() { return Promise.resolve(null) }
+  setCrossOrigin() { return this }
+  setRequestHeader() { return this }
+}
+
 export class ServerAssetHandlers extends BaseAssetHandler {
   constructor(world, errors, scripts) {
     super()
@@ -17,6 +24,7 @@ export class ServerAssetHandlers extends BaseAssetHandler {
     this.errors = errors
     this.scripts = scripts
     this.gltfLoader = new GLTFLoader()
+    this.gltfLoader._serverMode = true
   }
 
   setupHandlers() {
