@@ -30,8 +30,23 @@ async function transformCode(code, filepath) {
 }
 
 export async function registerStaticAssets(fastify, buildDir, assetsDir, world) {
-  fastify.get('/', (req, reply) => {
-    return reply.type('text/plain').send('OK')
+  fastify.get('/', async (req, reply) => {
+    try {
+      const buildId = Date.now().toString()
+      const particlesPath = '/particles'
+      let html = await fs.readFile(path.join(publicDir, 'index.html'), 'utf-8')
+      html = html
+        .replaceAll('{title}', 'Hyperfy')
+        .replaceAll('{desc}', 'Hyperfy Virtual Worlds')
+        .replaceAll('{url}', `${req.protocol}://${req.headers.host}`)
+        .replaceAll('{image}', `${req.protocol}://${req.headers.host}/public/favicon.svg`)
+        .replaceAll('{buildId}', buildId)
+        .replaceAll('{particlesPath}', particlesPath)
+      return reply.type('text/html').send(html)
+    } catch (err) {
+      fastify.logger.error(`Failed to serve index.html: ${err.message}`)
+      return reply.code(500).send('Server error')
+    }
   })
 
   // Serve src/client files directly (buildless)
