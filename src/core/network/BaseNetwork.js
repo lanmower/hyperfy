@@ -1,6 +1,6 @@
 import { System } from '../systems/System.js'
 import { StructuredLogger } from '../utils/logging/index.js'
-import { writePacket } from '../packets.js'
+import { MessageHandler } from '../plugins/core/MessageHandler.js'
 
 const logger = new StructuredLogger('BaseNetwork')
 
@@ -31,7 +31,7 @@ export class BaseNetwork extends System {
             logger.error('Send failed: socket.send is not a function', { method, socketType: typeof socket })
             return
           }
-          const packet = writePacket(method, data)
+          const packet = MessageHandler.encode(method, data)
           socket.send(packet)
         } catch (err) {
           logger.error('Send failed', { method, error: err.message })
@@ -48,7 +48,7 @@ export class BaseNetwork extends System {
               logger.error('SendReliable failed: socket.send is not a function', { method, socketType: typeof socket })
               return reject(new Error('Socket send is not a function'))
             }
-            const packet = writePacket(method, data)
+            const packet = MessageHandler.encode(method, data)
             socket.send(packet)
             resolve()
           } catch (err) {

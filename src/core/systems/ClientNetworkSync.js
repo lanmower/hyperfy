@@ -1,5 +1,5 @@
 import { StructuredLogger } from '../utils/logging/index.js'
-import { readPacket } from '../packets.js'
+import { MessageHandler } from '../plugins/core/MessageHandler.js'
 import { storage } from '../storage.js'
 
 const logger = new StructuredLogger('ClientNetworkSync')
@@ -54,7 +54,7 @@ export class ClientNetworkSync {
   }
 
   onPacket(e, clientNetwork) {
-    const [method, data] = readPacket(e.data)
+    const [method, data] = MessageHandler.decode(e.data)
     if (!method) {
       logger.error('Invalid packet received', { dataType: typeof e.data, dataSize: e.data?.length || e.data?.byteLength || 0 })
       return
