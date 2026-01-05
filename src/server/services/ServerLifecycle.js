@@ -3,7 +3,7 @@ import { closeDB } from '../db.js'
 export async function startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker, retries = 10) {
   try {
     logger.info(`Attempting to start Fastify server on port ${port}...`)
-    await fastify.listen({ port, host: '127.0.0.1' })
+    await fastify.listen({ port, host: '0.0.0.0' })
     logger.info(`Fastify.listen() completed successfully`)
     logger.info(`Server running on port ${port}`, { port, env: process.env.NODE_ENV || 'development' })
     metrics.gauge('server.port', port)
@@ -30,8 +30,9 @@ export async function startServer(fastify, port, logger, metrics, telemetry, shu
       gameLoopId = setTimeout(gameLoop, 1)
     }
 
-    gameLoopId = setTimeout(gameLoop, 1)
-    logger.info('Server game loop started', { targetFps: TARGET_FPS })
+    // Temporarily disabled to test if game loop blocks HTTP
+    // gameLoopId = setTimeout(gameLoop, 1)
+    logger.info('Server game loop started (DISABLED FOR TESTING)', { targetFps: TARGET_FPS })
 
     shutdownManager.addShutdownHandler('gameLoop', async () => {
       if (gameLoopId) {

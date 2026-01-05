@@ -24,8 +24,8 @@ const CACHE_STRATEGIES = {
 }
 
 export function setupCacheHeaders(fastify) {
-  fastify.addHook('onSend', (request, reply) => {
-    if (reply.sent || reply.headersSent) return
+  fastify.addHook('onSend', (request, reply, payload) => {
+    if (reply.sent || reply.headersSent) return payload
     const path = request.url.split('?')[0]
     const strategy = getCacheStrategy(path)
 
@@ -36,6 +36,7 @@ export function setupCacheHeaders(fastify) {
         // Headers already sent, skip
       }
     }
+    return payload
   })
 }
 

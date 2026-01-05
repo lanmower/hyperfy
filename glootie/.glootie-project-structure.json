@@ -347,7 +347,6 @@
       "INVESTIGATION_REPORT.md",
       "LICENSE",
       "MIGRATION_EXECUTIVE_SUMMARY.md",
-      "nul",
       "package-lock.json",
       "package.json",
       "PARITY_REPORT.md",
@@ -904,5 +903,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767574969560
+  "lastAnalyzed": 1767576202741
 }

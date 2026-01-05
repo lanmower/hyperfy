@@ -31,7 +31,7 @@ async function transformCode(code, filepath) {
 
 export async function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   fastify.get('/', (req, reply) => {
-    reply.type('text/plain').send('OK')
+    return reply.type('text/plain').send('OK')
   })
 
   // Serve src/client files directly (buildless)
@@ -40,9 +40,9 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     try {
       const code = await fs.readFile(filepath, 'utf-8')
       const transformed = await transformCode(code, filepath)
-      reply.type('application/javascript').send(transformed)
+      return reply.type('application/javascript').send(transformed)
     } catch (err) {
-      reply.code(404).send(`Not found: ${req.params['*']}`)
+      return reply.code(404).send(`Not found: ${req.params['*']}`)
     }
   })
 
@@ -52,9 +52,9 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     try {
       const code = await fs.readFile(filepath, 'utf-8')
       const transformed = await transformCode(code, filepath)
-      reply.type('application/javascript').send(transformed)
+      return reply.type('application/javascript').send(transformed)
     } catch (err) {
-      reply.code(404).send(`Not found: ${req.params['*']}`)
+      return reply.code(404).send(`Not found: ${req.params['*']}`)
     }
   })
 
@@ -64,15 +64,15 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     try {
       const code = await fs.readFile(filepath, 'utf-8')
       const transformed = await transformCode(code, filepath)
-      reply.type('application/javascript').send(transformed)
+      return reply.type('application/javascript').send(transformed)
     } catch (err) {
-      reply.code(404).send(`Not found: ${req.params['*']}`)
+      return reply.code(404).send(`Not found: ${req.params['*']}`)
     }
   })
 
   // Stub handler for server-only files accessed from client (returns empty export)
   fastify.get('/src/server/*', async (req, reply) => {
-    reply.type('application/javascript').send('export const SecurityConfig = {}; export default {};')
+    return reply.type('application/javascript').send('export const SecurityConfig = {}; export default {};')
   })
 
   // Serve /assets/* static files
@@ -112,6 +112,6 @@ export function registerEnvEndpoint(fastify) {
     }
 
     const envsCode = `window.env = ${JSON.stringify(publicEnvs)};`
-    reply.type('application/javascript').send(envsCode)
+    return reply.type('application/javascript').send(envsCode)
   })
 }

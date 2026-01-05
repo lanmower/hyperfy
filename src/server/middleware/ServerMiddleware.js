@@ -20,6 +20,7 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
   await fastify.register(createTimeoutMiddleware(timeoutManager))
 
   fastify.addHook('onRequest', async (request, reply) => {
+    if (reply.headersSent) return
     try {
       reply.header('X-Content-Type-Options', 'nosniff')
       reply.header('X-Frame-Options', 'SAMEORIGIN')
@@ -64,12 +65,11 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
     }
   })
 
-  // Compression disabled due to conflicts with reply.send() in HTML route
-  // await setupCompression(fastify)
-  setupCacheHeaders(fastify)
-  addETagSupport(fastify)
-  trackResponseTime(fastify)
-  enforcePerformanceBudgets(fastify)
+  logger.info('[MIDDLEWARE] Temporarily disabling cache functions for HTTP connectivity fix')
+  // setupCacheHeaders(fastify)
+  // addETagSupport(fastify)
+  // trackResponseTime(fastify)
+  // enforcePerformanceBudgets(fastify)
 
   await fastify.register(multipart, {
     limits: {
