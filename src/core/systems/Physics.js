@@ -59,7 +59,11 @@ export class Physics extends System {
     this.handles = new Map()
     this.materials = {}
 
+    this.coordinator.initialize()
     this.coordinator.initializeCallbacks()
+    this.actorManager = this.coordinator.actorManager
+    this.callbackManager = this.coordinator.callbackManager
+    this.interpolationManager = this.coordinator.interpolationManager
     this.getContactCallback = this.coordinator.getContactCallback
     this.getTriggerCallback = this.coordinator.getTriggerCallback
     this.contactCallbacks = this.coordinator.contactCallbacks

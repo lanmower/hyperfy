@@ -31,6 +31,10 @@ export class PlayerController {
     this.zoom = InputConfig.DEFAULT_ZOOM
   }
 
+  get camera() {
+    return this
+  }
+
   get nametag() {
     return this.movement.nametag
   }

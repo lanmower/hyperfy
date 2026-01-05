@@ -10,13 +10,9 @@ export function preprocessVRMScene(glb) {
   for (const node of secondaries) node.removeFromParent()
   glb.scene.traverse(obj => {
     if (obj.isMesh) {
-      const model = obj.getComponent('model')
-      if (model) {
-        for (let i = 0; i < model.meshInstances.length; i++) {
-          model.meshInstances[i].castShadow = true
-          model.meshInstances[i].receiveShadow = true
-        }
-      }
+      // THREE.js mesh - set shadow properties directly
+      obj.castShadow = true
+      obj.receiveShadow = true
     }
   })
 }
@@ -25,23 +21,15 @@ export function setupSkinnedMeshes(glb, setupMaterial) {
   const skinnedMeshes = []
   glb.scene.traverse(node => {
     if (node.isSkinnedMesh) {
-      const skinInstance = node.skinInstance
-      if (skinInstance) {
-        const worldMat = node.getWorldTransform()
-        const bindMat = new pc.Mat4()
-        bindMat.copy(worldMat)
-        skinInstance.bones[0]._parent.setLocalTransform(bindMat)
-        skinnedMeshes.push(node)
-      }
+      // THREE.js skinned mesh
+      skinnedMeshes.push(node)
     }
     if (node.isMesh) {
-      const model = node.getComponent('model')
-      if (model) {
-        for (let i = 0; i < model.meshInstances.length; i++) {
-          model.meshInstances[i].receiveShadow = true
-        }
+      // THREE.js mesh - set shadow and material
+      node.receiveShadow = true
+      if (node.material && setupMaterial) {
+        setupMaterial(node.material)
       }
-      setupMaterial(node.material)
     }
   })
   return skinnedMeshes

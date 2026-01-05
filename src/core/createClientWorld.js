@@ -6,6 +6,7 @@ import { ClientPointer } from './systems/ClientPointer.js'
 import { ClientPrefs } from './systems/ClientPrefs.js'
 import { InputSystem } from './systems/input/InputSystem.js'
 import { ClientNetwork } from './systems/ClientNetwork.js'
+import { Scripts } from './systems/Scripts.js'
 import { UnifiedLoader } from './systems/UnifiedLoader.js'
 import { ClientGraphics } from './systems/ClientGraphics.js'
 import { ClientEnvironment } from './systems/ClientEnvironment.js'
@@ -29,6 +30,7 @@ import { Entities } from './systems/Entities.js'
 import { Chat } from './systems/Chat.js'
 import { Events } from './systems/Events.js'
 import { Stage } from './systems/Stage.js'
+import { Physics } from './systems/Physics.js'
 import { Avatars } from './systems/Avatars.js'
 import { HUDOverlay } from './systems/HUDOverlay.js'
 import { CameraController } from './CameraController.js'
@@ -43,6 +45,7 @@ export function createClientWorld() {
   world.register('events', Events)
   world.register('settings', Settings)
   world.register('collections', Collections)
+  world.register('scripts', Scripts)
   world.register('loader', UnifiedLoader)
   world.register('blueprints', BlueprintManager)
   world.register('entities', Entities)
@@ -51,6 +54,7 @@ export function createClientWorld() {
   world.register('network', ClientNetwork)
   world.register('graphics', ClientGraphics)
   world.register('stage', Stage)
+  world.register('physics', Physics)
   world.register('environment', ClientEnvironment)
   world.register('audio', ClientAudio)
   world.register('stats', ClientStats)

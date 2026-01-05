@@ -34,3 +34,6 @@ playwright/
 # Dev server
 .dev-server.log
 .dev-server.pid
+
+# Auto Claude data directory
+.auto-claude/

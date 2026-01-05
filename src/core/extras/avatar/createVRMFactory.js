@@ -7,9 +7,9 @@ import { createAvatar } from './VRMAvatarCreator.js'
 export function createVRMFactory(glb, setupMaterial) {
   preprocessVRMScene(glb)
   const skinnedMeshes = setupSkinnedMeshes(glb, setupMaterial)
-  const { skeleton, rootToHips, height, headToHeight, version, normBones } = extractBoneGeometry(glb, skinnedMeshes)
-  setupArmAngles(glb, normBones)
-  skeleton.update()
+  const { skeleton, rootToHips, height, headToHeight, version, humanoid } = extractBoneGeometry(glb, skinnedMeshes)
+  setupArmAngles(glb, humanoid)
+  if (skeleton) skeleton.update()
 
   return {
     create: (matrix, hooks, node) => createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version),

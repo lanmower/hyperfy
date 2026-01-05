@@ -25,9 +25,6 @@ export class UnifiedLoader extends System {
     this.isServer = typeof window === 'undefined'
     this.maxCacheSize = 100
     this.cacheAccessOrder = []
-    if (!this.isServer) {
-      this.handlers = new AssetHandlers(this, world)
-    }
   }
 
   async init() {
@@ -37,11 +34,13 @@ export class UnifiedLoader extends System {
       globalThis.document = { createElementNS: () => ({ style: {} }) }
       const serverHandlers = await import('./loaders/ServerAssetHandlers.js')
       this.handlers = new serverHandlers.ServerAssetHandlers(this.world, this.errors, this.scripts)
+    } else {
+      this.handlers = new AssetHandlers(this, this.world)
     }
   }
 
   start() {
-    if (!this.isServer && this.handlers.start) {
+    if (!this.isServer && this.handlers?.start) {
       this.handlers.start()
     }
   }

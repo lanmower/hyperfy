@@ -49,6 +49,17 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     }
   })
 
+  fastify.get('/particles', async (req, reply) => {
+    const filepath = path.join(clientDir, 'particles.js')
+    try {
+      const code = await fs.readFile(filepath, 'utf-8')
+      const transformed = await transformCode(code, filepath)
+      return reply.type('application/javascript').send(transformed)
+    } catch (err) {
+      return reply.code(404).send(`Not found: particles.js`)
+    }
+  })
+
   // Serve src/client files directly (buildless)
   fastify.get('/src/client/*', async (req, reply) => {
     const filepath = path.join(clientDir, req.params['*'])
@@ -65,6 +76,11 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
   fastify.get('/src/core/*', async (req, reply) => {
     const filepath = path.join(srcDir, 'core', req.params['*'])
     try {
+      // Serve binary files (WASM) without text transformation
+      if (filepath.endsWith('.wasm')) {
+        const data = await fs.readFile(filepath)
+        return reply.type('application/wasm').send(data)
+      }
       const code = await fs.readFile(filepath, 'utf-8')
       if (code.includes('server/utils/errors')) {
         console.error(`[STATIC_ASSETS] WARNING: ${req.params['*']} imports from server/utils/errors`)

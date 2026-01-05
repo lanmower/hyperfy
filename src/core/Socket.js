@@ -43,8 +43,8 @@ export class Socket {
       } else {
         logger.error('Socket.send() packet is unknown type', { name, type: typeof packet, constructor: packet?.constructor?.name })
       }
-      const result = this.ws.send(binaryData, { binary: true })
-      logger.info('Socket.send() packet sent to WebSocket', { name, sendResult: result, sentType: typeof binaryData })
+      this.ws.send(binaryData)
+      logger.info('Socket.send() packet sent to WebSocket', { name, sentType: typeof binaryData })
     } catch (err) {
       logger.error('Socket.send() failed', { name, error: err.message, errorType: err.constructor.name })
     }

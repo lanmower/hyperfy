@@ -118,11 +118,15 @@ export class Particles extends System {
 
   onMessage = msg => {
     msg = msg.data
+    if (msg.op === 'error' || msg.op === 'worker-error') {
+      logger.error('Particle worker error', { error: msg.error, stack: msg.stack })
+      return
+    }
     this.emitters.get(msg.emitterId)?.onMessage(msg)
   }
 
   onError = err => {
-    logger.error('Particle system error', { error: err.message })
+    logger.error('Particle system error', { error: err.message, errorStr: String(err), errorType: err?.constructor?.name, stack: err.stack })
   }
 
   onXRSession = session => {

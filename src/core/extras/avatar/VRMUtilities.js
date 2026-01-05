@@ -1,10 +1,29 @@
 import * as pc from '../playcanvas.js'
 
 function cloneEntity(entity) {
+  // For Three.js objects, use clone() if available
+  if (typeof entity.clone === 'function') {
+    const cloned = entity.clone(true)
+    // Recursively clone children if not already handled by clone()
+    if (entity.children && entity.children.length > 0 && (!cloned.children || cloned.children.length === 0)) {
+      for (let i = 0; i < entity.children.length; i++) {
+        cloned.add(cloneEntity(entity.children[i]))
+      }
+    }
+    return cloned
+  }
+
+  // Fallback for PlayCanvas entities
   const cloned = new pc.Entity(entity.name)
-  cloned.setLocalPosition(entity.getLocalPosition())
-  cloned.setLocalRotation(entity.getLocalRotation())
-  cloned.setLocalScale(entity.getLocalScale())
+  if (entity.getLocalPosition) {
+    cloned.setLocalPosition(entity.getLocalPosition())
+  }
+  if (entity.getLocalRotation) {
+    cloned.setLocalRotation(entity.getLocalRotation())
+  }
+  if (entity.getLocalScale) {
+    cloned.setLocalScale(entity.getLocalScale())
+  }
   if (entity.model) {
     cloned.addComponent('model', { asset: entity.model.asset })
   }
@@ -16,8 +35,10 @@ function cloneEntity(entity) {
       }
     }
   }
-  for (let i = 0; i < entity.children.length; i++) {
-    cloned.addChild(cloneEntity(entity.children[i]))
+  if (entity.children) {
+    for (let i = 0; i < entity.children.length; i++) {
+      cloned.addChild(cloneEntity(entity.children[i]))
+    }
   }
   return cloned
 }
@@ -29,11 +50,19 @@ export function cloneGLB(glb) {
 export function getSkinnedMeshes(scene) {
   const meshes = []
   function traverse(entity) {
+    // Check for Three.js skinned meshes
+    if (entity.isSkinnedMesh) {
+      meshes.push(entity)
+    }
+    // Check for PlayCanvas skinned meshes
     if (entity.model && entity.model.skinInstances && entity.model.skinInstances.length > 0) {
       meshes.push(entity)
     }
-    for (let i = 0; i < entity.children.length; i++) {
-      traverse(entity.children[i])
+    // Traverse children
+    if (entity.children && entity.children.length > 0) {
+      for (let i = 0; i < entity.children.length; i++) {
+        traverse(entity.children[i])
+      }
     }
   }
   traverse(scene)

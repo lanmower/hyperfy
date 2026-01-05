@@ -11,14 +11,55 @@ export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headT
   const vrm = cloneGLB(glb)
   const tvrm = vrm.userData.vrm
   const skinnedMeshes = getSkinnedMeshes(vrm.scene)
-  const skeleton = skinnedMeshes[0].model.skinInstances[0].skin
-  const rootBoneEntity = skeleton.bones[0]
+
+  if (!skinnedMeshes.length) {
+    throw new Error('Avatar has no skinned meshes')
+  }
+
+  // Get skeleton from either Three.js or PlayCanvas
+  let skeleton = null
+  const firstMesh = skinnedMeshes[0]
+
+  if (firstMesh.isSkinnedMesh) {
+    // Three.js skinned mesh
+    skeleton = firstMesh.skeleton
+  } else if (firstMesh.model?.skinInstances?.[0]?.skin) {
+    // PlayCanvas model
+    skeleton = firstMesh.model.skinInstances[0].skin
+  }
+
+  if (!skeleton) {
+    throw new Error('Avatar skeleton not found')
+  }
+  const rootBoneEntity = skeleton.bones?.[0] || skeleton.bones[0]
   const rootBoneParent = rootBoneEntity.parent
   if (rootBoneParent) {
-    rootBoneParent.removeChild(rootBoneEntity)
+    // Handle both Three.js and PlayCanvas parent removal
+    if (typeof rootBoneParent.remove === 'function') {
+      rootBoneEntity.removeFromParent?.() || rootBoneParent.remove(rootBoneEntity)
+    } else if (typeof rootBoneParent.removeChild === 'function') {
+      rootBoneParent.removeChild(rootBoneEntity)
+    }
   }
-  vrm.scene.setLocalMatrix(matrix)
-  hooks.scene.addChild(vrm.scene)
+
+  // Set matrix/transform on the scene
+  if (typeof vrm.scene.setLocalMatrix === 'function') {
+    // PlayCanvas
+    vrm.scene.setLocalMatrix(matrix)
+  } else if (vrm.scene.matrixAutoUpdate !== undefined) {
+    // Three.js
+    vrm.scene.matrix.copy(matrix)
+    vrm.scene.matrixAutoUpdate = false
+  }
+
+  // Add scene to parent
+  if (typeof hooks.scene.addChild === 'function') {
+    // PlayCanvas
+    hooks.scene.addChild(vrm.scene)
+  } else if (typeof hooks.scene.add === 'function') {
+    // Three.js
+    hooks.scene.add(vrm.scene)
+  }
 
   const getEntity = () => node?.ctx.entity
 

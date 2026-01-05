@@ -10,9 +10,14 @@ export class PhysicsCoordinator {
     this.actors = new Map()
     this.callbacks = new Map()
     this.interpolations = new Map()
-    this.actorManager = new PhysicsActorManager(physics)
+    this.actorManager = null
     this.callbackManager = new PhysicsCallbackManager()
-    this.interpolationManager = new PhysicsInterpolationManager(physics)
+    this.interpolationManager = null
+  }
+
+  initialize() {
+    this.actorManager = new PhysicsActorManager(this.physics)
+    this.interpolationManager = new PhysicsInterpolationManager(this.physics)
   }
 
   initializeCallbacks() {
@@ -37,7 +42,6 @@ export class PhysicsCoordinator {
 
   setQueries(queries) {
     this.queries = queries
-    this.actorManager.setQueries(queries)
   }
 
   registerActor(id, actor) {
