@@ -3,7 +3,7 @@ import { PACKET_NAMES } from './packets.constants.js'
 import { StructuredLogger } from './utils/logging/index.js'
 
 const logger = new StructuredLogger('packets')
-const packr = new Packr()
+const packr = new Packr({ useRecords: false })
 
 const names = PACKET_NAMES
 
