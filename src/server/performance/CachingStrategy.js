@@ -25,7 +25,7 @@ const CACHE_STRATEGIES = {
 
 export function setupCacheHeaders(fastify) {
   fastify.addHook('onSend', async (request, reply) => {
-    if (reply.sent) return
+    if (reply.sent || reply.headersSent) return
     const path = request.url.split('?')[0]
     const strategy = getCacheStrategy(path)
 
@@ -106,7 +106,7 @@ export function generateETag(content) {
 
 export function addETagSupport(fastify) {
   fastify.addHook('onSend', async (request, reply, payload) => {
-    if (reply.sent) return
+    if (reply.sent || reply.headersSent) return
 
     const contentType = reply.getHeader('content-type')
     if (!contentType || !contentType.includes('application/json')) {
@@ -114,16 +114,11 @@ export function addETagSupport(fastify) {
     }
 
     const etag = generateETag(payload)
-    if (etag) {
+    if (etag && !reply.headersSent) {
       try {
         reply.header('ETag', etag)
-
-        if (request.headers['if-none-match'] === etag) {
-          reply.code(304)
-          return ''
-        }
       } catch (err) {
-        // Headers already sent, skip
+        return payload
       }
     }
 

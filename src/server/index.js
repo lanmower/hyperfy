@@ -72,24 +72,33 @@ fastify.statusPageData = statusPageData
 fastify.corsConfig = corsConfig
 fastify.shutdownManager = shutdownManager
 
+logger.info('Registering middleware...')
 await registerMiddleware(fastify, timeoutManager, logger, errorTracker, corsConfig, shutdownManager)
+logger.info('Registering world network...')
 await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker)
 
+logger.info('Registering routes...')
 await registerRoutes(fastify, world, initializer.assetsDir)
-registerEnvEndpoint(fastify)
-registerStaticAssets(fastify, __dirname, initializer.assetsDir, world)
+logger.info('Registering env endpoint...')
+await Promise.resolve(registerEnvEndpoint(fastify))
+logger.info('Registering static assets...')
+await Promise.resolve(registerStaticAssets(fastify, __dirname, initializer.assetsDir, world))
+logger.info('All routes registered successfully')
+
+logger.info('Waiting for Fastify to be ready...')
+await fastify.ready()
+logger.info('Fastify is ready, can now accept requests')
 
 let hmr = null
 if (process.env.NODE_ENV === 'development') {
-  await new Promise(resolve => {
-    fastify.ready(() => {
-      hmr = new ServerHMR(fastify.server)
-      fastify.hmr = hmr
-      initHMRBridge(fastify)
-      logger.info('HMR server initialized')
-      resolve()
-    })
-  })
+  try {
+    hmr = new ServerHMR(fastify.server)
+    fastify.hmr = hmr
+    initHMRBridge(fastify)
+    logger.info('HMR server initialized')
+  } catch (err) {
+    logger.error(`HMR initialization error: ${err.message}`)
+  }
 }
 
 await startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker)

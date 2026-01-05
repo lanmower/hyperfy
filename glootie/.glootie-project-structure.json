@@ -344,6 +344,7 @@
       ".glootie-project-structure.json",
       ".mcp-file-analysis-metadata.json",
       ".mcp-init-flag.json",
+      "INVESTIGATION_REPORT.md",
       "LICENSE",
       "MIGRATION_EXECUTIVE_SUMMARY.md",
       "package-lock.json",
@@ -843,6 +844,7 @@
       "TESTING_INDEX.md",
       "TESTING_SUMMARY.md",
       "TEST_RESULTS.md",
+      "TEXTURE_BLOB_URL_ISSUE.md",
       "VERIFICATION_COMPLETE.md",
       "VERIFICATION_REPORT.md",
       "VERIFICATION_SUMMARY.txt",
@@ -901,5 +903,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767571241505
+  "lastAnalyzed": 1767573376187
 }

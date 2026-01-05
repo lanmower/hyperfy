@@ -104,23 +104,27 @@ export function createInputSanitizationMiddleware() {
 }
 
 export function createContentSecurityPolicyHeaders(reply) {
-  reply.header('Content-Security-Policy', [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    "connect-src 'self'",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join('; '))
+  try {
+    reply.header('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '))
 
-  reply.header('X-Content-Type-Options', 'nosniff')
-  reply.header('X-Frame-Options', 'DENY')
-  reply.header('X-XSS-Protection', '1; mode=block')
-  reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
-  reply.header('Permissions-Policy', 'accelerometer=(), microphone=(), geolocation=()')
+    reply.header('X-Content-Type-Options', 'nosniff')
+    reply.header('X-Frame-Options', 'DENY')
+    reply.header('X-XSS-Protection', '1; mode=block')
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+    reply.header('Permissions-Policy', 'accelerometer=(), microphone=(), geolocation=()')
+  } catch (err) {
+    // Headers already sent, silently skip
+  }
 }
 
 export function createSecurityHeadersMiddleware() {

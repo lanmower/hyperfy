@@ -20,11 +20,15 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
   fastify.register(createTimeoutMiddleware(timeoutManager))
 
   fastify.addHook('onRequest', async (request, reply) => {
-    reply.header('X-Content-Type-Options', 'nosniff')
-    reply.header('X-Frame-Options', 'SAMEORIGIN')
-    reply.header('X-XSS-Protection', '1; mode=block')
-    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
-    reply.header('Permissions-Policy', 'microphone=(), camera=(), geolocation=()')
+    try {
+      reply.header('X-Content-Type-Options', 'nosniff')
+      reply.header('X-Frame-Options', 'SAMEORIGIN')
+      reply.header('X-XSS-Protection', '1; mode=block')
+      reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+      reply.header('Permissions-Policy', 'microphone=(), camera=(), geolocation=()')
+    } catch (err) {
+      // Headers already sent, skip
+    }
   })
 
   const corsOptions = corsConfig.getCORSOptions()

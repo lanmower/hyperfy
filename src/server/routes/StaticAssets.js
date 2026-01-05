@@ -31,22 +31,28 @@ async function transformCode(code, filepath) {
 
 export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   fastify.get('/', async (req, reply) => {
-    const title = world.settings.title || 'World'
-    const desc = world.settings.desc || ''
-    const image = world.resolveURL(world.settings.image?.url) || ''
-    const url = process.env.PUBLIC_ASSETS_URL
-    const filePath = path.join(publicDir, 'index.html')
-    let html = fs.readFileSync(filePath, 'utf-8')
+    try {
+      const title = world?.settings?.title || 'World'
+      const desc = world?.settings?.desc || ''
+      const imgUrl = world?.settings?.image?.url
+      const image = imgUrl ? (world?.resolveURL?.(imgUrl) || '') : ''
+      const url = process.env.PUBLIC_ASSETS_URL
+      const filePath = path.join(publicDir, 'index.html')
+      const html = fs.readFileSync(filePath, 'utf-8')
 
-    html = html.replace('{jsPath}', '/src/client/index.js?t=' + Date.now())
-    html = html.replace('{particlesPath}', '/src/client/particles.js?t=' + Date.now())
-    html = html.replaceAll('{buildId}', Date.now())
-    html = html.replaceAll('{url}', url)
-    html = html.replaceAll('{title}', title)
-    html = html.replaceAll('{desc}', desc)
-    html = html.replaceAll('{image}', image)
+      const result = html
+        .replace('{jsPath}', '/src/client/index.js?t=' + Date.now())
+        .replace('{particlesPath}', '/src/client/particles.js?t=' + Date.now())
+        .replaceAll('{buildId}', Date.now())
+        .replaceAll('{url}', url || '')
+        .replaceAll('{title}', title)
+        .replaceAll('{desc}', desc)
+        .replaceAll('{image}', image)
 
-    reply.type('text/html').send(html)
+      reply.type('text/html').send(result)
+    } catch (err) {
+      reply.code(500).send('Error: ' + err.message)
+    }
   })
 
   // Serve src/client files directly (buildless)

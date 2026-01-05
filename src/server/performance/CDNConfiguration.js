@@ -42,13 +42,18 @@ export function configureCDN(fastify, userConfig = {}) {
     return { enabled: false }
   }
 
-  fastify.addHook('onSend', async (request, reply) => {
-    reply.header('X-CDN-Provider', config.provider)
-    reply.header('X-Cache-Control', 'public')
+  fastify.addHook('onSend', (request, reply) => {
+    if (reply.sent || reply.headersSent) return
+    try {
+      reply.header('X-CDN-Provider', config.provider)
+      reply.header('X-Cache-Control', 'public')
 
-    const ttl = getTTLForPath(request.url, config.cacheRules)
-    if (ttl > 0) {
-      reply.header('CDN-Cache-Control', `public, max-age=${ttl}`)
+      const ttl = getTTLForPath(request.url, config.cacheRules)
+      if (ttl > 0) {
+        reply.header('CDN-Cache-Control', `public, max-age=${ttl}`)
+      }
+    } catch (err) {
+      // Headers already sent, skip
     }
   })
 

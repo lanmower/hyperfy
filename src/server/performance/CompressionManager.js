@@ -36,8 +36,8 @@ export async function setupCompression(fastify, options = {}) {
     exclude: config.exclude,
   })
 
-  fastify.addHook('onSend', async (request, reply) => {
-    if (reply.sent) return
+  fastify.addHook('onSend', (request, reply) => {
+    if (reply.sent || reply.headersSent) return
     const contentType = reply.getHeader('content-type') || ''
     const level = getCompressionLevel(contentType)
 

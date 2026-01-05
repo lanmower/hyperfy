@@ -102,7 +102,11 @@ export function trackResponseTime(fastify, options = {}) {
     }
 
     if (!reply.headersSent) {
-      reply.header('X-Response-Time', Math.round(duration * 100) / 100 + 'ms')
+      try {
+        reply.header('X-Response-Time', Math.round(duration * 100) / 100 + 'ms')
+      } catch (err) {
+        // Headers already sent by another onSend hook, silently skip
+      }
     }
   })
 
@@ -147,8 +151,8 @@ export function registerPerformanceEndpoints(fastify) {
 }
 
 export function enforcePerformanceBudgets(fastify, options = {}) {
-  fastify.addHook('onSend', async (request, reply) => {
-    if (reply.sent) return
+  fastify.addHook('onSend', (request, reply) => {
+    if (reply.sent || reply.headersSent) return
     if (options.enforceStrict && request._performanceStart) {
       const end = process.hrtime.bigint()
       const duration = Number(end - request._performanceStart) / 1000000
