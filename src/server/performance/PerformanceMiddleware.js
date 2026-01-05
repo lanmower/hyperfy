@@ -101,10 +101,8 @@ export function trackResponseTime(fastify, options = {}) {
       )
     }
 
-    try {
+    if (!reply.headersSent) {
       reply.header('X-Response-Time', Math.round(duration * 100) / 100 + 'ms')
-    } catch (err) {
-      // Headers already sent, skip
     }
   })
 
