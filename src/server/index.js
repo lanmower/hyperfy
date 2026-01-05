@@ -80,9 +80,9 @@ await registerWorldNetwork(fastify, world, logger, shutdownManager, errorTracker
 logger.info('Registering routes...')
 await registerRoutes(fastify, world, initializer.assetsDir)
 logger.info('Registering env endpoint...')
-await Promise.resolve(registerEnvEndpoint(fastify))
+registerEnvEndpoint(fastify)
 logger.info('Registering static assets...')
-await Promise.resolve(registerStaticAssets(fastify, __dirname, initializer.assetsDir, world))
+await registerStaticAssets(fastify, __dirname, initializer.assetsDir, world)
 logger.info('All routes registered successfully')
 
 logger.info('Waiting for Fastify to be ready...')

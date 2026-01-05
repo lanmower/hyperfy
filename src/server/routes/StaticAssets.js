@@ -29,9 +29,9 @@ async function transformCode(code, filepath) {
   }
 }
 
-export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
-  fastify.get('/', async (req, reply) => {
-    return reply.type('text/plain').send('OK')
+export async function registerStaticAssets(fastify, buildDir, assetsDir, world) {
+  fastify.get('/', (req, reply) => {
+    reply.type('text/plain').send('OK')
   })
 
   // Serve src/client files directly (buildless)
@@ -76,7 +76,7 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   })
 
   // Serve /assets/* static files
-  fastify.register(statics, {
+  await fastify.register(statics, {
     root: assetsDir,
     prefix: '/assets/',
     decorateReply: false,
@@ -87,19 +87,9 @@ export function registerStaticAssets(fastify, buildDir, assetsDir, world) {
   })
 
   // Serve public/*.* static files (CSS, JS, images, etc) but only specific extensions
-  fastify.register(statics, {
+  await fastify.register(statics, {
     root: publicDir,
     prefix: '/public/',
-    decorateReply: false,
-    setHeaders: res => {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-    },
-  })
-
-  // Serve root-level static files from public directory (base-environment.glb, favicon.svg, etc)
-  fastify.register(statics, {
-    root: publicDir,
-    constraints: {},
     decorateReply: false,
     setHeaders: res => {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')

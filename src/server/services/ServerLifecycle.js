@@ -3,7 +3,7 @@ import { closeDB } from '../db.js'
 export async function startServer(fastify, port, logger, metrics, telemetry, shutdownManager, world, degradationManager, errorTracker, retries = 10) {
   try {
     logger.info(`Attempting to start Fastify server on port ${port}...`)
-    await fastify.listen({ port, host: '0.0.0.0', exclusive: false })
+    await fastify.listen({ port, host: '127.0.0.1' })
     logger.info(`Fastify.listen() completed successfully`)
     logger.info(`Server running on port ${port}`, { port, env: process.env.NODE_ENV || 'development' })
     metrics.gauge('server.port', port)
