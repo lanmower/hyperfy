@@ -66,6 +66,9 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     const filepath = path.join(srcDir, 'core', req.params['*'])
     try {
       const code = await fs.readFile(filepath, 'utf-8')
+      if (code.includes('server/utils/errors')) {
+        console.error(`[STATIC_ASSETS] WARNING: ${req.params['*']} imports from server/utils/errors`)
+      }
       const transformed = await transformCode(code, filepath)
       return reply.type('application/javascript').send(transformed)
     } catch (err) {
@@ -85,8 +88,23 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     }
   })
 
-  // Stub handler for server-only files accessed from client (returns empty export)
+  // Stub handler for server-only files accessed from client
   fastify.get('/src/server/*', async (req, reply) => {
+    const path_str = req.params['*'];
+    // Special handling for HyperfyError - return the actual core implementation
+    if (path_str.includes('errors/HyperfyError')) {
+      try {
+        const coreHyperfyErrorPath = path.join(srcDir, 'core', 'utils', 'errors', 'HyperfyError.js');
+        const code = await fs.readFile(coreHyperfyErrorPath, 'utf-8');
+        const transformed = await transformCode(code, coreHyperfyErrorPath);
+        return reply.type('application/javascript').send(transformed);
+      } catch (err) {
+        return reply.code(500).send('Error loading HyperfyError');
+      }
+    }
+    if (path_str.includes('errors/index')) {
+      return reply.type('application/javascript').send('export { HyperfyError } from "/src/server/utils/errors/HyperfyError.js"; export default {};')
+    }
     return reply.type('application/javascript').send('export const SecurityConfig = {}; export default {};')
   })
 
