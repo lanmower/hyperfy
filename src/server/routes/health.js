@@ -56,10 +56,10 @@ export function registerStatusAPI(fastify, world) {
       const duration = performance.now() - startTime
       logger.info('Status request', { duration: `${duration.toFixed(2)}ms` })
 
-      reply.send(status)
+      return reply.send(status)
     } catch (error) {
       logger.error('Status request failed', { error: error.message })
-      reply.status(500).send({ error: 'Failed to get status' })
+      return reply.status(500).send({ error: 'Failed to get status' })
     }
   })
 
@@ -76,9 +76,9 @@ export function registerStatusAPI(fastify, world) {
         }
       }
 
-      reply.send(health)
+      return reply.send(health)
     } catch (error) {
-      reply.status(500).send({ status: 'unhealthy', error: error.message })
+      return reply.status(500).send({ status: 'unhealthy', error: error.message })
     }
   })
 
@@ -107,9 +107,9 @@ export function registerStatusAPI(fastify, world) {
         rateLimits: rateLimiterManager?.getStats() || {},
       }
 
-      reply.send(metrics)
+      return reply.send(metrics)
     } catch (error) {
-      reply.status(500).send({ error: error.message })
+      return reply.status(500).send({ error: error.message })
     }
   })
 }
