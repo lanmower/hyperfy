@@ -39,21 +39,27 @@ export function readPacket(packet) {
     const isArrayBuffer = packet instanceof ArrayBuffer
     const isBuffer = typeof Buffer !== 'undefined' && Buffer.isBuffer(packet)
     if (!isArrayBuffer && !isBuffer) {
-      throw new Error(`readPacket failed: invalid packet type (expected ArrayBuffer or Buffer, got ${typeof packet})`)
+      logger.error('readPacket security error: invalid packet type', { type: typeof packet })
+      return [null, null]
     }
     const unpacked = packr.unpack(packet)
-    if (!Array.isArray(unpacked) || unpacked.length < 2) {
-      throw new Error(`readPacket failed: invalid packet format (expected array with 2+ elements, got ${typeof unpacked}${Array.isArray(unpacked) ? ` length ${unpacked.length}` : ''})`)
+    if (!Array.isArray(unpacked) || unpacked.length !== 2) {
+      logger.error('readPacket security error: invalid packet structure', { length: unpacked?.length })
+      return [null, null]
     }
     const [id, data] = unpacked
     if (typeof id !== 'number') {
-      throw new Error(`readPacket failed: invalid packet id type (expected number, got ${typeof id})`)
+      logger.error('readPacket security error: id not number', { type: typeof id })
+      return [null, null]
     }
     const info = byId[id]
-    if (!info) throw new Error(`readPacket failed: ${id} (id not found)`)
+    if (!info) {
+      logger.error('readPacket security error: unknown id', { id })
+      return [null, null]
+    }
     return [info.method, data]
   } catch (err) {
-    logger.error('Failed to read packet', { error: err.message })
-    return []
+    logger.error('readPacket decode error', { error: err.message })
+    return [null, null]
   }
 }
