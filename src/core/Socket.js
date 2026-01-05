@@ -126,7 +126,17 @@ export class Socket {
       return
     }
 
-    const [method, data] = MessageHandler.decode(packet)
+    let decodedPacket = packet
+    if (packet.length > 2) {
+      const firstTwoBytes = packet.slice(0, 2)
+      const looksLikeSequence = firstTwoBytes[0] !== 0x92 && firstTwoBytes[0] !== 0x93 && firstTwoBytes[0] !== 0xdc && firstTwoBytes[0] !== 0xdd
+      if (looksLikeSequence) {
+        logger.info('Extracting sequence prefix from packet', { socketId: this.id, byte0: firstTwoBytes[0], byte1: firstTwoBytes[1] })
+        decodedPacket = packet.slice(2)
+      }
+    }
+
+    const [method, data] = MessageHandler.decode(decodedPacket)
 
     if (!method) {
       logger.error('Failed to decode packet from socket', { socketId: this.id })
