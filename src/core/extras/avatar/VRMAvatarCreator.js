@@ -7,10 +7,10 @@ import { Emotes } from '../playerEmotes.js'
 
 const material = new pc.Material()
 
-export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version) {
+export function createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version, skinnedMeshes) {
   const vrm = cloneGLB(glb)
   const tvrm = vrm.userData.vrm
-  const skinnedMeshes = getSkinnedMeshes(vrm.scene)
+  if (!skinnedMeshes) skinnedMeshes = getSkinnedMeshes(vrm.scene)
 
   if (!skinnedMeshes.length) {
     throw new Error('Avatar has no skinned meshes')

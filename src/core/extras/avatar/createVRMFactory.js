@@ -12,7 +12,7 @@ export function createVRMFactory(glb, setupMaterial) {
   if (skeleton) skeleton.update()
 
   return {
-    create: (matrix, hooks, node) => createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version),
+    create: (matrix, hooks, node) => createAvatar(glb, matrix, hooks, node, rootToHips, height, headToHeight, version, skinnedMeshes),
     applyStats(stats) {
       function traverse(entity) {
         if (entity.model && entity.model.asset && entity.model.asset.resource) {

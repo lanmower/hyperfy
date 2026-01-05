@@ -7,6 +7,7 @@ import { ClientPrefs } from './systems/ClientPrefs.js'
 import { InputSystem } from './systems/input/InputSystem.js'
 import { ClientNetwork } from './systems/ClientNetwork.js'
 import { Scripts } from './systems/Scripts.js'
+import { Apps } from './systems/Apps.js'
 import { UnifiedLoader } from './systems/UnifiedLoader.js'
 import { ClientGraphics } from './systems/ClientGraphics.js'
 import { ClientEnvironment } from './systems/ClientEnvironment.js'
@@ -46,6 +47,7 @@ export function createClientWorld() {
   world.register('settings', Settings)
   world.register('collections', Collections)
   world.register('scripts', Scripts)
+  world.register('apps', Apps)
   world.register('loader', UnifiedLoader)
   world.register('blueprints', BlueprintManager)
   world.register('entities', Entities)
