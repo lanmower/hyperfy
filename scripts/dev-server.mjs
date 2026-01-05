@@ -2,6 +2,7 @@ import { spawn } from 'child_process'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import net from 'net'
+import fs from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -34,6 +35,24 @@ async function findAvailablePort(startPort) {
   throw new Error(`Could not find available port starting from ${startPort}`)
 }
 
+function watchServerFiles(callback) {
+  const watchPaths = [
+    path.join(rootDir, 'src/server'),
+    path.join(rootDir, 'src/core')
+  ]
+
+  const watchers = watchPaths.map(dirPath => {
+    return fs.watch(dirPath, { recursive: true }, (eventType, filename) => {
+      if (filename && (filename.endsWith('.js') || filename.endsWith('.mjs'))) {
+        console.log(`[dev-server] File changed: ${filename}`)
+        callback()
+      }
+    })
+  })
+
+  return () => watchers.forEach(w => w.close())
+}
+
 async function main() {
   try {
     const availablePort = await findAvailablePort(port)
@@ -41,20 +60,51 @@ async function main() {
       console.log(`[dev-server] Port ${port} unavailable, using ${availablePort}`)
     }
 
-    const proc = spawn('node', [path.join(rootDir, 'src/server/index.js')], {
-      cwd: rootDir,
-      env: { ...process.env, PORT: availablePort.toString() },
-      stdio: 'inherit',
-    })
+    let proc = null
+    let isRestarting = false
+
+    function startServer() {
+      if (isRestarting) return
+
+      proc = spawn('node', [path.join(rootDir, 'src/server/index.js')], {
+        cwd: rootDir,
+        env: { ...process.env, PORT: availablePort.toString() },
+        stdio: 'inherit',
+      })
+
+      proc.on('exit', code => {
+        if (!isRestarting) {
+          process.exit(code || 0)
+        }
+      })
+    }
+
+    function restartServer() {
+      isRestarting = true
+      console.log('[dev-server] Restarting server...')
+
+      if (proc) {
+        proc.kill('SIGTERM')
+        proc.on('exit', () => {
+          isRestarting = false
+          startServer()
+        })
+      } else {
+        isRestarting = false
+        startServer()
+      }
+    }
+
+    startServer()
+    const closeWatcher = watchServerFiles(restartServer)
 
     process.on('SIGINT', () => {
       console.log('[dev-server] Shutting down...')
-      proc.kill('SIGTERM')
+      closeWatcher()
+      if (proc) {
+        proc.kill('SIGTERM')
+      }
       process.exit(0)
-    })
-
-    proc.on('exit', code => {
-      process.exit(code || 0)
     })
   } catch (err) {
     console.error('[dev-server] Error:', err.message)
