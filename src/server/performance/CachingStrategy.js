@@ -107,7 +107,7 @@ export function generateETag(content) {
 
 export function addETagSupport(fastify) {
   fastify.addHook('onSend', async (request, reply, payload) => {
-    if (reply.sent || reply.headersSent) return
+    if (reply.sent || reply.headersSent) return payload
 
     const contentType = reply.getHeader('content-type')
     if (!contentType || !contentType.includes('application/json')) {

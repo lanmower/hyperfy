@@ -83,9 +83,9 @@ export function trackResponseTime(fastify, options = {}) {
     request._performanceStart = process.hrtime.bigint()
   })
 
-  fastify.addHook('onSend', (request, reply) => {
-    if (!request._performanceStart) return
-    if (reply.sent) return
+  fastify.addHook('onSend', (request, reply, payload) => {
+    if (!request._performanceStart) return payload
+    if (reply.sent) return payload
 
     const end = process.hrtime.bigint()
     const duration = Number(end - request._performanceStart) / 1000000
@@ -108,6 +108,7 @@ export function trackResponseTime(fastify, options = {}) {
         // Headers already sent by another onSend hook, silently skip
       }
     }
+    return payload
   })
 
   return metrics
@@ -151,9 +152,9 @@ export function registerPerformanceEndpoints(fastify) {
 }
 
 export function enforcePerformanceBudgets(fastify, options = {}) {
-  fastify.addHook('onSend', (request, reply) => {
+  fastify.addHook('onSend', (request, reply, payload) => {
     if (reply.sent || reply.headersSent) {
-      return
+      return payload
     }
     if (options.enforceStrict && request._performanceStart) {
       const end = process.hrtime.bigint()
@@ -168,6 +169,7 @@ export function enforcePerformanceBudgets(fastify, options = {}) {
         )
       }
     }
+    return payload
   })
 }
 

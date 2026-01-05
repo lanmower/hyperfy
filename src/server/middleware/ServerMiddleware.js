@@ -65,7 +65,7 @@ export async function registerMiddleware(fastify, timeoutManager, logger, errorT
     }
   })
 
-  logger.info('[MIDDLEWARE] Temporarily disabling cache functions for HTTP connectivity fix')
+  // Caching middleware causes HTTP timeouts - disabled for now
   // setupCacheHeaders(fastify)
   // addETagSupport(fastify)
   // trackResponseTime(fastify)

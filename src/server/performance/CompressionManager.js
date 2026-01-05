@@ -36,8 +36,8 @@ export async function setupCompression(fastify, options = {}) {
     exclude: config.exclude,
   })
 
-  fastify.addHook('onSend', (request, reply) => {
-    if (reply.sent || reply.headersSent) return
+  fastify.addHook('onSend', (request, reply, payload) => {
+    if (reply.sent || reply.headersSent) return payload
     const contentType = reply.getHeader('content-type') || ''
     const level = getCompressionLevel(contentType)
 
@@ -48,6 +48,7 @@ export async function setupCompression(fastify, options = {}) {
         // Headers already sent, skip setting custom header
       }
     }
+    return payload
   })
 }
 
