@@ -21,20 +21,7 @@ export class WebSocketEventHandlers {
         return
       }
 
-      let packetData = e.data
-      const sequenceInfo = this.manager.messageQueue.extractSequenceFromPacket(e.data)
-      if (sequenceInfo) {
-        const seqValidation = this.manager.messageQueue.validateSequence(sequenceInfo.sequence)
-        if (seqValidation.gap > 0 && seqValidation.gap < 256) {
-          this.manager.logger.warn('Message sequence gap detected', { gap: seqValidation.gap })
-        }
-        this.manager.messageQueue.setExpectedSequence(sequenceInfo.sequence)
-        packetData = sequenceInfo.payload
-      }
-
-      const modifiedEvent = Object.create(e)
-      Object.defineProperty(modifiedEvent, 'data', { value: packetData, enumerable: true })
-      this.manager.network.onPacket(modifiedEvent)
+      this.manager.network.onPacket(e)
     }
   }
 

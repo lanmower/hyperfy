@@ -208,7 +208,6 @@
     "directories": [
       ".git",
       ".glootie",
-      "build",
       "glootie",
       ".mcp-metadata",
       "code_search_index",
@@ -331,11 +330,13 @@
       ".env.example",
       ".env.local",
       ".gitignore",
+      "CdevhyperfyVERIFICATION_REPORT.md",
       "debug-dom.mjs",
       "debug-init.mjs",
       "debug-react-error.mjs",
       "debug-visual-state.mjs",
       "DIAGNOSTIC_REPORT.md",
+      "EXECUTIVE_SUMMARY.md",
       "FEATURE_GAPS_FIXED.md",
       "FINAL_STATUS_REPORT.md",
       "FINAL_SUCCESS.png",
@@ -839,12 +840,11 @@
       "scene.hyp.bak",
       "SUCCESS.png",
       "SYSTEM_STATUS.md",
-      "test-rendering.mjs",
-      "test-visual-verification.mjs",
       "TESTING_COMPLETE.md",
       "TESTING_INDEX.md",
       "TESTING_SUMMARY.md",
       "TEST_RESULTS.md",
+      "TEST_RESULTS_ACTUAL.md",
       "TEXTURE_BLOB_URL_ISSUE.md",
       "VERIFICATION_COMPLETE.md",
       "VERIFICATION_REPORT.md",
@@ -904,5 +904,5 @@
     "🐳 Consider adding Docker for containerization",
     "🔄 Consider adding CI/CD pipeline for automation"
   ],
-  "lastAnalyzed": 1767592431965
+  "lastAnalyzed": 1767599978027
 }
