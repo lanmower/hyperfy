@@ -7,8 +7,12 @@ export function createKeyboardHandler(inputSystem) {
 
   handler.init = function() {
     baseInit()
-    this.addEventListener(window, 'keydown', this.onKeyDown.bind(this))
-    this.addEventListener(window, 'keyup', this.onKeyUp.bind(this))
+    const boundKeyDown = this.onKeyDown.bind(this)
+    const boundKeyUp = this.onKeyUp.bind(this)
+    this.addEventListener(window, 'keydown', boundKeyDown)
+    this.addEventListener(window, 'keyup', boundKeyUp)
+    this.addEventListener(document, 'keydown', boundKeyDown, true)
+    this.addEventListener(document, 'keyup', boundKeyUp, true)
   }
 
   handler.onKeyDown = e => {
