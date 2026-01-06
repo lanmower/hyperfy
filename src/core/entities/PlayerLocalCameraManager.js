@@ -32,37 +32,30 @@ export class PlayerLocalCameraManager {
     }
 
     const cam = player.cam
-    const camPos = cam.getLocalPosition()
-    camPos.copy(player.base.getLocalPosition())
+    const camPos = v1.copy(player.base.position)
+    camPos.y += player.camHeight
 
     if (!player.world.xr?.session) {
-      camPos.y += player.camHeight
-
       if (!player.firstPerson) {
-        const forward = v1.copy(FORWARD)
-        const camRot = cam.getLocalRotation()
-        forward.applyQuaternion(camRot)
-        const right = v2.copy(forward).cross(UP).normalize()
+        const forward = v2.copy(FORWARD)
+        forward.applyQuaternion(cam.quaternion)
+        const right = forward.clone().cross(UP).normalize()
         camPos.add(right.scale(0.3))
       }
     }
-    cam.setLocalPosition(camPos)
+    cam.position.copy(camPos)
   }
 
   static syncControlCamera(player, delta) {
     if (player.world.xr?.session) {
       if (player.control?.camera) {
-        const ctrlPos = player.control.camera.getLocalPosition()
-        const ctrlRot = player.control.camera.getLocalRotation()
-        ctrlPos.copy(player.cam.getLocalPosition())
-        ctrlRot.copy(player.cam.getLocalRotation())
-        player.control.camera.setLocalPosition(ctrlPos)
-        player.control.camera.setLocalRotation(ctrlRot)
+        player.control.camera.position.copy(player.cam.position)
+        player.control.camera.quaternion.copy(player.cam.quaternion)
       }
     } else if (player.control?.camera) {
       simpleCamLerp(player.world, player.control.camera, player.cam, delta)
       if (window.__DEBUG__) {
-        const dist = player.control.camera.getLocalPosition().distance(player.cam.getLocalPosition())
+        const dist = player.control.camera.position.distanceTo(player.cam.position)
         window.__DEBUG__.cameraDist = dist
         window.__DEBUG__.cameraZoom = player.control.camera.zoom || 1
       }
