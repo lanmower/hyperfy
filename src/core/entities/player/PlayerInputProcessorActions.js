@@ -79,6 +79,17 @@ export class PlayerInputProcessorActions {
     const isXR = this.playerLocal.world.xr?.session
     const { control, physics, stick, world } = this.playerLocal
     if (!physics || (!control && !isXR && !stick?.active)) return
+
+    if (window.__DEBUG__?.logMovement) {
+      window.__DEBUG__.movementLog = window.__DEBUG__.movementLog || [];
+      window.__DEBUG__.movementLog.push({
+        time: Date.now(),
+        control_keyW: control?.keyW?.down,
+        physics_moving: physics?.moving,
+      });
+      if (window.__DEBUG__.movementLog.length > 100) window.__DEBUG__.movementLog.shift();
+    }
+
     physics.moveDir.set(0, 0, 0)
     if (isXR && control) {
       physics.moveDir.x = control.xrLeftStick.value.x
