@@ -26,8 +26,8 @@ export class SocketManager {
     }
 
     const executeSend = async () => {
-      const compressed = this.network.compressor.compress(data)
-      const packet = MessageHandler.encode(name, compressed)
+      const toSend = data
+      const packet = MessageHandler.encode(name, toSend)
       this.network.sockets.forEach(socket => {
         if (socket.id === ignoreSocketId) return
         socket.sendPacket(packet)
