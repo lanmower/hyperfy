@@ -2,7 +2,6 @@
 import { uuid } from '../../utils.js'
 import { storage } from '../../storage.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
-import moment from 'moment'
 
 const logger = new StructuredLogger('ClientNetworkHandlers')
 
@@ -111,7 +110,7 @@ export const createClientNetworkHandlers = (network) => ({
       from: null,
       fromId: null,
       body: 'You have been disconnected.',
-      createdAt: moment().toISOString(),
+      createdAt: new Date().toISOString(),
     })
     network.world.emit('disconnect', code || true)
     logger.info('Disconnected', { code })

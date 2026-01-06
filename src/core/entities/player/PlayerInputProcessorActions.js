@@ -124,7 +124,7 @@ export class PlayerInputProcessorActions {
   applyMovementRotation() {
     const isXR = this.playerLocal.world.xr?.session
     const { physics, cam, world } = this.playerLocal
-    if (!physics) return
+    if (!physics || !physics.flyDir || !physics.moveDir) return
     physics.moveDir.normalize()
     if (isXR && world.xr?.camera) {
       physics.flyDir.copy(physics.moveDir).applyQuaternion(world.xr.camera.quaternion)

@@ -1,5 +1,4 @@
 import { BaseEntity } from './BaseEntity.js'
-import { isBoolean } from 'lodash-es'
 import { hasRank, Ranks } from '../extras/ranks.js'
 import { PlayerController } from './player/PlayerController.js'
 import { PlayerChatBubble } from './player/PlayerChatBubble.js'
@@ -72,6 +71,7 @@ export class PlayerLocal extends BaseEntity {
       this.controlBinder.initControl()
       logger.info('Control binding initialized')
 
+      this.world.entities.setHot(this, true)
       this.world.setHot(this, true)
       logger.info('Player marked as hot, emitting ready event')
       this.world.events.emit('ready', true)
@@ -79,6 +79,7 @@ export class PlayerLocal extends BaseEntity {
       logger.info('init() completed')
     } catch (err) {
       logger.error('init() error', err)
+      this.world.entities.setHot(this, true)
       this.world.setHot(this, true)
       this.world.events.emit('ready', true)
       this.isInitialized = true
@@ -108,7 +109,7 @@ export class PlayerLocal extends BaseEntity {
 
   toggleFlying(value) {
     if (!this.physics) return
-    value = isBoolean(value) ? value : !this.physics.flying
+    value = typeof value === 'boolean' ? value : !this.physics.flying
     if (this.physics.flying === value) return
     this.physics.flying = value
     if (this.physics.flying) {

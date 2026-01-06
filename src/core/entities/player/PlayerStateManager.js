@@ -1,4 +1,3 @@
-import { isNumber } from 'lodash-es'
 import * as THREE from '../../extras/three.js'
 import { BaseManager } from '../../patterns/index.js'
 
@@ -11,7 +10,7 @@ export class PlayerStateManager extends BaseManager {
   teleport({ position: pos, rotationY }) {
     const position = new THREE.Vector3()
     position.copy(pos.isVector3 ? pos : new THREE.Vector3().fromArray(pos))
-    const hasRotation = isNumber(rotationY)
+    const hasRotation = typeof rotationY === 'number'
     const pose = this.player.capsule.getGlobalPose()
     position.toPxTransform(pose)
     this.player.capsuleHandle.snap(pose)
