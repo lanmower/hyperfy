@@ -88,8 +88,13 @@ export class ClientNetworkSync {
   }
 
   onSnapshot(data, world) {
-    const isFullSnapshot = data.collections || data.entities || data.blueprints
-    const isFrameUpdate = data.time !== undefined && data.frame !== undefined && !isFullSnapshot
+    if (!data || typeof data !== 'object') {
+      logger.error('Invalid snapshot data type', { dataType: typeof data, isNull: data === null })
+      return
+    }
+
+    const isFrameUpdate = data.time !== undefined && data.frame !== undefined && !data.id && typeof data.serverTime !== 'number'
+    const isFullSnapshot = data.id && typeof data.serverTime === 'number'
 
     if (isFrameUpdate) {
       if (data.time !== undefined) {
@@ -99,20 +104,14 @@ export class ClientNetworkSync {
     }
 
     if (!isFullSnapshot) {
-      logger.warn('Snapshot packet missing expected data', {
+      logger.warn('Snapshot packet missing required full snapshot fields', {
+        hasId: !!data.id,
+        hasServerTime: typeof data.serverTime === 'number',
         hasCollections: !!data.collections,
         hasEntities: !!data.entities,
         hasBlueprints: !!data.blueprints,
         hasTime: data.time !== undefined,
         hasFrame: data.frame !== undefined,
-      })
-      return
-    }
-
-    if (!data.id || typeof data.serverTime !== 'number') {
-      logger.error('Snapshot missing required fields', {
-        hasId: !!data.id,
-        serverTimeType: typeof data.serverTime,
       })
       return
     }
