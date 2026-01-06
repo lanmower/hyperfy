@@ -40,8 +40,9 @@ export class PlayerLocalCameraManager {
         const forward = v2.copy(FORWARD)
         forward.applyQuaternion(cam.quaternion)
         const right = forward.clone().cross(UP).normalize()
-        right.mul(0.3)
-        camPos.add(right)
+        camPos.x += right.x * 0.3
+        camPos.y += right.y * 0.3
+        camPos.z += right.z * 0.3
       }
     }
     cam.position.copy(camPos)
