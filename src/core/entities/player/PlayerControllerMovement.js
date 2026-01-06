@@ -166,7 +166,7 @@ export class PlayerControllerMovement {
   updateMatrices() {
     if (!this.transformSync.isDirty || this.transformSync.pendingUpdates.size === 0) return
     for (const object of this.transformSync.pendingUpdates) {
-      if (!object) continue
+      if (!object || !object.updateMatrix) continue
       object.updateMatrix()
     }
     this.transformSync.isDirty = false
@@ -174,7 +174,7 @@ export class PlayerControllerMovement {
 
   updateMatrixWorldAll() {
     for (const object of this.transformSync.pendingUpdates) {
-      if (!object) continue
+      if (!object || !object.updateMatrixWorld) continue
       object.updateMatrixWorld(true)
     }
     this.transformSync.pendingUpdates.clear()
