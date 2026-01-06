@@ -54,6 +54,7 @@ export class ClientNetwork extends BaseNetwork {
   set initialized(value) { this.networkState.initialized = value }
   get isClient() { return true }
   get serverTimeOffset() { return this.networkState.serverTimeOffset }
+  get connected() { return this.wsManager?.ws?.readyState === WebSocket.OPEN }
 
   init({ wsUrl, name, avatar }) {
     if (this.networkState.initialized) {

@@ -1,42 +1,16 @@
-import * as pc from '../playcanvas.js'
-
-function cloneEntity(entity) {
-  const cloned = new pc.Entity(entity.name)
-  cloned.setLocalPosition(entity.getLocalPosition())
-  cloned.setLocalRotation(entity.getLocalRotation())
-  cloned.setLocalScale(entity.getLocalScale())
-  if (entity.model) {
-    cloned.addComponent('model', { asset: entity.model.asset })
-  }
-  if (entity.script) {
-    for (const scriptName in entity.script) {
-      if (entity.script.hasOwnProperty(scriptName)) {
-        cloned.addComponent('script')
-        cloned.script[scriptName] = entity.script[scriptName]
-      }
-    }
-  }
-  for (let i = 0; i < entity.children.length; i++) {
-    cloned.addChild(cloneEntity(entity.children[i]))
-  }
-  return cloned
-}
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 export function cloneGLB(glb) {
-  return { ...glb, scene: cloneEntity(glb.scene) }
+  return { ...glb, scene: SkeletonUtils.clone(glb.scene) }
 }
 
 export function getSkinnedMeshes(scene) {
   const meshes = []
-  function traverse(entity) {
-    if (entity.model && entity.model.skinInstances && entity.model.skinInstances.length > 0) {
-      meshes.push(entity)
+  scene.traverse(node => {
+    if (node.isSkinnedMesh) {
+      meshes.push(node)
     }
-    for (let i = 0; i < entity.children.length; i++) {
-      traverse(entity.children[i])
-    }
-  }
-  traverse(scene)
+  })
   return meshes
 }
 
