@@ -81,7 +81,8 @@ export class PlayerInputProcessorActions {
     if (!physics || (!control && !isXR && !stick?.active)) return
     physics.moveDir.set(0, 0, 0)
     if (isXR && control) {
-      physics.moveDir.x = control.xrLeftStick.value.x; physics.moveDir.z = control.xrLeftStick.value.z
+      physics.moveDir.x = control.xrLeftStick.value.x
+      physics.moveDir.z = control.xrLeftStick.value.z
     } else if (stick?.active) {
       const { x: touchX, y: touchY } = stick.touch.position
       const { x: centerX, y: centerY } = stick.center
@@ -94,11 +95,12 @@ export class PlayerInputProcessorActions {
       physics.moveDir.x = (touchX - stick.center.x) / moveRadius
       physics.moveDir.z = (touchY - stick.center.y) / moveRadius
       world.events.emit('stick', stick)
-    } else if (control) {
-      if (control.keyW.down || control.arrowUp.down) physics.moveDir.z -= 1
-      if (control.keyS.down || control.arrowDown.down) physics.moveDir.z += 1
-      if (control.keyA.down || control.arrowLeft.down) physics.moveDir.x -= 1
-      if (control.keyD.down || control.arrowRight.down) physics.moveDir.x += 1
+    }
+    if (control) {
+      if (control.keyW?.down || control.arrowUp?.down) physics.moveDir.z -= 1
+      if (control.keyS?.down || control.arrowDown?.down) physics.moveDir.z += 1
+      if (control.keyA?.down || control.arrowLeft?.down) physics.moveDir.x -= 1
+      if (control.keyD?.down || control.arrowRight?.down) physics.moveDir.x += 1
     }
     physics.moving = physics.moveDir.length() > STICK_DEAD_ZONE
   }

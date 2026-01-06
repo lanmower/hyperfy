@@ -22,7 +22,10 @@ export function createKeyboardHandler(inputSystem) {
     if (inputSystem.buttonsDown.has(prop)) return
     inputSystem.buttonsDown.add(prop)
     for (const control of inputSystem.controls) {
-      const button = control.entries[prop]
+      let button = control.entries[prop]
+      if (!button && control[prop]) {
+        button = control[prop]
+      }
       if (button?.$button) {
         button.pressed = true; button.down = true
         const capture = button.onPress?.()
@@ -40,7 +43,10 @@ export function createKeyboardHandler(inputSystem) {
     if (!inputSystem.buttonsDown.has(prop)) return
     inputSystem.buttonsDown.delete(prop)
     for (const control of inputSystem.controls) {
-      const button = control.entries[prop]
+      let button = control.entries[prop]
+      if (!button && control[prop]) {
+        button = control[prop]
+      }
       if (button?.$button && button.down) { button.down = false; button.released = true; button.onRelease?.() }
       const capture = control.options.onKeyUp?.(e)
       if (capture) break
