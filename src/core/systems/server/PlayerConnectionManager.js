@@ -3,7 +3,6 @@ import { SnapshotCodec } from '../network/SnapshotCodec.js'
 import { Socket } from '../../Socket.js'
 import { uuid } from '../../utils.js'
 import { createJWT, readJWT } from '../../utils/helpers/crypto.js'
-import moment from 'moment'
 import { EVENT } from '../../constants/EventNames.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 

@@ -6,6 +6,10 @@ import { StructuredLogger } from '../../utils/logging/index.js'
 const logger = new StructuredLogger('ClientNetworkHandlers')
 
 export const createClientNetworkHandlers = (network) => ({
+  onSnapshot: (data) => {
+    network.snapshotProcessor.process(data)
+  },
+
   onSettingsModified: (data) => {
     network.world.settings.set(data.key, data.value)
   },
