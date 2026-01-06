@@ -97,10 +97,27 @@ export class PlayerInputProcessorActions {
       world.events.emit('stick', stick)
     }
     if (control) {
-      if (control.keyW?.down || control.arrowUp?.down) physics.moveDir.z -= 1
-      if (control.keyS?.down || control.arrowDown?.down) physics.moveDir.z += 1
-      if (control.keyA?.down || control.arrowLeft?.down) physics.moveDir.x -= 1
-      if (control.keyD?.down || control.arrowRight?.down) physics.moveDir.x += 1
+      const keyWDown = control.keyW?.down
+      const keyADown = control.keyA?.down
+      const keySDown = control.keyS?.down
+      const keyDDown = control.keyD?.down
+      const arrowUpDown = control.arrowUp?.down
+      const arrowDownDown = control.arrowDown?.down
+      const arrowLeftDown = control.arrowLeft?.down
+      const arrowRightDown = control.arrowRight?.down
+
+      if (keyWDown || arrowUpDown) physics.moveDir.z -= 1
+      if (keySDown || arrowDownDown) physics.moveDir.z += 1
+      if (keyADown || arrowLeftDown) physics.moveDir.x -= 1
+      if (keyDDown || arrowRightDown) physics.moveDir.x += 1
+
+      if (window.__DEBUG__?.keyboardDebug && (keyWDown || keySDown || keyADown || keyDDown)) {
+        window.__DEBUG__.lastKeyboardInput = {
+          keyW: keyWDown, keyA: keyADown, keyS: keySDown, keyD: keyDDown,
+          moveDir: {x: physics.moveDir.x, z: physics.moveDir.z},
+          timestamp: Date.now()
+        }
+      }
     }
     physics.moving = physics.moveDir.length() > STICK_DEAD_ZONE
   }
