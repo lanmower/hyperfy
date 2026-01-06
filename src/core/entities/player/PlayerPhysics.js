@@ -24,6 +24,7 @@ export class PlayerPhysics {
     this.moveDir = new THREE.Vector3()
     this.flyDir = new THREE.Vector3()
     this.moving = false
+    this.groundNormal = new THREE.Vector3(0, 1, 0)
 
     this.platform = {
       actor: null,
@@ -84,6 +85,9 @@ export class PlayerPhysics {
       this.groundDetection.detectGround()
       this.groundDetection.handleSteepSlopes()
     }
+
+    // Sync ground normal from ground detection
+    this.groundNormal.copy(this.groundDetection.groundNormal)
 
     this.physicsState.updateMaterialFriction()
     this.physicsState.updateJumpFallState(delta)
