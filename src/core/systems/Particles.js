@@ -126,10 +126,23 @@ export class Particles extends System {
   }
 
   onError = err => {
-    const message = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error ? err.stack : null
-    const type = err?.constructor?.name || typeof err
-    logger.error('Particle system error', { error: message, errorType: type, stack })
+    let message = 'Unknown error'
+    let stack = null
+    let filename = null
+    let lineno = null
+
+    if (err instanceof Error) {
+      message = err.message
+      stack = err.stack
+    } else if (err?.message) {
+      message = err.message
+      filename = err.filename
+      lineno = err.lineno
+    } else if (typeof err === 'string') {
+      message = err
+    }
+
+    logger.error('Particle system error', { message, filename, lineno, stack })
   }
 
   onXRSession = session => {
