@@ -66,9 +66,11 @@ export class ClientEnvironment extends System {
         })
         const modelEntity = new pc.Entity('baseEnvironment')
         modelEntity.addComponent('model', { asset: modelAsset })
+        modelEntity.setLocalPosition(0, 916 / 2, 0)
         app.root.addChild(modelEntity)
         logger.info('Base environment model loaded and added to scene', {
-          meshInstances: modelEntity.model?.meshInstances?.length || 0
+          meshInstances: modelEntity.model?.meshInstances?.length || 0,
+          position: modelEntity.getLocalPosition()
         })
       } catch (err) {
         logger.error('Failed to load base environment model', { error: err.message })
