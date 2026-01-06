@@ -13,7 +13,7 @@ export class WorldPersistence extends PersistenceBase {
 
   async loadSpawn() {
     const row = await this.db('config').where('key', 'spawn').cacheAs('getConfigValue').first()
-    return row?.value || '{ "position": [0, 0, 0], "quaternion": [0, 0, 0, 1] }'
+    return row?.value || '{ "position": [0, 10, 0], "quaternion": [0, 0, 0, 1] }'
   }
 
   async saveSpawn(value) {
