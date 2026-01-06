@@ -149,6 +149,18 @@ export class ServerNetwork extends BaseNetwork {
     }
   }
 
+  onClientLogs(socket, data) {
+    if (!data || !Array.isArray(data.logs)) {
+      logger.warn('Invalid client logs data', { hasData: !!data, isArray: Array.isArray(data?.logs) })
+      return
+    }
+    for (const logEntry of data.logs) {
+      if (logEntry && typeof logEntry === 'object') {
+        console.log(logEntry.message || JSON.stringify(logEntry))
+      }
+    }
+  }
+
   destroy() {
     if (this.socketIntervalId) clearInterval(this.socketIntervalId)
     if (this.saveTimerId) clearTimeout(this.saveTimerId)

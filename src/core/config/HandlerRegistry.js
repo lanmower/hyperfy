@@ -47,6 +47,7 @@ export const serverNetworkHandlers = {
   'errorEvent': 'onErrorEvent',
   'errorReport': 'onErrorReport',
   'clientError': 'onClientError',
+  'clientLogs': 'onClientLogs',
   'mcpSubscribeErrors': 'onMcpSubscribeErrors',
   'getErrors': 'onGetErrors',
   'clearErrors': 'onClearErrors',

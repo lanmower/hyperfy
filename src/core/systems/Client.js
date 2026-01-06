@@ -1,4 +1,6 @@
 import { System } from './System.js'
+import { StructuredLogger } from '../utils/logging/StructuredLogger.js'
+import { NetworkLogSink } from '../utils/logging/NetworkLogSink.js'
 
 import * as THREE from '../extras/three.js'
 import { initYoga } from '../extras/yoga.js'
@@ -7,12 +9,15 @@ const BYTES_PER_MB = 1048576
 const WORKER_RATE_MS = 200
 
 let worker
+let networkLogSink = null
+const originalStructuredLoggerAddSink = StructuredLogger.prototype.addSink
 
 export class Client extends System {
   static DEPS = {
     graphics: 'graphics',
     tick: 'tick',
     events: 'events',
+    network: 'network',
   }
 
   static EVENTS = {
@@ -74,6 +79,27 @@ export class Client extends System {
       this.graphics.startApp()
     }
     document.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.setupNetworkLogging()
+  }
+
+  setupNetworkLogging() {
+    if (!this.network || networkLogSink) return
+
+    networkLogSink = new NetworkLogSink(this.network)
+
+    StructuredLogger.prototype.addSink = function(sink) {
+      originalStructuredLoggerAddSink.call(this, sink)
+      if (networkLogSink && sink !== networkLogSink) {
+        originalStructuredLoggerAddSink.call(this, networkLogSink)
+      }
+      return this
+    }
+
+    setInterval(() => {
+      if (networkLogSink) {
+        networkLogSink.flush()
+      }
+    }, 5000)
   }
 
   onSettingChanged = ({ key, value }) => {
@@ -99,5 +125,9 @@ export class Client extends System {
       this.graphics.app.pause()
     }
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
+    if (networkLogSink) {
+      networkLogSink.destroy()
+      networkLogSink = null
+    }
   }
 }
