@@ -22,6 +22,7 @@ export class PlayerPhysics {
     this.airJumping = false
 
     this.moveDir = new THREE.Vector3()
+    this.flyDir = new THREE.Vector3()
     this.moving = false
 
     this.platform = {
