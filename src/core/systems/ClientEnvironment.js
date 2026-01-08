@@ -38,28 +38,6 @@ export class ClientEnvironment extends System {
     app.scene.ambientLight = new pc.Color(1, 1, 1)
     app.scene.ambientLightIntensity = 0.6
 
-    if (this.baseEnvironment?.model) {
-      try {
-        logger.info('Loading base environment model', { model: this.baseEnvironment.model })
-        const modelAsset = await new Promise((resolve, reject) => {
-          const asset = new pc.Asset('baseEnvironment', 'model', { url: this.baseEnvironment.model })
-          asset.on('load', () => resolve(asset))
-          asset.on('error', reject)
-          app.assets.add(asset)
-          app.assets.load(asset)
-        })
-        const modelEntity = new pc.Entity('baseEnvironment')
-        modelEntity.addComponent('model', { asset: modelAsset })
-        modelEntity.setLocalPosition(0, 0, 0)
-        app.root.addChild(modelEntity)
-        logger.info('Base environment model loaded and added to scene', {
-          meshInstances: modelEntity.model?.meshInstances?.length || 0,
-          position: modelEntity.getLocalPosition()
-        })
-      } catch (err) {
-        logger.error('Failed to load base environment model', { error: err.message })
-      }
-    }
 
     const settings = {
       hdr: this.baseEnvironment?.hdr,
