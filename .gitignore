@@ -39,3 +39,7 @@ playwright/
 .auto-claude/
 
 .code-search/
+
+# Database files
+*.db
+world/hyperfy.db
