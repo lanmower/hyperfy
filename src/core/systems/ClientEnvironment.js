@@ -38,22 +38,6 @@ export class ClientEnvironment extends System {
     app.scene.ambientLight = new pc.Color(1, 1, 1)
     app.scene.ambientLightIntensity = 0.6
 
-    const material = new pc.StandardMaterial()
-    material.diffuse.set(0.2, 0.6, 0.2)
-    material.update()
-
-    const mesh = pc.createBox(app.graphicsDevice, { halfExtents: { x: 5, y: 0.5, z: 5 } })
-
-    const ground = new pc.Entity('ground')
-    ground.setLocalPosition(0, -2, 0)
-    const meshInstance = new pc.MeshInstance(mesh, material)
-    ground.addComponent('render', {
-      type: 'asset',
-      meshInstances: [meshInstance]
-    })
-
-    app.root.addChild(ground)
-
     if (this.baseEnvironment?.model) {
       try {
         logger.info('Loading base environment model', { model: this.baseEnvironment.model })

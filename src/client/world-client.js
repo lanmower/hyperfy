@@ -40,7 +40,6 @@ export function Client({ wsUrl, onSetup }) {
 
       const baseEnvironment = {
         model: '/public/base-environment.glb',
-        bg: null,
         hdr: '/public/Clear_08_4pm_LDR.hdr',
         sky: '/public/day2-2k.jpg',
         rotationY: 0,
