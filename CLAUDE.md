@@ -30,6 +30,9 @@ WebSocket Multiplayer System
 - Player state updates broadcast to all connected clients
 - Connection state exposed via PlayerConnectionManager
 - No persistent session storage; game-session-only lifetime
+- WorldNetworkPlugin validates world.network exists before accepting connections
+- Connection rejected with code 1002 if network system not initialized
+- WebSocket handler waits for world.init() and world.start() to complete before accepting connections
 
 Asset Storage System
 - Local storage default (world/assets/ directory)
@@ -58,3 +61,12 @@ SQL.js In-Memory Database
 - Production deployment requires PostgreSQL or SQLite with persistence
 - Parameter binding mandatory: stmt.bind([params]) before stmt.step()
 - Custom QueryBuilder available at C:\dev\hyperfy\src\server\QueryBuilder.js
+
+System Initialization Sequencing
+- World.init() orchestrates all system initialization: initializeSystems() then startSystems()
+- initializeSystems() calls each system.init(options) sequentially
+- startSystems() calls each system.start() sequentially with 30-second timeout per system
+- ServerNetwork.start() loads spawn, blueprints, and entities from database via ServerLifecycleManager
+- WebSocket route registered BEFORE systems complete startup; protected by world.network null check
+- If system.start() hangs for >30s, error logged and initialization continues (non-blocking)
+- Client WebSocket connections only accepted after world.start() completion
