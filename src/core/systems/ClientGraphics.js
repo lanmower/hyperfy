@@ -78,6 +78,7 @@ export class ClientGraphics extends System {
 
   start() {
     logger.info('ClientGraphics.start called')
+    this.startApp()
   }
 
   startApp() {

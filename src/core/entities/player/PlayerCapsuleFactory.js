@@ -1,14 +1,10 @@
 // Player capsule physics factory
-import * as THREE from '../../extras/three.js'
 import { Layers } from '../../extras/Layers.js'
 import { PhysicsConfig } from '../../config/SystemConfig.js'
 import { BaseFactory } from '../../patterns/BaseFactory.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
-import { SharedVectorPool } from '../../utils/SharedVectorPool.js'
 
 const logger = new StructuredLogger('PlayerCapsuleFactory')
-const BACKWARD = new THREE.Vector3(0, 0, 1)
-const { q1, v1 } = SharedVectorPool('PlayerCapsuleFactory', 1, 1)
 
 export class PlayerCapsuleFactory extends BaseFactory {
   static create(config) {
@@ -46,10 +42,13 @@ export class PlayerCapsuleFactory extends BaseFactory {
     )
     const shape = world.physics.physics.createShape(geometry, material, true, flags)
     const localPose = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-    q1.set(0, 0, 0).setFromAxisAngle(BACKWARD, Math.PI / 2)
-    q1.toPxTransform(localPose)
-    v1.set(0, halfHeight + radius, 0)
-    v1.toPxTransform(localPose)
+    localPose.p.x = 0
+    localPose.p.y = halfHeight + radius
+    localPose.p.z = 0
+    localPose.q.w = Math.cos(Math.PI / 4)
+    localPose.q.x = 0
+    localPose.q.y = Math.sin(Math.PI / 4)
+    localPose.q.z = 0
     shape.setLocalPose(localPose)
 
     const filterData = new PHYSX.PxFilterData(
@@ -68,8 +67,13 @@ export class PlayerCapsuleFactory extends BaseFactory {
     shape.setSimulationFilterData(filterData)
 
     const transform = new PHYSX.PxTransform(PHYSX.PxIDENTITYEnum.PxIdentity)
-    v1.copy(player.base.position).toPxTransform(transform)
-    q1.set(0, 0, 0, 1).toPxTransform(transform)
+    transform.p.x = player.data.position[0]
+    transform.p.y = player.data.position[1]
+    transform.p.z = player.data.position[2]
+    transform.q.x = player.data.quaternion[0]
+    transform.q.y = player.data.quaternion[1]
+    transform.q.z = player.data.quaternion[2]
+    transform.q.w = player.data.quaternion[3]
     const capsule = world.physics.physics.createRigidDynamic(transform)
     capsule.setMass(player.mass)
     capsule.setRigidBodyFlag(PHYSX.PxRigidBodyFlagEnum.eENABLE_CCD, true)
@@ -82,7 +86,9 @@ export class PlayerCapsuleFactory extends BaseFactory {
       tag: null,
       playerId: player.data.id,
       onInterpolate: position => {
-        player.base.position.copy(position)
+        player.data.position[0] = position.x
+        player.data.position[1] = position.y
+        player.data.position[2] = position.z
       },
     })
 
