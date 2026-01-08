@@ -6,8 +6,8 @@ import * as pc from '../core/extras/playcanvas.js'
 // Make React global for JSX transform (which uses React.createElement)
 globalThis.React = React
 
-// Make PlayCanvas global
-window.pc = pc
+// Make PlayCanvas global - use a plain object to avoid read-only module assignments
+window.pc = Object.assign({}, pc)
 
 function App() {
   // Phase 2: Network initialization

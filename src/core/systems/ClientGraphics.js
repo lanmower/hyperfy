@@ -49,6 +49,15 @@ export class ClientGraphics extends System {
     this.app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW)
     this.app.setCanvasResolution(pc.RESOLUTION_AUTO)
 
+    if (typeof window !== 'undefined') {
+      if (!window.pc) {
+        window.pc = {}
+        Object.assign(window.pc, pc)
+      }
+      window.pc.app = this.app
+    }
+    this.app.frame = 0
+
     const cameraEntity = new pc.Entity('camera')
     cameraEntity.addComponent('camera', {
       fov: 75,
@@ -101,6 +110,22 @@ export class ClientGraphics extends System {
 
   render() {
     this.frameCount++
+    if (this.app) this.app.frame = this.frameCount
+    const player = this.world.entities?.player
+    if (player?.control?.camera && player.control.camera.write && player.cam) {
+      const pcCameraEntity = this.pcCamera.entity
+      pcCameraEntity.setLocalPosition(
+        player.control.camera.position.x,
+        player.control.camera.position.y,
+        player.control.camera.position.z
+      )
+      pcCameraEntity.setLocalRotation(
+        player.control.camera.quaternion.x,
+        player.control.camera.quaternion.y,
+        player.control.camera.quaternion.z,
+        player.control.camera.quaternion.w
+      )
+    }
   }
 
   commit() {
