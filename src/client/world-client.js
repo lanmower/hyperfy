@@ -39,10 +39,10 @@ export function Client({ wsUrl, onSetup }) {
       }
 
       const baseEnvironment = {
-        model: null,
+        model: '/public/base-environment.glb',
         bg: null,
-        hdr: '/assets/62db0ffbcea86b5e9ba23fb5da739b160e8abfd3b390235fed5ac436750e1e2e.hdr',
-        sky: '/assets/179d71586e675efc4af04185e1b2d3e6b7f4a5b707f1ef5e9b6497c5660ecab7.webp',
+        hdr: '/public/Clear_08_4pm_LDR.hdr',
+        sky: '/public/day2-2k.jpg',
         rotationY: 0,
         sunDirection: [-1, -2, -2],
         sunIntensity: 1,

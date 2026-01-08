@@ -29,10 +29,13 @@ export class WorldSystemLifecycle {
       if (system && typeof system.start === 'function') {
         try {
           logger.info(`startSystems: starting ${key}`)
-          await system.start()
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`${key}.start() timeout after 30s`)), 30000)
+          )
+          await Promise.race([system.start(), timeout])
           logger.info(`startSystems: ${key} complete`)
         } catch (err) {
-          logger.error(`System ${key} start failed`, { error: err.message })
+          logger.error(`System ${key} start failed`, { error: err.message, stack: err.stack })
         }
       }
     }

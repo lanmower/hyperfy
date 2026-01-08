@@ -66,8 +66,7 @@ export class ClientGraphics extends System {
       clearColor: new pc.Color(0.3, 0.4, 0.6, 1),
       priority: 0
     })
-    cameraEntity.setLocalPosition(0, 3.5, 20)
-    cameraEntity.lookAt(0, 0, 0)
+    cameraEntity.setLocalPosition(0, 10, 0)
     this.app.root.addChild(cameraEntity)
     this.pcCamera = cameraEntity.camera
     this.app.scene.activeCameraEntity = cameraEntity

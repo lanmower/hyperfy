@@ -34,7 +34,6 @@ import { Stage } from './systems/Stage.js'
 import { Physics } from './systems/Physics.js'
 import { Avatars } from './systems/Avatars.js'
 import { HUDOverlay } from './systems/HUDOverlay.js'
-import { CameraController } from './CameraController.js'
 
 export function createClientWorld() {
   const world = new World()
@@ -72,6 +71,5 @@ export function createClientWorld() {
   world.register('xr', XR)
   world.register('ai', ClientAI)
   world.register('hud', HUDOverlay)
-  world.register('cameraController', CameraController)
   return world
 }

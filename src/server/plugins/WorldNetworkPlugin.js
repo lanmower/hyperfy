@@ -10,6 +10,12 @@ export async function registerWorldNetwork(fastify, world, logger, shutdownManag
         return
       }
 
+      if (!world.network) {
+        logger.error('WS Connection rejected: world.network not initialized')
+        ws.close(1002, 'Server error: network not ready')
+        return
+      }
+
       logger.info('WS Connection established')
 
       ws.on('close', () => {

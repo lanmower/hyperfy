@@ -82,9 +82,23 @@ export class World extends EventEmitter {
     }
 
     logger.info('About to execute world:init hook')
-    await this.pluginHooks.execute('world:init', this)
+    try {
+      await this.pluginHooks.execute('world:init', this)
+      logger.info('world:init hook executed successfully')
+    } catch (err) {
+      logger.error('world:init hook failed', { error: err.message })
+      throw err
+    }
+
     logger.info('About to initialize systems')
-    await this.systemLifecycle.initializeSystems(options)
+    try {
+      await this.systemLifecycle.initializeSystems(options)
+      logger.info('Systems initialized successfully')
+    } catch (err) {
+      logger.error('initializeSystems failed', { error: err.message })
+      throw err
+    }
+
     logger.info('Systems initialized, about to start systems')
     try {
       await this.systemLifecycle.startSystems()

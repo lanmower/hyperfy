@@ -33,7 +33,7 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
   fastify.get('/', async (req, reply) => {
     try {
       const buildId = Date.now().toString()
-      const particlesPath = '/particles'
+      const particlesPath = '/src/client/particles.js'
       let html = await fs.readFile(path.join(publicDir, 'index.html'), 'utf-8')
       html = html
         .replaceAll('{title}', 'Hyperfy')
@@ -130,8 +130,14 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     prefix: '/assets/',
     decorateReply: false,
     setHeaders: res => {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-      res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString())
+      if (process.env.NODE_ENV === 'production') {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString())
+      } else {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+        res.setHeader('Pragma', 'no-cache')
+        res.setHeader('Expires', '0')
+      }
     },
   })
 
@@ -141,7 +147,13 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     prefix: '/public/',
     decorateReply: false,
     setHeaders: res => {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      if (process.env.NODE_ENV === 'production') {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      } else {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+        res.setHeader('Pragma', 'no-cache')
+        res.setHeader('Expires', '0')
+      }
     },
   })
 }

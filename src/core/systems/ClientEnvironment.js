@@ -66,7 +66,7 @@ export class ClientEnvironment extends System {
         })
         const modelEntity = new pc.Entity('baseEnvironment')
         modelEntity.addComponent('model', { asset: modelAsset })
-        modelEntity.setLocalPosition(0, 916 / 2, 0)
+        modelEntity.setLocalPosition(0, 0, 0)
         app.root.addChild(modelEntity)
         logger.info('Base environment model loaded and added to scene', {
           meshInstances: modelEntity.model?.meshInstances?.length || 0,

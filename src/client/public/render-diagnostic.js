@@ -1,78 +1,70 @@
-console.log('[RENDER_DIAGNOSTIC] Starting 3D scene diagnostic...');
+console.log('[RENDER_DIAGNOSTIC] Starting PlayCanvas render diagnostic...');
 
 let attempts = 0;
 const maxAttempts = 30;
 
 const checkScene = setInterval(() => {
   attempts++;
-  console.log(`[CHECK ${attempts}/${maxAttempts}] Checking for PlayCanvas app...`);
-
   const app = window.pc?.app;
+  const canvas = document.querySelector('canvas');
+  const hasGraphics = !!app?.graphicsDevice;
+  const hasScene = !!app?.scene;
+  const isRenderingContent = canvas && canvas.offsetWidth > 0 && canvas.offsetHeight > 0;
 
-  if (app && app.isRunning) {
-    clearInterval(checkScene);
-    console.log('\n=== RENDERING STATUS ===');
-    console.log('App running:', app.isRunning);
-    console.log('App enabled:', app.enabled);
-    console.log('Root entity:', app.root?.name);
-    console.log('Root children count:', app.root?.children?.length);
-
-    if (app.root?.children?.length > 0) {
-      console.log('\nRoot children:');
-      app.root.children.forEach((child, i) => {
-        console.log(`  [${i}] ${child.name}`);
-        console.log(`      Type: ${child.constructor.name}`);
-        console.log(`      Enabled: ${child.enabled}`);
-        if (child.camera) {
-          console.log(`      Has camera: true`);
-          console.log(`      Position: ${child.getLocalPosition()?.toString()}`);
-        }
-      });
+  if (!app) {
+    if (attempts % 5 === 0) console.log(`[CHECK ${attempts}/${maxAttempts}] Waiting for PlayCanvas app...`);
+    if (attempts >= maxAttempts) {
+      clearInterval(checkScene);
+      console.log('\n=== PLAYCANVAS INITIALIZATION FAILED ===');
+      console.log('window.pc available:', !!window.pc);
+      console.log('window.pc.app available:', !!window.pc?.app);
     }
-
-    console.log('\nCamera info:');
-    console.log('Active camera entity:', app.scene?.activeCameraEntity?.name);
-    const pos = app.scene?.activeCameraEntity?.getLocalPosition?.();
-    console.log('Active camera position:', pos ? `(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})` : 'unknown');
-
-    // Check if there are any mesh instances
-    const meshInstances = app.scene?.getMeshInstances?.() || [];
-    console.log('\nMesh instances in scene:', meshInstances.length);
-
-    if (meshInstances.length > 0) {
-      console.log('First 5 meshes:');
-      meshInstances.slice(0, 5).forEach((mesh, i) => {
-        console.log(`  Mesh [${i}]: ${mesh.node?.name || 'unknown'}`);
-      });
-    }
-
-    // Check canvas
-    console.log('\nCanvas info:');
-    const canvas = document.querySelector('canvas');
-    console.log('Canvas found:', !!canvas);
-    console.log('Canvas resolution:', canvas?.width, 'x', canvas?.height);
-    console.log('Canvas CSS size:', canvas?.offsetWidth, 'x', canvas?.offsetHeight);
-
-    const rect = canvas?.getBoundingClientRect();
-    console.log('Canvas on screen:', !!rect && rect.width > 0 && rect.height > 0);
-
-    console.log('\n=== CONCLUSION ===');
-    if (meshInstances.length > 0) {
-      console.log('SUCCESS: 3D scene is rendering with ' + meshInstances.length + ' mesh instances');
-    } else if (app.scene?.activeCameraEntity) {
-      console.log('PARTIAL: Camera is active but no meshes visible');
-    } else {
-      console.log('ISSUE: App running but camera not active');
-    }
-
     return;
   }
 
-  if (attempts >= maxAttempts) {
-    clearInterval(checkScene);
-    console.log('\n=== TIMEOUT ===');
-    console.log('PlayCanvas app not initialized after 30 attempts');
-    console.log('window.pc:', typeof window.pc);
-    console.log('window.pc.app:', window.pc?.app ? 'exists' : 'null');
+  if (!hasGraphics || !hasScene) {
+    if (attempts % 5 === 0) console.log(`[CHECK ${attempts}/${maxAttempts}] PlayCanvas initializing (graphics: ${hasGraphics}, scene: ${hasScene})...`);
+    if (attempts >= maxAttempts) {
+      clearInterval(checkScene);
+      console.log('\n=== PLAYCANVAS PARTIAL INIT ===');
+      console.log('App exists:', !!app);
+      console.log('Graphics device:', hasGraphics);
+      console.log('Scene:', hasScene);
+    }
+    return;
   }
+
+  if (!isRenderingContent) {
+    if (attempts % 5 === 0) console.log(`[CHECK ${attempts}/${maxAttempts}] PlayCanvas ready, waiting for render...`);
+    if (attempts >= maxAttempts) {
+      clearInterval(checkScene);
+      console.log('\n=== PLAYCANVAS READY BUT NOT RENDERING ===');
+      console.log('Canvas size:', `${canvas?.width}x${canvas?.height}`);
+      console.log('Canvas visible:', isRenderingContent);
+    }
+    return;
+  }
+
+  clearInterval(checkScene);
+  console.log('\n=== PLAYCANVAS RENDER STATUS ===');
+  console.log('Graphics device:', !!app.graphicsDevice);
+  console.log('Root entity:', app.root?.name);
+  console.log('Root children:', app.root?.children?.length || 0);
+
+  if (app.root?.children?.length > 0) {
+    console.log('\nScene entities (first 8):');
+    app.root.children.slice(0, 8).forEach((child, i) => {
+      console.log(`  [${i}] ${child.name}`);
+    });
+  }
+
+  console.log('\nCamera:');
+  console.log('Active camera:', app.scene?.activeCameraEntity?.name || 'none');
+
+  console.log('\nCanvas:');
+  console.log('Resolution:', `${canvas?.width}x${canvas?.height}`);
+  console.log('Visible:', isRenderingContent);
+
+  console.log('\n=== SUCCESS ===');
+  console.log('PlayCanvas engine initialized and rendering');
 }, 1000);
