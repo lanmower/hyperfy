@@ -1,4 +1,3 @@
-import * as THREE from './extras/three.js'
 import EventEmitter from 'eventemitter3'
 import { WorldConfig } from './config/SystemConfig.js'
 import { StructuredLogger } from './utils/logging/index.js'
@@ -37,9 +36,8 @@ export class World extends EventEmitter {
     this.eventAudit = eventAudit
     this.eventRegistry = eventRegistry
 
-    this.rig = new THREE.Object3D()
-    this.camera = new THREE.PerspectiveCamera(70, 0, 0.2, 1200)
-    this.rig.add(this.camera)
+    this.rig = null
+    this.camera = null
 
     this.tickLoop = new WorldTickLoop(this)
     this.systemLifecycle = new WorldSystemLifecycle(this)
