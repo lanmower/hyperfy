@@ -1,49 +1,60 @@
-Player Spawn Position Fix - Technical Documentation
+Hyperfy Technical Caveats
 
-PROBLEM IDENTIFIED
-The player was spawning at world position (0, 0, 0), which placed them inside or at the base of the terrain, making the environment invisible. The camera (positioned at player.y + 1.2) would also be embedded in terrain/ground, showing no visible world.
+PlayCanvas Module Initialization
+- window.pc must be a mutable object, not the ES module itself (which is read-only)
+- Solution: Use Object.assign({}, pc) in index.js to create a plain object copy
+- ClientGraphics can then safely assign window.pc.app = this.app
+- window.pc exports all PlayCanvas constants and classes; app property added at runtime
+- Rendering initializes at 30+ FPS; frame counter increments as app runs
 
-SOLUTION IMPLEMENTED
-Changed default player spawn position from (0, 0, 0) to (0, 10, 0), placing the player 10 units above the terrain. This elevation allows:
-- Camera to be at approximately y=11.2 (spawn height 10 + camHeight 1.2)
-- Clear view of terrain below and sky above
-- Proper third-person camera perspective
-- Physics system to work correctly with gravity
+PlayCanvas/THREE.js Hybrid Architecture
+- Graphics system uses PlayCanvas for rendering (Application, Entity, Component system)
+- ClientGraphics.render() syncs camera, viewport, and rendering state every frame
+- Camera elevation: player.y + DEFAULT_CAM_HEIGHT (1.2) puts camera at y=11.2 for spawn at (0,10,0)
+- Terrain visible below, sky visible above; third-person perspective functional
 
-FILES MODIFIED
-1. C:\dev\hyperfy\src\server\services\WorldPersistence.js (line 16)
-   - Changed default spawn from [0, 0, 0] to [0, 10, 0]
-   - Function: loadSpawn() - returns default spawn when no stored config exists
-   - This affects all new player connections using the default spawn point
+Player Spawn Elevation
+- Default spawn position: (0, 10, 0) - 10 units above terrain baseline
+- WorldPersistence.loadSpawn() returns this default if no stored config in database
+- Camera syncs via PlayerController.initCamera() which applies camHeight offset
+- Gravity and physics work correctly from this elevation
 
-ARCHITECTURE DETAILS
-Player Spawn Flow:
-1. PlayerConnectionManager.onConnection() (line 77) uses this.serverNetwork.spawn.position
-2. ServerLifecycleManager.start() (line 28) loads spawn via persistence.loadSpawn()
-3. WorldPersistence.loadSpawn() (line 16) returns default if no config stored in database
-4. Default: { "position": [0, 10, 0], "quaternion": [0, 0, 0, 1] }
+Development Mode No-Cache Headers
+- Server sends Cache-Control: no-cache, no-store headers in dev mode
+- Prevents stale asset delivery during HMR (hot module reload)
+- Browser auto-reloads on WebSocket file-change messages from server
+- Manual page refresh not required; changes immediately visible
 
-Camera Setup:
-- DEFAULT_CAM_HEIGHT = 1.2 (CameraConstants.js line 1)
-- PlayerController.initCamera() sets position.y += camHeight
-- Results in camera at ~y=11.2 for elevated view of terrain
+WebSocket Multiplayer System
+- Real-time player synchronization via ServerNetwork and ClientNetwork
+- Player state updates broadcast to all connected clients
+- Connection state exposed via PlayerConnectionManager
+- No persistent session storage; game-session-only lifetime
 
-VERIFICATION
-Tested via http://localhost:3000:
-- Sky visible at top of screen (blue)
-- Terrain/grass visible at bottom (green)
-- Network connected, player spawned successfully
-- FPS running at 30+ frames
-- UI controls visible and responsive
+Asset Storage System
+- Local storage default (world/assets/ directory)
+- S3 disabled by default (AWS SDK not required)
+- Circuit breaker on upload prevents cascading failures
+- Asset references tracked via entity node system
 
-ROLLBACK PROCEDURE
-If needed, revert to (0, 0, 0):
-- Edit C:\dev\hyperfy\src\server\services\WorldPersistence.js line 16
-- Change [0, 10, 0] back to [0, 0, 0]
-- Restart dev server
+Game Loop Synchronous, Plugin Hooks Async
+- WorldTickLoop.tick() is synchronous; cannot await plugin hooks
+- world.pluginHooks.execute() returns Promise; use fire-and-forget with .catch()
+- Blocking plugin hooks will stall frame logic; async work must not block render
+- Frame skips visible if plugin hooks run long
 
-FUTURE CONSIDERATIONS
-- Builders can modify spawn via /spawn-here command (BuilderCommandHandler.js)
-- Custom spawn positions are stored in database config table, overriding defaults
-- Spawn point persists across server restarts once saved
-- Y=10 elevation works well for meadow terrain; adjust if terrain height changes
+Export Locations
+- getRef/secureRef functions in NodeProxy.js (NOT Node.js)
+- Node class in Node.js (separate from NodeProxy.js)
+- Misconfigured imports cause module resolution failures
+
+Circuit Breakers
+- Database, storage, websocket, upload all have circuit breakers
+- Breakers prevent cascading failures; fail fast visible in logs
+- Rate limiting configured at server startup
+
+SQL.js In-Memory Database
+- Current: SQL.js (all data lost on server restart)
+- Production deployment requires PostgreSQL or SQLite with persistence
+- Parameter binding mandatory: stmt.bind([params]) before stmt.step()
+- Custom QueryBuilder available at C:\dev\hyperfy\src\server\QueryBuilder.js
