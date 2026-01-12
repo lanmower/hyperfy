@@ -1,0 +1,104 @@
+{
+  "version": "1.0.0",
+  "migrations": [
+    {
+      "id": "001_create_users_table",
+      "description": "Create users table",
+      "version": "1.0.0",
+      "tables": {
+        "users": {
+          "columns": [
+            { "name": "id", "type": "TEXT PRIMARY KEY" },
+            { "name": "name", "type": "TEXT NOT NULL" },
+            { "name": "email", "type": "TEXT UNIQUE" },
+            { "name": "createdAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" },
+            { "name": "updatedAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "002_create_blueprints_table",
+      "description": "Create blueprints table",
+      "version": "1.0.0",
+      "tables": {
+        "blueprints": {
+          "columns": [
+            { "name": "id", "type": "TEXT PRIMARY KEY" },
+            { "name": "name", "type": "TEXT NOT NULL" },
+            { "name": "version", "type": "TEXT" },
+            { "name": "model", "type": "TEXT" },
+            { "name": "script", "type": "TEXT" },
+            { "name": "props", "type": "JSON" },
+            { "name": "createdAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" },
+            { "name": "updatedAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "003_create_entities_table",
+      "description": "Create entities table",
+      "version": "1.0.0",
+      "tables": {
+        "entities": {
+          "columns": [
+            { "name": "id", "type": "TEXT PRIMARY KEY" },
+            { "name": "type", "type": "TEXT NOT NULL" },
+            { "name": "position", "type": "JSON" },
+            { "name": "quaternion", "type": "JSON" },
+            { "name": "scale", "type": "JSON" },
+            { "name": "state", "type": "JSON" },
+            { "name": "blueprint", "type": "TEXT" },
+            { "name": "createdAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" },
+            { "name": "updatedAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "004_create_config_table",
+      "description": "Create config table for key-value storage",
+      "version": "1.0.0",
+      "tables": {
+        "config": {
+          "columns": [
+            { "name": "key", "type": "TEXT PRIMARY KEY" },
+            { "name": "value", "type": "JSON" },
+            { "name": "updatedAt", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "005_create_files_table",
+      "description": "Create files table for asset tracking",
+      "version": "1.0.0",
+      "tables": {
+        "files": {
+          "columns": [
+            { "name": "hash", "type": "TEXT PRIMARY KEY" },
+            { "name": "filename", "type": "TEXT NOT NULL" },
+            { "name": "size", "type": "INTEGER" },
+            { "name": "type", "type": "TEXT" },
+            { "name": "uploader", "type": "TEXT" },
+            { "name": "timestamp", "type": "INTEGER DEFAULT CURRENT_TIMESTAMP" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "006_add_indexes",
+      "description": "Create indexes for performance",
+      "version": "1.0.0",
+      "indexes": [
+        { "table": "users", "column": "name", "unique": false },
+        { "table": "blueprints", "column": "createdAt", "unique": false },
+        { "table": "entities", "column": "createdAt", "unique": false },
+        { "table": "entities", "column": "blueprint", "unique": false },
+        { "table": "files", "column": "uploader", "unique": false },
+        { "table": "files", "column": "timestamp", "unique": false }
+      ]
+    }
+  ]
+}

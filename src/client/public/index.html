@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    <meta name="description" content="{desc}" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{url}" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{desc}" />
+    <meta property="og:image" content="{image}" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="{url}" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{desc}" />
+    <meta name="twitter:image" content="{image}" />
+
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel='icon' href='/public/favicon.svg' type='image/svg+xml' />
+    <link rel="preload" href="/public/rubik.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" type="text/css" href="/public/index.css?v={buildId}" />
+    <link rel="modulepreload" href="https://esm.sh/react@19.0.0/es2022/react.development.mjs" />
+    <link rel="modulepreload" href="https://esm.sh/react-dom@19.0.0/es2022/react-dom.development.mjs" />
+    <script>
+      window.PARTICLES_PATH = '{particlesPath}'
+      // Suppress graceful-fs process.cwd error that occurs during module initialization
+      const originalError = console.error
+      let cwdErrorSuppressed = false
+      console.error = function(...args) {
+        const msg = args[0]?.toString?.() || ''
+        if (msg.includes('Cannot set property cwd') && !cwdErrorSuppressed) {
+          cwdErrorSuppressed = true
+          return // Suppress the first occurrence
+        }
+        return originalError.apply(console, args)
+      }
+      // Provide a mutable process.cwd if needed
+      if (typeof process !== 'undefined' && process) {
+        try {
+          let cwdValue = '/'
+          Object.defineProperty(process, 'cwd', {
+            get: () => cwdValue,
+            set: (value) => { cwdValue = value },
+            configurable: true
+          })
+        } catch (e) {
+          // Silently ignore if defineProperty fails
+        }
+      }
+    </script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.0.0/es2022/react.development.mjs",
+        "react-dom": "https://esm.sh/react-dom@19.0.0/es2022/react-dom.development.mjs",
+        "react-dom/client": "https://esm.sh/react-dom@19.0.0/es2022/client.development.mjs",
+        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime.development.mjs",
+        "three": "https://esm.sh/three@r128",
+        "three/examples/jsm/": "https://esm.sh/three@r128/examples/jsm/",
+        "three/addons/": "https://esm.sh/three@r128/examples/jsm/",
+        "@firebolt-dev/css": "/node_modules/@firebolt-dev/css/dist/index.js",
+        "lodash": "/node_modules/lodash-es/lodash.js",
+        "lodash-es": "/node_modules/lodash-es/lodash.js",
+        "stylis": "/node_modules/stylis/index.js",
+        "eventemitter3": "/src/client/public/stub-eventemitter3.js",
+        "playcanvas": "/node_modules/playcanvas/build/playcanvas.mjs",
+        "msgpackr": "/node_modules/msgpackr/index.js",
+        "nanoid": "/src/client/public/stub-nanoid.js",
+        "moment": "/src/client/public/stub-moment.js",
+        "async-retry": "/src/client/public/stub-async-retry.js",
+        "p-queue": "/src/client/public/stub-p-queue.js",
+        "yoga-layout": "/src/client/public/stub-yoga-layout.js",
+        "hls.js": "/src/client/public/stub-hls.js",
+        "hls.js/dist/hls.js": "/src/client/public/stub-hls.js",
+        "lucide-react": "/node_modules/lucide-react/dist/esm/lucide-react.js",
+        "openai": "/src/client/public/stub-openai.js",
+        "hyperfy-error": "/src/client/public/stub-hyperfy-error.js",
+        "livekit-client": "/src/client/public/stub-livekit-client.js",
+        "generic-pool": "/src/client/public/stub-generic-pool.js",
+        "knex": "/src/client/public/stub-knex.js",
+        "pg": "/src/client/public/stub-pg.js",
+        "better-sqlite3": "/src/client/public/stub-better-sqlite3.js",
+        "mysql2": "/src/client/public/stub-mysql2.js",
+        "sqlite3": "/src/client/public/stub-sqlite3.js",
+        "@pixiv/three-vrm": "/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js"
+      }
+    }
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs =>
+          regs.forEach(r => r.unregister())
+        )
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/env.js?v={buildId}"></script>
+    <script type="module" src="/src/client/index.js?v={buildId}"></script>
+    <script src="/public/render-diagnostic.js?v={buildId}"></script>
+  </body>
+</html>
