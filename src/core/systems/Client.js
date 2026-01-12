@@ -2,7 +2,6 @@ import { System } from './System.js'
 import { StructuredLogger } from '../utils/logging/StructuredLogger.js'
 import { NetworkLogSink } from '../utils/logging/NetworkLogSink.js'
 
-import * as THREE from '../extras/three.js'
 import { initYoga } from '../extras/yoga.js'
 
 const BYTES_PER_MB = 1048576
@@ -70,8 +69,8 @@ export class Client extends System {
     }
   }
 
-  async init({ loadYoga }) {
-    await loadYoga
+  async init({ loadYoga } = {}) {
+    if (loadYoga) await loadYoga
     initYoga()
   }
 
