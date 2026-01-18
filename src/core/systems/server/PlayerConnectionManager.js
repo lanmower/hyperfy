@@ -57,20 +57,20 @@ export class PlayerConnectionManager {
         authToken = await createJWT({ userId: user.id })
       }
 
-      const livekit = this.serverNetwork.livekit ? await this.serverNetwork.livekit.serialize(user.id) : null
+       const livekit = this.serverNetwork.livekit ? await this.serverNetwork.livekit.serialize(user.id) : null
 
-      const socket = new Socket({ id: user.id, ws, network: this.serverNetwork })
+       // ATOMIC: Check socket existence BEFORE creation to prevent race condition
+       if (this.serverNetwork.sockets.has(user.id)) {
+         logger.error('Duplicate socket connection attempt - race condition prevented', { userId: user.id })
+         const packet = MessageHandler.encode('kick', 'duplicate_user')
+         ws.send(packet, { binary: true })
+         ws.close()
+         return
+       }
 
-      // ATOMIC: Check and set in single operation to prevent race condition
-      if (this.serverNetwork.sockets.has(socket.id)) {
-        logger.error('Duplicate socket connection attempt - race condition prevented', { userId: socket.id })
-        const packet = MessageHandler.encode('kick', 'duplicate_user')
-        ws.send(packet, { binary: true })
-        ws.close()
-        return
-      }
+       const socket = new Socket({ id: user.id, ws, network: this.serverNetwork })
 
-      socket.player = this.serverNetwork.entities.add(
+       socket.player = this.serverNetwork.entities.add(
         {
           id: user.id,
           type: 'player',

@@ -87,11 +87,11 @@ export class EntitySpawner {
       return { valid: false, error: 'Invalid entity type' }
     }
 
-    const validTypes = ['app', 'player']
-    if (!validTypes.includes(data.type)) {
-      logger.error('Unknown entity type', { type: data.type })
-      return { valid: false, error: 'Unknown entity type' }
-    }
+     const validTypes = ['app', 'player', 'playerLocal', 'playerRemote']
+     if (!validTypes.includes(data.type)) {
+       logger.error('Unknown entity type', { type: data.type, validTypes })
+       return { valid: false, error: 'Unknown entity type' }
+     }
 
     if (data.position) {
       const posValidation = validateVector3(data.position, 'position')

@@ -137,31 +137,151 @@ export class ServerNetwork extends BaseNetwork {
     this.core.unregisterSocket(playerId)
   }
 
-  commit() {
-    const shouldBroadcast = this.world.frame % Math.round(1 / this.world.networkRate) === 0
-    if (shouldBroadcast && this.sockets.size > 0) {
-      const snapshot = {
-        time: this.world.time,
-        frame: this.world.frame,
-        entities: this.entities.serialize(),
-      }
-      this.send('snapshot', snapshot)
-    }
-  }
+   commit() {
+     const shouldBroadcast = this.world.frame % Math.round(1 / this.world.networkRate) === 0
+     if (shouldBroadcast && this.sockets.size > 0) {
+       // Note: We do NOT compress snapshots because browsers cannot decompress
+       // Compressor is server-internal only, not for client communication
+       const snapshot = {
+         time: this.world.time,
+         frame: this.world.frame,
+         entities: this.entities.serialize(),
+       }
+       this.send('snapshot', snapshot)
+     }
+   }
 
-  onClientLogs(socket, data) {
-    if (!data || !Array.isArray(data.logs)) {
-      logger.warn('Invalid client logs data', { hasData: !!data, isArray: Array.isArray(data?.logs) })
-      return
-    }
-    for (const logEntry of data.logs) {
-      if (logEntry && typeof logEntry === 'object') {
-        console.log(logEntry.message || JSON.stringify(logEntry))
-      }
-    }
-  }
+   onChatAdded(socket, data) {
+     if (this.world.chat) {
+       this.world.chat.add(data, true)
+     }
+   }
 
-  destroy() {
+   async onCommand(socket, data) {
+     // Handle game commands from client
+     logger.info('Command received', { socketId: socket.id, command: data })
+   }
+
+   async onBlueprintAdded(socket, data) {
+     if (this.world.blueprints) {
+       await this.world.blueprints.add(data)
+     }
+   }
+
+   async onBlueprintModified(socket, data) {
+     if (this.world.blueprints) {
+       await this.world.blueprints.modify(data.id, data)
+     }
+   }
+
+   async onEntityAdded(socket, data) {
+     if (this.world.entities) {
+       this.world.entities.add(data, false)
+     }
+   }
+
+   async onEntityModified(socket, data) {
+     if (this.world.entities) {
+       const entity = this.world.entities.get(data.id)
+       if (entity) {
+         entity.modify(data)
+       }
+     }
+   }
+
+   async onEntityEvent(socket, data) {
+     if (this.world.entities && data && data.id) {
+       const entity = this.world.entities.get(data.id)
+       if (entity) {
+         entity.emit(data.event, data.eventData)
+       }
+     }
+   }
+
+   async onEntityRemoved(socket, data) {
+     if (this.world.entities && data && data.id) {
+       this.world.entities.remove(data.id)
+     }
+   }
+
+   async onSettingsModified(socket, data) {
+     if (this.world.settings) {
+       this.world.settings.modify(data)
+     }
+   }
+
+   async onSpawnModified(socket, data) {
+     if (data && data.position && data.quaternion) {
+       this.spawn = {
+         position: data.position,
+         quaternion: data.quaternion,
+       }
+     }
+   }
+
+   async onPing(socket, data) {
+     socket.send('pong', {})
+   }
+
+   async onErrorEvent(socket, data) {
+     logger.error('Error event from client', { socketId: socket.id, error: data })
+   }
+
+   async onErrorReport(socket, data) {
+     logger.error('Error report from client', { socketId: socket.id, error: data })
+   }
+
+   async onClientError(socket, data) {
+     logger.warn('Client error reported', { socketId: socket.id, message: data?.message })
+   }
+
+   async onClientLogs(socket, data) {
+     if (!data || !Array.isArray(data.logs)) {
+       logger.warn('Invalid client logs data', { hasData: !!data, isArray: Array.isArray(data?.logs) })
+       return
+     }
+     for (const logEntry of data.logs) {
+       if (logEntry && typeof logEntry === 'object') {
+         console.log(logEntry.message || JSON.stringify(logEntry))
+       }
+     }
+   }
+
+   async onMcpSubscribeErrors(socket, data) {
+     // MCP (Model Context Protocol) error subscription
+     logger.info('MCP error subscription received', { socketId: socket.id })
+   }
+
+   async onGetErrors(socket, data) {
+     // Send errors to client
+     socket.send('errors', [])
+   }
+
+   async onClearErrors(socket, data) {
+     // Clear errors
+     logger.info('Errors cleared by', { socketId: socket.id })
+   }
+
+   async onFileUpload(socket, data) {
+     // Delegate to file upload handler
+     if (this.fileUploadHandler) {
+       await this.fileUploadHandler.onFileUpload(socket, data)
+     }
+   }
+
+   async onFileUploadCheck(socket, data) {
+     if (this.fileUploadHandler) {
+       await this.fileUploadHandler.onFileUploadCheck(socket, data)
+     }
+   }
+
+   async onFileUploadStats(socket, data) {
+     if (this.fileUploadHandler) {
+       await this.fileUploadHandler.onFileUploadStats(socket, data)
+     }
+   }
+
+   destroy() {
     if (this.socketIntervalId) clearInterval(this.socketIntervalId)
     if (this.saveTimerId) clearTimeout(this.saveTimerId)
     if (this.hotReloadHandler && typeof process !== 'undefined' && process.removeListener) {

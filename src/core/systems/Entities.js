@@ -82,11 +82,21 @@ export class Entities extends System {
     this.lifecycle.update(delta)
   }
 
-  lateUpdate(delta) {
-    this.lifecycle.lateUpdate(delta)
-  }
+   lateUpdate(delta) {
+     this.lifecycle.lateUpdate(delta)
+   }
 
-  serialize() {
+   commit() {
+     // Synchronize removed entities to clients
+     if (this.removed.length > 0 && this.network && this.network.send) {
+       for (const entityId of this.removed) {
+         this.network.send('entityRemoved', { id: entityId })
+       }
+       this.removed = []
+     }
+   }
+
+   serialize() {
     const data = []
     this.items.forEach(entity => {
       data.push(entity.serialize())

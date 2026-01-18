@@ -27,23 +27,44 @@ export class EntityLifecycle {
     }
   }
 
-  fixedUpdate(delta) {
-    for (const entity of this.entities.hot) {
-      entity.fixedUpdate(delta)
-    }
-  }
+   fixedUpdate(delta) {
+     // Update hot entities (frequent updates)
+     for (const entity of this.entities.hot) {
+       if (entity.fixedUpdate) entity.fixedUpdate(delta)
+     }
+     // Also update all entities that might need fixed updates
+     for (const entity of this.entities.items.values()) {
+       if (!this.entities.hot.has(entity) && entity.fixedUpdate) {
+         entity.fixedUpdate(delta)
+       }
+     }
+   }
 
-  update(delta) {
-    for (const entity of this.entities.hot) {
-      entity.update(delta)
-    }
-  }
+   update(delta) {
+     // Update hot entities (frequent updates)
+     for (const entity of this.entities.hot) {
+       if (entity.update) entity.update(delta)
+     }
+     // Also update all entities that might need updates
+     for (const entity of this.entities.items.values()) {
+       if (!this.entities.hot.has(entity) && entity.update) {
+         entity.update(delta)
+       }
+     }
+   }
 
-  lateUpdate(delta) {
-    for (const entity of this.entities.hot) {
-      entity.lateUpdate(delta)
-    }
-  }
+   lateUpdate(delta) {
+     // Update hot entities (frequent updates)
+     for (const entity of this.entities.hot) {
+       if (entity.lateUpdate) entity.lateUpdate(delta)
+     }
+     // Also update all entities that might need late updates
+     for (const entity of this.entities.items.values()) {
+       if (!this.entities.hot.has(entity) && entity.lateUpdate) {
+         entity.lateUpdate(delta)
+       }
+     }
+   }
 
   destroy() {
     // Create array copy before iterating to avoid modification during iteration

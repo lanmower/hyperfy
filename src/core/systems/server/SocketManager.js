@@ -25,14 +25,19 @@ export class SocketManager {
       return
     }
 
-    const executeSend = async () => {
-      const toSend = data
-      const packet = MessageHandler.encode(name, toSend)
-      this.network.sockets.forEach(socket => {
-        if (socket.id === ignoreSocketId) return
-        socket.sendPacket(packet)
-      })
-    }
+     const executeSend = async () => {
+       const toSend = data
+       const packet = MessageHandler.encode(name, toSend)
+       this.network.sockets.forEach(socket => {
+         if (socket.id === ignoreSocketId) return
+         // Use sendPacket for raw binary, which wraps ArrayBuffer/Buffer properly
+         try {
+           socket.sendPacket(packet)
+         } catch (err) {
+           logger.warn('Failed to send packet to socket', { socketId: socket.id, name, error: err.message })
+         }
+       })
+     }
 
     if (this.circuitBreakerManager && this.circuitBreakerManager.has('websocket')) {
       this.circuitBreakerManager.execute('websocket', executeSend).catch(err => {
@@ -105,6 +110,27 @@ export class SocketManager {
     }
 
     return true
+  }
+
+  async onMessage(socket, method, data) {
+    // Route incoming messages to appropriate handlers
+    if (!socket || socket.closed || socket.disconnected) {
+      logger.warn('Message received on invalid socket', { socketId: socket?.id, method })
+      return
+    }
+
+    // Validate message first
+    if (!this.validateMessage(socket.id, data)) {
+      logger.warn('Message validation failed', { socketId: socket.id, method })
+      return
+    }
+
+    // Route to handler via network
+    try {
+      await this.network.enqueue(socket, method, data)
+    } catch (err) {
+      logger.error('Failed to enqueue message', { socketId: socket.id, method, error: err.message })
+    }
   }
 
   cleanupSocket(socketId) {
