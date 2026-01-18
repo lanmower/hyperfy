@@ -10,14 +10,16 @@ import { AssetResults } from './AssetResults.js'
 const logger = new StructuredLogger('AssetHandlers')
 
 export class AssetHandlers extends BaseAssetHandler {
-  constructor(clientLoader, world) {
-    super()
-    this.clientLoader = clientLoader
-    this.world = world
-    this.results = clientLoader.results
-    this.types = new AssetHandlerTypes(clientLoader, world)
-    this.insertRegistry = new AssetHandlerRegistry()
-  }
+   constructor(clientLoader, world) {
+     super()
+     this.clientLoader = clientLoader
+     this.world = world
+     this.results = clientLoader.results
+     this.types = new AssetHandlerTypes(clientLoader, world)
+     this.insertRegistry = new AssetHandlerRegistry()
+     // Initialize handlers immediately in constructor
+     this.setupHandlers()
+   }
 
   setupHandlers() {
     this.registry.register('video', (url, file, key) => this.types.handleVideo(url, file, key))
