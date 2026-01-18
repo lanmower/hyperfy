@@ -7,11 +7,9 @@ import { CoreUI } from './components/CoreUI.js'
 export { System } from '../core/systems/System.js'
 
 export function Client({ wsUrl, onSetup }) {
-  console.log('[CLIENT_COMPONENT] Rendering Client component')
   const viewportRef = useRef()
   const uiRef = useRef()
   const world = useMemo(() => {
-    console.log('[USEMEMO] Creating client world')
     return createClientWorld()
   }, [])
   const [ui, setUI] = useState(() => {
@@ -54,16 +52,13 @@ export function Client({ wsUrl, onSetup }) {
         if (wsUrl instanceof Promise) wsUrl = await wsUrl
       }
       const config = { viewport, ui, wsUrl, baseEnvironment, assetsUrl: window.env?.PUBLIC_ASSETS_URL || '/assets' }
-      console.log('[WORLD-CLIENT] Config being passed to world.init:', { wsUrl, hasUrl: !!wsUrl, assetsUrl: config.assetsUrl, vpWidth: viewport.offsetWidth, vpHeight: viewport.offsetHeight })
       onSetup?.(world, config)
       await world.init(config)
 
-      console.log('[WORLD-CLIENT] World initialized, starting graphics...')
       if (world.graphics && world.graphics.startApp) {
         world.graphics.startApp()
       }
 
-      console.log('[WORLD-CLIENT] About to set up RAF loop')
       const tick = (time) => {
         try {
           world.tick(time)
@@ -77,9 +72,7 @@ export function Client({ wsUrl, onSetup }) {
           console.error('[WORLD-CLIENT] Error in requestAnimationFrame:', err)
         }
       }
-      console.log('[WORLD-CLIENT] Calling requestAnimationFrame for first time')
       requestAnimationFrame(tick)
-      console.log('[WORLD-CLIENT] requestAnimationFrame called successfully')
     }
     init().catch(err => {
       console.error('[WORLD-CLIENT] Init error:', err)

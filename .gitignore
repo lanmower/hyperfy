@@ -43,3 +43,4 @@ playwright/
 # Database files
 *.db
 world/hyperfy.db
+.glootie-stop-verified

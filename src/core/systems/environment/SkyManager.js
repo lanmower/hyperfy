@@ -17,14 +17,12 @@ export class SkyManager {
       const asset = new pc.Asset('hdr', 'texture', { url: hdrImagePath })
       this.app.assets.add(asset)
 
-      console.log('Loading HDR as texture from path', { path: hdrImagePath })
 
       const texture = await new Promise((resolve, reject) => {
         const loadHandler = () => {
           asset.off('load', loadHandler)
           asset.off('error', errorHandler)
           const tex = asset.resource
-          console.log('HDR texture loaded', { hasResource: !!tex, resourceType: tex?.type })
           if (tex) {
             resolve(tex)
           } else {
@@ -47,7 +45,6 @@ export class SkyManager {
       this.app.scene.toneMapping = pc.TONEMAP_FILMIC
 
       this.environmentTexture = texture
-      console.log('HDR applied to scene', { envAtlasSet: !!this.app.scene.envAtlas })
       return texture
     } catch (err) {
       console.error('Failed to load HDR:', err.message)
