@@ -20,6 +20,26 @@ The system is production-ready pending standard testing and security audit.
 
 ---
 
+## PHASE 4.1: DEPENDENCY OPTIMIZATION (January 25, 2026)
+
+### Completed Removals
+- **esbuild & esbuild-wasm**: Build system replaced by Bun (native TypeScript support)
+- **eslint + config + react plugins**: Dev-only linting removed (use Bun's linter)
+- **Estimated savings**: 16-28MB from node_modules, 6 dev dependencies removed
+
+### Build Script Migrations
+- `scripts/build-ts.mjs`: Now uses `bun scripts/build.ts` directly
+- `scripts/dev-server-ts.mjs`: Now uses `bun scripts/dev-server.ts` directly
+- `scripts/start-ts.mjs`: Now uses `bun scripts/start.ts` directly
+
+### Cannot Yet Remove (Still Required)
+- **React (40KB)**: 69 files still use React imports (useState, useEffect, hooks)
+- **React-DOM (40KB)**: createRoot and createPortal in client initialization
+- **@babel/standalone (1.2MB)**: JSX server-side transformation in StaticAssets.ts
+- **Complete React removal** requires migrating all 69 UI component files to WebJSX
+
+---
+
 ## PERFORMANCE CONSTRAINTS
 
 ### Frame Budget Limitations
