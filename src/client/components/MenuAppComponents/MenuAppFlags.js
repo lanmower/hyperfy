@@ -1,4 +1,4 @@
-import { isBoolean } from 'lodash-es'
+import { isBoolean } from '../../../../core/utils/helpers/typeChecks.js'
 import { MenuItemBack, MenuItemToggle } from '../Menu.js'
 
 export function MenuAppFlags({ world, app, blueprint, pop, push }) {

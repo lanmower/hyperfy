@@ -1,4 +1,4 @@
-import { isBoolean, isString } from 'lodash-es'
+import { isBoolean, isString } from '../utils/helpers/typeChecks.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'
 import { schema } from '../utils/validation/index.js'

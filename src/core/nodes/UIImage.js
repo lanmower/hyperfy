@@ -1,5 +1,5 @@
 import Yoga from 'yoga-layout'
-import { isArray, isNumber } from 'lodash-es'
+import { isArray, isNumber } from '../utils/helpers/typeChecks.js'
 import { UIChildNode, uiChildDefaults, createYogaPropertyHandlers } from './base/UINodeBase.js'
 import { fillRoundRect, imageRoundRect } from '../extras/roundRect.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'

@@ -1,4 +1,4 @@
-import { isArray } from 'lodash-es'
+import { isArray } from '../../utils/helpers/typeChecks.js'
 import Yoga from 'yoga-layout'
 import {
   AlignContent,

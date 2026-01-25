@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep } from '../../../core/utils/helpers/typeChecks.js'
 import { uuid } from '../../../core/utils.js'
 import { BlueprintFactory } from '../../../core/factories/BlueprintFactory.js'
 import { Pane } from './Pane.js'

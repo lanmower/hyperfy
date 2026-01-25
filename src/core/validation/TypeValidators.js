@@ -1,5 +1,5 @@
 /* Centralized type validators extracted from 20+ node and handler files */
-import { isNumber, isArray, every } from 'lodash-es'
+import { isNumber, isArray, every } from '../utils/helpers/typeChecks.js'
 
 export const isDistanceModel = (v) => ['linear', 'inverse', 'exponential'].includes(v)
 export const isFit = (v) => ['fill', 'fit', 'cover', 'stretch'].includes(v)

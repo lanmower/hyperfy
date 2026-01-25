@@ -1,7 +1,7 @@
 import { downloadFile } from '../../../core/extras/downloadFile.js'
 import { exportApp } from '../../../core/extras/appTools.js'
 import { hashFile } from '../../../core/utils-client.js'
-import { isBoolean } from 'lodash-es'
+import { isBoolean } from '../../../core/utils/helpers/typeChecks.js'
 import { StructuredLogger } from '../../../core/utils/logging/index.js'
 import { NetworkUploadUtil } from '../../../core/utils/network/NetworkUploadUtil.js'
 import { getFileExtension } from '../../../core/utils/getFileExtension.js'

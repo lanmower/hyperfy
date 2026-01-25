@@ -1,5 +1,5 @@
 import * as THREE from '../extras/three.js'
-import { every, isArray, isBoolean, isFunction, isNumber, isString } from 'lodash-es'
+import { every, isArray, isBoolean, isFunction, isNumber, isString } from '../utils/helpers/typeChecks.js'
 
 import { Node } from './Node.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'

@@ -1,4 +1,4 @@
-import { isEqual } from 'lodash-es'
+import { isEqual } from '../../utils/helpers/typeChecks.js'
 import { defaults } from './PrimDefaults.js'
 import { PROPERTY_SCHEMA } from './PrimPropertySchema.js'
 

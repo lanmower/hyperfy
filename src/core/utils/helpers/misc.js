@@ -1,5 +1,5 @@
 
-import { some } from 'lodash-es'
+import { some } from './typeChecks.js'
 import { customAlphabet } from 'nanoid'
 
 const ALPHABET = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'

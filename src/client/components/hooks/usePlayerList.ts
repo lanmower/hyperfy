@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { sortBy } from 'lodash-es'
+import { sortBy } from '../../../core/utils/helpers/typeChecks.js'
 
 const getPlayers = (world) => {
   const players = []

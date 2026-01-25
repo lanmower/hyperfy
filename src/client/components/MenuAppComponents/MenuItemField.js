@@ -1,4 +1,4 @@
-import { isArray, isBoolean } from 'lodash-es'
+import { isArray, isBoolean } from '../../../../core/utils/helpers/typeChecks.js'
 import {
   MenuItemText,
   MenuItemTextarea,

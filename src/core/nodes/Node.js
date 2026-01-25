@@ -1,4 +1,4 @@
-import { isBoolean } from 'lodash-es'
+import { isBoolean } from '../utils/helpers/typeChecks.js'
 import * as THREE from '../extras/three.js'
 import { TransformSystem } from './base/TransformSystem.js'
 import { LifecycleManager } from './base/LifecycleManager.js'

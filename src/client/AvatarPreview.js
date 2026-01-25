@@ -1,5 +1,4 @@
 import * as THREE from '../core/extras/three.js'
-import { isString } from 'lodash'
 import { Emotes } from '../core/extras/playerEmotes.js'
 import { Ranks } from '../core/extras/ranks.js'
 import { AvatarConfig } from './config/AvatarConfig.js'

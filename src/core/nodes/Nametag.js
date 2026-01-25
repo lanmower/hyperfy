@@ -1,4 +1,4 @@
-import { isNumber, isString } from 'lodash-es'
+import { isNumber, isString } from '../utils/helpers/typeChecks.js'
 import { Node } from './Node.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { validators  } from '../utils/helpers/defineProperty.js'

@@ -1,4 +1,4 @@
-import { isNumber } from 'lodash-es'
+import { isNumber } from '../../utils/helpers/typeChecks.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 
 const logger = new StructuredLogger('AudioPlaybackController')

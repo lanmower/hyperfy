@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { isBoolean } from 'lodash-es'
+import { isBoolean } from '../../core/utils/helpers/typeChecks.js'
 
 export function useFullscreen(targetRef) {
   const [enabled, setEnabled] = useState(false)

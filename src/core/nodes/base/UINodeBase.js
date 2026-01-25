@@ -1,5 +1,5 @@
 import Yoga from 'yoga-layout'
-import { isArray, isNumber } from 'lodash-es'
+import { isArray, isNumber } from '../../utils/helpers/typeChecks.js'
 import { Node } from '../Node.js'
 import { Display, FlexDirection, JustifyContent, AlignItems, AlignContent, FlexWrap } from '../../extras/yoga.js'
 import { fillRoundRect } from '../../extras/roundRect.js'

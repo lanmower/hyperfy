@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep } from '../utils/helpers/typeChecks.js'
 
 export async function exportApp(blueprint, resolveFile) {
   blueprint = cloneDeep(blueprint)

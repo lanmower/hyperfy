@@ -1,4 +1,4 @@
-import { every, isArray, isNumber } from 'lodash-es'
+import { every, isArray, isNumber } from '../utils/helpers/typeChecks.js'
 import { UIContainerNode, uiContainerDefaults, createYogaPropertyHandlers } from './base/UINodeBase.js'
 import { fillRoundRect } from '../extras/roundRect.js'
 import { borderRoundRect } from '../extras/borderRoundRect.js'

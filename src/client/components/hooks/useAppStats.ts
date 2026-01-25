@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { orderBy } from 'lodash-es'
+import { orderBy } from '../../../core/utils/helpers/typeChecks.js'
 import { formatBytes } from '../../../core/extras/formatBytes.js'
 
 export function formatNumber(num) {

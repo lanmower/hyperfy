@@ -1,4 +1,4 @@
-import { isBoolean, isNumber, isString, isArray } from 'lodash-es'
+import { isBoolean, isNumber, isString, isArray } from '../../utils/helpers/typeChecks.js'
 import { defaults, defaultSizes, types } from './PrimDefaults.js'
 
 export const PROPERTY_SCHEMA = {

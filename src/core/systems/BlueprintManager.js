@@ -1,4 +1,4 @@
-import { isEqual } from 'lodash-es'
+import { isEqual } from '../../utils/helpers/typeChecks.js'
 import { System } from './System.js'
 import { BlueprintValidator } from './BlueprintValidator.js'
 import { BlueprintCache } from './BlueprintCache.js'

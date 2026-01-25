@@ -1,4 +1,4 @@
-import { cloneDeep, debounce } from 'lodash-es'
+import { cloneDeep, debounce } from '../../core/utils/helpers/typeChecks.js'
 import { useEffect } from 'react'
 import { storage } from '../../core/storage.js'
 

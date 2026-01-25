@@ -1,6 +1,6 @@
 import { collisionLayers as layers } from '../utils/collections/NodeConstants.js'
 import * as THREE from '../extras/three.js'
-import { isString } from 'lodash-es'
+import { isString } from '../utils/helpers/typeChecks.js'
 
 import { DEG2RAD } from '../extras/general.js'
 

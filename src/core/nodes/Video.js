@@ -1,4 +1,4 @@
-import { isBoolean, isNumber, isString } from 'lodash-es'
+import { isBoolean, isNumber, isString } from '../utils/helpers/typeChecks.js'
 import * as pc from '../extras/playcanvas.js'
 
 import { Node } from './Node.js'

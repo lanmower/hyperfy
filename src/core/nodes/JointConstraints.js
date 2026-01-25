@@ -1,7 +1,7 @@
 import * as THREE from '../extras/three.js'
 import { q } from '../utils/TempVectors.js'
 import { DEG2RAD } from '../extras/general.js'
-import { isNumber } from 'lodash-es'
+import { isNumber } from '../utils/helpers/typeChecks.js'
 
 export function createJoint(type, physics, actor0, frame0, actor1, frame1, config) {
   const { offset0, offset1, quaternion0, quaternion1, axis, limitY, limitZ, limitMin, limitMax, limitStiffness, limitDamping } = config

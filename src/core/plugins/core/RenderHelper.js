@@ -1,6 +1,6 @@
 import * as THREE from '../../extras/three.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
-import { isNumber } from 'lodash-es'
+import { isNumber } from '../../utils/helpers/typeChecks.js'
 
 const logger = new StructuredLogger('RenderHelper')
 

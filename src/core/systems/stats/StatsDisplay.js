@@ -1,4 +1,4 @@
-import { isBoolean } from 'lodash-es'
+import { isBoolean } from '../../../utils/helpers/typeChecks.js'
 
 export class StatsDisplay {
   constructor() {

@@ -1,5 +1,5 @@
 import * as THREE from '../extras/three.js'
-import { isFunction, isNumber, isString } from 'lodash-es'
+import { isFunction, isNumber, isString } from '../utils/helpers/typeChecks.js'
 import { initializeNode } from './base/NodeConstructorHelper.js'
 import { validators  } from '../utils/helpers/defineProperty.js'
 import { createSchemaProxy } from '../utils/helpers/NodeSchemaHelper.js'

@@ -1,5 +1,5 @@
 import * as pc from '../extras/playcanvas.js'
-import { every, isArray, isBoolean, isNumber, isString } from 'lodash-es'
+import { every, isArray, isBoolean, isNumber, isString } from '../utils/helpers/typeChecks.js'
 import Yoga from 'yoga-layout'
 
 import { Node } from './Node.js'
