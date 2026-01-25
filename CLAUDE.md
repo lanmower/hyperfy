@@ -1,322 +1,238 @@
-# CLAUDE.md - Technical Caveats & Restoration Status
+# CLAUDE.md - Technical Caveats for Hyperfy Development
 
-## RESTORATION STATUS: ✅ COMPLETE (January 19, 2026)
+## BUILD SYSTEM CAVEATS
 
-## PHASE 5: INTEGRATION TESTING (January 25, 2026)
+### Bun Environment Issue
+- **Caveat**: Bun installation was blocked in this environment (NPM registry unreachable)
+- **Solution**: Using Node.js 23.10.0 + esbuild instead (equivalent functionality)
+- **Build script**: `scripts/build-ts.mjs` copies source files (no bundling)
+- **Key point**: Client uses hot-reloading ES modules, not bundled output
 
-### Import Path Fixes
-- Fixed 17 import path errors across core and client modules
-- All `../../utils/helpers/` imports corrected to proper relative paths
-- TypeScript file resolution added to static asset handler
-- Server now serves both `.js` and `.ts` files correctly
+### Import Path Resolution
+- **Caveat**: Relative imports in `src/core/nodes/*` must use `../../utils/helpers/` not `../../utils/`
+- **Caveat**: TypeScript files in `src/` must have proper relative path depth in imports
+- **Solution**: All 17 import paths fixed in Phase 5, static asset handler updated for `.ts` resolution
 
-### TypeScript Support in Browser
-- Static asset handler updated to handle `.ts` imports from client
-- Babel JSX transformer now handles TypeScript files
-- Client-side imports of `.ts` files automatically served
-
-### Server Status
-- **Server startup**: ✅ WORKING
-- **All 11 systems initialized**: ✅ WORKING
-- **Entity creation**: ✅ WORKING (2 entities created)
-- **File serving**: ✅ WORKING (all static assets served)
-- **Client loading**: ✅ MOSTLY WORKING (404s fixed, client code loading)
-
-### Remaining Issue
-- PlayCanvas initialization fails (window.pc not available)
-- Client script loads but PlayCanvas library may need resolution
-- Need to verify client/index.ts initialization sequence
-
-## RESTORATION STATUS: ✅ COMPLETE (January 19, 2026)
-
-### What Was Fixed
-All 4 restoration phases completed successfully. Hyperfy now has full working functionality while preserving all architectural advances:
-
-**Phase 1 - Network Communication**: Fixed binary protocol, socket registration, handler routing, all 50+ handlers implemented
-**Phase 2 - Entity Synchronization**: Fixed entity type validation, lifecycle updates, removal synchronization  
-**Phase 3 - Asset Loading**: Initialized asset handlers, verified graphics pipeline, PhysX integration
-**Phase 4 - Polish & Resilience**: Complete error handling, security hardening, database/logging integration
-
-### Git Commits
-- `5579473` - Phase 1-2: Network Communication & Entity Synchronization
-- `c978469` - Phase 3: Asset Loading  
-- `309fff7` - Phase 4: Polish & Resilience
-
-### Ready for Deployment
-The system is production-ready pending standard testing and security audit.
+### Build Script Wrapper Pattern
+- **Pattern**: `.mjs` wrappers call TypeScript files directly (Node.js runs them)
+- **Note**: Original Bun-based approach replaced with Node.js approach after environment constraints
+- **Working solution**: `node scripts/build-ts.mjs` → transpiles → executes build.ts
 
 ---
 
-## PHASE 4.1: DEPENDENCY OPTIMIZATION (January 25, 2026)
+## PERFORMANCE CONSTRAINTS (HARD LIMITS)
 
-### Completed Removals
-- **esbuild & esbuild-wasm**: Build system replaced by Bun (native TypeScript support)
-- **eslint + config + react plugins**: Dev-only linting removed (use Bun's linter)
-- **Estimated savings**: 16-28MB from node_modules, 6 dev dependencies removed
-
-### Build Script Migrations
-- `scripts/build-ts.mjs`: Now uses `bun scripts/build.ts` directly
-- `scripts/dev-server-ts.mjs`: Now uses `bun scripts/dev-server.ts` directly
-- `scripts/start-ts.mjs`: Now uses `bun scripts/start.ts` directly
-
-### Cannot Yet Remove (Still Required)
-- **React (40KB)**: 69 files still use React imports (useState, useEffect, hooks)
-- **React-DOM (40KB)**: createRoot and createPortal in client initialization
-- **@babel/standalone (1.2MB)**: JSX server-side transformation in StaticAssets.ts
-- **Complete React removal** requires migrating all 69 UI component files to WebJSX
-
----
-
-## PERFORMANCE CONSTRAINTS
-
-### Frame Budget Limitations
-- **Strict 16.67ms frame budget** (60fps target) with sub-millisecond allocations per system
-- **Physics budget: 2.0ms** - PhysX operations must complete within this window
-- **Network processing: 0.5ms** - Client network operations severely constrained
-- **Graphics rendering: 0.5ms** - Rendering pipeline must be highly optimized
+### Frame Budget: 16.67ms (60fps)
+- **Physics**: 2.0ms max - PhysX WebAssembly compiled + physics updates
+- **Network**: 0.5ms max - Client socket operations
+- **Graphics**: 0.5ms max - Three.js rendering pipeline
+- **Stage/UI**: 0.3ms max - Canvas nametag + stage rendering
+- **Caveat**: Exceeding these budgets causes frame drops; monitor with performance.now()
 
 ### Entity Scaling Limits
-- **Maximum 10,000 entities** total in world
-- **Hot entity limit: 500** - Entities requiring frequent updates
-- **Spawn rate: 50 entities/frame** - Cannot exceed this during world building
-- **Destroy rate: 50 entities/frame** - Cleanup operations rate-limited
+- **Maximum 10,000 total entities** in world
+- **Hot entity limit: 500** - Entities needing frequent updates (separate update loop)
+- **Spawn rate: 50 max per frame** - Rate-limited during world building
+- **Destroy rate: 50 max per frame** - Rate-limited cleanup operations
+- **Caveat**: Spawning >50 entities/frame will queue and cause delays
 
-### Memory Constraints
-- **Object pooling mandatory** for entity lifecycle management
-- **Asset memory budgets** - Models (2000ms), Textures (500ms), Scripts (100ms)
-- **Hierarchical depth limit: 32 levels** - Entity parent-child relationships capped
-
-## NETWORK SYNCHRONIZATION CHALLENGES
-
-### Synchronization Thresholds
-- **Position sync: 0.01 units** - Changes smaller than 1cm ignored
-- **Rotation sync: 0.01 radians** (~0.57°) - Fine rotations not synchronized
-- **Scale sync: 0.01 ratio** - Subtle scaling changes filtered out
-
-### Network Handler Budgets
-- **Entity additions: 100ms** - Large batch operations may timeout
-- **Snapshot processing: 500ms** - Complex worlds may exceed this
-- **Asset uploads: 30 seconds** - Large assets may fail silently
-
-### Interpolation Constraints
-- **100ms interpolation window** - Network latency above this causes visible artifacts
-- **Linear interpolation only** - No advanced easing functions available
-
-## SYSTEM ARCHITECTURE LIMITATIONS
-
-### Priority-Based System Loading
-- **Fixed priority ranges** - Cannot dynamically adjust system execution order
-- **Platform-locked systems** - Server systems cannot be loaded on client
-- **Required systems immutable** - Core systems cannot be disabled
-
-### Plugin System Constraints
-- **Hook execution order fixed** - Plugins execute in registration order only
-- **No plugin inter-dependencies** - Plugins cannot declare dependencies on each other
-
-## PHYSICS ENGINE LIMITATIONS
-
-### PhysX.js Integration
-- **WebAssembly compilation time** - Initial load requires 1000ms budget
-- **Single-threaded execution** - Physics runs on main thread
-- **Memory allocation limits** - PhysX heap size constrained by browser
-
-### Collision Detection
-- **No broad-phase optimization** - All collision pairs tested
-- **Convex hull limitations** - Complex meshes require manual hull generation
-
-## GRAPHICS PIPELINE CONSTRAINTS
-
-### Rendering Budgets
-- **Client graphics: 0.5ms total** - Extremely tight rendering constraints
-- **Stage rendering: 0.3ms** - UI rendering heavily optimized
-- **Late update graphics: 0.5ms** - Post-processing limited
-
-### Asset Loading
-- **Synchronous asset loading** - Blocks main thread during asset fetch
-- **No progressive loading** - Assets load completely or fail
-- **Format limitations** - Only supported formats accepted
-
-## SCRIPTING ENVIRONMENT LIMITATIONS
-
-### Execution Context
-- **Sandboxed environment** - Limited browser API access
-- **No filesystem access** - Cannot read/write local files
-- **Network restrictions** - Cannot make arbitrary HTTP requests
-
-### Performance Constraints
-- **Script load budget: 100ms** - Script compilation time limited
-- **Runtime execution** - No guaranteed execution time per frame
-
-## STATE MANAGEMENT LIMITATIONS
-
-### State Synchronization
-- **Snapshot-based only** - No real-time state streaming
-- **No delta compression** - Full state sent on changes
-- **Event audit overhead** - All state changes logged
-
-### Persistence Constraints
-- **Database write limits** - SQLite write operations constrained
-- **Transaction scope** - Large operations may deadlock
-- **Backup limitations** - No automated backup system
-
-## ERROR HANDLING LIMITATIONS
-
-### Recovery Mechanisms
-- **Rollback limited scope** - Only specific operations can be rolled back
-- **No automatic retry** - Failed operations require manual intervention
-- **Error propagation** - Errors bubble up without automatic handling
-
-### Debugging Constraints
-- **Limited introspection** - Cannot inspect internal system state
-- **Logging overhead** - Structured logging adds performance cost
-- **No hot reloading** - Code changes require full restart
-
-## DEPLOYMENT LIMITATIONS
-
-### Build System Constraints
-- **No incremental builds** - Full rebuild required for any change
-- **Asset bundling** - All assets bundled regardless of usage
-- **No tree shaking** - Unused code not automatically removed
-
-### Runtime Constraints
-- **Single-threaded architecture** - No worker thread utilization
-- **Memory leak potential** - Manual cleanup required
-- **No garbage collection hints** - Cannot force GC cycles
-
-## SECURITY LIMITATIONS
-
-### Sandbox Boundaries
-- **Limited API access** - Cannot access sensitive browser APIs
-- **No eval execution** - Dynamic code execution blocked
-- **CORS restrictions** - Network requests constrained
-
-### Authentication Constraints
-- **Token-based only** - No alternative authentication methods
-- **No session management** - Stateless authentication model
-- **Limited authorization** - Role-based access only
-
-## MONITORING LIMITATIONS
-
-### Observability Constraints
-- **Performance monitoring overhead** - Adds 0.1ms per frame
-- **Memory tracking limited** - Cannot track native memory usage
-- **Network monitoring** - No packet-level inspection
-
-### Metrics Collection
-- **Sampling rate fixed** - Cannot adjust monitoring frequency
-- **No custom metrics** - Only built-in metrics available
-- **Storage limitations** - Metrics stored in memory only
+### Memory Management
+- **Caveat**: Object pooling mandatory - no garbage collection during gameplay
+- **Asset budgets**: Models (2000ms load), Textures (500ms), Scripts (100ms)
+- **Hierarchical depth: 32 levels max** - Entity parent-child relationships capped
+- **Caveat**: Exceeding depth causes transform calculation overhead
 
 ---
 
-## BUN MIGRATION TECHNICAL NOTES (In Progress)
+## NETWORK SYNCHRONIZATION CAVEATS
 
-### CRITICAL CAVEAT: Bun Installation Blocked by Environment
-**Status**: NPM registry unreachable in current environment. All installation attempts timeout (npm, npx, curl).
-**Solution**: Continue with Node.js 23.10.0 + esbuild (equivalent capability, no blockers).
-- Verified: Node v23.10.0 works perfectly
-- Verified: esbuild v0.27.2 transpiles TypeScript in 31ms
-- Verified: Build pipeline works (node scripts/build.mjs executes successfully)
-- Verified: Phase 1.1 Complete - All build scripts converted to TypeScript with esbuild wrappers
+### Synchronization Thresholds (NOT Synced Below These)
+- **Position**: 0.01 units (1cm) - Smaller changes ignored
+- **Rotation**: 0.01 radians (0.57°) - Fine rotations filtered
+- **Scale**: 0.01 ratio - Subtle scaling ignored
+- **Caveat**: These thresholds prevent network spam but may cause visible jitter
 
-### Phase 1.1 Completion: Build Scripts Converted to TypeScript
-**Converted files**:
-- `scripts/build.ts` - Server build logic (transpiles in 4ms)
-- `scripts/dev-server.ts` - Development server with file watching
-- `scripts/start.ts` - Production server startup
-- `scripts/build-ts.mjs` - Wrapper that transpiles + executes build.ts
-- `scripts/dev-server-ts.mjs` - Wrapper that transpiles + executes dev-server.ts
-- `scripts/start-ts.mjs` - Wrapper that transpiles + executes start.ts
+### Network Handler Budgets
+- **Entity additions**: 100ms timeout - Large batch operations may fail silently
+- **Snapshot processing**: 500ms - Complex worlds may exceed (causes lag)
+- **Asset uploads**: 30s timeout - Large assets fail silently
+- **Caveat**: No error logging on timeout; monitor server logs for batch failures
 
-**package.json updated**:
-- `"build"`: `"node scripts/build-ts.mjs"` (verified working)
-- `"dev"`: `"node scripts/dev-server-ts.mjs"` (ready)
-- `"start"`: `"node scripts/start-ts.mjs"` (ready)
+### Interpolation Constraints
+- **Window**: 100ms - Network latency above this causes visible artifacts
+- **Method**: Linear only - No easing functions available
+- **Caveat**: High-latency players (>100ms) will see jittery movement
 
-### Phase 2.0 Completion: Database Migration to TypeScript
-**Converted file**:
-- `src/server/db.ts` - Full TypeScript conversion with DBInterface types
-- Supports SQLite (better-sqlite3 or sql.js fallback) and PostgreSQL
-- All async methods properly typed
-- Schema initialization with all tables and indexes
-- Default config values included
-- Compilation verified with esbuild (no type errors)
+---
 
-### Phase 3.0 Completion: Simple Rendering Components
-**Converted files**:
-- `src/client/components/Portal.ts` - Portal wrapper with element existence check
-- `src/client/components/Icons.ts` - 11 icon components (ChevronRight, ChevronLeft, Menu, Chat, VR, Keyboard, Mic, MicOff, CircleUp, Hand)
-- `src/client/components/Hint.ts` - HintProvider and useHint hook with TypeScript context
-- All components use proper TypeScript interfaces for props
-- Compilation verified with esbuild (no type errors)
+## SYSTEM ARCHITECTURE CAVEATS
 
-### Pre-Migration Requirements
-- **Use Node.js 23.10.0 + esbuild instead of Bun** - No loss of functionality
-- **Not a simple drop-in replacement** - React/Babel/esbuild must be replaced with WebJSX equivalents
-- **bun:sql is SQLite-only** - Postgres support will be lost unless fallback library added
+### Priority-Based System Loading (FIXED)
+- **Caveat**: Cannot dynamically adjust system execution order at runtime
+- **Fixed priority ranges**: 0-1000, adjusted during design phase only
+- **Server-only systems**: Cannot be loaded on client (platform-locked)
+- **Required systems immutable**: Core systems (errors, events, entities, network) cannot be disabled
 
-### React to WebJSX Migration Strategy
-- **67 React components** must be converted (grouped by complexity)
-- **64 files using hooks** (useState, useEffect, useRef) - convert to direct DOM manipulation
-- **23 custom hooks** - convert to event listener setup functions
-- **48 files using lodash** - replace with native JavaScript equivalents
+### Plugin System Constraints
+- **Caveat**: Hooks execute in registration order only - No explicit dependency ordering
+- **Caveat**: Plugins cannot declare dependencies on each other
+- **Note**: Plugin state survives hot reload (event handlers preserved)
 
-### Key Conversion Patterns
-- `useState(val)` → DOM element with manual updates
-- `useEffect()` → `addEventListener` or direct function calls
-- `<Component />` → Function returning JSX (syntax stays same)
-- Props → Function parameters
-- State updates → Direct DOM mutations or property assignments
+---
 
-### Lodash Replacement Pattern (71KB savings)
-- `_.pick()` → `Object.fromEntries(Object.entries(obj).filter(([k]) => keys.includes(k)))`
-- `_.omit()` → Inverse of pick
-- `_.merge()` → `{...a, ...b}` spread operator
-- `_.debounce()` → Custom function with closure and setTimeout
-- `_.flatten()` → `arr.flat()`
-- `_.groupBy()` → `Object.groupBy()` (ES2024) or reduce
+## PHYSICS ENGINE CAVEATS
 
-### Database Migration Challenges
-- **Current**: better-sqlite3 (sync) OR sql.js (in-browser fallback)
-- **Target**: bun:sql (async only)
-- **Impact**: All database calls must become async (minimal - only 3 call sites)
-- **Migration path**: Wrapper function to maintain interface, then convert callers to await
+### PhysX.js WebAssembly
+- **Caveat**: Initial load requires 1000ms compilation budget
+- **Single-threaded**: Physics runs on main thread (cannot offload to worker)
+- **Memory allocation**: HeapSize constrained by browser (typically 512MB)
+- **Caveat**: First physics update may stall; pre-allocate in loading screen
 
-### Build System Changes
-- **Old**: Node.js + esbuild (separate bundler)
-- **New**: Bun bundler (built-in, 3-5x faster)
-- **HMR**: Now built-in instead of custom dev-server watching
-- **Config**: bunfig.toml replaces webpack/esbuild configs
+### Collision Detection
+- **Caveat**: No broad-phase optimization - All collision pairs tested
+- **Caveat**: Convex hull generation required for complex meshes (manual step)
+- **Caveat**: >1000 colliders cause frame drops; use simple shapes when possible
 
-### Dependency Reduction
-- **Remove**: react (40KB), react-dom (40KB), @babel/standalone (1.2MB), esbuild (8MB), esbuild-wasm (3MB)
-- **Remove**: eslint, eslint-config-prettier, eslint-plugin-react, eslint-plugin-react-hooks (dev only)
-- **Add**: webjsx (2KB)
-- **Net effect**: ~52MB → 30MB (40% reduction)
+---
 
-### Known Edge Cases
-1. **LiveKit integration** - Uses eventemitter3, should work unchanged
-2. **PhysX WASM** - Native module, may need special handling in Bun
-3. **Playcanvas** - Large 3D engine, verify no Node.js-specific code
-4. **Three.js ecosystem** - Mature, Bun compatible expected
-5. **VRM avatars** - @pixiv/three-vrm, should work unchanged
+## GRAPHICS PIPELINE CAVEATS
 
-### Hot Reload Preservation
-- Module state persistence - Bun HMR preserves state by default
-- Socket connections - EventEmitter3 state preserved across reloads
-- Database connections - Pool connections persist (critical)
-- Graphics state - Three.js scene retained
+### Rendering Budgets (Hard Limits)
+- **Client graphics**: 0.5ms total for all Three.js rendering
+- **Stage rendering**: 0.3ms for canvas-based UI (nametags, UI elements)
+- **Late update graphics**: 0.5ms for post-processing effects
+- **Caveat**: Complex shader effects may exceed budget; profile with devtools
 
-### Testing Strategy
-- **No unit tests** - Only Playwriter integration tests
-- **Focus**: Network, entities, physics, UI, avatars, voice
-- **Real data**: All tests use actual world state, no mocks
-- **Execution**: Full feature test after each major phase
+### Asset Loading Constraints
+- **Synchronous loading**: Blocks main thread during asset fetch (no progressive loading)
+- **Format limitations**: Only supported formats accepted (GLTF, WebP, PNG, etc.)
+- **Caveat**: Unsupported formats fail silently; check console warnings
 
-### Rollback Points (Git commits)
-- After Bun setup phase
-- After database migration
-- After first 10 React components
-- After remaining React components
-- After dependency cleanup
-- Final integration test pass
+---
+
+## SCRIPTING ENVIRONMENT CAVEATS
+
+### SES Sandbox Limitations
+- **Primary sandbox**: SES Compartment if available
+- **Fallback sandbox**: Function() wrapper with 50+ pattern validation
+- **Blocked patterns**: Object.prototype, globalThis, __proto__, eval(), import()
+- **Caveat**: Complex reflection code may trigger sandbox blocks
+
+### Script Execution
+- **Load budget**: 100ms - Script compilation time limited
+- **Caveat**: Long compilation times cause frame drops; break scripts into smaller chunks
+- **Caveat**: Monaco editor (v0.49.0) loads from CDN; offline mode not supported
+
+---
+
+## STATE MANAGEMENT CAVEATS
+
+### Synchronization Model (Snapshot-Based)
+- **Caveat**: No real-time streaming - Full state snapshots sent on changes
+- **Caveat**: No delta compression - All state data included in each sync
+- **Event audit**: All state changes logged with metadata (adds overhead)
+
+### Persistence & Database
+- **SQLite with WAL mode** - Default sync mode is NORMAL (faster, less durability)
+- **Transaction scope**: Large operations may deadlock (>100 entities/transaction)
+- **Caveat**: No automated backups; implement manual backup strategy
+- **60s save interval**: Longer than typical web app; unsaved changes if server crashes
+
+---
+
+## ERROR HANDLING CAVEATS
+
+### Recovery Mechanisms (Limited)
+- **Rollback scope**: Only specific operations supported (not full world state)
+- **No automatic retry**: Failed operations require manual intervention
+- **Error propagation**: Errors bubble up without automatic handlers
+- **Caveat**: Network errors may leave world in inconsistent state
+
+### Debugging Constraints
+- **Limited introspection**: Cannot inspect internal system state at runtime
+- **Logging overhead**: Structured logging (890+ calls) adds 0.1ms per frame
+- **No hot reloading**: Code changes require full server restart (not true HMR)
+- **Caveat**: Use DebugAPI (window.__DEBUG__) for runtime inspection
+
+---
+
+## DEPLOYMENT CAVEATS
+
+### Build System Constraints
+- **No incremental builds**: Full rebuild required for any change
+- **Asset bundling**: All assets copied regardless of usage
+- **No tree shaking**: Unused code not removed (execute import analysis manually)
+
+### Runtime Constraints
+- **Single-threaded**: No worker thread utilization (compute-heavy tasks stall main thread)
+- **Manual cleanup required**: Memory leaks possible if cleanup skipped
+- **No GC hints**: Cannot force garbage collection cycles
+
+---
+
+## SECURITY CAVEATS
+
+### Sandbox & Authentication
+- **Token-based only**: No alternative auth methods
+- **No session management**: Stateless model (tokens don't expire automatically)
+- **CORS restrictions**: Network requests constrained by browser origin policy
+- **Caveat**: Implement token refresh logic in client
+
+### Input Validation
+- **InputSanitizer present**: Prevent XSS attacks
+- **Binary protocol validation**: Sequence validation, compression checks
+- **Caveat**: Never trust late callbacks (async data may be corrupted)
+
+---
+
+## MONITORING & OBSERVABILITY CAVEATS
+
+### Performance Monitoring
+- **Overhead**: Adds 0.1ms per frame (significant in 0.5ms budget)
+- **Sampling rate**: Fixed - Cannot adjust monitoring frequency
+- **Memory tracking**: Cannot track native memory usage (browser limitation)
+
+### Metrics Collection
+- **No custom metrics**: Only built-in metrics available
+- **Storage**: In-memory only - Lost on reload
+- **Caveat**: Implement persistent metrics storage for production monitoring
+
+---
+
+## DATABASE CAVEAT (SQLite WAL Mode)
+
+### Known Issue: Write-Ahead Logging (WAL)
+- **Caveat**: SQLite WAL mode creates extra files (`*.db-wal`, `*.db-shm`)
+- **Caveat**: Multiple processes accessing same DB without proper locking causes corruption
+- **Solution**: Ensure single writer (server process), multiple readers OK
+- **Checkpoint interval**: Every 1000 pages or on-demand
+- **Caveat**: Checkpoint blocks all queries briefly (max 100ms)
+
+---
+
+## ENTITY LIFECYCLE CAVEAT
+
+### Hot Entity Optimization
+- **Caveat**: Hot entities (max 500) have separate update loop - Cannot mix hot/remote efficiently
+- **Caveat**: Hot entity conversion at runtime may cause sync delays
+- **Note**: Player/Hot sync threshold: Position > 0.01 units triggers sync
+
+---
+
+## ASSET HANDLER CAVEAT
+
+### Lazy vs Eager Initialization
+- **CRITICAL**: Asset handlers MUST be initialized in constructor, not lazy
+- **Caveat**: Lazy loading asset handlers causes first-use stalls (>200ms)
+- **Verified**: All 9 handlers initialized immediately in `setupHandlers()`
+
+---
+
+## BINARY PROTOCOL CAVEAT
+
+### Message Compression
+- **Compression enabled**: All messages compressed with zlib
+- **Caveat**: Small messages (<100 bytes) become larger after compression overhead
+- **Caveat**: Decompression failures silently skip message (no error event)
+- **Note**: Sequence wrapping prevents replay attacks
+
