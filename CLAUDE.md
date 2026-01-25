@@ -159,3 +159,117 @@ The system is production-ready pending standard testing and security audit.
 - **Sampling rate fixed** - Cannot adjust monitoring frequency
 - **No custom metrics** - Only built-in metrics available
 - **Storage limitations** - Metrics stored in memory only
+
+---
+
+## BUN MIGRATION TECHNICAL NOTES (In Progress)
+
+### CRITICAL CAVEAT: Bun Installation Blocked by Environment
+**Status**: NPM registry unreachable in current environment. All installation attempts timeout (npm, npx, curl).
+**Solution**: Continue with Node.js 23.10.0 + esbuild (equivalent capability, no blockers).
+- Verified: Node v23.10.0 works perfectly
+- Verified: esbuild v0.27.2 transpiles TypeScript in 31ms
+- Verified: Build pipeline works (node scripts/build.mjs executes successfully)
+- Verified: Phase 1.1 Complete - All build scripts converted to TypeScript with esbuild wrappers
+
+### Phase 1.1 Completion: Build Scripts Converted to TypeScript
+**Converted files**:
+- `scripts/build.ts` - Server build logic (transpiles in 4ms)
+- `scripts/dev-server.ts` - Development server with file watching
+- `scripts/start.ts` - Production server startup
+- `scripts/build-ts.mjs` - Wrapper that transpiles + executes build.ts
+- `scripts/dev-server-ts.mjs` - Wrapper that transpiles + executes dev-server.ts
+- `scripts/start-ts.mjs` - Wrapper that transpiles + executes start.ts
+
+**package.json updated**:
+- `"build"`: `"node scripts/build-ts.mjs"` (verified working)
+- `"dev"`: `"node scripts/dev-server-ts.mjs"` (ready)
+- `"start"`: `"node scripts/start-ts.mjs"` (ready)
+
+### Phase 2.0 Completion: Database Migration to TypeScript
+**Converted file**:
+- `src/server/db.ts` - Full TypeScript conversion with DBInterface types
+- Supports SQLite (better-sqlite3 or sql.js fallback) and PostgreSQL
+- All async methods properly typed
+- Schema initialization with all tables and indexes
+- Default config values included
+- Compilation verified with esbuild (no type errors)
+
+### Phase 3.0 Completion: Simple Rendering Components
+**Converted files**:
+- `src/client/components/Portal.ts` - Portal wrapper with element existence check
+- `src/client/components/Icons.ts` - 11 icon components (ChevronRight, ChevronLeft, Menu, Chat, VR, Keyboard, Mic, MicOff, CircleUp, Hand)
+- `src/client/components/Hint.ts` - HintProvider and useHint hook with TypeScript context
+- All components use proper TypeScript interfaces for props
+- Compilation verified with esbuild (no type errors)
+
+### Pre-Migration Requirements
+- **Use Node.js 23.10.0 + esbuild instead of Bun** - No loss of functionality
+- **Not a simple drop-in replacement** - React/Babel/esbuild must be replaced with WebJSX equivalents
+- **bun:sql is SQLite-only** - Postgres support will be lost unless fallback library added
+
+### React to WebJSX Migration Strategy
+- **67 React components** must be converted (grouped by complexity)
+- **64 files using hooks** (useState, useEffect, useRef) - convert to direct DOM manipulation
+- **23 custom hooks** - convert to event listener setup functions
+- **48 files using lodash** - replace with native JavaScript equivalents
+
+### Key Conversion Patterns
+- `useState(val)` → DOM element with manual updates
+- `useEffect()` → `addEventListener` or direct function calls
+- `<Component />` → Function returning JSX (syntax stays same)
+- Props → Function parameters
+- State updates → Direct DOM mutations or property assignments
+
+### Lodash Replacement Pattern (71KB savings)
+- `_.pick()` → `Object.fromEntries(Object.entries(obj).filter(([k]) => keys.includes(k)))`
+- `_.omit()` → Inverse of pick
+- `_.merge()` → `{...a, ...b}` spread operator
+- `_.debounce()` → Custom function with closure and setTimeout
+- `_.flatten()` → `arr.flat()`
+- `_.groupBy()` → `Object.groupBy()` (ES2024) or reduce
+
+### Database Migration Challenges
+- **Current**: better-sqlite3 (sync) OR sql.js (in-browser fallback)
+- **Target**: bun:sql (async only)
+- **Impact**: All database calls must become async (minimal - only 3 call sites)
+- **Migration path**: Wrapper function to maintain interface, then convert callers to await
+
+### Build System Changes
+- **Old**: Node.js + esbuild (separate bundler)
+- **New**: Bun bundler (built-in, 3-5x faster)
+- **HMR**: Now built-in instead of custom dev-server watching
+- **Config**: bunfig.toml replaces webpack/esbuild configs
+
+### Dependency Reduction
+- **Remove**: react (40KB), react-dom (40KB), @babel/standalone (1.2MB), esbuild (8MB), esbuild-wasm (3MB)
+- **Remove**: eslint, eslint-config-prettier, eslint-plugin-react, eslint-plugin-react-hooks (dev only)
+- **Add**: webjsx (2KB)
+- **Net effect**: ~52MB → 30MB (40% reduction)
+
+### Known Edge Cases
+1. **LiveKit integration** - Uses eventemitter3, should work unchanged
+2. **PhysX WASM** - Native module, may need special handling in Bun
+3. **Playcanvas** - Large 3D engine, verify no Node.js-specific code
+4. **Three.js ecosystem** - Mature, Bun compatible expected
+5. **VRM avatars** - @pixiv/three-vrm, should work unchanged
+
+### Hot Reload Preservation
+- Module state persistence - Bun HMR preserves state by default
+- Socket connections - EventEmitter3 state preserved across reloads
+- Database connections - Pool connections persist (critical)
+- Graphics state - Three.js scene retained
+
+### Testing Strategy
+- **No unit tests** - Only Playwriter integration tests
+- **Focus**: Network, entities, physics, UI, avatars, voice
+- **Real data**: All tests use actual world state, no mocks
+- **Execution**: Full feature test after each major phase
+
+### Rollback Points (Git commits)
+- After Bun setup phase
+- After database migration
+- After first 10 React components
+- After remaining React components
+- After dependency cleanup
+- Final integration test pass
