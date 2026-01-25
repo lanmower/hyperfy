@@ -7,12 +7,7 @@ const __dirname = path.dirname(__filename)
 const rootDir = path.dirname(__dirname)
 
 try {
-  execSync('npx esbuild scripts/build.ts --loader:.ts=tsx --outfile=scripts/build.js', {
-    cwd: rootDir,
-    stdio: 'inherit',
-  })
-
-  execSync('node scripts/build.js', {
+  execSync('bun scripts/build.ts', {
     cwd: rootDir,
     stdio: 'inherit',
   })
