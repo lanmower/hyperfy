@@ -3,6 +3,7 @@ import { SnapshotCodec } from '../network/SnapshotCodec.js'
 import { Socket } from '../../Socket.js'
 import { uuid } from '../../utils.js'
 import { createJWT, readJWT } from '../../utils/helpers/crypto.js'
+import { isNumber } from '../../utils/helpers/typeChecks.js'
 import { EVENT } from '../../constants/EventNames.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 
@@ -18,7 +19,6 @@ export class PlayerConnectionManager {
   async onConnection(ws, params) {
     try {
       const playerLimit = this.serverNetwork.settings.playerLimit
-      const { isNumber } = await import('../../utils/helpers/typeChecks.js')
       if (isNumber(playerLimit) && playerLimit > 0 && this.serverNetwork.sockets.size >= playerLimit) {
         const packet = MessageHandler.encode('kick', 'player_limit')
         ws.send(packet, { binary: true })

@@ -13,13 +13,13 @@ const clientDir = path.join(srcDir, 'client')
 const publicDir = path.join(clientDir, 'public')
 
 async function transformCode(code, filepath) {
-  if (!filepath.endsWith('.js')) return code
+  if (!filepath.endsWith('.js') && !filepath.endsWith('.ts')) return code
   if (typeof code !== 'string') return code
   if (filepath.includes('node_modules')) return code
 
   try {
     const result = Babel.transform(code, {
-      presets: ['react'],
+      presets: ['react', ['typescript', { isTSX: true }]],
       filename: filepath,
       babelrc: false
     })
@@ -63,7 +63,13 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
 
   // Serve src/client files directly (buildless)
   fastify.get('/src/client/*', async (req, reply) => {
-    const filepath = path.join(clientDir, req.params['*'])
+    let filepath = path.join(clientDir, req.params['*'])
+    if (!await fs.pathExists(filepath) && filepath.endsWith('.js')) {
+      const tsPath = filepath.replace(/\.js$/, '.ts')
+      if (await fs.pathExists(tsPath)) {
+        filepath = tsPath
+      }
+    }
     try {
       const code = await fs.readFile(filepath, 'utf-8')
       const transformed = await transformCode(code, filepath)
@@ -75,7 +81,13 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
 
   // Serve src/core files directly (buildless)
   fastify.get('/src/core/*', async (req, reply) => {
-    const filepath = path.join(srcDir, 'core', req.params['*'])
+    let filepath = path.join(srcDir, 'core', req.params['*'])
+    if (!await fs.pathExists(filepath) && filepath.endsWith('.js')) {
+      const tsPath = filepath.replace(/\.js$/, '.ts')
+      if (await fs.pathExists(tsPath)) {
+        filepath = tsPath
+      }
+    }
     try {
       // Serve binary files (WASM) without text transformation
       if (filepath.endsWith('.wasm')) {

@@ -1,4 +1,4 @@
-import { isArray } from '../../../utils/helpers/typeChecks.js'
+import { isArray } from '../../utils/helpers/typeChecks.js'
 import { APIConfigBuilder } from '../../utils/api/index.js'
 import { ValidationHelper } from '../../utils/api/ValidationHelper.js'
 import { ControlPriorities } from '../../extras/ControlPriorities.js'

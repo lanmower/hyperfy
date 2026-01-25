@@ -1,4 +1,4 @@
-import { isNumber } from '../../../utils/helpers/typeChecks.js'
+import { isNumber } from '../../utils/helpers/typeChecks.js'
 import * as pc from '../../extras/playcanvas.js'
 
 export function createMaterialProxy(raw, textures, material, world) {

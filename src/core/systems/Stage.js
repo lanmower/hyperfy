@@ -2,7 +2,7 @@ import * as pc from '../extras/playcanvas.js'
 import { System } from './System.js'
 import { LooseOctree } from '../extras/LooseOctree.js'
 import { MeshInserter } from './stage/MeshInserter.js'
-import { isNumber } from '../../utils/helpers/typeChecks.js'
+import { isNumber } from '../utils/helpers/typeChecks.js'
 
 export class Stage extends System {
   static DEPS = {

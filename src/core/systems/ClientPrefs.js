@@ -1,4 +1,4 @@
-import { isBoolean, isNumber } from '../../utils/helpers/typeChecks.js'
+import { isBoolean, isNumber } from '../utils/helpers/typeChecks.js'
 
 import { System } from './System.js'
 import { StateStore } from '../state/StateStore.js'

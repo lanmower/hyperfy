@@ -1,4 +1,4 @@
-import { isBoolean } from '../../utils/helpers/typeChecks.js'
+import { isBoolean } from '../utils/helpers/typeChecks.js'
 import { ControlPriorities } from '../extras/ControlPriorities.js'
 import { System } from './System.js'
 
