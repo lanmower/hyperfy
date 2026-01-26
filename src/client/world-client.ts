@@ -80,10 +80,10 @@ export function Client({ wsUrl, onSetup }) {
     })
   }, [])
   try {
-    return (
-      <div
-        className='App'
-        style={{
+    return React.createElement('div',
+      {
+        className: 'App',
+        style: {
           position: 'fixed',
           top: 0,
           left: 0,
@@ -91,12 +91,13 @@ export function Client({ wsUrl, onSetup }) {
           bottom: 0,
           width: '100%',
           height: '100vh',
-        }}
-      >
-        <div
-          className='App__viewport'
-          ref={viewportRef}
-          style={{
+        }
+      },
+      React.createElement('div',
+        {
+          className: 'App__viewport',
+          ref: viewportRef,
+          style: {
             position: 'absolute',
             top: 0,
             left: 0,
@@ -104,26 +105,26 @@ export function Client({ wsUrl, onSetup }) {
             bottom: 0,
             width: '100%',
             height: '100%',
-          }}
-        >
-          <div
-            className='App__ui'
-            ref={uiRef}
-            style={{
+          }
+        },
+        React.createElement('div',
+          {
+            className: 'App__ui',
+            ref: uiRef,
+            style: {
               position: 'absolute',
               inset: 0,
               pointerEvents: 'none',
               userSelect: 'none',
               display: ui?.visible !== false ? 'block' : 'none',
-            }}
-          >
-            {world.ui ? <CoreUI world={world} /> : null}
-          </div>
-        </div>
-      </div>
+            }
+          },
+          world.ui ? React.createElement(CoreUI, { world: world }) : null
+        )
+      )
     )
   } catch (err) {
     console.error('[CLIENT] Render error:', err)
-    return <div style={{ width: '100%', height: '100%', backgroundColor: '#f00', color: '#fff' }}>Error: {err.message}</div>
+    return React.createElement('div', { style: { width: '100%', height: '100%', backgroundColor: '#f00', color: '#fff' } }, `Error: ${err.message}`)
   }
 }

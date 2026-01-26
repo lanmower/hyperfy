@@ -154,4 +154,4 @@ function SharedVectorPool(name, vectorCount = 0, quaternionCount = 0, eulerCount
   return pool
 }
 
-export { SharedVectorPool }
+export { SharedVectorPool, Vec3, Quat }

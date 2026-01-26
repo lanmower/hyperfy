@@ -23,7 +23,6 @@
     "start": "npx tsx src/server/index.js"
   },
   "dependencies": {
-    "@babel/standalone": "^7.28.5",
     "@fastify/compress": "^8.0.1",
     "@fastify/cors": "^10.0.1",
     "@fastify/multipart": "^9.0.1",
@@ -46,6 +45,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "source-map-support": "^0.5.21",
+    "sql.js": "^1.13.0",
+    "webjsx": "^0.2.0",
     "yoga-layout": "^3.2.1"
   },
   "devDependencies": {

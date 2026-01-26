@@ -1,4 +1,3 @@
-import { Vec3, Quat } from './playcanvas.js'
 import { Vector3, Quaternion } from './three.js'
 import { Layers } from './Layers.js'
 import { SharedVectorPool } from '../utils/SharedVectorPool.js'
@@ -56,7 +55,7 @@ export function simpleCamLerp(world, camera, target, delta) {
   target.quaternion.setFromEuler(target.rotation)
 
   const alpha = 1.0 - Math.exp(-smoothing * delta)
-  const result = new Quat()
+  const result = new Quaternion()
   slerpQuat(camera.quaternion, target.quaternion, alpha, result)
   camera.quaternion.copy(result)
 

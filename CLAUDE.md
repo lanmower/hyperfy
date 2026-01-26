@@ -3,14 +3,14 @@
 ## BUILD SYSTEM CAVEATS
 
 ### Buildless Architecture
-- **Caveat**: Zero build step - TypeScript/JSX transpiled on-request via Babel in server
-- **Performance**: First request for a file has ~50-100ms transpilation overhead (cached after)
+- **Caveat**: Zero build step - JSX transpiled on-request via lightweight custom transformer in server
+- **Performance**: First request for a file has ~10-20ms transpilation overhead (cached after) - lighter than Babel
 - **Hot reload**: Files changes detected within 500ms via tsx watch (chokidar)
 - **State preservation**: Module cache preserved - connections/sockets stay alive across reload
 - **Module imports**: Must use file extensions (.js/.ts) in all imports (ES modules requirement)
 - **Production**: At scale, consider pre-transpiling for faster responses
 - **Windows compatible**: Node.js + tsx (no Bun required)
-- **Babel API**: Use `Babel.availablePresets.react` NOT `Babel.presets.react` when importing `@babel/standalone` as ES module
+- **JSX Transformer**: Custom lightweight transformer - eliminates Babel dependency, transpiles React.createElement on-request
 
 ### Development Scripts
 - `dev`: `npx tsx watch --clear-screen src/server/index.js` (hot reload enabled)
@@ -242,19 +242,6 @@
 - **Caveat**: Small messages (<100 bytes) become larger after compression overhead
 - **Caveat**: Decompression failures silently skip message (no error event)
 - **Note**: Sequence wrapping prevents replay attacks
-
----
-
-## BABEL @STANDALONE CAVEAT (BLOCKING ISSUE)
-
-### JSX to JS Transpilation Bug
-- **CRITICAL**: @babel/standalone generates invalid `_extends()` helper at module top-level
-- **Symptom**: "Unexpected token ':'" error when browser parses ES6 modules with JSX
-- **Root cause**: Helper function uses syntax invalid in module context (return + comma operator at top level)
-- **Affected files**: .js files with JSX (FieldsComponents/*.js, SidebarPanes/World.js, etc.)
-- **Status**: UNFIXED - SafetyAssets.js cannot be modified without server crash (hot reload issue)
-- **Workaround**: (None currently - blocks client app initialization)
-- **Fix needed**: Either remove _extends helper post-transpilation or skip Babel for modern ES6 .js files
 
 ---
 

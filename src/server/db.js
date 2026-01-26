@@ -6,40 +6,12 @@ let dbType = 'sqlite'
 let pgPool = null
 
 async function initSqlite(dbPath) {
-  let Database
-  try {
-    const betterSqlite3 = await import('better-sqlite3')
-    Database = betterSqlite3.default
-  } catch {
-    const initSqlJs = await import('sql.js').then(m => m.default)
-    const SQL = await initSqlJs()
-    return createSqlJsDb(SQL, dbPath)
-  }
+  const initSqlJs = await import('sql.js')
+  const SQL = await initSqlJs.default()
 
+  let db
   const dir = path.dirname(dbPath)
   await fs.ensureDir(dir)
-  const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
-  db.pragma('synchronous = NORMAL')
-  return {
-    query: async (sql, params = []) => db.prepare(sql).all(...params),
-    queryOne: async (sql, params = []) => db.prepare(sql).get(...params) || null,
-    exec: async (sql, params = []) => {
-      db.prepare(sql).run(...params)
-    },
-    run: async (sql, params = []) => {
-      const stmt = db.prepare(sql)
-      const info = stmt.run(...params)
-      return info.lastInsertRowid || null
-    },
-    close: async () => db.close()
-  }
-}
-
-function createSqlJsDb(SQL, dbPath) {
-  let db
-  let lastSave = 0
-  const SAVE_INTERVAL = 1000
 
   const loadDb = () => {
     try {
@@ -54,15 +26,13 @@ function createSqlJsDb(SQL, dbPath) {
     }
   }
 
-  const saveDb = (force = false) => {
-    const now = Date.now()
-    if (force || now - lastSave >= SAVE_INTERVAL) {
+  const saveDb = () => {
+    try {
       const data = db.export()
       const buffer = Buffer.from(data)
-      const dir = path.dirname(dbPath)
-      fs.ensureDirSync(dir)
       fs.writeFileSync(dbPath, buffer)
-      lastSave = now
+    } catch (e) {
+      console.error('DB save error:', e)
     }
   }
 
@@ -70,43 +40,65 @@ function createSqlJsDb(SQL, dbPath) {
 
   return {
     query: async (sql, params = []) => {
-      const stmt = db.prepare(sql)
-      stmt.bind(params)
-      const rows = []
-      while (stmt.step()) {
-        rows.push(stmt.getAsObject())
+      try {
+        const stmt = db.prepare(sql)
+        stmt.bind(params)
+        const rows = []
+        while (stmt.step()) rows.push(stmt.getAsObject())
+        stmt.free()
+        return rows
+      } catch (e) {
+        console.error('Query error:', e, sql)
+        return []
       }
-      stmt.free()
-      return rows
     },
     queryOne: async (sql, params = []) => {
-      const stmt = db.prepare(sql)
-      stmt.bind(params)
-      if (stmt.step()) {
-        const row = stmt.getAsObject()
+      try {
+        const stmt = db.prepare(sql)
+        stmt.bind(params)
+        if (stmt.step()) {
+          const row = stmt.getAsObject()
+          stmt.free()
+          return row
+        }
         stmt.free()
-        return row
+        return null
+      } catch (e) {
+        console.error('QueryOne error:', e, sql)
+        return null
       }
-      stmt.free()
-      return null
     },
     exec: async (sql, params = []) => {
-      const stmt = db.prepare(sql)
-      stmt.bind(params)
-      stmt.step()
-      stmt.free()
-      saveDb(true)
+      try {
+        const stmt = db.prepare(sql)
+        stmt.bind(params)
+        stmt.step()
+        stmt.free()
+        saveDb()
+      } catch (e) {
+        console.error('Exec error:', e, sql)
+      }
     },
     run: async (sql, params = []) => {
-      const stmt = db.prepare(sql)
-      stmt.bind(params)
-      stmt.step()
-      stmt.free()
-      saveDb(true)
-      return null
+      try {
+        const stmt = db.prepare(sql)
+        stmt.bind(params)
+        stmt.step()
+        stmt.free()
+        saveDb()
+        return null
+      } catch (e) {
+        console.error('Run error:', e, sql)
+        return null
+      }
     },
     close: async () => {
-      saveDb(true)
+      try {
+        saveDb()
+        db.close()
+      } catch (e) {
+        console.error('Close error:', e)
+      }
     }
   }
 }
