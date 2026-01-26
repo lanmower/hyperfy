@@ -18,7 +18,7 @@
 - `start`: `npx tsx src/server/index.js` (production execution)
 
 ### Dependencies Optimized
-- **Reduction**: 43 → 24 packages (44% reduction)
+- **Reduction**: 43 → 25 packages (42% reduction)
 - **Removed build tools**: Bun, esbuild, webpack, rollup
 - **Removed test tools**: playwright, @playwright/test
 - **Removed unused**: d3 (→ canvas), playcanvas, async-retry (inlined), knex, sql.js, jsonwebtoken, ses
