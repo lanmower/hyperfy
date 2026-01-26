@@ -30,7 +30,7 @@ async function transformCode(code, filepath) {
 
   try {
     const result = Babel.transform(code, {
-      presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
+      presets: [Babel.availablePresets.react, [Babel.availablePresets.typescript, { isTSX: true, allExtensions: true }]],
       filename: filepath,
       babelrc: false
     })
@@ -49,49 +49,6 @@ async function transformCode(code, filepath) {
 }
 
 export async function registerStaticAssets(fastify, buildDir, assetsDir, world) {
-  fastify.get('/debug-babel', async (req, reply) => {
-    const hasBabel = typeof Babel !== 'undefined'
-    const hasTransform = hasBabel && typeof Babel.transform === 'function'
-    const testCode = 'function App() { return <div>test</div> }'
-
-    let transformed = 'NO_TRANSFORM'
-    let error = null
-
-    if (hasTransform) {
-      try {
-        const result = Babel.transform(testCode, {
-          presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
-          filename: 'test.js',
-          babelrc: false
-        })
-        transformed = result.code
-      } catch (err) {
-        error = err.message
-      }
-    }
-
-    return reply.type('application/json').send({
-      hasBabel,
-      hasTransform,
-      transformed,
-      error
-    })
-  })
-
-  fastify.get('/test-transform', async (req, reply) => {
-    const testCode = 'function App() { return <div>test</div> }'
-    try {
-      const result = Babel.transform(testCode, {
-        presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
-        filename: 'test.js',
-        babelrc: false
-      })
-      return reply.type('text/plain').send(`SUCCESS: ${result.code}`)
-    } catch (err) {
-      return reply.type('text/plain').send(`FAIL: ${err.message}`)
-    }
-  })
-
   fastify.get('/', async (req, reply) => {
     try {
       const buildId = Date.now().toString()
@@ -122,6 +79,54 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     }
   })
 
+  fastify.get('/test-working', (req, reply) => {
+    reply.type('text/plain')
+    return reply.send('WORKS')
+  })
+
+  fastify.get('/debug-babel', async (req, reply) => {
+    const hasBabel = typeof Babel !== 'undefined'
+    const hasTransform = hasBabel && typeof Babel.transform === 'function'
+    const testCode = 'function App() { return <div>test</div> }'
+
+    let transformed = 'NO_TRANSFORM'
+    let error = null
+
+    if (hasTransform) {
+      try {
+        const result = Babel.transform(testCode, {
+          presets: [Babel.availablePresets.react, [Babel.availablePresets.typescript, { isTSX: true, allExtensions: true }]],
+          filename: 'test.js',
+          babelrc: false
+        })
+        transformed = result.code
+      } catch (err) {
+        error = err.message
+      }
+    }
+
+    return reply.type('application/json').send({
+      hasBabel,
+      hasTransform,
+      transformed,
+      error
+    })
+  })
+
+  fastify.get('/test-transform', async (req, reply) => {
+    const testCode = 'function App() { return <div>test</div> }'
+    try {
+      const result = Babel.transform(testCode, {
+        presets: [Babel.availablePresets.react, [Babel.availablePresets.typescript, { isTSX: true, allExtensions: true }]],
+        filename: 'test.js',
+        babelrc: false
+      })
+      return reply.type('text/plain').send(`SUCCESS: ${result.code}`)
+    } catch (err) {
+      return reply.type('text/plain').send(`FAIL: ${err.message}`)
+    }
+  })
+
   // Serve src/client files directly (buildless)
   fastify.get('/src/client/*', async (req, reply) => {
     let filepath = path.join(clientDir, req.params['*'])
@@ -134,18 +139,25 @@ export async function registerStaticAssets(fastify, buildDir, assetsDir, world) 
     try {
       const code = await fs.readFile(filepath, 'utf-8')
       let transformed = code
+      const hasBabel = typeof Babel !== 'undefined' && typeof Babel.transform === 'function'
+      const shouldTransform = (filepath.endsWith('.ts') || filepath.endsWith('.tsx') || filepath.endsWith('.js') || filepath.endsWith('.jsx')) && !filepath.includes('node_modules')
+
+      if (filepath.includes('CoreUI')) {
+        // Inject comment as debug output to see the actual file
+        transformed = `/* hasBabel=${hasBabel}, shouldTransform=${shouldTransform} */\n` + transformed
+      }
 
       // Force transform JSX files
-      if ((filepath.endsWith('.ts') || filepath.endsWith('.tsx') || filepath.endsWith('.js') || filepath.endsWith('.jsx')) && !filepath.includes('node_modules')) {
+      if (shouldTransform && hasBabel) {
         try {
           const result = Babel.transform(code, {
-            presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
+            presets: [Babel.availablePresets.react, [Babel.availablePresets.typescript, { isTSX: true, allExtensions: true }]],
             filename: filepath,
             babelrc: false
           })
           if (result && result.code) {
             transformed = result.code
-            console.log(`[CLIENT_ROUTE] Transformed ${filepath}`)
+            console.log(`[CLIENT_ROUTE] Transformed ${filepath} (${code.length} => ${result.code.length} bytes)`)
           } else {
             console.log(`[CLIENT_ROUTE] No result from Babel for ${filepath}`)
           }
