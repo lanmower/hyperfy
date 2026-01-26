@@ -11,7 +11,7 @@ import { PrefsInterface } from './PrefsInterface.js'
 import { PrefsGraphics } from './PrefsGraphics.js'
 import { PrefsAudio } from './PrefsAudio.js'
 
-export function Prefs({  world, hidden  }: any)) {
+export function Prefs({  world, hidden  }: any) {
   const player = world.entities.player
   const { isAdmin, isBuilder } = useRank(world, player)
   const [name, setName] = useState(() => player.data.name)

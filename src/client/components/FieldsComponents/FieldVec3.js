@@ -1,3 +1,4 @@
+import React from 'react'
 import { css } from '@firebolt-dev/css'
 import { useFieldHint, useFieldVec3, fieldLabelCss, fieldWrapperCss, fieldInputCss } from '../hooks/index.js'
 

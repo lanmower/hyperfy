@@ -1,3 +1,4 @@
+import React from 'react'
 import { css } from '@firebolt-dev/css'
 import { LoaderIcon, XIcon } from 'lucide-react'
 import { useFileUpload, fileKinds } from '../hooks/index.js'

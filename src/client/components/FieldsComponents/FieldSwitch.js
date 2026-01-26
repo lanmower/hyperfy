@@ -1,3 +1,4 @@
+import React from 'react'
 import { css } from '@firebolt-dev/css'
 import { ChevronLeftIcon, ChevronRightIcon } from '../Icons.js'
 import { useFieldHint, useFieldSwitch } from '../hooks/index.js'

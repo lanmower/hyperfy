@@ -1,3 +1,4 @@
+import React from 'react'
 import { css } from '@firebolt-dev/css'
 import { useFieldHint, useFieldCurve, fieldLabelCss } from '../hooks/index.js'
 import { CurvePreview } from '../../CurvePreview.js'
