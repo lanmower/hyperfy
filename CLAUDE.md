@@ -18,11 +18,11 @@
 - `start`: `npx tsx src/server/index.js` (production execution)
 
 ### Dependencies Optimized
-- **Reduction**: 43 → 25 packages (42% reduction)
+- **Reduction**: 43 → 26 packages (40% reduction)
 - **Removed build tools**: Bun, esbuild, webpack, rollup
 - **Removed test tools**: playwright, @playwright/test
-- **Removed unused**: d3 (→ canvas), playcanvas, async-retry (inlined), knex, sql.js, jsonwebtoken, ses
-- **Kept core**: fastify, react, react-dom, three.js, livekit, eventemitter3, msgpackr
+- **Removed unused**: d3 (→ canvas), async-retry (inlined), knex, sql.js, jsonwebtoken, ses
+- **Kept core**: fastify, react, react-dom, three.js, playcanvas, livekit, eventemitter3, msgpackr
 - **Result**: Minimal, focused dependencies for features needed
 
 ---

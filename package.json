@@ -42,11 +42,11 @@
     "msgpackr": "^1.11.0",
     "nanoid": "^5.0.6",
     "p-queue": "^4.0.0",
+    "playcanvas": "^2.14.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "source-map-support": "^0.5.21",
     "sql.js": "^1.13.0",
-    "webjsx": "^0.2.0",
     "yoga-layout": "^3.2.1"
   },
   "devDependencies": {
