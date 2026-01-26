@@ -245,3 +245,16 @@
 
 ---
 
+## BABEL @STANDALONE CAVEAT (BLOCKING ISSUE)
+
+### JSX to JS Transpilation Bug
+- **CRITICAL**: @babel/standalone generates invalid `_extends()` helper at module top-level
+- **Symptom**: "Unexpected token ':'" error when browser parses ES6 modules with JSX
+- **Root cause**: Helper function uses syntax invalid in module context (return + comma operator at top level)
+- **Affected files**: .js files with JSX (FieldsComponents/*.js, SidebarPanes/World.js, etc.)
+- **Status**: UNFIXED - SafetyAssets.js cannot be modified without server crash (hot reload issue)
+- **Workaround**: (None currently - blocks client app initialization)
+- **Fix needed**: Either remove _extends helper post-transpilation or skip Babel for modern ES6 .js files
+
+---
+
