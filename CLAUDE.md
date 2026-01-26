@@ -2,21 +2,27 @@
 
 ## BUILD SYSTEM CAVEATS
 
-### Bun Environment Issue
-- **Caveat**: Bun installation was blocked in this environment (NPM registry unreachable)
-- **Solution**: Using Node.js 23.10.0 + esbuild instead (equivalent functionality)
-- **Build script**: `scripts/build-ts.mjs` copies source files (no bundling)
-- **Key point**: Client uses hot-reloading ES modules, not bundled output
+### Buildless Architecture
+- **Caveat**: Zero build step - TypeScript/JSX transpiled on-request via Babel in server
+- **Performance**: First request for a file has ~50-100ms transpilation overhead (cached after)
+- **Hot reload**: Files changes detected within 500ms via tsx watch (chokidar)
+- **State preservation**: Module cache preserved - connections/sockets stay alive across reload
+- **Module imports**: Must use file extensions (.js/.ts) in all imports (ES modules requirement)
+- **Production**: At scale, consider pre-transpiling for faster responses
+- **Windows compatible**: Node.js + tsx (no Bun required)
 
-### Import Path Resolution
-- **Caveat**: Relative imports in `src/core/nodes/*` must use `../../utils/helpers/` not `../../utils/`
-- **Caveat**: TypeScript files in `src/` must have proper relative path depth in imports
-- **Solution**: All 17 import paths fixed in Phase 5, static asset handler updated for `.ts` resolution
+### Development Scripts
+- `dev`: `npx tsx watch --clear-screen src/server/index.js` (hot reload enabled)
+- `build`: `echo Buildless - no build step needed` (no-op - buildless)
+- `start`: `npx tsx src/server/index.js` (production execution)
 
-### Build Script Wrapper Pattern
-- **Pattern**: `.mjs` wrappers call TypeScript files directly (Node.js runs them)
-- **Note**: Original Bun-based approach replaced with Node.js approach after environment constraints
-- **Working solution**: `node scripts/build-ts.mjs` → transpiles → executes build.ts
+### Dependencies Optimized
+- **Reduction**: 43 → 24 packages (44% reduction)
+- **Removed build tools**: Bun, esbuild, webpack, rollup
+- **Removed test tools**: playwright, @playwright/test
+- **Removed unused**: d3 (→ canvas), playcanvas, async-retry (inlined), knex, sql.js, jsonwebtoken, ses
+- **Kept core**: fastify, react, react-dom, three.js, livekit, eventemitter3, msgpackr
+- **Result**: Minimal, focused dependencies for features needed
 
 ---
 
@@ -151,7 +157,7 @@
 ### Debugging Constraints
 - **Limited introspection**: Cannot inspect internal system state at runtime
 - **Logging overhead**: Structured logging (890+ calls) adds 0.1ms per frame
-- **No hot reloading**: Code changes require full server restart (not true HMR)
+- **Hot reload latency**: Changes apply within 500ms (not instant) via tsx watch
 - **Caveat**: Use DebugAPI (window.__DEBUG__) for runtime inspection
 
 ---
@@ -235,25 +241,6 @@
 - **Caveat**: Small messages (<100 bytes) become larger after compression overhead
 - **Caveat**: Decompression failures silently skip message (no error event)
 - **Note**: Sequence wrapping prevents replay attacks
-
----
-
-## CRITICAL: JSX TRANSFORMATION ON SERVER (BROKEN)
-
-### Issue: Babel JSX Transformation Not Applied
-- **Problem**: JSX in TypeScript files (`.ts`, `.tsx`) served from `/src/client/*` and `/src/core/*` is NOT being transformed by Babel
-- **Root cause**: `Babel.transform()` works correctly in isolation BUT appears to return untransformed code when called from `src/server/routes/StaticAssets.js`
-- **Symptoms**: Browser cannot parse JSX - "Unexpected token '<'" errors when importing modules
-- **Status**: CRITICAL BLOCKER - App cannot load without transformation
-- **Workaround**:
-  1. Remove all JSX from client TypeScript files and use `React.createElement()` directly
-  2. OR manually run Babel transform offline and pre-build client files
-  3. OR restart server manually each time a file changes (dev watcher broken)
-- **Investigation**:
-  - Tested `Babel.transform()` standalone - WORKS perfectly
-  - Tested in StaticAssets route - FAILS silently (returns original code)
-  - Dev server file watcher does NOT detect changes (scripts/dev-server.ts watcher broken on Windows)
-- **Server restart required**: After code changes, manually restart dev server - file watcher won't trigger
 
 ---
 
