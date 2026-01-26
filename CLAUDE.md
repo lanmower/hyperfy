@@ -245,3 +245,13 @@
 
 ---
 
+## CLIENT INITIALIZATION CAVEAT
+
+### Playcanvas Dependency
+- **Caveat**: NametagRenderer requires playcanvas for Texture creation (`pc.Texture`)
+- **Critical**: index.ts imports from `../core/extras/playcanvas.js` which re-exports playcanvas package
+- **If removed**: Client fails to initialize, nothing renders in root div
+- **Verified**: playcanvas ^2.14.4 must be in dependencies
+
+---
+
