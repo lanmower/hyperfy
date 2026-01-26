@@ -25,37 +25,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel='icon' href='/public/favicon.svg' type='image/svg+xml' />
-    <link rel="preload" href="/public/rubik.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" type="text/css" href="/public/index.css?v={buildId}" />
-    <link rel="modulepreload" href="https://esm.sh/react@19.0.0/es2022/react.development.mjs" />
-    <link rel="modulepreload" href="https://esm.sh/react-dom@19.0.0/es2022/react-dom.development.mjs" />
-    <script>
-      window.PARTICLES_PATH = '{particlesPath}'
-      // Suppress graceful-fs process.cwd error that occurs during module initialization
-      const originalError = console.error
-      let cwdErrorSuppressed = false
-      console.error = function(...args) {
-        const msg = args[0]?.toString?.() || ''
-        if (msg.includes('Cannot set property cwd') && !cwdErrorSuppressed) {
-          cwdErrorSuppressed = true
-          return // Suppress the first occurrence
-        }
-        return originalError.apply(console, args)
-      }
-      // Provide a mutable process.cwd if needed
-      if (typeof process !== 'undefined' && process) {
-        try {
-          let cwdValue = '/'
-          Object.defineProperty(process, 'cwd', {
-            get: () => cwdValue,
-            set: (value) => { cwdValue = value },
-            configurable: true
-          })
-        } catch (e) {
-          // Silently ignore if defineProperty fails
-        }
-      }
-    </script>
     <script type="importmap">
     {
       "imports": {
@@ -93,6 +63,29 @@
         "@pixiv/three-vrm": "/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js"
       }
     }
+    </script>
+    <script>
+      window.PARTICLES_PATH = '{particlesPath}'
+      const originalError = console.error
+      let cwdErrorSuppressed = false
+      console.error = function(...args) {
+        const msg = args[0]?.toString?.() || ''
+        if (msg.includes('Cannot set property cwd') && !cwdErrorSuppressed) {
+          cwdErrorSuppressed = true
+          return
+        }
+        return originalError.apply(console, args)
+      }
+      if (typeof process !== 'undefined' && process) {
+        try {
+          let cwdValue = '/'
+          Object.defineProperty(process, 'cwd', {
+            get: () => cwdValue,
+            set: (value) => { cwdValue = value },
+            configurable: true
+          })
+        } catch (e) {}
+      }
     </script>
     <script>
       if ('serviceWorker' in navigator) {

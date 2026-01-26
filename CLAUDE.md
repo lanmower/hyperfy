@@ -12,6 +12,13 @@
 - **Windows compatible**: Node.js + tsx (no Bun required)
 - **JSX Transformer**: Custom lightweight transformer - eliminates Babel dependency, transpiles React.createElement on-request
 
+### Import Map Ordering (CRITICAL)
+- **Caveat**: Import map MUST be defined before any modulepreload links or module scripts load
+- **Order**: CSS → Import Map Script → modulepreload links → Module Scripts
+- **Reason**: Browsers apply import maps only to modules loaded after import map is parsed
+- **If violated**: "was a bare specifier, but was not remapped" errors in console
+- **Location**: Import map in `<head>` BEFORE any `<link rel="modulepreload">` or `<script type="module">`
+
 ### Development Scripts
 - `dev`: `npx tsx watch --clear-screen src/server/index.js` (hot reload enabled)
 - `build`: `echo Buildless - no build step needed` (no-op - buildless)
