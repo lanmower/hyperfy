@@ -236,3 +236,24 @@
 - **Caveat**: Decompression failures silently skip message (no error event)
 - **Note**: Sequence wrapping prevents replay attacks
 
+---
+
+## CRITICAL: JSX TRANSFORMATION ON SERVER (BROKEN)
+
+### Issue: Babel JSX Transformation Not Applied
+- **Problem**: JSX in TypeScript files (`.ts`, `.tsx`) served from `/src/client/*` and `/src/core/*` is NOT being transformed by Babel
+- **Root cause**: `Babel.transform()` works correctly in isolation BUT appears to return untransformed code when called from `src/server/routes/StaticAssets.js`
+- **Symptoms**: Browser cannot parse JSX - "Unexpected token '<'" errors when importing modules
+- **Status**: CRITICAL BLOCKER - App cannot load without transformation
+- **Workaround**:
+  1. Remove all JSX from client TypeScript files and use `React.createElement()` directly
+  2. OR manually run Babel transform offline and pre-build client files
+  3. OR restart server manually each time a file changes (dev watcher broken)
+- **Investigation**:
+  - Tested `Babel.transform()` standalone - WORKS perfectly
+  - Tested in StaticAssets route - FAILS silently (returns original code)
+  - Dev server file watcher does NOT detect changes (scripts/dev-server.ts watcher broken on Windows)
+- **Server restart required**: After code changes, manually restart dev server - file watcher won't trigger
+
+---
+

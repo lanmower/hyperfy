@@ -11,12 +11,12 @@ window.pc = Object.assign({}, pc)
 
 function App() {
   // Phase 2: Network initialization
-  return <Client wsUrl={() => window.env?.PUBLIC_WS_URL} />
+  return React.createElement(Client, { wsUrl: () => window.env?.PUBLIC_WS_URL })
 }
 
 function initializeApp() {
   const root = createRoot(document.getElementById('root'))
-  root.render(<App />)
+  root.render(React.createElement(App))
 }
 
 if (document.readyState === 'loading') {

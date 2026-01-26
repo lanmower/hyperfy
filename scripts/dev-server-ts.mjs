@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename)
 const rootDir = path.dirname(__dirname)
 
 try {
-  execSync('bun scripts/dev-server.ts', {
+  execSync('node scripts/dev-server.ts', {
     cwd: rootDir,
     stdio: 'inherit',
   })
