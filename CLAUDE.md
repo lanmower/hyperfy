@@ -10,6 +10,7 @@
 - **Module imports**: Must use file extensions (.js/.ts) in all imports (ES modules requirement)
 - **Production**: At scale, consider pre-transpiling for faster responses
 - **Windows compatible**: Node.js + tsx (no Bun required)
+- **Babel API**: Use `Babel.availablePresets.react` NOT `Babel.presets.react` when importing `@babel/standalone` as ES module
 
 ### Development Scripts
 - `dev`: `npx tsx watch --clear-screen src/server/index.js` (hot reload enabled)
