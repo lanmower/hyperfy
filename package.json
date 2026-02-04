@@ -24,6 +24,7 @@
     "p-queue": "^4.0.0",
     "playcanvas": "^2.14.4",
     "source-map-support": "^0.5.21",
+    "sql.js": "^1.12.0",
     "three": "^0.160.0",
     "yoga-layout": "^3.2.1"
   },

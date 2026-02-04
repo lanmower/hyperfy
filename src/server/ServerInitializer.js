@@ -34,8 +34,15 @@ export class ServerInitializer {
     await fs.ensureDir(this.assetsDir)
     await fs.ensureDir(this.collectionsDir)
     await fs.ensureDir(this.logsDir)
-    await fs.copy(path.join(this.rootDir, 'src/world/assets'), this.assetsDir)
-    await fs.copy(path.join(this.rootDir, 'src/world/collections'), this.collectionsDir)
+    // Only copy if source exists (src/world structure is optional)
+    const srcAssetsPath = path.join(this.rootDir, 'src/world/assets')
+    const srcCollectionsPath = path.join(this.rootDir, 'src/world/collections')
+    if (await fs.pathExists(srcAssetsPath)) {
+      await fs.copy(srcAssetsPath, this.assetsDir)
+    }
+    if (await fs.pathExists(srcCollectionsPath)) {
+      await fs.copy(srcCollectionsPath, this.collectionsDir)
+    }
   }
 
   setupLogger() {
