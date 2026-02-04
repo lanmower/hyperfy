@@ -122,7 +122,7 @@ export class PhysicsNetworkClient {
       this.remoteStates.set(playerId, state)
 
       if (playerId === this.playerId && this.config.predictionEnabled) {
-        this.predictionEngine.onServerSnapshot({ tick: data.tick, players: [state] })
+        this.predictionEngine.onServerSnapshot({ players: [state] }, data.tick)
       }
     }
 
