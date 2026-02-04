@@ -1,15 +1,16 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { encode, decode } from '@msgpack/msgpack'
+import { createClient } from '../src/sdk/client.js'
 
-const MSG = { HANDSHAKE_ACK: 0x02, HEARTBEAT: 0x03, HEARTBEAT_ACK: 0x04, SNAPSHOT: 0x10, INPUT: 0x11, PLAYER_LEAVE: 0x21 }
 const COLORS = [0x4488FF, 0xFF4444, 0x44FF44, 0xFFFF44, 0xFF44FF, 0x44FFFF, 0xFF8844, 0x8844FF]
 
-let ws = null, playerId = null, connected = false, seq = 0, ping = 0, lastPing = 0, playerCount = 0
-const keys = {}
-let yaw = 0, pitch = 0, locked = false
+const client = createClient({
+  serverUrl: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`
+})
+
 const localPos = new THREE.Vector3(-8, 5, -8)
 const remotePlayers = new Map()
+let playerCount = 0
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x87CEEB)
@@ -44,9 +45,15 @@ new GLTFLoader().load('/world/schwust.glb', (gltf) => {
 
 function makeAvatar(color) {
   const g = new THREE.Group()
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.6, 8, 16), new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.2 }))
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.3, 0.6, 8, 16),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.2 })
+  )
   body.position.y = 0.6; body.castShadow = true; g.add(body)
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), new THREE.MeshStandardMaterial({ color: 0xFFDBAC, roughness: 0.8 }))
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.2, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xFFDBAC, roughness: 0.8 })
+  )
   head.position.y = 1.3; head.castShadow = true; g.add(head)
   return g
 }
@@ -71,50 +78,23 @@ function removeRemote(id) {
   remotePlayers.delete(id)
 }
 
-function sendFrame(type, payload) {
-  if (!ws || ws.readyState !== 1) return
-  const body = encode(payload)
-  const f = new Uint8Array(3 + body.length)
-  f[0] = type; f[1] = (seq >> 8) & 0xFF; f[2] = seq & 0xFF; seq = (seq + 1) & 0xFFFF
-  f.set(body, 3)
-  ws.send(f.buffer)
-}
-
-function handleMessage(event) {
-  const buf = new Uint8Array(event.data)
-  if (buf.length < 3) return
-  const type = buf[0]
-  let payload = null
-  if (buf.length > 3) { try { payload = decode(buf.slice(3)) } catch (_) { return } }
-
-  if (type === MSG.HANDSHAKE_ACK && payload) { playerId = payload.playerId; connected = true; return }
-  if (type === MSG.HEARTBEAT_ACK) { ping = Math.round(performance.now() - lastPing); return }
-  if (type === MSG.HEARTBEAT) { sendFrame(MSG.HEARTBEAT_ACK, { ts: payload?.ts || 0 }); return }
-  if (type === MSG.PLAYER_LEAVE && payload) { removeRemote(payload.playerId); return }
-
-  if (type === MSG.SNAPSHOT && Array.isArray(payload)) {
-    const pdata = payload[2]
-    if (!Array.isArray(pdata)) return
-    playerCount = pdata.length
-    const seen = new Set()
-    for (const p of pdata) {
-      if (!Array.isArray(p) || p.length < 4) continue
-      seen.add(p[0])
-      if (p[0] === playerId) localPos.set(p[1], p[2], p[3])
-      else getRemote(p[0]).target.set(p[1], p[2], p[3])
-    }
-    for (const [id] of remotePlayers) { if (!seen.has(id)) removeRemote(id) }
+client.on('snapshot', (snap) => {
+  const seen = new Set()
+  for (const p of snap.players || []) {
+    const id = Array.isArray(p) ? p[0] : p.id
+    const pos = Array.isArray(p) ? [p[1], p[2], p[3]] : p.position
+    seen.add(id)
+    if (id === client.playerId) localPos.set(pos[0], pos[1], pos[2])
+    else getRemote(id).target.set(pos[0], pos[1], pos[2])
   }
-}
+  playerCount = seen.size
+  for (const [id] of remotePlayers) { if (!seen.has(id)) removeRemote(id) }
+})
 
-function connect() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${proto}//${location.host}`)
-  ws.binaryType = 'arraybuffer'
-  ws.onmessage = handleMessage
-  ws.onclose = () => { connected = false; setTimeout(connect, 1000) }
-  ws.onerror = () => {}
-}
+client.on('playerLeave', (playerId) => removeRemote(playerId))
+
+const keys = {}
+let yaw = 0, pitch = 0, locked = false
 
 addEventListener('keydown', (e) => { keys[e.code] = true })
 addEventListener('keyup', (e) => { keys[e.code] = false })
@@ -136,8 +116,13 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight)
 })
 
-const hud = { ping: document.getElementById('hud-ping'), players: document.getElementById('hud-players'), pos: document.getElementById('hud-pos'), fps: document.getElementById('hud-fps') }
-let frames = 0, fpsTime = performance.now(), fps = 0, hbTimer = 0
+const hud = {
+  ping: document.getElementById('hud-ping'),
+  players: document.getElementById('hud-players'),
+  pos: document.getElementById('hud-pos'),
+  fps: document.getElementById('hud-fps')
+}
+let frames = 0, fpsTime = performance.now(), fps = 0
 const clock = new THREE.Clock()
 const camTarget = new THREE.Vector3()
 const lookAt = new THREE.Vector3()
@@ -146,10 +131,12 @@ function animate() {
   requestAnimationFrame(animate)
   const dt = Math.min(clock.getDelta(), 0.05)
 
-  if (connected) {
-    sendFrame(MSG.INPUT, {
-      forward: !!keys['KeyW'] || !!keys['ArrowUp'], backward: !!keys['KeyS'] || !!keys['ArrowDown'],
-      left: !!keys['KeyA'] || !!keys['ArrowLeft'], right: !!keys['KeyD'] || !!keys['ArrowRight'],
+  if (client.isConnected) {
+    client.sendInput({
+      forward: !!keys['KeyW'] || !!keys['ArrowUp'],
+      backward: !!keys['KeyS'] || !!keys['ArrowDown'],
+      left: !!keys['KeyA'] || !!keys['ArrowLeft'],
+      right: !!keys['KeyD'] || !!keys['ArrowRight'],
       jump: !!keys['Space'], yaw
     })
   }
@@ -170,14 +157,13 @@ function animate() {
   frames++
   const now = performance.now()
   if (now - fpsTime >= 1000) { fps = frames; frames = 0; fpsTime = now }
-  hbTimer += dt
-  if (hbTimer >= 1) { hbTimer = 0; lastPing = performance.now(); sendFrame(MSG.HEARTBEAT, { ts: Date.now() }) }
 
-  hud.ping.textContent = `PING: ${ping}ms`
+  const stats = client.quality.getStats()
+  hud.ping.textContent = `PING: ${stats.rtt}ms`
   hud.players.textContent = `PLAYERS: ${playerCount}`
   hud.pos.textContent = `POS: ${localPos.x.toFixed(1)}, ${localPos.y.toFixed(1)}, ${localPos.z.toFixed(1)}`
   hud.fps.textContent = `FPS: ${fps}`
 }
 
-connect()
+client.connect().then(() => console.log('[client] connected'))
 animate()

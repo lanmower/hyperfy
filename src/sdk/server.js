@@ -1,3 +1,6 @@
+import { createServer as createHttpServer } from 'node:http'
+import { readFileSync, existsSync } from 'node:fs'
+import { join, extname } from 'node:path'
 import { WebSocketServer as WSServer } from 'ws'
 import { MSG, DISCONNECT_REASONS } from '../protocol/MessageTypes.js'
 import { ConnectionManager } from '../connection/ConnectionManager.js'
@@ -16,11 +19,37 @@ import { EntityAppBinder } from '../apps/EntityAppBinder.js'
 import { createTickHandler } from './TickHandler.js'
 import EventEmitter from 'node:events'
 
+const MIME_TYPES = {
+  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.json': 'application/json', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp',
+  '.svg': 'image/svg+xml', '.wasm': 'application/wasm'
+}
+
+function createStaticHandler(dirs) {
+  return (req, res) => {
+    const url = req.url.split('?')[0]
+    for (const { prefix, dir } of dirs) {
+      if (!url.startsWith(prefix)) continue
+      const relative = url === prefix ? '/index.html' : url.slice(prefix.length)
+      const fp = join(dir, relative)
+      if (existsSync(fp)) {
+        res.writeHead(200, { 'Content-Type': MIME_TYPES[extname(fp)] || 'application/octet-stream' })
+        res.end(readFileSync(fp))
+        return
+      }
+    }
+    res.writeHead(404)
+    res.end('not found')
+  }
+}
+
 export async function createServer(config = {}) {
   const port = config.port || 8080
   const tickRate = config.tickRate || 128
   const appsDir = config.appsDir || './apps'
   const gravity = config.gravity || [0, -9.81, 0]
+  const staticDirs = config.staticDirs || []
 
   const physics = new PhysicsWorld({ gravity })
   await physics.init()
@@ -43,6 +72,7 @@ export async function createServer(config = {}) {
   const appLoader = new AppLoader(appRuntime, { dir: appsDir })
   const binder = new EntityAppBinder(appRuntime, appLoader)
   let wss = null
+  let httpServer = null
   let snapshotSeq = 0
 
   const onTick = createTickHandler({
@@ -124,21 +154,24 @@ export async function createServer(config = {}) {
     physics, runtime: appRuntime, loader: appLoader, binder,
     tickSystem, playerManager, networkState, lagCompensator,
     connections, sessions, inspector, emitter,
-    on: emitter.on.bind(emitter),
-    off: emitter.off.bind(emitter),
+    on: emitter.on.bind(emitter), off: emitter.off.bind(emitter),
     async loadWorld(worldDef) { await appLoader.loadAll(); return binder.loadWorld(worldDef) },
     async start() {
       await appLoader.loadAll()
-      wss = new WSServer({ port })
+      if (staticDirs.length > 0) {
+        httpServer = createHttpServer(createStaticHandler(staticDirs))
+        wss = new WSServer({ server: httpServer })
+        await new Promise((resolve, reject) => {
+          httpServer.on('error', reject); httpServer.listen(port, () => resolve())
+        })
+      } else { wss = new WSServer({ port }) }
       wss.on('connection', onClientConnect)
-      tickSystem.onTick(onTick)
-      tickSystem.start()
-      appLoader.watchAll()
+      tickSystem.onTick(onTick); tickSystem.start(); appLoader.watchAll()
       return { port, tickRate }
     },
     stop() {
-      tickSystem.stop(); appLoader.stopWatching(); connections.destroy()
-      sessions.destroy(); if (wss) wss.close(); physics.destroy()
+      tickSystem.stop(); appLoader.stopWatching(); connections.destroy(); sessions.destroy()
+      if (wss) wss.close(); if (httpServer) httpServer.close(); physics.destroy()
     },
     send(id, type, p) { return connections.send(id, type, p) },
     broadcast(type, p) { connections.broadcast(type, p) },
@@ -146,15 +179,10 @@ export async function createServer(config = {}) {
     getEntityCount() { return binder.getEntityCount() },
     getSnapshot() { return appRuntime.getSnapshot() },
     getAllStats() {
-      return {
-        connections: connections.getAllStats(),
-        inspector: inspector.getAllClients(connections),
-        sessions: sessions.getActiveCount(),
-        tick: tickSystem.currentTick, players: playerManager.getPlayerCount()
-      }
+      return { connections: connections.getAllStats(), inspector: inspector.getAllClients(connections),
+        sessions: sessions.getActiveCount(), tick: tickSystem.currentTick, players: playerManager.getPlayerCount() }
     }
   }
   if (typeof globalThis.__DEBUG__ === 'undefined') globalThis.__DEBUG__ = {}
-  globalThis.__DEBUG__.server = api
-  return api
+  globalThis.__DEBUG__.server = api; return api
 }

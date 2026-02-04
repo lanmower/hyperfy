@@ -21,10 +21,11 @@ export function createMessageRouter(deps) {
   }
 
   return function onMessage(raw) {
-    const buf = raw instanceof ArrayBuffer ? Buffer.from(new Uint8Array(raw)) : raw
+    const buf = raw instanceof ArrayBuffer ? new Uint8Array(raw) : raw
     const msg = deps.codec.decode(buf)
     if (!msg) return
-    quality.recordBytesIn(buf.length || buf.byteLength || 0)
+    const byteLen = buf.length || buf.byteLength || 0
+    quality.recordBytesIn(byteLen)
     tracker.track(msg.seq)
 
     if (msg.type === MSG.HEARTBEAT) {
