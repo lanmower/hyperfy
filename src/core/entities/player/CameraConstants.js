@@ -1,9 +1,0 @@
-export const DEFAULT_CAM_HEIGHT = 1.2
-export const POINTER_LOOK_SPEED = 0.1
-export const PAN_LOOK_SPEED = 0.4
-export const ZOOM_SPEED = 2
-export const MIN_ZOOM = 0
-export const MAX_ZOOM = 8
-export const XR_SNAP_TURN_ANGLE = 45
-export const MIN_PITCH_ANGLE = -89
-export const MAX_PITCH_ANGLE = 89
