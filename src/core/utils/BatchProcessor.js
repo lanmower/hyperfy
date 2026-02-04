@@ -1,4 +1,32 @@
-import PQueue from 'p-queue'
+// Inline Promise queue to eliminate p-queue dependency
+class PromiseQueue {
+  constructor(concurrency = 1) {
+    this.concurrency = concurrency
+    this.running = 0
+    this.queue = []
+  }
+
+  add(fn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ fn, resolve, reject })
+      this.process()
+    })
+  }
+
+  async process() {
+    if (this.running >= this.concurrency || this.queue.length === 0) return
+    this.running++
+    const { fn, resolve, reject } = this.queue.shift()
+    try {
+      const result = await fn()
+      resolve(result)
+    } catch (err) {
+      reject(err)
+    }
+    this.running--
+    this.process()
+  }
+}
 
 export class BatchProcessor {
   static processBatch(items, size, fn) {
@@ -18,7 +46,7 @@ export class BatchProcessor {
   }
 
   static async processBatchesAsync(items, size, asyncFn, concurrency = 1) {
-    const queue = new PQueue({ concurrency })
+    const queue = new PromiseQueue(concurrency)
     const batches = this.getBatches(items, size)
     const tasks = []
     for (const batch of batches) {

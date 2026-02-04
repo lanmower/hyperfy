@@ -20,9 +20,7 @@
     "build": "echo Buildless - no build step needed",
     "start": "npx tsx src/server/index.js"
   },
-  "dependencies": {
-    "fastify": "^5.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "prettier": "^3.4.2"
   },

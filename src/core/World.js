@@ -1,4 +1,56 @@
-import EventEmitter from 'eventemitter3'
+// Inline EventEmitter to eliminate eventemitter3 dependency
+class EventEmitter {
+  constructor() {
+    this._events = {}
+  }
+
+  on(event, listener) {
+    if (!this._events[event]) {
+      this._events[event] = []
+    }
+    this._events[event].push(listener)
+    return this
+  }
+
+  off(event, listener) {
+    if (!this._events[event]) return this
+    this._events[event] = this._events[event].filter(l => l !== listener)
+    return this
+  }
+
+  emit(event, ...args) {
+    if (!this._events[event]) return false
+    this._events[event].forEach(listener => listener(...args))
+    return true
+  }
+
+  once(event, listener) {
+    const wrapper = (...args) => {
+      listener(...args)
+      this.off(event, wrapper)
+    }
+    this.on(event, wrapper)
+    return this
+  }
+
+  removeAllListeners(event) {
+    if (event) {
+      delete this._events[event]
+    } else {
+      this._events = {}
+    }
+    return this
+  }
+
+  listeners(event) {
+    return this._events[event] || []
+  }
+
+  listenerCount(event) {
+    return (this._events[event] || []).length
+  }
+}
+
 import { WorldConfig } from './config/SystemConfig.js'
 import { StructuredLogger } from './utils/logging/index.js'
 import { pluginRegistry, pluginHooks } from './plugins/index.js'
