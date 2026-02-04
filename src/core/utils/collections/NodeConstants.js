@@ -1,8 +1,0 @@
-export const audioGroups = ['music', 'sfx']
-export const distanceModels = ['linear', 'inverse', 'exponential']
-export const imageFits = ['none', 'cover', 'contain']
-export const collisionLayers = ['environment', 'prop', 'player', 'tool']
-export const pivots = ['top-left', 'top-center', 'top-right', 'center-left', 'center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right']
-export const geometryTypes = ['box', 'sphere', 'geometry']
-export const jointTypes = ['fixed', 'socket', 'hinge', 'distance']
-export const bodyTypes = ['static', 'kinematic', 'dynamic']
