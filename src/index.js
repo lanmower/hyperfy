@@ -39,3 +39,5 @@ export { ClientReporter } from './debug/ClientReporter.js'
 export { StateInspector } from './debug/StateInspector.js'
 
 export { hyperfyMiddleware } from './middleware/expressPlugin.js'
+
+export { Emitter } from './utils/Emitter.js'

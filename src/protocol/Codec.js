@@ -1,5 +1,11 @@
 import { pack, unpack } from 'msgpackr'
-import { msgName } from './MessageTypes.js'
+
+function toUint8(input) {
+  if (input instanceof Uint8Array) return input
+  if (input instanceof ArrayBuffer) return new Uint8Array(input)
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(input)) return new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
+  return new Uint8Array(input)
+}
 
 export class Codec {
   constructor() {
@@ -13,22 +19,22 @@ export class Codec {
   encode(type, payload) {
     const seq = this.sendSequence++ & 0xFFFF
     const body = pack(payload)
-    const frame = Buffer.alloc(3 + body.length)
-    frame.writeUInt8(type, 0)
-    frame.writeUInt16BE(seq, 1)
-    body.copy(frame, 3)
+    const bodyBytes = toUint8(body)
+    const frame = new Uint8Array(3 + bodyBytes.length)
+    frame[0] = type
+    frame[1] = (seq >> 8) & 0xFF
+    frame[2] = seq & 0xFF
+    frame.set(bodyBytes, 3)
     this.bytesSent += frame.length
     this.messagesSent++
     return frame
   }
 
   decode(buffer) {
-    const buf = Buffer.isBuffer(buffer)
-      ? buffer
-      : Buffer.from(buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer)
+    const buf = toUint8(buffer)
     if (buf.length < 3) return null
-    const type = buf.readUInt8(0)
-    const seq = buf.readUInt16BE(1)
+    const type = buf[0]
+    const seq = (buf[1] << 8) | buf[2]
     const payload = buf.length > 3 ? unpack(buf.slice(3)) : null
     this.bytesReceived += buf.length
     this.messagesReceived++

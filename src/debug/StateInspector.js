@@ -1,6 +1,6 @@
-import EventEmitter from 'node:events'
+import { Emitter } from '../utils/Emitter.js'
 
-export class StateInspector extends EventEmitter {
+export class StateInspector extends Emitter {
   constructor(config = {}) {
     super()
     this.corrections = []
