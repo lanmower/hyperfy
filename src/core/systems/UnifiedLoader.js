@@ -2,18 +2,13 @@
 
 import { System } from './System.js'
 import { StructuredLogger } from '../utils/logging/index.js'
-import { AssetHandlers } from './loaders/AssetHandlers.js'
+
 
 const logger = new StructuredLogger('UnifiedLoader')
 
 export class UnifiedLoader extends System {
   static DEPS = {
-    stage: 'stage',
     scripts: 'scripts',
-    audio: 'audio',
-    events: 'events',
-    camera: 'camera',
-    loader: 'loader',
     errors: 'errors',
   }
 
@@ -35,7 +30,8 @@ export class UnifiedLoader extends System {
       const serverHandlers = await import('./loaders/ServerAssetHandlers.js')
       this.handlers = new serverHandlers.ServerAssetHandlers(this.world, this.errors, this.scripts)
     } else {
-      this.handlers = new AssetHandlers(this, this.world)
+      const assetHandlers = await import('./loaders/AssetHandlers.js')
+      this.handlers = new assetHandlers.AssetHandlers(this, this.world)
     }
   }
 

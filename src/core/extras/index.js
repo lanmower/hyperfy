@@ -1,4 +1,3 @@
-
-export * from './avatar/index.js'
-
-export * as avatar from './avatar/index.js'
+export * from './glb/index.js'
+export * from './extendThreePhysX.js'
+export * from './Layers.js'

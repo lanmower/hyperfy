@@ -3,7 +3,6 @@ import { AssetHandlerRegistry } from './AssetHandlerRegistry.js'
 import { AssetHandlerTypes } from './AssetHandlerTypes.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
 import { createVideoFactory } from './VideoFactory.js'
-import { AvatarFactory } from '../../extras/avatar/AvatarFactory.js'
 import { glbToNodes } from '../../extras/glbToNodes.js'
 import { AssetResults } from './AssetResults.js'
 
