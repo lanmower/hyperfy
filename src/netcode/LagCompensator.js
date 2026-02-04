@@ -15,10 +15,10 @@ export class LagCompensator {
     history.push({
       tick,
       timestamp,
-      position: JSON.parse(JSON.stringify(state.position)),
-      rotation: JSON.parse(JSON.stringify(state.rotation)),
-      velocity: JSON.parse(JSON.stringify(state.velocity)),
-      onGround: state.onGround
+      position: state.position ? [...state.position] : [0, 0, 0],
+      rotation: state.rotation ? [...state.rotation] : [0, 0, 0, 1],
+      velocity: state.velocity ? [...state.velocity] : [0, 0, 0],
+      onGround: state.onGround !== undefined ? state.onGround : true
     })
 
     if (history.length > this.maxHistorySize) {
@@ -93,7 +93,7 @@ export class LagCompensator {
   }
 
   detectSpeedCheat(playerId, newState, maxSpeed = 20) {
-    const velocity = newState.velocity
+    const velocity = newState.velocity || [0, 0, 0]
     const speed = Math.sqrt(
       velocity[0] * velocity[0] +
       velocity[1] * velocity[1] +
