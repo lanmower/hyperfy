@@ -1,32 +1,30 @@
 {
   "name": "hyperfy",
-  "version": "0.15.0",
+  "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "description": "Pure physics SDK powered by Jolt - zero HTTP, pure black magic",
+  "main": "src/index.js",
   "homepage": "https://github.com/hyperfy-xyz/hyperfy#readme",
   "bugs": {
     "url": "https://github.com/hyperfy-xyz/hyperfy/issues"
   },
   "keywords": [
-    "hyperfy",
-    "3d",
     "physics",
-    "virtual-worlds",
-    "metaverse",
-    "real-time"
+    "sdk",
+    "jolt",
+    "3d",
+    "physics-engine",
+    "webassembly"
   ],
   "scripts": {
-    "dev": "npx tsx watch --clear-screen src/server/index.js",
-    "build": "echo Buildless - no build step needed",
-    "start": "npx tsx src/server/index.js"
+    "test": "node --loader=./test-loader.js test/index.js"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "prettier": "^3.4.2"
+  "dependencies": {
+    "jolt-physics": "^1.0.0"
   },
+  "devDependencies": {},
   "engines": {
-    "npm": ">=10.0.0",
-    "node": "22.11.0"
+    "node": ">=18.0.0"
   },
   "license": "GPL-3.0-only"
 }
