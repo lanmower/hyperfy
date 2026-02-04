@@ -24,6 +24,8 @@ export class AppContext {
       set scale(v) { ent.scale = v },
       get velocity() { return ent.velocity },
       set velocity(v) { ent.velocity = v },
+      get custom() { return ent.custom },
+      set custom(v) { ent.custom = v },
       destroy: () => runtime.destroyEntity(ent.id)
     }
   }
@@ -32,7 +34,6 @@ export class AppContext {
 
   get physics() {
     const ent = this._entity
-    const runtime = this._runtime
     return {
       setStatic: (v) => { ent.bodyType = v ? 'static' : ent.bodyType },
       setDynamic: (v) => { ent.bodyType = v ? 'dynamic' : ent.bodyType },
@@ -42,14 +43,14 @@ export class AppContext {
       addSphereCollider: (r) => { ent.collider = { type: 'sphere', radius: r } },
       addCapsuleCollider: (r, h) => { ent.collider = { type: 'capsule', radius: r, height: h } },
       addMeshCollider: (m) => { ent.collider = { type: 'mesh', mesh: m } },
+      addTrimeshCollider: () => { ent.collider = { type: 'trimesh', model: ent.model } },
       addForce: (f) => {
         const mass = ent.mass || 1
         ent.velocity[0] += f[0] / mass
         ent.velocity[1] += f[1] / mass
         ent.velocity[2] += f[2] / mass
       },
-      setVelocity: (v) => { ent.velocity = [...v] },
-      raycast: (o, d, dist) => runtime.raycast(o, d, dist)
+      setVelocity: (v) => { ent.velocity = [...v] }
     }
   }
 
