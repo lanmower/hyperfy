@@ -1,8 +1,8 @@
 export class SnapshotEncoder {
   static encode(snapshot) {
     const players = []
-    for (const player of snapshot.players) {
-      const compressed = {
+    for (const player of (snapshot.players || [])) {
+      players.push({
         i: player.id,
         p: this.encodeVector(player.position),
         r: this.encodeQuat(player.rotation),
@@ -10,35 +10,59 @@ export class SnapshotEncoder {
         g: player.onGround ? 1 : 0,
         h: Math.round(player.health),
         s: player.inputSequence
+      })
+    }
+    const entities = []
+    for (const ent of (snapshot.entities || [])) {
+      const encoded = {
+        i: ent.id,
+        m: ent.model,
+        p: this.encodeVec3(ent.position),
+        r: this.encodeRotation(ent.rotation),
+        sc: this.encodeVec3(ent.scale),
+        bt: ent.bodyType
       }
-      players.push(compressed)
+      if (ent.animation) encoded.an = ent.animation
+      if (ent.effects) encoded.ef = ent.effects
+      if (ent.sound) encoded.sn = ent.sound
+      if (ent.custom) encoded.cu = ent.custom
+      entities.push(encoded)
     }
-    return {
-      tick: snapshot.tick,
-      ts: snapshot.timestamp,
-      p: players
-    }
+    const result = { tick: snapshot.tick, ts: snapshot.timestamp }
+    if (players.length) result.p = players
+    if (entities.length) result.e = entities
+    return result
   }
 
   static decode(data) {
     const players = []
-    for (const compressed of data.p) {
-      const player = {
-        id: compressed.i,
-        position: this.decodeVector(compressed.p),
-        rotation: this.decodeQuat(compressed.r),
-        velocity: this.decodeVector(compressed.v),
-        onGround: compressed.g === 1,
-        health: compressed.h,
-        inputSequence: compressed.s
-      }
-      players.push(player)
+    for (const c of (data.p || [])) {
+      players.push({
+        id: c.i,
+        position: this.decodeVector(c.p),
+        rotation: this.decodeQuat(c.r),
+        velocity: this.decodeVector(c.v),
+        onGround: c.g === 1,
+        health: c.h,
+        inputSequence: c.s
+      })
     }
-    return {
-      tick: data.tick,
-      timestamp: data.ts,
-      players
+    const entities = []
+    for (const c of (data.e || [])) {
+      entities.push({
+        id: c.i,
+        model: c.m,
+        position: this.decodeVec3(c.p),
+        rotation: this.decodeRotation(c.r),
+        scale: this.decodeVec3(c.sc),
+        bodyType: c.bt,
+        animation: c.an || null,
+        effects: c.ef || null,
+        sound: c.sn || null,
+        custom: c.cu || null
+      })
     }
+    return { tick: data.tick, timestamp: data.ts, players, entities }
   }
 
   static encodeVector(v) {
@@ -51,6 +75,27 @@ export class SnapshotEncoder {
 
   static decodeVector(v) {
     return [v.x, v.y, v.z]
+  }
+
+  static encodeVec3(v) {
+    if (!v) return [0, 0, 0]
+    const arr = Array.isArray(v) ? v : [v.x || 0, v.y || 0, v.z || 0]
+    return arr.map(n => Math.round(n * 100) / 100)
+  }
+
+  static decodeVec3(v) {
+    return Array.isArray(v) ? [...v] : [0, 0, 0]
+  }
+
+  static encodeRotation(r) {
+    if (!r) return [0, 0, 0, 1]
+    if (Array.isArray(r)) return r.map(n => Math.round(n * 10000) / 10000)
+    return { x: r.x || 0, y: r.y || 0, z: r.z || 0, w: r.w !== undefined ? r.w : 1 }
+  }
+
+  static decodeRotation(r) {
+    if (Array.isArray(r)) return [...r]
+    return r
   }
 
   static encodeQuat(q) {
@@ -67,7 +112,6 @@ export class SnapshotEncoder {
   }
 
   static getSize(snapshot) {
-    const encoded = this.encode(snapshot)
-    return JSON.stringify(encoded).length
+    return JSON.stringify(this.encode(snapshot)).length
   }
 }
