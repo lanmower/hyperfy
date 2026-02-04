@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import fs from 'fs'
 import path from 'path'
 
 export class ConsoleSink {
@@ -30,6 +30,7 @@ export class FileSink {
 
     const timestamp = new Date().toISOString().split('T')[0]
     const rotatedFile = path.join(this.logsDir, `${this.name}.${timestamp}.log`)
-    await fs.move(this.logFile, rotatedFile)
+    // Rename instead of move for native fs
+    fs.renameSync(this.logFile, rotatedFile)
   }
 }
