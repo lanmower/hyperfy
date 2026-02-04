@@ -1,4 +1,3 @@
-import { emoteUrls } from '../../extras/playerEmotes.js'
 import { storage } from '../../storage.js'
 import { SnapshotCodec } from './SnapshotCodec.js'
 import { StructuredLogger } from '../../utils/logging/index.js'
@@ -89,9 +88,6 @@ export class SnapshotProcessor {
       logger.warn('Blueprints not found or not array', { blueprintsType: typeof data.blueprints })
     }
 
-    for (const url of emoteUrls) {
-      this.network.loader.preload('emote', url)
-    }
 
     if (Array.isArray(data.entities)) {
       for (const item of data.entities) {

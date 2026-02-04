@@ -12,7 +12,7 @@ const logger = new StructuredLogger('Physics')
 
 export class Physics extends System {
   static DEPS = {
-    stage: 'stage',
+
   }
 
   constructor(world) {
