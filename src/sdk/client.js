@@ -1,100 +1,124 @@
-import { SnapshotEncoder } from '../netcode/SnapshotEncoder.js'
-import { pack, unpack } from 'msgpackr'
+import { MSG } from '../protocol/MessageTypes.js'
+import { Codec } from '../protocol/Codec.js'
+import { SequenceTracker } from '../protocol/SequenceTracker.js'
+import { QualityMonitor } from '../connection/QualityMonitor.js'
+import { ClientReporter } from '../debug/ClientReporter.js'
+import { StateInspector } from '../debug/StateInspector.js'
+import { createMessageRouter } from './ClientMessageHandler.js'
+import EventEmitter from 'node:events'
 
 export function createClient(config = {}) {
   const serverUrl = config.serverUrl || 'ws://localhost:8080'
-  const onRender = config.onRender || (() => {})
-  const onConnect = config.onConnect || (() => {})
-  const onDisconnect = config.onDisconnect || (() => {})
-  const onWorldState = config.onWorldState || (() => {})
+  const emitter = new EventEmitter()
+  const codec = new Codec()
+  const tracker = new SequenceTracker()
+  const quality = new QualityMonitor()
+  const stateInspector = new StateInspector()
 
-  let ws = null
-  let playerId = null
-  let currentTick = 0
-  let entities = new Map()
-  let players = new Map()
-  let connected = false
-
-  function onMessage(raw) {
-    try {
-      let msg
-      if (raw instanceof ArrayBuffer || (typeof Buffer !== 'undefined' && Buffer.isBuffer(raw))) {
-        msg = unpack(raw instanceof ArrayBuffer ? new Uint8Array(raw) : raw)
-      } else if (typeof raw === 'string') {
-        msg = JSON.parse(raw)
-      } else {
-        return
-      }
-
-      if (msg.t === 1 || msg.type === 'player_assigned') {
-        playerId = msg.id || msg.playerId
-        currentTick = msg.tick
-        onConnect({ playerId, tick: currentTick })
-      } else if (msg.t === 2 || msg.type === 'world_state') {
-        const decoded = SnapshotEncoder.decode(msg.data)
-        for (const ent of decoded.entities) entities.set(ent.id, ent)
-        onWorldState(Array.from(entities.values()))
-      } else if (msg.t === 6 || msg.type === 'snapshot') {
-        const decoded = SnapshotEncoder.decode(msg.data)
-        currentTick = decoded.tick
-        for (const p of decoded.players) players.set(p.id, p)
-        for (const ent of decoded.entities) entities.set(ent.id, ent)
-        onRender(Array.from(entities.values()), Array.from(players.values()))
-      } else if (msg.t === 5 || msg.type === 'player_disconnected') {
-        players.delete(msg.id || msg.playerId)
-      }
-    } catch (e) {}
+  const state = {
+    ws: null, playerId: null, sessionToken: null, tick: 0,
+    entities: new Map(), players: new Map(),
+    connected: false, reconnecting: false, reconnectAttempts: 0,
+    reconnectTimer: null, heartbeatTimer: null
   }
 
-  function sendInput(input) {
-    if (!ws || !connected) return
-    ws.send(pack({ t: 3, i: input }))
+  function send(type, payload) {
+    if (!state.ws || state.ws.readyState !== 1) return false
+    const frame = codec.encode(type, payload)
+    quality.recordBytesOut(frame.length)
+    state.ws.send(frame)
+    return true
   }
 
-  return {
-    get playerId() { return playerId },
-    get tick() { return currentTick },
-    get entities() { return entities },
-    get players() { return players },
-    get isConnected() { return connected },
+  const onMessage = createMessageRouter({
+    emitter, quality, tracker, stateInspector, codec, send,
+    getState: (k) => state[k],
+    setState: (k, v) => { state[k] = v }
+  })
 
-    connect() {
-      return new Promise((resolve, reject) => {
-        try {
-          ws = new WebSocket(serverUrl)
-          ws.binaryType = 'arraybuffer'
-          ws.onopen = () => { connected = true; resolve() }
-          ws.onmessage = (event) => onMessage(event.data)
-          ws.onclose = () => { connected = false; onDisconnect() }
-          ws.onerror = (err) => reject(err)
-        } catch (e) { reject(e) }
-      })
-    },
+  function _startHeartbeats() {
+    state.heartbeatTimer = setInterval(() => {
+      quality.recordHeartbeatSent()
+      send(MSG.HEARTBEAT, { ts: Date.now() })
+    }, 1000)
+  }
 
-    connectNode(WebSocketImpl) {
-      return new Promise((resolve, reject) => {
-        try {
-          ws = new WebSocketImpl(serverUrl)
-          ws.on('open', () => { connected = true; resolve() })
-          ws.on('message', (data) => onMessage(data))
-          ws.on('close', () => { connected = false; onDisconnect() })
-          ws.on('error', (err) => reject(err))
-        } catch (e) { reject(e) }
-      })
-    },
+  function _attemptReconnect() {
+    if (state.reconnectAttempts >= 10) { emitter.emit('reconnectFailed'); return }
+    state.reconnecting = true
+    const delay = Math.min(100 * Math.pow(2, state.reconnectAttempts), 5000)
+    state.reconnectAttempts++
+    state.reconnectTimer = setTimeout(() => {
+      _connect().then(() => {
+        if (state.sessionToken) send(MSG.RECONNECT, { sessionToken: state.sessionToken })
+      }).catch(() => _attemptReconnect())
+    }, delay)
+  }
 
-    sendInput,
+  function _connect() {
+    return new Promise((resolve, reject) => {
+      try {
+        const WS = config.WebSocket || (typeof WebSocket !== 'undefined' ? WebSocket : null)
+        if (!WS) return reject(new Error('No WebSocket available'))
+        state.ws = new WS(serverUrl)
+        if (state.ws.binaryType !== undefined) state.ws.binaryType = 'arraybuffer'
+        const onOpen = () => { state.connected = true; _startHeartbeats(); resolve() }
+        const onClose = () => {
+          state.connected = false
+          if (state.heartbeatTimer) clearInterval(state.heartbeatTimer)
+          emitter.emit('disconnect')
+          if (!state.reconnecting && state.sessionToken) _attemptReconnect()
+        }
+        const onErr = (e) => reject(e)
+        if (state.ws.on) {
+          state.ws.on('open', onOpen); state.ws.on('message', onMessage)
+          state.ws.on('close', onClose); state.ws.on('error', onErr)
+        } else {
+          state.ws.onopen = onOpen; state.ws.onmessage = (e) => onMessage(e.data)
+          state.ws.onclose = onClose; state.ws.onerror = onErr
+        }
+      } catch (e) { reject(e) }
+    })
+  }
 
-    interact(entityId) {
-      if (!ws || !connected) return
-      ws.send(pack({ t: 4, eid: entityId }))
-    },
+  const reporter = new ClientReporter((type, payload) => send(type, payload))
 
+  const api = {
+    get playerId() { return state.playerId },
+    get tick() { return state.tick },
+    get entities() { return state.entities },
+    get players() { return state.players },
+    get isConnected() { return state.connected },
+    get sessionToken() { return state.sessionToken },
+    codec, tracker, quality, stateInspector, reporter,
+    on: emitter.on.bind(emitter),
+    off: emitter.off.bind(emitter),
+    connect() { return _connect() },
+    connectNode(WS) { config.WebSocket = WS; return _connect() },
+    sendInput(input) { send(MSG.INPUT, { input }) },
+    interact(entityId) { send(MSG.APP_EVENT, { entityId }) },
+    reportState(s) { reporter.reportState(s) },
+    startReporting() { reporter.start() },
     disconnect() {
-      if (ws) { connected = false; ws.close() }
+      state.reconnecting = true
+      if (state.reconnectTimer) clearTimeout(state.reconnectTimer)
+      if (state.heartbeatTimer) clearInterval(state.heartbeatTimer)
+      reporter.stop(); state.connected = false
+      if (state.ws) state.ws.close()
     },
-
-    getEntity(id) { return entities.get(id) || null },
-    getPlayer(id) { return players.get(id) || null }
+    getStats() {
+      return {
+        quality: quality.getStats(), codec: codec.getStats(),
+        sequence: tracker.getStats(), stateSync: stateInspector.getStats()
+      }
+    },
+    getEntity(id) { return state.entities.get(id) || null },
+    getPlayer(id) { return state.players.get(id) || null }
   }
+
+  if (typeof globalThis !== 'undefined') {
+    if (!globalThis.__DEBUG__) globalThis.__DEBUG__ = {}
+    globalThis.__DEBUG__.client = api
+  }
+  return api
 }
