@@ -1,114 +1,168 @@
-# CLAUDE.md - Hyperfy Physics Server Technical Caveats
+# CLAUDE.md - Hyperfy SDK Technical Reference
 
-## SERVER ARCHITECTURE
+## ARCHITECTURE
 
-### Buildless Architecture
-- Zero build step - Server runs Node.js files directly with tsx
-- Hot reload: File changes detected within 500ms via tsx watch
-- State preservation: Module cache preserved - connections/sockets stay alive across reload
+### Physics + Netcode SDK (Display-Engine Agnostic)
+- SDK handles ONLY physics setup and netcode
+- No rendering, no display code anywhere in the codebase
+- Works with THREE.js, Babylon, PlayCanvas, or any display engine
+- Client receives position/rotation/velocity data and renders however it wants
 
-### Dependencies Optimized
-- **Core**: fastify, react, react-dom, three.js, playcanvas, livekit, eventemitter3, msgpackr
-- **Removed**: All client-side UI libs, test tools, build tools
-- **Result**: Minimal, focused dependencies for server physics engine
-
----
-
-## PHYSICS ENGINE CAVEATS
-
-### PhysX.js WebAssembly
-- **Caveat**: Initial load requires 1000ms compilation budget
-- **Single-threaded**: Physics runs on main thread (cannot offload to worker)
-- **Memory allocation**: HeapSize constrained by browser (typically 512MB)
-- **Caveat**: First physics update may stall; pre-allocate in loading screen
-
-### Collision Detection
-- **Caveat**: No broad-phase optimization - All collision pairs tested
-- **Caveat**: Convex hull generation required for complex meshes (manual step)
-- **Caveat**: >1000 colliders cause frame drops; use simple shapes when possible
+### Dependencies (3 packages)
+- `jolt-physics` - Jolt Physics WASM for real rigid body simulation
+- `msgpackr` - Binary encoding for network snapshots (70% smaller than JSON)
+- `ws` - WebSocket server for Node.js
 
 ---
 
-## PERFORMANCE CONSTRAINTS (HARD LIMITS)
+## SERVER
 
-### Frame Budget: 16.67ms (60fps)
-- **Physics**: 2.0ms max - PhysX WebAssembly compiled + physics updates
-- **Network**: 0.5ms max - WebSocket operations
-- **Caveat**: Exceeding these budgets causes frame drops; monitor with performance.now()
+### Tick System
+- 128 TPS fixed timestep via `setImmediate` loop
+- `TickSystem` fires callbacks at 7.8125ms intervals
+- Verified: ~124 ticks per second in production
 
-### Entity Scaling Limits
-- **Maximum 10,000 total entities** in world
-- **Hot entity limit: 500** - Entities needing frequent updates (separate update loop)
-- **Spawn rate: 50 max per frame** - Rate-limited during world building
-- **Destroy rate: 50 max per frame** - Rate-limited cleanup operations
-- **Caveat**: Spawning >50 entities/frame will queue and cause delays
+### Physics Engine
+- Jolt Physics WASM (`jolt-physics/wasm-compat`)
+- Two collision layers: STATIC (0) and DYNAMIC (1)
+- Body types: Static boxes, trimesh colliders from GLB, dynamic capsules/boxes, kinematic capsules
+- GLB mesh extraction: reads binary glTF, extracts vertex/index data, builds Jolt TriangleList
+- Trimesh creation for schwust.glb (9,932 triangles): ~59ms
 
-### Memory Management
-- **Caveat**: Object pooling mandatory - no garbage collection during gameplay
-- **Asset budgets**: Models (2000ms load), Textures (500ms), Scripts (100ms)
-- **Hierarchical depth: 32 levels max** - Entity parent-child relationships capped
-- **Caveat**: Exceeding depth causes transform calculation overhead
+### Network Protocol
+- Binary msgpackr over WebSocket
+- Message types: 1=player_assigned, 2=world_state, 3=input, 4=interact, 5=disconnect, 6=snapshot
+- Snapshot format: `[tick, timestamp, [[player_arrays]], [[entity_arrays]]]`
+- Player array: `[id, px, py, pz, rx, ry, rz, rw, vx, vy, vz, onGround, health, inputSeq]`
 
----
+### Netcode Components
+- `PlayerManager` - Socket management, input buffering, binary broadcast
+- `NetworkState` - Authoritative player state tracking
+- `LagCompensator` - Server-side state history, time rewind, teleport/speed detection
+- `HitValidator` - Shot validation with lag compensation
+- `PhysicsIntegration` - Server-side player physics (gravity, ground collision)
+- `BandwidthOptimizer` - Delta compression between snapshots
+- `CullingManager` - Distance-based relevance filtering
+- `SnapshotEncoder` - msgpackr binary encode/decode with quantization
 
-## NETWORK SYNCHRONIZATION CAVEATS
-
-### Synchronization Thresholds (NOT Synced Below These)
-- **Position**: 0.01 units (1cm) - Smaller changes ignored
-- **Rotation**: 0.01 radians (0.57°) - Fine rotations filtered
-- **Scale**: 0.01 ratio - Subtle scaling ignored
-- **Caveat**: These thresholds prevent network spam but may cause visible jitter
-
-### Network Handler Budgets
-- **Entity additions**: 100ms timeout - Large batch operations may fail silently
-- **Snapshot processing**: 500ms - Complex worlds may exceed (causes lag)
-- **Asset uploads**: 30s timeout - Large assets fail silently
-- **Caveat**: No error logging on timeout; monitor server logs for batch failures
-
----
-
-## DATABASE CAVEAT (SQLite WAL Mode)
-
-### Known Issue: Write-Ahead Logging (WAL)
-- **Caveat**: SQLite WAL mode creates extra files (`*.db-wal`, `*.db-shm`)
-- **Caveat**: Multiple processes accessing same DB without proper locking causes corruption
-- **Solution**: Ensure single writer (server process), multiple readers OK
-- **Checkpoint interval**: Every 1000 pages or on-demand
-- **Caveat**: Checkpoint blocks all queries briefly (max 100ms)
+### Client Components
+- `PredictionEngine` - Client-side input prediction with server reconciliation
+- `ReconciliationEngine` - Correction blending when server state diverges
+- `InputHandler` - Keyboard/mouse input capture (browser)
+- `RenderSync` - Display state management (engine-agnostic data output)
+- `PhysicsNetworkClient` - Full client with prediction, snapshot processing
 
 ---
 
-## ENTITY LIFECYCLE CAVEAT
+## APP SYSTEM
 
-### Hot Entity Optimization
-- **Caveat**: Hot entities (max 500) have separate update loop - Cannot mix hot/remote efficiently
-- **Caveat**: Hot entity conversion at runtime may cause sync delays
-- **Note**: Player/Hot sync threshold: Position > 0.01 units triggers sync
+### Single-File Client/Server Format
+```javascript
+export default {
+  server: {
+    setup(ctx) { },
+    update(ctx, dt) { },
+    teardown(ctx) { },
+    onCollision(ctx, other) { },
+    onInteract(ctx, player) { }
+  },
+  client: {
+    render(ctx) {
+      return { model, position, rotation, custom }
+    }
+  }
+}
+```
+
+### App Context (ctx)
+- `ctx.entity` - id, model, position, rotation, scale, velocity, custom, destroy()
+- `ctx.physics` - setStatic, setDynamic, setKinematic, setMass, addBoxCollider, addSphereCollider, addCapsuleCollider, addMeshCollider, addTrimeshCollider, addForce, setVelocity
+- `ctx.world` - spawn, destroy, query, getEntity, gravity
+- `ctx.players` - getAll, getNearest, send, broadcast
+- `ctx.time` - tick, deltaTime, elapsed
+- `ctx.state` - Persistent app state (survives hot reload)
+- `ctx.events` - emit, on, off, once
+- `ctx.network` - broadcast, sendTo
+
+### Hot Reload
+- `AppLoader` watches apps directory via `fs.watch`
+- On file change: validates source, re-imports module, calls teardown on old, setup on new
+- App state (`ctx.state`) preserved across reloads
 
 ---
 
-## ASSET HANDLER CAVEAT
+## GLB ASSETS
 
-### Lazy vs Eager Initialization
-- **CRITICAL**: Asset handlers MUST be initialized in constructor, not lazy
-- **Caveat**: Lazy loading asset handlers causes first-use stalls (>200ms)
-- **Verified**: All asset handlers initialized immediately in `setupHandlers()`
+### world/schwust.glb (4.1 MB)
+- Environment mesh (Dust2-style map)
+- Node "Collider" (mesh 0): 17,936 vertices, 9,932 triangles
+- Bounds: X[-64, 48] Y[-5, 10] Z[-94, 38]
+- Used as static trimesh collider
 
----
-
-## BINARY PROTOCOL CAVEAT
-
-### Message Compression
-- **Compression enabled**: All messages compressed with zlib
-- **Caveat**: Small messages (<100 bytes) become larger after compression overhead
-- **Caveat**: Decompression failures silently skip message (no error event)
-- **Note**: Sequence wrapping prevents replay attacks
+### world/kaira.glb (13 KB)
+- Character model reference
+- 320 vertices, 308 triangles
+- Referenced in world definition as playerModel
 
 ---
 
-## PLAYCANVAS DEPENDENCY CAVEAT
+## WORLD DEFINITION
 
-### Critical Dependency
-- **Caveat**: playcanvas ^2.14.4 is required in dependencies
-- **Reason**: NametagRenderer requires playcanvas for Texture creation
-- **Verified**: playcanvas must be kept in package.json dependencies
+```javascript
+// apps/world.js
+export default {
+  gravity: [0, -9.81, 0],
+  entities: [
+    { id: 'environment', model: './world/schwust.glb', position: [0,0,0], app: 'environment' }
+  ],
+  playerModel: './world/kaira.glb',
+  spawnPoint: [0, 2, 0]
+}
+```
+
+---
+
+## FILE STRUCTURE (30 files, all under 200 lines)
+
+```
+src/
+  index.js                    - Barrel exports
+  physics/
+    World.js                  - Jolt WASM physics world
+    GLBLoader.js              - GLB mesh extraction
+  sdk/
+    server.js                 - Server SDK (physics + WS + tick + apps)
+    client.js                 - Client SDK (binary protocol + state)
+  netcode/
+    TickSystem.js             - 128 TPS fixed timestep
+    InputBuffer.js            - Sequenced input buffer
+    NetworkState.js           - Player state tracking
+    SnapshotEncoder.js        - msgpackr binary encoding
+    PlayerManager.js          - Socket + input management
+    BandwidthOptimizer.js     - Delta compression
+    CullingManager.js         - Distance relevance
+    LagCompensator.js         - State history + rewind
+    HitValidator.js           - Shot validation
+    PhysicsIntegration.js     - Server player physics
+  client/
+    InputHandler.js           - Browser input capture
+    PhysicsNetworkClient.js   - Client with prediction
+    PredictionEngine.js       - Client prediction
+    ReconciliationEngine.js   - Server reconciliation
+    RenderSync.js             - Display state output
+  apps/
+    AppContext.js             - App API proxy
+    AppLoader.js              - File loading + hot reload
+    AppRuntime.js             - App lifecycle + entity management
+    EntityAppBinder.js        - Entity-app binding + world loading
+apps/
+  world.js                    - World definition
+  environment.js              - Static trimesh collider
+  static-mesh.js              - Generic static mesh
+  interactive-door.js         - Proximity door
+  patrol-npc.js               - Waypoint patrol
+  physics-crate.js            - Dynamic box
+world/
+  schwust.glb                 - Environment mesh
+  kaira.glb                   - Player model
+```

@@ -1,9 +1,11 @@
 {
   "name": "hyperfy",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "type": "module",
   "main": "src/index.js",
   "dependencies": {
-    "jolt-physics": "^0.21.0"
+    "jolt-physics": "^0.29.0",
+    "msgpackr": "^1.11.0",
+    "ws": "^8.18.0"
   }
 }

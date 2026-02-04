@@ -44,7 +44,7 @@ export class PhysicsIntegration {
       state.velocity = [0, 0, 0]
     }
 
-    collider.velocity[1] -= this.config.gravity[1] * deltaTime
+    collider.velocity[1] += this.config.gravity[1] * deltaTime
 
     if (Math.abs(collider.velocity[1]) > this.config.maxFallSpeed) {
       collider.velocity[1] = -this.config.maxFallSpeed

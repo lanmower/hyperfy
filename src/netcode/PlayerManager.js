@@ -51,27 +51,18 @@ export class PlayerManager {
 
   updatePlayerState(playerId, state) {
     const player = this.players.get(playerId)
-    if (player) {
-      Object.assign(player.state, state)
-    }
+    if (player) Object.assign(player.state, state)
   }
 
   addInput(playerId, input) {
     const player = this.players.get(playerId)
-    if (player) {
-      player.inputSequence++
-      player.lastInputTime = Date.now()
-      const inputs = this.inputBuffers.get(playerId)
-      if (inputs) {
-        inputs.push({
-          sequence: player.inputSequence,
-          data: input,
-          timestamp: Date.now()
-        })
-        if (inputs.length > 128) {
-          inputs.shift()
-        }
-      }
+    if (!player) return
+    player.inputSequence++
+    player.lastInputTime = Date.now()
+    const inputs = this.inputBuffers.get(playerId)
+    if (inputs) {
+      inputs.push({ sequence: player.inputSequence, data: input, timestamp: Date.now() })
+      if (inputs.length > 128) inputs.shift()
     }
   }
 
@@ -81,15 +72,22 @@ export class PlayerManager {
 
   clearInputs(playerId) {
     const inputs = this.inputBuffers.get(playerId)
-    if (inputs) {
-      inputs.length = 0
-    }
+    if (inputs) inputs.length = 0
   }
 
   broadcast(message) {
+    const json = JSON.stringify(message)
     for (const player of this.getConnectedPlayers()) {
       if (player.socket && player.socket.send) {
-        player.socket.send(JSON.stringify(message))
+        try { player.socket.send(json) } catch (e) {}
+      }
+    }
+  }
+
+  broadcastBinary(buffer) {
+    for (const player of this.getConnectedPlayers()) {
+      if (player.socket && player.socket.send) {
+        try { player.socket.send(buffer) } catch (e) {}
       }
     }
   }
@@ -97,7 +95,14 @@ export class PlayerManager {
   sendToPlayer(playerId, message) {
     const player = this.players.get(playerId)
     if (player && player.socket && player.socket.send) {
-      player.socket.send(JSON.stringify(message))
+      try { player.socket.send(JSON.stringify(message)) } catch (e) {}
+    }
+  }
+
+  sendBinaryToPlayer(playerId, buffer) {
+    const player = this.players.get(playerId)
+    if (player && player.socket && player.socket.send) {
+      try { player.socket.send(buffer) } catch (e) {}
     }
   }
 }

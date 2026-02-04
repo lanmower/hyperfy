@@ -5,3 +5,23 @@ export { EntityAppBinder } from './apps/EntityAppBinder.js'
 
 export { createServer } from './sdk/server.js'
 export { createClient } from './sdk/client.js'
+
+export { PhysicsWorld } from './physics/World.js'
+export { extractMeshFromGLB } from './physics/GLBLoader.js'
+
+export { TickSystem } from './netcode/TickSystem.js'
+export { InputBuffer } from './netcode/InputBuffer.js'
+export { NetworkState } from './netcode/NetworkState.js'
+export { SnapshotEncoder } from './netcode/SnapshotEncoder.js'
+export { PlayerManager } from './netcode/PlayerManager.js'
+export { BandwidthOptimizer } from './netcode/BandwidthOptimizer.js'
+export { CullingManager } from './netcode/CullingManager.js'
+export { LagCompensator } from './netcode/LagCompensator.js'
+export { HitValidator } from './netcode/HitValidator.js'
+export { PhysicsIntegration } from './netcode/PhysicsIntegration.js'
+
+export { InputHandler } from './client/InputHandler.js'
+export { PhysicsNetworkClient } from './client/PhysicsNetworkClient.js'
+export { PredictionEngine } from './client/PredictionEngine.js'
+export { ReconciliationEngine } from './client/ReconciliationEngine.js'
+export { RenderSync } from './client/RenderSync.js'

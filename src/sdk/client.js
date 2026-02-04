@@ -1,9 +1,9 @@
 import { SnapshotEncoder } from '../netcode/SnapshotEncoder.js'
+import { pack, unpack } from 'msgpackr'
 
 export function createClient(config = {}) {
   const serverUrl = config.serverUrl || 'ws://localhost:8080'
   const onRender = config.onRender || (() => {})
-  const onInput = config.onInput || (() => ({}))
   const onConnect = config.onConnect || (() => {})
   const onDisconnect = config.onDisconnect || (() => {})
   const onWorldState = config.onWorldState || (() => {})
@@ -14,56 +14,41 @@ export function createClient(config = {}) {
   let entities = new Map()
   let players = new Map()
   let connected = false
-  let inputInterval = null
 
   function onMessage(raw) {
     try {
-      const msg = typeof raw === 'string' ? JSON.parse(raw) : JSON.parse(raw.toString())
-      if (msg.type === 'player_assigned') {
-        playerId = msg.playerId
+      let msg
+      if (raw instanceof ArrayBuffer || (typeof Buffer !== 'undefined' && Buffer.isBuffer(raw))) {
+        msg = unpack(raw instanceof ArrayBuffer ? new Uint8Array(raw) : raw)
+      } else if (typeof raw === 'string') {
+        msg = JSON.parse(raw)
+      } else {
+        return
+      }
+
+      if (msg.t === 1 || msg.type === 'player_assigned') {
+        playerId = msg.id || msg.playerId
         currentTick = msg.tick
         onConnect({ playerId, tick: currentTick })
-      } else if (msg.type === 'world_state') {
+      } else if (msg.t === 2 || msg.type === 'world_state') {
         const decoded = SnapshotEncoder.decode(msg.data)
-        for (const ent of decoded.entities) {
-          entities.set(ent.id, ent)
-        }
+        for (const ent of decoded.entities) entities.set(ent.id, ent)
         onWorldState(Array.from(entities.values()))
-      } else if (msg.type === 'snapshot') {
+      } else if (msg.t === 6 || msg.type === 'snapshot') {
         const decoded = SnapshotEncoder.decode(msg.data)
         currentTick = decoded.tick
-        for (const p of decoded.players) {
-          players.set(p.id, p)
-        }
-        for (const ent of decoded.entities) {
-          entities.set(ent.id, ent)
-        }
+        for (const p of decoded.players) players.set(p.id, p)
+        for (const ent of decoded.entities) entities.set(ent.id, ent)
         onRender(Array.from(entities.values()), Array.from(players.values()))
-      } else if (msg.type === 'player_disconnected') {
-        players.delete(msg.playerId)
+      } else if (msg.t === 5 || msg.type === 'player_disconnected') {
+        players.delete(msg.id || msg.playerId)
       }
     } catch (e) {}
   }
 
   function sendInput(input) {
     if (!ws || !connected) return
-    ws.send(JSON.stringify({ type: 'input', input }))
-  }
-
-  function startInputLoop(rate = 60) {
-    if (inputInterval) return
-    inputInterval = setInterval(() => {
-      if (!connected) return
-      const input = onInput()
-      if (input) sendInput(input)
-    }, 1000 / rate)
-  }
-
-  function stopInputLoop() {
-    if (inputInterval) {
-      clearInterval(inputInterval)
-      inputInterval = null
-    }
+    ws.send(pack({ t: 3, i: input }))
   }
 
   return {
@@ -71,26 +56,18 @@ export function createClient(config = {}) {
     get tick() { return currentTick },
     get entities() { return entities },
     get players() { return players },
-    get connected() { return connected },
+    get isConnected() { return connected },
 
     connect() {
       return new Promise((resolve, reject) => {
         try {
           ws = new WebSocket(serverUrl)
-          ws.onopen = () => {
-            connected = true
-            resolve()
-          }
+          ws.binaryType = 'arraybuffer'
+          ws.onopen = () => { connected = true; resolve() }
           ws.onmessage = (event) => onMessage(event.data)
-          ws.onclose = () => {
-            connected = false
-            stopInputLoop()
-            onDisconnect()
-          }
+          ws.onclose = () => { connected = false; onDisconnect() }
           ws.onerror = (err) => reject(err)
-        } catch (e) {
-          reject(e)
-        }
+        } catch (e) { reject(e) }
       })
     },
 
@@ -98,43 +75,23 @@ export function createClient(config = {}) {
       return new Promise((resolve, reject) => {
         try {
           ws = new WebSocketImpl(serverUrl)
-          ws.on('open', () => {
-            connected = true
-            resolve()
-          })
+          ws.on('open', () => { connected = true; resolve() })
           ws.on('message', (data) => onMessage(data))
-          ws.on('close', () => {
-            connected = false
-            stopInputLoop()
-            onDisconnect()
-          })
+          ws.on('close', () => { connected = false; onDisconnect() })
           ws.on('error', (err) => reject(err))
-        } catch (e) {
-          reject(e)
-        }
+        } catch (e) { reject(e) }
       })
     },
 
     sendInput,
-    startInputLoop,
-    stopInputLoop,
 
     interact(entityId) {
       if (!ws || !connected) return
-      ws.send(JSON.stringify({ type: 'interact', entityId }))
-    },
-
-    sendMessage(entityId, payload) {
-      if (!ws || !connected) return
-      ws.send(JSON.stringify({ type: 'message', entityId, payload }))
+      ws.send(pack({ t: 4, eid: entityId }))
     },
 
     disconnect() {
-      stopInputLoop()
-      if (ws) {
-        connected = false
-        ws.close()
-      }
+      if (ws) { connected = false; ws.close() }
     },
 
     getEntity(id) { return entities.get(id) || null },
