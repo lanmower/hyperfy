@@ -25,59 +25,32 @@ export class PhysicsWorld {
   async init() {
     const Jolt = await getJoltModule()
     this.jolt = Jolt
-
-    // Create Jolt physics system
     this.physicsSystem = new Jolt.PhysicsSystem()
-    this.physicsSystem.init(
-      1000,
-      0,
-      1000,
-      1000,
-      new Jolt.BroadPhaseLayerInterface(2, 1),
-      new Jolt.ObjectLayerPairFilter(),
-      new Jolt.ObjectVsBroadPhaseLayerFilter()
-    )
-
+    this.physicsSystem.init(1000, 0, 1000, 1000, new Jolt.BroadPhaseLayerInterface(2, 1), new Jolt.ObjectLayerPairFilter(), new Jolt.ObjectVsBroadPhaseLayerFilter())
     this.bodyInterface = this.physicsSystem.getBodyInterface()
-
-    // Set gravity
     const [gx, gy, gz] = this.config.gravity
     this.physicsSystem.setGravity(new Jolt.Vec3(gx, gy, gz))
-
     return this
   }
 
   addBody(mesh, bodyConfig = {}) {
-    if (!this.physicsSystem) {
-      throw new Error('World not initialized - call await world.init() first')
-    }
-
     const bodyId = this.nextBodyId++
-
-    // Store body reference internally
     this.bodies.set(bodyId, {
       mesh,
       config: bodyConfig,
       position: bodyConfig.position || [0, 0, 0],
       rotation: bodyConfig.rotation || [0, 0, 0, 1]
     })
-
     return bodyId
-  }
-
-  getBody(bodyId) {
-    return this.bodies.get(bodyId)
   }
 
   step(deltaTime) {
     if (!this.physicsSystem) return
+    this.physicsSystem.step(deltaTime, 1, 1)
+  }
 
-    // Collide and step
-    this.physicsSystem.step(
-      deltaTime,
-      1, // collision steps
-      1  // integration substeps
-    )
+  getBody(bodyId) {
+    return this.bodies.get(bodyId)
   }
 
   destroy() {
@@ -90,4 +63,35 @@ export class PhysicsWorld {
 
 export function createWorld(config = {}) {
   return new PhysicsWorld(config)
+}
+
+export function addBody(world, mesh, config = {}) {
+  return world.addBody(mesh, {
+    dynamic: false,
+    mass: 1.0,
+    friction: 0.2,
+    restitution: 0.0,
+    ...config
+  })
+}
+
+export function step(world, deltaTime) {
+  world.step(deltaTime)
+}
+
+export function raycast(world, origin, direction, distance, config = {}) {
+  return { hit: false, distance, body: null }
+}
+
+export function getEntityData(world, bodyId) {
+  const body = world.getBody(bodyId)
+  if (!body) return null
+  return {
+    id: bodyId,
+    position: body.position || [0, 0, 0],
+    rotation: body.rotation || [0, 0, 0, 1],
+    velocity: body.velocity || [0, 0, 0],
+    angularVelocity: body.angularVelocity || [0, 0, 0],
+    config: body.config
+  }
 }
