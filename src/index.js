@@ -25,3 +25,17 @@ export { PhysicsNetworkClient } from './client/PhysicsNetworkClient.js'
 export { PredictionEngine } from './client/PredictionEngine.js'
 export { ReconciliationEngine } from './client/ReconciliationEngine.js'
 export { RenderSync } from './client/RenderSync.js'
+
+export { MSG, msgName, DISCONNECT_REASONS, CONNECTION_QUALITY } from './protocol/MessageTypes.js'
+export { Codec } from './protocol/Codec.js'
+export { SequenceTracker } from './protocol/SequenceTracker.js'
+
+export { ConnectionManager } from './connection/ConnectionManager.js'
+export { SessionStore } from './connection/SessionStore.js'
+export { QualityMonitor } from './connection/QualityMonitor.js'
+
+export { Inspector } from './debug/Inspector.js'
+export { ClientReporter } from './debug/ClientReporter.js'
+export { StateInspector } from './debug/StateInspector.js'
+
+export { hyperfyMiddleware } from './middleware/expressPlugin.js'
