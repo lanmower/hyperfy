@@ -1,14 +1,15 @@
+import { ReconciliationEngine } from './ReconciliationEngine.js'
+
 export class PredictionEngine {
   constructor(tickRate = 128) {
     this.tickRate = tickRate
     this.tickDuration = 1000 / tickRate
     this.localPlayerId = null
     this.localState = null
-    this.predictedStates = []
-    this.lastServerTick = 0
     this.lastServerState = null
     this.inputHistory = []
     this.gravity = [0, -9.81, 0]
+    this.reconciliationEngine = new ReconciliationEngine()
   }
 
   init(playerId, initialState = {}) {
@@ -69,8 +70,6 @@ export class PredictionEngine {
       state.velocity[1] = 0
       state.onGround = true
     }
-
-    this.predictedStates.push(JSON.parse(JSON.stringify(state)))
   }
 
   interpolate(factor) {
@@ -105,47 +104,32 @@ export class PredictionEngine {
     return extrapolated
   }
 
-  onServerSnapshot(snapshot) {
+  onServerSnapshot(snapshot, tick) {
     for (const serverPlayer of snapshot.players) {
       if (serverPlayer.id === this.localPlayerId) {
-        this.lastServerTick = snapshot.tick
         this.lastServerState = JSON.parse(JSON.stringify(serverPlayer))
 
-        const divergence = this.calculateDivergence()
-        if (divergence > 0.01) {
-          this.reconcile()
+        const reconciliation = this.reconciliationEngine.reconcile(
+          this.lastServerState,
+          this.localState,
+          tick
+        )
+
+        if (reconciliation.needsCorrection) {
+          this.reconciliationEngine.applyCorrection(this.localState, reconciliation.correction)
+          this.resimulate()
         }
       }
     }
   }
 
-  calculateDivergence() {
-    if (!this.lastServerState || !this.localState) return 0
-
-    const dx = this.localState.position[0] - this.lastServerState.position[0]
-    const dy = this.localState.position[1] - this.lastServerState.position[1]
-    const dz = this.localState.position[2] - this.lastServerState.position[2]
-
-    return Math.sqrt(dx * dx + dy * dy + dz * dz)
-  }
-
-  reconcile() {
-    const serverState = this.lastServerState
-    const divergence = this.calculateDivergence()
-
-    if (divergence < 0.01) {
-      return
-    }
-
-    this.localState.position = JSON.parse(JSON.stringify(serverState.position))
-    this.localState.velocity = JSON.parse(JSON.stringify(serverState.velocity))
-    this.localState.onGround = serverState.onGround
+  resimulate() {
+    const baseState = JSON.parse(JSON.stringify(this.lastServerState))
+    this.localState = baseState
 
     for (const input of this.inputHistory) {
       this.predict(input.data)
     }
-
-    this.predictedStates = []
   }
 
   getDisplayState(tick, ticksSinceLastSnapshot) {
@@ -157,7 +141,13 @@ export class PredictionEngine {
     return this.inputHistory
   }
 
-  clearPredictedStates() {
-    this.predictedStates = []
+  calculateDivergence() {
+    if (!this.lastServerState || !this.localState) return 0
+
+    const dx = this.localState.position[0] - this.lastServerState.position[0]
+    const dy = this.localState.position[1] - this.lastServerState.position[1]
+    const dz = this.localState.position[2] - this.lastServerState.position[2]
+
+    return Math.sqrt(dx * dx + dy * dy + dz * dz)
   }
 }
