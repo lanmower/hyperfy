@@ -1,5 +1,5 @@
 import { pack, unpack } from 'msgpackr'
-import EventEmitter from 'node:events'
+import { EventEmitter } from '../protocol/EventEmitter.js'
 
 export class ConnectionManager extends EventEmitter {
   constructor(options = {}) {
