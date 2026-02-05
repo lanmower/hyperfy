@@ -171,9 +171,50 @@ export async function createServer(config = {}) {
     setTickHandler(newHandler)
   }
 
+  const reloadPhysicsIntegration = async () => {
+    const oldColliders = new Map(physicsIntegration.playerColliders)
+    const { PhysicsIntegration: NewPhysicsIntegration } = await import('../netcode/PhysicsIntegration.js?' + Date.now())
+    const newIntegration = new NewPhysicsIntegration({ gravity: physicsIntegration.config.gravity })
+    newIntegration.playerColliders = oldColliders
+    Object.assign(physicsIntegration, newIntegration)
+  }
+
+  const reloadLagCompensator = async () => {
+    const oldHistory = new Map(lagCompensator.playerHistory)
+    const { LagCompensator: NewLagCompensator } = await import('../netcode/LagCompensator.js?' + Date.now())
+    const newLag = new NewLagCompensator(lagCompensator.historyWindow)
+    newLag.playerHistory = oldHistory
+    Object.assign(lagCompensator, newLag)
+  }
+
+  const reloadPlayerManager = async () => {
+    const oldPlayers = new Map(playerManager.players)
+    const oldInputBuffers = new Map(playerManager.inputBuffers)
+    const { PlayerManager: NewPlayerManager } = await import('../netcode/PlayerManager.js?' + Date.now())
+    const newPM = new NewPlayerManager()
+    newPM.players = oldPlayers
+    newPM.inputBuffers = oldInputBuffers
+    newPM.nextPlayerId = playerManager.nextPlayerId
+    Object.assign(playerManager, newPM)
+  }
+
+  const reloadNetworkState = async () => {
+    const oldPlayers = new Map(networkState.players)
+    const { NetworkState: NewNetworkState } = await import('../netcode/NetworkState.js?' + Date.now())
+    const newNS = new NewNetworkState()
+    newNS.players = oldPlayers
+    newNS.tick = networkState.tick
+    newNS.timestamp = networkState.timestamp
+    Object.assign(networkState, newNS)
+  }
+
   const setupSDKWatchers = () => {
     const watcherConfig = [
-      { id: 'tick-handler', path: './src/sdk/TickHandler.js', reload: reloadTickHandler }
+      { id: 'tick-handler', path: './src/sdk/TickHandler.js', reload: reloadTickHandler },
+      { id: 'physics-integration', path: './src/netcode/PhysicsIntegration.js', reload: reloadPhysicsIntegration },
+      { id: 'lag-compensator', path: './src/netcode/LagCompensator.js', reload: reloadLagCompensator },
+      { id: 'player-manager', path: './src/netcode/PlayerManager.js', reload: reloadPlayerManager },
+      { id: 'network-state', path: './src/netcode/NetworkState.js', reload: reloadNetworkState }
     ]
     for (const { id, path, reload } of watcherConfig) {
       reloadManager.addWatcher(id, path, reload)
