@@ -1,0 +1,257 @@
+## Flawless Hot Reload Architecture - Server and Client
+
+### System Design Phase (No Dependencies)
+- [x] Audit current hot reload implementation (AppLoader only)
+- [x] Identify all file types that can change (app files, SDK files, config)
+- [x] Map dependency graph for each file type
+- [x] Design hot reload for server SDK files
+- [x] Design hot reload for client SDK files
+- [x] Design hot reload for physics engine integration
+- [x] Design hot reload for netcode components
+- [x] Design hot reload for configuration files
+- [x] Plan state preservation strategy for each layer
+- [x] Define "flawless" requirements: zero downtime, zero dropped connections, state persists
+
+### Server Architecture Phase (Blocks: Server Implementation)
+- [x] Design handler swap mechanism (atomic replacement)
+- [x] Design request draining (finish in-flight requests)
+- [x] Plan graceful degradation during reload
+- [x] Design state persistence layer (separate from reloadable code)
+- [x] Plan rollback mechanism for failed reloads
+- [x] Design reload supervision (restart failed reloads)
+- [x] Plan socket management during reload
+- [x] Design tick system reload (maintain 128 TPS)
+- [x] Design physics engine reload (preserve world state)
+- [x] Plan netcode component reload (preserve player state)
+
+### Client Architecture Phase (Blocks: Client Implementation)
+- [x] Design DOM-safe reload (preserve canvas state)
+- [x] Design WebSocket reconnect strategy (automatic, transparent)
+- [x] Design input buffer preservation across reload
+- [x] Design prediction engine state persistence
+- [x] Design reconciliation engine reload
+- [x] Design render sync state preservation
+- [x] Plan visual continuity (no visible interruption)
+- [x] Design error recovery (fallback to cached state)
+- [x] Plan hot reload markers (track which modules reloaded)
+- [x] Design client-side rollback for failed reloads
+
+### Server Implementation Phase (Blocks: Server Testing)
+- [ ] Implement handler swap mechanism in server.js
+- [ ] Implement request draining system
+- [ ] Create state persistence layer outside reloadable modules
+- [ ] Implement AppLoader file watcher enhancements
+- [ ] Implement SDK module file watcher
+- [ ] Implement physics engine reload handler
+- [ ] Implement netcode component reload
+- [ ] Implement graceful error recovery
+- [ ] Implement reload supervision (auto-restart)
+- [ ] Implement socket state management during reload
+- [ ] Verify all reloadable modules < 200 lines
+- [ ] Verify no circular dependencies in reload chain
+
+### Client Implementation Phase (Blocks: Client Testing)
+- [ ] Implement client-side file watcher (if applicable for bundled code)
+- [ ] Implement WebSocket auto-reconnect with exponential backoff
+- [ ] Implement input buffer persistence across reload
+- [ ] Implement prediction engine state preservation
+- [ ] Implement reconciliation engine reload
+- [ ] Implement RenderSync state preservation
+- [ ] Implement DOM state preservation (canvas)
+- [ ] Implement visual continuity markers
+- [ ] Implement error recovery fallback to cached state
+- [ ] Implement client-side reload acknowledgment
+
+### Configuration Reload Phase (Blocks: Integration Tests)
+- [ ] Implement world.js reload (gravity, spawn point)
+- [ ] Implement colliders.js reload
+- [ ] Implement game-modes.js reload
+- [ ] Implement maps.js reload
+- [ ] Verify config changes apply instantly
+- [ ] Verify no player disconnection on config reload
+- [ ] Verify physics world respects new config
+- [ ] Verify gravity changes apply to active players
+
+### SDK File Reload Tests (depends on: Server Implementation, Client Implementation)
+- [ ] Test server.js reload (tick system continues)
+- [ ] Test client.js reload (WebSocket reconnects automatically)
+- [ ] Test TickSystem.js reload (128 TPS maintained)
+- [ ] Test NetworkState.js reload (player state preserved)
+- [ ] Test InputBuffer.js reload (pending inputs preserved)
+- [ ] Test SnapshotEncoder.js reload (encoding continues)
+- [ ] Test PlayerManager.js reload (socket connections persist)
+- [ ] Test PhysicsNetworkClient.js reload (prediction continues)
+- [ ] Test PredictionEngine.js reload (state preserved)
+- [ ] Test ReconciliationEngine.js reload (blending continues)
+
+### App File Reload Tests (depends on: Server Implementation)
+- [ ] Test environment.js reload (colliders persist)
+- [ ] Test interactive-door.js reload (state preserved)
+- [ ] Test patrol-npc.js reload (waypoints preserved)
+- [ ] Test physics-crate.js reload (position preserved)
+- [ ] Test player-controller.js reload (input continues)
+- [ ] Test score-tracker.js reload (scores preserved)
+- [ ] Test spawn-manager.js reload (spawn queue preserved)
+- [ ] Test tps-game.js reload (game state preserved)
+- [ ] Test weapon-hitscan.js reload (hit validation continues)
+- [ ] Test custom app reload (entity state persists)
+
+### Physics Engine Reload Tests (depends on: Server Implementation)
+- [ ] Test Jolt WASM reload (physics world preserved)
+- [ ] Test body state preservation
+- [ ] Test collision layer configuration preserved
+- [ ] Test static colliders re-attached
+- [ ] Test dynamic bodies continue simulation
+- [ ] Test gravity reapplied correctly
+- [ ] Test active players unaffected by physics reload
+- [ ] Test performance metrics stable after reload
+
+### Netcode Component Reload Tests (depends on: Server Implementation, Client Implementation)
+- [ ] Test PlayerManager reload (sockets persist)
+- [ ] Test NetworkState reload (player data preserved)
+- [ ] Test BandwidthOptimizer reload (delta compression continues)
+- [ ] Test CullingManager reload (relevance preserved)
+- [ ] Test LagCompensator reload (history preserved)
+- [ ] Test HitValidator reload (validation continues)
+- [ ] Test SnapshotEncoder reload (encoding continues)
+- [ ] Test message routing continues
+- [ ] Test input buffering continues
+- [ ] Test no packets lost during reload
+
+### Concurrent Operations During Reload (depends on: SDK File Reload Tests)
+- [ ] Test reload while players connected
+- [ ] Test reload while physics updating
+- [ ] Test reload while snapshots sending
+- [ ] Test reload while input processing
+- [ ] Test reload while hot reload in progress
+- [ ] Test multiple file changes in quick succession
+- [ ] Test rapid reload cycles (10+ reloads in 10 seconds)
+- [ ] Test reload under high network latency
+- [ ] Test reload with packet loss
+- [ ] Test reload with connection interruptions
+
+### State Preservation Verification (depends on: All Reload Tests)
+- [ ] Verify player position preserved
+- [ ] Verify player velocity preserved
+- [ ] Verify player input state preserved
+- [ ] Verify entity state preserved
+- [ ] Verify app custom state preserved
+- [ ] Verify world configuration preserved
+- [ ] Verify physics world state preserved
+- [ ] Verify network state preserved
+- [ ] Verify tick counter preserved
+- [ ] Verify timestamp continuity
+
+### Zero Downtime Verification (depends on: All Reload Tests)
+- [ ] Measure reload duration (target < 50ms)
+- [ ] Verify no snapshot gaps during reload
+- [ ] Verify no player position jitter
+- [ ] Verify continuous tick counter
+- [ ] Verify no visible pause in client
+- [ ] Verify input queue processed during reload
+- [ ] Verify network messages received during reload
+- [ ] Verify no connection timeouts
+- [ ] Verify no packet loss
+- [ ] Verify smooth camera movement before/after reload
+
+### Error Recovery During Reload (depends on: Concurrent Operations)
+- [ ] Test reload with syntax error in app file
+- [ ] Test reload with syntax error in SDK file
+- [ ] Test reload with import error
+- [ ] Test reload with initialization error
+- [ ] Test reload with state corruption
+- [ ] Verify system recovers (rollback to previous)
+- [ ] Verify players stay connected on error
+- [ ] Verify error logged without crash
+- [ ] Verify automatic retry with backoff
+- [ ] Verify manual recovery option available
+
+### Browser-Based Client Reload Tests (depends on: Client Implementation)
+- [ ] Test client.js reload in browser (via hot module replacement or page reload)
+- [ ] Test InputHandler.js reload (keyboard/mouse continues working)
+- [ ] Test PredictionEngine.js reload (no visual jitter)
+- [ ] Test ReconciliationEngine.js reload (smooth corrections)
+- [ ] Test RenderSync.js reload (render state preserved)
+- [ ] Test PhysicsNetworkClient.js reload (WebSocket auto-reconnects)
+- [ ] Test no visible pause when client reloads
+- [ ] Test no input loss during client reload
+- [ ] Test smooth visual continuity
+- [ ] Test camera state preserved
+
+### Integration Test: Full Reload Cycle (depends on: Browser-Based Client Reload Tests, State Preservation Verification)
+- [ ] Server and client both connected
+- [ ] Modify server app file (e.g., environment.js)
+- [ ] Server detects change and reloads
+- [ ] Client receives updated entity data seamlessly
+- [ ] Player continues moving without interruption
+- [ ] No visible pause or jitter
+- [ ] Player input continues working
+- [ ] Hot reload completes in < 50ms
+- [ ] Player state matches server state
+- [ ] Both server and client fully operational post-reload
+- [ ] Repeat with client-side changes
+- [ ] Repeat with SDK file changes
+- [ ] Repeat with config changes
+- [ ] Run for 5+ minutes with continuous gameplay
+- [ ] Perform 50+ reloads during gameplay
+- [ ] Verify system stable with zero crashes
+
+### Performance Verification (depends on: Integration Test)
+- [ ] Measure reload overhead (CPU usage spike)
+- [ ] Verify tick rate unchanged (128 TPS)
+- [ ] Verify frame rate unchanged (60 FPS if client has renderer)
+- [ ] Verify memory not leaked on repeated reloads
+- [ ] Verify no GC pauses during reload
+- [ ] Verify network bandwidth stable
+- [ ] Verify latency unchanged post-reload
+- [ ] Verify throughput unchanged post-reload
+
+### Documentation & Cleanup (depends on: Performance Verification)
+- [ ] Document hot reload architecture
+- [ ] Document file watching strategy
+- [ ] Document state preservation layers
+- [ ] Document reload supervision strategy
+- [ ] Document error recovery procedures
+- [ ] Document performance characteristics
+- [ ] Create hot reload guide for developers
+- [ ] Add hot reload examples
+- [ ] Remove any test artifacts
+- [ ] Verify system ready for production
+
+## Parallel Execution Waves
+
+**Wave 1 (Analysis)**
+- System Design Phase
+
+**Wave 2 (Architecture Design)**
+- Server Architecture Phase
+- Client Architecture Phase
+- Configuration Reload Phase
+
+**Wave 3 (Implementation)**
+- Server Implementation Phase
+- Client Implementation Phase
+
+**Wave 4 (SDK & App Tests)**
+- SDK File Reload Tests (depends: Wave 3)
+- App File Reload Tests (depends: Wave 3)
+
+**Wave 5 (Component Tests)**
+- Physics Engine Reload Tests (depends: Wave 3)
+- Netcode Component Reload Tests (depends: Wave 3)
+
+**Wave 6 (Stress & Concurrency)**
+- Concurrent Operations During Reload (depends: Wave 4, Wave 5)
+- Error Recovery During Reload (depends: Wave 4, Wave 5)
+
+**Wave 7 (State & Verification)**
+- State Preservation Verification (depends: Wave 6)
+- Zero Downtime Verification (depends: Wave 6)
+
+**Wave 8 (Browser & Integration)**
+- Browser-Based Client Reload Tests (depends: Wave 3)
+- Integration Test: Full Reload Cycle (depends: Wave 7, Wave 8)
+
+**Wave 9 (Performance & Release)**
+- Performance Verification (depends: Wave 8)
+- Documentation & Cleanup (depends: Wave 9)
