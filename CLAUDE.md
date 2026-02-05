@@ -1,4 +1,4 @@
-# CLAUDE.md - Hyperfy SDK Technical Reference
+# CLAUDE.md - Spawnpoint SDK Technical Reference
 
 ## ARCHITECTURE
 
@@ -246,7 +246,7 @@ LOCK Use thorns for overview Explore via search and plugin:gm:dev Web search whe
 ## HOOKS ARCHITECTURE
 
 ### Hook System Overview
-Hyperfy uses a hook system to enforce gm philosophy and workflow discipline:
+Spawnpoint uses a hook system to enforce gm philosophy and workflow discipline:
 
 1. **SessionStart Hook** - Fires when session begins
    - Loads gm agent policy from CLAUDE.md

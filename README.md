@@ -1,4 +1,4 @@
-# Hyperfy - Pure Physics SDK
+# Spawnpoint - Pure Physics SDK
 
 A radical transformation from HTTP server to pure physics SDK powered by Jolt.
 
@@ -71,7 +71,7 @@ import {
   Vector3,          // 3D vector math
   Quaternion,       // Quaternion math
   Transform         // Transform data
-} from 'hyperfy'
+} from 'spawnpoint'
 
 // Usage
 const world = createWorld({ gravity: [0, -9.81, 0] })

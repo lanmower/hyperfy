@@ -1,5 +1,5 @@
 {
-  "name": "hyperfy",
+  "name": "spawnpoint",
   "version": "0.16.0",
   "type": "module",
   "main": "src/index.js",
