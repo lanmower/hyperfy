@@ -13,14 +13,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PHASE D: FULL GAME INTEGRATION (TPS on Schwust)
 
-### D3: Combat Validation
-- [ ] Test shooting, hit detection, respawn flow
-  - Scenario: 2 players, player A shoots player B
-  - Verify: B takes damage, dies, respawns
-  - Test: multiple shots, lag compensation accuracy
-  - Test: respawn timer visible to client
-  - Blocks: D4
-
 ### D4: Multi-Client Game Session
 - [ ] Full integration test with 10 clients
   - Scenario: 10 players on schwust.glb, FFA deathmatch
@@ -57,7 +49,8 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ### Wave 4 (IN PROGRESS)
 - D2 ✓ (player input - all real components, zero mocks)
-- D3 (combat), D4 (multi-client) - remaining integration and testing
+- D3 ✓ (combat - damage, death, events)
+- D4 (multi-client) - remaining integration and testing
 
 ### Wave 5 (FINAL after Wave 4)
 - D5 (stress test on live game, final validation)
