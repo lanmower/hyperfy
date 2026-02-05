@@ -84,9 +84,10 @@ export async function createServer(config = {}) {
     const playerId = playerManager.addPlayer(socket)
     networkState.addPlayer(playerId)
     physicsIntegration.addPlayerCollider(playerId, 0.4)
-    lagCompensator.recordPlayerState(
-      playerId, playerManager.getPlayer(playerId).state,
-      tickSystem.currentTick, Date.now()
+    const playerState = playerManager.getPlayer(playerId).state
+    lagCompensator.recordPlayerPosition(
+      playerId, playerState.position, playerState.rotation, playerState.velocity,
+      tickSystem.currentTick
     )
     const client = connections.addClient(playerId, socket)
     client.sessionToken = sessions.create(playerId, playerManager.getPlayer(playerId).state)

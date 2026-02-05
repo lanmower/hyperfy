@@ -65,6 +65,10 @@ export class LagCompensator {
     return dist > threshold
   }
 
+  clearPlayerHistory(playerId) {
+    this.playerHistory.delete(playerId)
+  }
+
   getStats() {
     return {
       trackedPlayers: this.playerHistory.size,

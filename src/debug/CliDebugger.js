@@ -82,6 +82,12 @@ export class CliDebugger {
       console.log(`${this.prefix}   ${key}: ${value}`)
     }
   }
+
+  log(message) {
+    const msg = `${this.prefix} ${message}`
+    console.log(`${this._timestamp()} ${msg}`)
+    this.history.push(msg)
+  }
 }
 
 export const cliDebugger = new CliDebugger()
