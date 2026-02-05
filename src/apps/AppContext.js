@@ -104,4 +104,11 @@ export class AppContext {
       sendTo: (id, msg) => runtime.sendToPlayer(id, msg)
     }
   }
+
+  raycast(origin, direction, maxDistance = 1000) {
+    if (this._runtime._physics) {
+      return this._runtime._physics.raycast(origin, direction, maxDistance)
+    }
+    return { hit: false, distance: maxDistance, body: null, position: null }
+  }
 }
