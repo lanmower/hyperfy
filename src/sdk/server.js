@@ -166,13 +166,17 @@ export async function createServer(config = {}) {
     async loadWorld(worldDef) { await appLoader.loadAll(); return binder.loadWorld(worldDef) },
     async start() {
       await appLoader.loadAll()
-      if (staticDirs.length > 0) {
-        httpServer = createHttpServer(createStaticHandler(staticDirs))
-        wss = new WSServer({ server: httpServer })
-        await new Promise((resolve, reject) => {
-          httpServer.on('error', reject); httpServer.listen(port, () => resolve())
-        })
-      } else { wss = new WSServer({ port }) }
+      await new Promise((resolve, reject) => {
+        if (staticDirs.length > 0) {
+          httpServer = createHttpServer(createStaticHandler(staticDirs))
+          wss = new WSServer({ server: httpServer })
+          httpServer.on('error', reject)
+          httpServer.listen(port, () => resolve())
+        } else {
+          wss = new WSServer({ port }, () => resolve())
+          wss.on('error', reject)
+        }
+      })
       wss.on('connection', onClientConnect)
       tickSystem.onTick(onTick); tickSystem.start(); appLoader.watchAll()
       setupSDKWatchers()
