@@ -1,4 +1,6 @@
 import EventEmitter from 'node:events'
+import { CliDebugger } from '../debug/CliDebugger.js'
+import { ColliderFitter } from '../physics/ColliderFitter.js'
 
 export class AppContext {
   constructor(entity, runtime) {
@@ -8,6 +10,7 @@ export class AppContext {
     this._state = entity._appState || {}
     entity._appState = this._state
     this._entityProxy = this._buildEntityProxy()
+    this._debugger = new CliDebugger(`[${entity.id}]`)
   }
 
   _buildEntityProxy() {
@@ -102,6 +105,26 @@ export class AppContext {
     return {
       broadcast: (msg) => runtime.broadcastToPlayers(msg),
       sendTo: (id, msg) => runtime.sendToPlayer(id, msg)
+    }
+  }
+
+  get debug() { return this._debugger }
+
+  get collider() {
+    const ent = this._entity
+    return {
+      fitToModel: () => {
+        if (!ent.model) return
+        const analysis = ColliderFitter.analyzeMesh(ent.model, 0)
+        const rec = ColliderFitter.recommend(analysis)
+        if (rec.type === 'box') ent.collider = { type: 'box', halfExtents: rec.halfExtents }
+        else if (rec.type === 'capsule') ent.collider = { type: 'capsule', radius: rec.radius, halfHeight: rec.halfHeight }
+        else ent.collider = { type: 'sphere', radius: rec.radius }
+        return rec
+      },
+      box: (hx, hy, hz) => { ent.collider = { type: 'box', halfExtents: [hx, hy, hz] } },
+      capsule: (r, h) => { ent.collider = { type: 'capsule', radius: r, halfHeight: h } },
+      sphere: (r) => { ent.collider = { type: 'sphere', radius: r } }
     }
   }
 
