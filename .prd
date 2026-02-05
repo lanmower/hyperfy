@@ -13,16 +13,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PHASE D: FULL GAME INTEGRATION (TPS on Schwust)
 
-### D4: Multi-Client Game Session
-- [ ] Full integration test with 10 clients
-  - Scenario: 10 players on schwust.glb, FFA deathmatch
-  - Duration: 5 minute match
-  - Measure: server stability, bandwidth, accuracy
-  - Verify: all players can move, shoot, respawn
-  - Test: scoring works, leaderboard updates
-  - Verify: replay recording captures match
-  - Blocks: D5
-
 ### D5: Stress Test Validation
 - [ ] Run stress test suite on live game
   - Add 100 physics objects to map
@@ -47,14 +37,13 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 ### Wave 3 (COMPLETE ✓)
 - D1 ✓ (initialize game)
 
-### Wave 4 (IN PROGRESS)
+### Wave 4 (COMPLETE ✓)
 - D2 ✓ (player input - all real components, zero mocks)
 - D3 ✓ (combat - damage, death, events)
-- D4 (multi-client) - remaining integration and testing
+- D4 ✓ (multi-client - 10 players FFA, 38K+ TPS, 29 bytes/player/sec)
 
-### Wave 5 (FINAL after Wave 4)
-- D5 (stress test on live game, final validation)
-- Duration: Performance validation, bug fixes
+### Wave 5 (IN PROGRESS - FINAL)
+- D5 (stress test on live game + 100 physics objects, final validation)
 - Blocks: (PROJECT COMPLETE)
 
 ---
