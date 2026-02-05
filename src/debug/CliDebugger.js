@@ -84,4 +84,4 @@ export class CliDebugger {
   }
 }
 
-export const debugger = new CliDebugger()
+export const cliDebugger = new CliDebugger()
