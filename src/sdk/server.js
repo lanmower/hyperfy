@@ -18,6 +18,7 @@ import { AppLoader } from '../apps/AppLoader.js'
 import { EntityAppBinder } from '../apps/EntityAppBinder.js'
 import { createTickHandler } from './TickHandler.js'
 import { EventEmitter } from '../protocol/EventEmitter.js'
+import { ReloadManager } from './ReloadManager.js'
 
 const MIME_TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -66,6 +67,7 @@ export async function createServer(config = {}) {
   })
   const sessions = new SessionStore({ ttl: config.sessionTTL || 30000 })
   const inspector = new Inspector()
+  const reloadManager = new ReloadManager()
 
   const appRuntime = new AppRuntime({ gravity, playerManager, physics })
   appRuntime.setPlayerManager(playerManager)
@@ -75,10 +77,19 @@ export async function createServer(config = {}) {
   let httpServer = null
   let snapshotSeq = 0
 
-  const onTick = createTickHandler({
+  const handlerState = { fn: null }
+  const onTick = (tick, dt) => {
+    if (handlerState.fn) handlerState.fn(tick, dt)
+  }
+
+  const setTickHandler = (fn) => {
+    handlerState.fn = fn
+  }
+
+  setTickHandler(createTickHandler({
     networkState, playerManager, physicsIntegration,
     lagCompensator, physics, appRuntime, connections
-  })
+  }))
 
   function onClientConnect(socket) {
     const playerId = playerManager.addPlayer(socket)
@@ -151,10 +162,28 @@ export async function createServer(config = {}) {
     })
   }
 
+  const reloadTickHandler = async () => {
+    const { createTickHandler: refreshHandler } = await import('./TickHandler.js?' + Date.now())
+    const newHandler = refreshHandler({
+      networkState, playerManager, physicsIntegration,
+      lagCompensator, physics, appRuntime, connections
+    })
+    setTickHandler(newHandler)
+  }
+
+  const setupSDKWatchers = () => {
+    const watcherConfig = [
+      { id: 'tick-handler', path: './src/sdk/TickHandler.js', reload: reloadTickHandler }
+    ]
+    for (const { id, path, reload } of watcherConfig) {
+      reloadManager.addWatcher(id, path, reload)
+    }
+  }
+
   const api = {
     physics, runtime: appRuntime, loader: appLoader, binder,
     tickSystem, playerManager, networkState, lagCompensator,
-    connections, sessions, inspector, emitter,
+    connections, sessions, inspector, emitter, reloadManager,
     on: emitter.on.bind(emitter), off: emitter.off.bind(emitter),
     async loadWorld(worldDef) { await appLoader.loadAll(); return binder.loadWorld(worldDef) },
     async start() {
@@ -168,10 +197,12 @@ export async function createServer(config = {}) {
       } else { wss = new WSServer({ port }) }
       wss.on('connection', onClientConnect)
       tickSystem.onTick(onTick); tickSystem.start(); appLoader.watchAll()
+      setupSDKWatchers()
       return { port, tickRate }
     },
     stop() {
-      tickSystem.stop(); appLoader.stopWatching(); connections.destroy(); sessions.destroy()
+      tickSystem.stop(); appLoader.stopWatching(); reloadManager.stopAllWatchers()
+      connections.destroy(); sessions.destroy()
       if (wss) wss.close(); if (httpServer) httpServer.close(); physics.destroy()
     },
     send(id, type, p) { return connections.send(id, type, p) },
@@ -179,6 +210,8 @@ export async function createServer(config = {}) {
     getPlayerCount() { return playerManager.getPlayerCount() },
     getEntityCount() { return binder.getEntityCount() },
     getSnapshot() { return appRuntime.getSnapshot() },
+    reloadTickHandler,
+    getReloadStats() { return reloadManager.getStats() },
     getAllStats() {
       return { connections: connections.getAllStats(), inspector: inspector.getAllClients(connections),
         sessions: sessions.getActiveCount(), tick: tickSystem.currentTick, players: playerManager.getPlayerCount() }
