@@ -1,0 +1,201 @@
+## Hyperfy SDK Testing with Playwriter
+
+### Setup Phase (No Dependencies) - COMPLETED
+### Server Startup Phase (Blocks: Integration Tests) - COMPLETED
+
+### Client Initialization Phase - COMPLETED
+Verified with real WebSocket client connection to running server:
+- PASS: HTTP page loads (returns 200 OK)
+- PASS: WebSocket connection established (ws://localhost:8080/ws)
+- PASS: Player assigned (ID: 1)
+- PASS: Initial snapshots received (7 snapshots, ticks 3-9)
+- PASS: Player data in snapshot ([id, px, py, pz, rx, ry, rz, rw, vx, vy, vz, onGround, health, inputSeq])
+- PASS: Player position at spawn point (0, 2, 0 with quantization)
+- PASS: Player on ground (onGround flag = 1)
+- PASS: Full health (100)
+- PASS: Ticks incrementing correctly (128 TPS)
+- PASS: msgpackr binary protocol working (HANDSHAKE_ACK, SNAPSHOT messages)
+- PASS: Session token issued (f4ef58dd...)
+
+### Network Communication Phase (Blocks: Physics Verification, depends on: Client Initialization)
+- [ ] Verify msgpackr binary protocol working (snapshot decoded)
+- [ ] Verify snapshot format correct: [tick, timestamp, [[players]], [[entities]]]
+- [ ] Verify player array contains: [id, px, py, pz, rx, ry, rz, rw, vx, vy, vz, onGround, health, inputSeq]
+- [ ] Verify entity array correct format
+- [ ] Verify tick counter incrementing (server time advancing)
+- [ ] Verify timestamp values increasing
+- [ ] Verify quantization decompression working (position values reasonable)
+- [ ] Verify input sequence tracking on client
+- [ ] Verify input buffer on server accepting client inputs
+- [ ] Verify round-trip message delay acceptable (<200ms typical)
+
+### Physics Verification Phase (Blocks: Collision Tests, depends on: Network Communication)
+- [ ] Verify player spawns with correct initial position
+- [ ] Verify player can move forward (apply input)
+- [ ] Verify player velocity updates on server
+- [ ] Verify player position updates on client
+- [ ] Verify gravity applied (player falls when in air)
+- [ ] Verify ground collision detected (onGround flag toggles)
+- [ ] Verify player stops falling when hitting ground
+- [ ] Verify player position reconciliation (client receives server correction)
+- [ ] Verify prediction engine active (client-side extrapolation)
+- [ ] Verify reconciliation smooth (no jitter on correction)
+- [ ] Verify player mass correct
+- [ ] Verify player capsule collider correct dimensions
+
+### Environment Collision Phase (Blocks: Interaction Tests, depends on: Physics Verification)
+- [ ] Verify environment static trimesh loaded from GLB
+- [ ] Verify collider node extracted (9,932 triangles from schwust.glb)
+- [ ] Verify player walks on environment mesh
+- [ ] Verify player cannot fall through floor
+- [ ] Verify player can navigate environment features
+- [ ] Verify environmental obstacles block movement
+- [ ] Verify collision callbacks trigger correctly
+- [ ] Verify lag compensator state history tracking
+- [ ] Verify teleport detection working (anomalous movements caught)
+- [ ] Verify speed detection working (excessive velocity flagged)
+
+### Input Handling Phase (Blocks: Movement Tests, depends on: Client Initialization)
+- [ ] Verify W key moves player forward
+- [ ] Verify A key moves player left
+- [ ] Verify S key moves player backward
+- [ ] Verify D key moves player right
+- [ ] Verify Space key jumps (when on ground)
+- [ ] Verify mouse look updates rotation
+- [ ] Verify input predicts correctly on client
+- [ ] Verify input buffer sequences inputs correctly
+- [ ] Verify server acknowledges inputs in snapshots
+- [ ] Verify input reconciliation when divergence detected
+
+### Movement & Prediction Phase (depends on: Input Handling, Physics Verification)
+- [ ] Player moves forward, verify server and client agree
+- [ ] Player turns, verify rotation updates
+- [ ] Player jumps, verify arc motion correct
+- [ ] Player lands, verify ground detection instant
+- [ ] Player strafes, verify lateral movement works
+- [ ] Player slides, verify friction/deceleration correct
+- [ ] Multiple rapid inputs, verify buffer doesn't overflow
+- [ ] Input delay, verify prediction handles lag
+- [ ] Input reversal, verify buffer handles cancellation
+- [ ] Long continuous movement, verify no drift
+
+### Snapshot & Encoding Phase (depends on: Network Communication)
+- [ ] Verify snapshot tick count increments correctly
+- [ ] Verify snapshot timestamp matches server time
+- [ ] Verify delta compression (changes only) vs full snapshot logic
+- [ ] Verify bandwidth optimizer reduces message size
+- [ ] Verify msgpackr encoding/decoding symmetric
+- [ ] Verify quantization precision sufficient
+- [ ] Verify quantization reversible (no data loss)
+- [ ] Verify snapshot contains all active players
+- [ ] Verify snapshot contains all active entities
+- [ ] Verify culling manager filters based on distance
+- [ ] Verify culling respects configured radius
+- [ ] Verify culled entities not sent (bandwidth saving)
+
+### Lag Compensation Phase (depends on: Environment Collision, Network Communication)
+- [ ] Verify server tracks player history per tick
+- [ ] Verify history stores position/velocity/rotation
+- [ ] Verify history retrieves correct state for past time
+- [ ] Verify time rewind calculation correct
+- [ ] Verify rewind simulates hits accurately
+- [ ] Verify hit validator uses rewind data
+- [ ] Verify hit validation prevents leading/chasing shots
+- [ ] Verify speed check flags impossible movements
+- [ ] Verify teleport check flags discontinuities
+- [ ] Verify compensation doesn't affect non-players
+
+### Entity Spawning Phase (depends on: Server Startup)
+- [ ] Verify environment entity spawned with correct ID
+- [ ] Verify entity model path correct (schwust.glb)
+- [ ] Verify entity collider type set (static trimesh)
+- [ ] Verify entity position [0,0,0] set
+- [ ] Verify entity rotation [0,0,0,1] set
+- [ ] Verify entity app loaded (environment.js)
+- [ ] Verify entity app setup called
+- [ ] Verify entity persists across ticks
+- [ ] Verify entity survives hot reload
+- [ ] Verify entity queryable via world.query
+
+### Hot Reload Phase (depends on: Server Startup, Entity Spawning)
+- [ ] Verify AppLoader watching apps directory
+- [ ] Modify an app file slightly
+- [ ] Verify file change detected
+- [ ] Verify old app teardown called
+- [ ] Verify new app module loaded
+- [ ] Verify new app setup called
+- [ ] Verify entity state preserved
+- [ ] Verify no socket disconnections during reload
+- [ ] Verify client continues receiving snapshots
+- [ ] Verify no input loss during reload
+
+### Error Handling Phase (depends on: Server Startup)
+- [ ] Verify server catches unhandled exceptions
+- [ ] Verify socket errors handled gracefully
+- [ ] Verify malformed messages don't crash server
+- [ ] Verify physics exceptions caught
+- [ ] Verify invalid GLB files caught
+- [ ] Verify missing app files caught
+- [ ] Verify recovery from physics simulation errors
+- [ ] Verify graceful degradation on errors
+- [ ] Verify error logging functional
+- [ ] Verify server remains operational after errors
+
+### State Persistence Phase (depends on: Hot Reload)
+- [ ] Verify app context state object created
+- [ ] Verify state persists across hot reload
+- [ ] Verify state survives entity deletion
+- [ ] Verify state accessible from update callbacks
+- [ ] Verify state accessible from lifecycle callbacks
+- [ ] Verify state modifications persist
+- [ ] Verify state cleared on app unload
+
+### Message Routing Phase (depends on: Network Communication)
+- [ ] Verify message type 1 (player_assigned) handled
+- [ ] Verify message type 2 (world_state) handled
+- [ ] Verify message type 3 (input) handled
+- [ ] Verify message type 4 (interact) handled
+- [ ] Verify message type 5 (disconnect) handled
+- [ ] Verify message type 6 (snapshot) handled
+- [ ] Verify unknown message types ignored safely
+- [ ] Verify malformed messages handled
+- [ ] Verify message routing to correct handler
+- [ ] Verify message buffer prevents overflow
+
+### Performance Baseline (depends on: All Physics/Network phases)
+- [ ] Measure tick duration (target <7.8125ms)
+- [ ] Measure snapshot encode time
+- [ ] Measure snapshot decode time
+- [ ] Measure physics update time
+- [ ] Measure network latency
+- [ ] Measure message size (binary vs JSON)
+- [ ] Measure memory usage stable
+- [ ] Measure no memory leaks during 60 seconds
+- [ ] Verify 128 TPS maintained consistently
+- [ ] Verify no frame drops
+
+### Integration Test: Full Gameplay Loop (depends on: All previous phases)
+- [ ] Client connects to server
+- [ ] Player spawns at spawn point
+- [ ] Player receives environment state
+- [ ] Player moves forward
+- [ ] Player rotates view
+- [ ] Player jumps
+- [ ] Player lands on environment
+- [ ] Player receives position correction from server
+- [ ] Multiple ticks process without errors
+- [ ] Snapshot count increments correctly
+- [ ] Client state matches server state
+- [ ] Hot reload doesn't disconnect client
+- [ ] Input continues working after reload
+- [ ] No crashes or exceptions logged
+
+### Cleanup Phase (depends on: All tests complete)
+- [ ] Stop development server cleanly
+- [ ] Close Chrome browser
+- [ ] Verify no orphaned processes
+- [ ] Verify no port still in use
+- [ ] Verify no file handles open
+- [ ] Verify logs contain no errors
+- [ ] Clear any test artifacts
+- [ ] Verify system ready for next test run
