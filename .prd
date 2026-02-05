@@ -9,36 +9,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PHASE B: INFRASTRUCTURE (Reliability & Validation)
 
-### B4: Stress Test Suite (100+ Entities)
-- [ ] Create test/stress-test.js
-  - Spawn: 100 physics objects on map
-  - Measure: server tick time, network bandwidth
-  - Verify: maintains 128 TPS with 100 entities + 10 clients
-  - Test: collision handling with many bodies
-  - Blocks: (independent)
-
----
-
-## PHASE C: CONTENT & ASSETS (Game Configuration)
-
-### C2: Map Configuration System
-- [ ] Create config/maps.js
-  - schwust.glb: load trimesh, define spawn points, boundaries
-  - Spawn points: array of [x, y, z] coordinates (4 spawns)
-  - Map bounds: enforce boundary checks
-  - Verify: schwust.glb loads and players can walk
-  - Test: spawn points accessible, no clipping
-  - Blocks: C3
-
-### C3: Game Mode Configuration
-- [ ] Create config/game-modes.js
-  - FFA (Free For All): no teams, pure kills
-  - TDM (Team Deathmatch): 2 teams, respawn enabled
-  - Settings: respawn time, health, damage values
-  - Verify: configuration applies correctly
-  - Test: FFA and TDM mode switching
-  - Blocks: D1 (full game needs game mode)
-
 ---
 
 ## PHASE D: FULL GAME INTEGRATION (TPS on Schwust)
@@ -94,11 +64,10 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 ### Wave 1 (COMPLETE ✓)
 - A1 ✓, A2 ✓, A5 ✓ (movement, weapon, score - completed)
 
-### Wave 2 (MOSTLY COMPLETE ✓)
-- A3 ✓ (health), A4 ✓ (spawn)
-- B1 ✓ (lag comp), B2 ✓ (bandwidth), B3 ✓ (replay), C1 ✓ (collider presets)
-- Remaining: B4 (stress test - independent)
-- Blocks: D1
+### Wave 2 (COMPLETE ✓)
+- A3 ✓, A4 ✓ (health, spawn)
+- B1 ✓, B2 ✓, B3 ✓, B4 ✓ (lag comp, bandwidth, replay, stress test)
+- C1 ✓, C2 ✓, C3 ✓ (colliders, maps, game modes)
 
 ### Wave 3 (PARALLEL after Wave 2)
 - C2 (map config), C3 (game modes)
