@@ -7,9 +7,13 @@ export default {
       ctx.state.jumpImpulse = 7.0
       ctx.state.maxFallSpeed = 50
       ctx.state.groundDist = 0.1
+      ctx.state.health = 100
+      ctx.state.maxHealth = 100
+      ctx.state.dead = false
       ctx.physics.setDynamic(true)
       ctx.physics.setMass(80)
       ctx.physics.addCapsuleCollider(0.4, 0.9)
+      ctx.debug.spawn(ctx.entity.id, ctx.entity.position)
     },
 
     update(ctx, dt) {
@@ -51,6 +55,20 @@ export default {
       const state = ctx.state
       const vel = state.velocity
 
+      if (msg.type === 'hit') {
+        state.health -= msg.damage || 25
+        ctx.debug.hit(msg.shooter, ctx.entity.id, msg.damage || 25)
+        if (state.health <= 0 && !state.dead) {
+          state.dead = true
+          state.health = 0
+          ctx.debug.death(ctx.entity.id, state.maxHealth)
+          ctx.events.emit('death', { killer: msg.shooter, victim: ctx.entity.id })
+        }
+        return
+      }
+
+      if (state.dead) return
+
       let vx = 0, vz = 0
 
       if (msg.forward) vz += state.moveSpeed
@@ -75,6 +93,8 @@ export default {
         position: ctx.entity.position,
         rotation: ctx.entity.rotation,
         custom: {
+          health: ctx.state.health,
+          dead: ctx.state.dead,
           onGround: ctx.state.onGround,
           falling: ctx.state.velocity && ctx.state.velocity[1] < -1
         }
