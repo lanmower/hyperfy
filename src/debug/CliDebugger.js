@@ -1,5 +1,5 @@
 export class CliDebugger {
-  constructor(prefix = '[hyperfy]') {
+  constructor(prefix = '[spawnpoint]') {
     this.prefix = prefix
     this.startTime = Date.now()
     this.history = []
