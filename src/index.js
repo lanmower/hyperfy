@@ -4,7 +4,6 @@ export { AppLoader } from './apps/AppLoader.js'
 export { EntityAppBinder } from './apps/EntityAppBinder.js'
 
 export { createServer } from './sdk/server.js'
-export { createClient } from './sdk/client.js'
 
 export { PhysicsWorld } from './physics/World.js'
 export { extractMeshFromGLB } from './physics/GLBLoader.js'

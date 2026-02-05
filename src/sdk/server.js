@@ -17,7 +17,7 @@ import { AppRuntime } from '../apps/AppRuntime.js'
 import { AppLoader } from '../apps/AppLoader.js'
 import { EntityAppBinder } from '../apps/EntityAppBinder.js'
 import { createTickHandler } from './TickHandler.js'
-import EventEmitter from 'node:events'
+import { EventEmitter } from '../protocol/EventEmitter.js'
 
 const MIME_TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',

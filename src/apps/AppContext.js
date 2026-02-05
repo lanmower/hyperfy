@@ -1,4 +1,4 @@
-import EventEmitter from 'node:events'
+import { EventEmitter } from '../protocol/EventEmitter.js'
 import { CliDebugger } from '../debug/CliDebugger.js'
 import { ColliderFitter } from '../physics/ColliderFitter.js'
 
