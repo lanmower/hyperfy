@@ -7,25 +7,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PHASE A: GAME PATTERN APPS (Game Logic Foundation)
 
-### A1: Player Movement Controller App
-- [x] Create apps/player-controller.js
-  - Input: forward/backward/strafe/jump (from network input)
-  - Physics: capsule collision with map, gravity, velocity control
-  - Output: position, rotation, velocity, onGround, inputSeq
-  - Verify: player can walk on schwust.glb without clipping
-  - Test: movement in all directions, jumping, landing
-  - Blocks: A4 (weapon needs valid player position)
-
-### A2: Weapon/Projectile System App
-- [x] Create apps/weapon-hitscan.js (instant raycast hit)
-  - Physics: raycast from player head, collision detection
-  - Network: send hit event to server with position/target
-  - Hit validation: server-side lag compensation check
-  - Output: hit event with shooter/target/impact point
-  - Verify: raycast hits enemies correctly
-  - Test: shooting through walls, at moving targets
-  - Blocks: A3 (damage needs valid hits)
-
 ### A3: Player Health & Damage App
 - [ ] Extend player-controller.js with health tracking
   - Health: 100 HP default
@@ -44,15 +25,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
   - Verify: players respawn correctly
   - Test: multiple respawns, spawn point distribution
   - Blocks: B1 (lag comp needs valid spawns)
-
-### A5: Score & Statistics Tracker App
-- [x] Create apps/score-tracker.js
-  - Track: kills, deaths, damage dealt, shots fired
-  - Sync: broadcast score updates every 1 second
-  - Leaderboard: top 5 players by kills
-  - Verify: scores update correctly
-  - Test: multiple players, concurrent kills
-  - Blocks: (independent)
 
 ---
 
@@ -178,12 +150,10 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PARALLEL EXECUTION WAVES
 
-### Wave 1 (PARALLEL - Independent Game Apps)
-- A1, A2, A5 (movement, weapon, score - no interdependencies initially)
-- Duration: Implement all 3 apps
-- Blocks: A3, A4
+### Wave 1 (COMPLETE ✓)
+- A1 ✓, A2 ✓, A5 ✓ (movement, weapon, score - completed)
 
-### Wave 2 (PARALLEL after Wave 1)
+### Wave 2 (PARALLEL - IN PROGRESS)
 - A3 (health - depends on A2 hits), A4 (spawn - depends on player-controller)
 - B1 (lag comp - independent), B2 (bandwidth - independent), B3 (replay - independent), C1 (collider presets - independent)
 - Duration: Extend apps + infrastructure parallel
