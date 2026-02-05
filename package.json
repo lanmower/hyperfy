@@ -7,8 +7,5 @@
     "jolt-physics": "^0.29.0",
     "msgpackr": "^1.11.0",
     "ws": "^8.18.0"
-  },
-  "devDependencies": {
-    "puppeteer": "^24.37.0"
   }
 }
