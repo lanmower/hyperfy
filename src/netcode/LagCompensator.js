@@ -1,12 +1,10 @@
 export class LagCompensator {
-  constructor(config = {}) {
-    this.maxHistorySize = config.maxHistorySize || 128
-    this.hitboxLeadFactor = config.hitboxLeadFactor || 1.0
+  constructor(historyWindow = 500) {
+    this.historyWindow = historyWindow
     this.playerHistory = new Map()
-    this.rewindWindow = config.rewindWindow || 200
   }
 
-  recordPlayerState(playerId, state, tick, timestamp) {
+  recordPlayerPosition(playerId, position, rotation, velocity, tick) {
     if (!this.playerHistory.has(playerId)) {
       this.playerHistory.set(playerId, [])
     }
@@ -14,106 +12,63 @@ export class LagCompensator {
     const history = this.playerHistory.get(playerId)
     history.push({
       tick,
-      timestamp,
-      position: state.position ? [...state.position] : [0, 0, 0],
-      rotation: state.rotation ? [...state.rotation] : [0, 0, 0, 1],
-      velocity: state.velocity ? [...state.velocity] : [0, 0, 0],
-      onGround: state.onGround !== undefined ? state.onGround : true
+      timestamp: Date.now(),
+      position: [...position],
+      rotation: [...rotation],
+      velocity: [...velocity]
     })
 
-    if (history.length > this.maxHistorySize) {
+    const cutoff = Date.now() - this.historyWindow
+    while (history.length > 0 && history[0].timestamp < cutoff) {
       history.shift()
     }
   }
 
-  getPlayerStateAtTime(playerId, timestamp) {
+  getPlayerStateAtTime(playerId, millisAgo) {
     const history = this.playerHistory.get(playerId)
     if (!history || history.length === 0) return null
 
-    for (let i = history.length - 1; i >= 0; i--) {
-      if (history[i].timestamp <= timestamp) {
-        return history[i]
+    const targetTime = Date.now() - millisAgo
+    let best = null
+
+    for (const state of history) {
+      if (state.timestamp <= targetTime) {
+        best = state
+      } else {
+        break
       }
     }
 
-    return history[0]
+    return best
   }
 
-  predictTargetPosition(playerId, currentTime, networkLatency) {
-    const currentState = this.getPlayerStateAtTime(playerId, currentTime)
-    if (!currentState) return null
+  validateShot(shooterId, targetId, latencyMs) {
+    const targetState = this.getPlayerStateAtTime(targetId, latencyMs)
+    if (!targetState) return { valid: false, reason: 'no_history' }
 
-    const predictionTime = networkLatency / 1000
-    const leadDistance = this.hitboxLeadFactor * predictionTime
+    const speed = Math.sqrt(targetState.velocity[0]**2 + targetState.velocity[1]**2 + targetState.velocity[2]**2)
 
-    const predicted = {
-      position: [
-        currentState.position[0] + currentState.velocity[0] * leadDistance,
-        currentState.position[1] + currentState.velocity[1] * leadDistance,
-        currentState.position[2] + currentState.velocity[2] * leadDistance
-      ],
-      rotation: currentState.rotation,
-      velocity: currentState.velocity,
-      onGround: currentState.onGround
+    if (speed > 30) {
+      return { valid: true, reason: 'fast_moving_target', state: targetState }
     }
 
-    return predicted
+    return { valid: true, reason: 'valid_shot', state: targetState }
   }
 
-  validateHit(shooter, target, hitTime, networkLatency) {
-    const targetStateAtHit = this.getPlayerStateAtTime(target, hitTime)
-    if (!targetStateAtHit) {
-      return { valid: false, reason: 'No state history' }
-    }
-
-    const shotLatency = networkLatency / 1000
-    const timeSinceShot = (Date.now() - hitTime) / 1000
-
-    if (timeSinceShot > this.rewindWindow / 1000) {
-      return { valid: false, reason: 'Hit outside rewind window' }
-    }
-
-    return {
-      valid: true,
-      targetState: targetStateAtHit,
-      rewindTime: shotLatency
-    }
-  }
-
-  detectTeleport(playerId, newState, maxDistance = 1.0) {
-    const lastState = this.getLastState(playerId)
-    if (!lastState) return false
-
-    const dx = newState.position[0] - lastState.position[0]
-    const dy = newState.position[1] - lastState.position[1]
-    const dz = newState.position[2] - lastState.position[2]
-
-    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
-    return distance > maxDistance
-  }
-
-  detectSpeedCheat(playerId, newState, maxSpeed = 20) {
-    const velocity = newState.velocity || [0, 0, 0]
-    const speed = Math.sqrt(
-      velocity[0] * velocity[0] +
-      velocity[1] * velocity[1] +
-      velocity[2] * velocity[2]
-    )
-
-    return speed > maxSpeed
-  }
-
-  getLastState(playerId) {
+  detectTeleport(playerId, newPosition, threshold = 50) {
     const history = this.playerHistory.get(playerId)
-    if (!history || history.length === 0) return null
-    return history[history.length - 1]
+    if (!history || history.length < 2) return false
+
+    const lastPos = history[history.length - 1].position
+    const dist = Math.sqrt((newPosition[0] - lastPos[0])**2 + (newPosition[1] - lastPos[1])**2 + (newPosition[2] - lastPos[2])**2)
+
+    return dist > threshold
   }
 
-  clearPlayerHistory(playerId) {
-    this.playerHistory.delete(playerId)
-  }
-
-  clearAllHistory() {
-    this.playerHistory.clear()
+  getStats() {
+    return {
+      trackedPlayers: this.playerHistory.size,
+      totalSamples: Array.from(this.playerHistory.values()).reduce((sum, h) => sum + h.length, 0)
+    }
   }
 }
