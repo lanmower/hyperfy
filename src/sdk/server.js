@@ -169,7 +169,7 @@ export async function createServer(config = {}) {
       await new Promise((resolve, reject) => {
         if (staticDirs.length > 0) {
           httpServer = createHttpServer(createStaticHandler(staticDirs))
-          wss = new WSServer({ server: httpServer })
+          wss = new WSServer({ server: httpServer, path: '/ws' })
           httpServer.on('error', reject)
           httpServer.listen(port, () => resolve())
         } else {
