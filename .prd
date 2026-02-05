@@ -13,14 +13,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PHASE D: FULL GAME INTEGRATION (TPS on Schwust)
 
-### D2: Player Input Integration
-- [ ] Connect player input to movement controller
-  - Receive: WASD + mouse input from clients
-  - Apply: to player capsule via physics
-  - Verify: movement responds to input correctly
-  - Test: simultaneous input from multiple clients
-  - Blocks: D4
-
 ### D3: Combat Validation
 - [ ] Test shooting, hit detection, respawn flow
   - Scenario: 2 players, player A shoots player B
@@ -64,8 +56,8 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 - D1 ✓ (initialize game)
 
 ### Wave 4 (IN PROGRESS)
-- D2 (player input), D3 (combat), D4 (multi-client)
-- Remaining integration and testing
+- D2 ✓ (player input - all real components, zero mocks)
+- D3 (combat), D4 (multi-client) - remaining integration and testing
 
 ### Wave 5 (FINAL after Wave 4)
 - D5 (stress test on live game, final validation)
