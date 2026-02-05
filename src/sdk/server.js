@@ -19,6 +19,7 @@ import { EntityAppBinder } from '../apps/EntityAppBinder.js'
 import { createTickHandler } from './TickHandler.js'
 import { EventEmitter } from '../protocol/EventEmitter.js'
 import { ReloadManager } from './ReloadManager.js'
+import { createReloadHandlers } from './ReloadHandlers.js'
 
 const MIME_TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -162,61 +163,23 @@ export async function createServer(config = {}) {
     })
   }
 
-  const reloadTickHandler = async () => {
-    const { createTickHandler: refreshHandler } = await import('./TickHandler.js?' + Date.now())
-    const newHandler = refreshHandler({
-      networkState, playerManager, physicsIntegration,
-      lagCompensator, physics, appRuntime, connections
-    })
-    setTickHandler(newHandler)
-  }
-
-  const reloadPhysicsIntegration = async () => {
-    const oldColliders = new Map(physicsIntegration.playerColliders)
-    const { PhysicsIntegration: NewPhysicsIntegration } = await import('../netcode/PhysicsIntegration.js?' + Date.now())
-    const newIntegration = new NewPhysicsIntegration({ gravity: physicsIntegration.config.gravity })
-    newIntegration.playerColliders = oldColliders
-    Object.assign(physicsIntegration, newIntegration)
-  }
-
-  const reloadLagCompensator = async () => {
-    const oldHistory = new Map(lagCompensator.playerHistory)
-    const { LagCompensator: NewLagCompensator } = await import('../netcode/LagCompensator.js?' + Date.now())
-    const newLag = new NewLagCompensator(lagCompensator.historyWindow)
-    newLag.playerHistory = oldHistory
-    Object.assign(lagCompensator, newLag)
-  }
-
-  const reloadPlayerManager = async () => {
-    const oldPlayers = new Map(playerManager.players)
-    const oldInputBuffers = new Map(playerManager.inputBuffers)
-    const { PlayerManager: NewPlayerManager } = await import('../netcode/PlayerManager.js?' + Date.now())
-    const newPM = new NewPlayerManager()
-    newPM.players = oldPlayers
-    newPM.inputBuffers = oldInputBuffers
-    newPM.nextPlayerId = playerManager.nextPlayerId
-    Object.assign(playerManager, newPM)
-  }
-
-  const reloadNetworkState = async () => {
-    const oldPlayers = new Map(networkState.players)
-    const { NetworkState: NewNetworkState } = await import('../netcode/NetworkState.js?' + Date.now())
-    const newNS = new NewNetworkState()
-    newNS.players = oldPlayers
-    newNS.tick = networkState.tick
-    newNS.timestamp = networkState.timestamp
-    Object.assign(networkState, newNS)
-  }
+  const reloadHandlers = createReloadHandlers({
+    networkState, playerManager, physicsIntegration,
+    lagCompensator, physics, appRuntime, connections
+  })
 
   const setupSDKWatchers = () => {
-    const watcherConfig = [
-      { id: 'tick-handler', path: './src/sdk/TickHandler.js', reload: reloadTickHandler },
-      { id: 'physics-integration', path: './src/netcode/PhysicsIntegration.js', reload: reloadPhysicsIntegration },
-      { id: 'lag-compensator', path: './src/netcode/LagCompensator.js', reload: reloadLagCompensator },
-      { id: 'player-manager', path: './src/netcode/PlayerManager.js', reload: reloadPlayerManager },
-      { id: 'network-state', path: './src/netcode/NetworkState.js', reload: reloadNetworkState }
+    const config = [
+      { id: 'tick-handler', path: './src/sdk/TickHandler.js', reload: async () => {
+        const handler = await reloadHandlers.reloadTickHandler()
+        setTickHandler(handler)
+      }},
+      { id: 'physics-integration', path: './src/netcode/PhysicsIntegration.js', reload: reloadHandlers.reloadPhysicsIntegration },
+      { id: 'lag-compensator', path: './src/netcode/LagCompensator.js', reload: reloadHandlers.reloadLagCompensator },
+      { id: 'player-manager', path: './src/netcode/PlayerManager.js', reload: reloadHandlers.reloadPlayerManager },
+      { id: 'network-state', path: './src/netcode/NetworkState.js', reload: reloadHandlers.reloadNetworkState }
     ]
-    for (const { id, path, reload } of watcherConfig) {
+    for (const { id, path, reload } of config) {
       reloadManager.addWatcher(id, path, reload)
     }
   }
@@ -251,7 +214,10 @@ export async function createServer(config = {}) {
     getPlayerCount() { return playerManager.getPlayerCount() },
     getEntityCount() { return binder.getEntityCount() },
     getSnapshot() { return appRuntime.getSnapshot() },
-    reloadTickHandler,
+    reloadTickHandler: async () => {
+      const handler = await reloadHandlers.reloadTickHandler()
+      setTickHandler(handler)
+    },
     getReloadStats() { return reloadManager.getStats() },
     getAllStats() {
       return { connections: connections.getAllStats(), inspector: inspector.getAllClients(connections),
