@@ -1,0 +1,4 @@
+# Keep directory tracked but ignore hook outputs
+*.log
+*.tmp
+.cache
