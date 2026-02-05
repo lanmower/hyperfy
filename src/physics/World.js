@@ -1,5 +1,6 @@
 import initJolt from 'jolt-physics/wasm-compat'
 import { extractMeshFromGLB } from './GLBLoader.js'
+import { Octree } from './Octree.js'
 
 const LAYER_STATIC = 0
 const LAYER_DYNAMIC = 1
@@ -16,6 +17,8 @@ export class PhysicsWorld {
     this.bodyInterface = null
     this.bodies = new Map()
     this.bodyMeta = new Map()
+    this.octree = new Octree(config.octreeBounds || [-256, -256, -256, 256, 256, 256])
+    this.enableOctree = config.enableOctree !== false
   }
 
   async init() {
@@ -55,6 +58,10 @@ export class PhysicsWorld {
     const id = body.GetID().GetIndexAndSequenceNumber()
     this.bodies.set(id, body)
     this.bodyMeta.set(id, opts.meta || {})
+    if (this.enableOctree) {
+      const radius = opts.meta?.shape === 'capsule' ? (opts.meta?.radius || 0.4) : 0
+      this.octree.insert(id, position[0], position[1], position[2], radius)
+    }
     return id
   }
 
@@ -143,6 +150,23 @@ export class PhysicsWorld {
     this.bodyInterface.DestroyBody(b.GetID())
     this.bodies.delete(bodyId)
     this.bodyMeta.delete(bodyId)
+    if (this.enableOctree) this.octree.remove(bodyId)
+  }
+
+  queryBodiesInRadius(center, radius) {
+    if (!this.enableOctree) return Array.from(this.bodies.keys())
+    const items = this.octree.queryRadius(center, radius)
+    return items.map(item => item.id)
+  }
+
+  queryBodiesInBounds(bounds) {
+    if (!this.enableOctree) return Array.from(this.bodies.keys())
+    const items = this.octree.query(bounds)
+    return items.map(item => item.id)
+  }
+
+  getOctreeStats() {
+    return this.octree.getStats()
   }
 
   destroy() {
