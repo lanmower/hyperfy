@@ -54,20 +54,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
   - Test: multiple players, concurrent kills
   - Blocks: (independent)
 
-### BONUS: Physics & Collision Verification
-- [x] Verify physics engine working correctly with schwust.glb
-  - Created test-physics-verification.js with 6 comprehensive tests
-  - All tests passing: collision, gravity, raycast, performance
-  - Known issue documented: Trimesh instability with 5+ bodies (workaround provided)
-  - Verified: capsules collide with geometry, physics accurate, performance excellent
-
-### BONUS: Auto-Scaling Collider System
-- [x] Implement automatic collider fitting to mesh bounds
-  - Created ColliderFitter.js: analyzes mesh and recommends optimal colliders
-  - Integrated into AppContext: ctx.collider.fitToModel() for all apps
-  - Created CliDebugger.js: ultra-slick CLI output for debugging
-  - All under 200 lines per file, maximum implicit behavior
-
 ---
 
 ## PHASE B: INFRASTRUCTURE (Reliability & Validation)
