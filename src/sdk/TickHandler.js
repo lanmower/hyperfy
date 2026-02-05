@@ -37,7 +37,7 @@ export function createTickHandler(deps) {
       st.position = updated.position
       st.velocity = updated.velocity
       st.onGround = updated.onGround
-      lagCompensator.recordPlayerState(player.id, st, tick, Date.now())
+      lagCompensator.recordPlayerPosition(player.id, st.position, st.rotation, st.velocity, tick)
       networkState.updatePlayer(player.id, {
         position: st.position, rotation: st.rotation,
         velocity: st.velocity, onGround: st.onGround,
