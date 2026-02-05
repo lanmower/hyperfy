@@ -1,0 +1,275 @@
+# .prd - Krunker-Style TPS Game: Full Netcode & Physics Stack
+
+## GOAL
+Build a playable TPS game on schwust.glb map with complete netcode, physics, and game patterns. No graphics - pure physics/networking validation via CLI. Players spawn, move, shoot, respawn with full lag compensation and replay system.
+
+---
+
+## PHASE A: GAME PATTERN APPS (Game Logic Foundation)
+
+### A1: Player Movement Controller App
+- [ ] Create apps/player-controller.js
+  - Input: forward/backward/strafe/jump (from network input)
+  - Physics: capsule collision with map, gravity, velocity control
+  - Output: position, rotation, velocity, onGround, inputSeq
+  - Verify: player can walk on schwust.glb without clipping
+  - Test: movement in all directions, jumping, landing
+  - Blocks: A4 (weapon needs valid player position)
+
+### A2: Weapon/Projectile System App
+- [ ] Create apps/weapon-hitscan.js (instant raycast hit)
+  - Physics: raycast from player head, collision detection
+  - Network: send hit event to server with position/target
+  - Hit validation: server-side lag compensation check
+  - Output: hit event with shooter/target/impact point
+  - Verify: raycast hits enemies correctly
+  - Test: shooting through walls, at moving targets
+  - Blocks: A3 (damage needs valid hits)
+
+### A3: Player Health & Damage App
+- [ ] Extend player-controller.js with health tracking
+  - Health: 100 HP default
+  - Damage: 25 HP per hit (projectile/hitscan)
+  - Death: health <= 0 triggers respawn
+  - Verify: players die after enough hits
+  - Test: multiple hits, respawn system
+  - Blocks: A4
+
+### A4: Spawn & Respawn Manager App
+- [ ] Create apps/spawn-manager.js
+  - Spawn points: 4 locations on schwust.glb
+  - Respawn logic: random spawn point after death
+  - Respawn time: 3 seconds countdown
+  - Physics: reset position, velocity, health
+  - Verify: players respawn correctly
+  - Test: multiple respawns, spawn point distribution
+  - Blocks: B1 (lag comp needs valid spawns)
+
+### A5: Score & Statistics Tracker App
+- [ ] Create apps/score-tracker.js
+  - Track: kills, deaths, damage dealt, shots fired
+  - Sync: broadcast score updates every 1 second
+  - Leaderboard: top 5 players by kills
+  - Verify: scores update correctly
+  - Test: multiple players, concurrent kills
+  - Blocks: (independent)
+
+---
+
+## PHASE B: INFRASTRUCTURE (Reliability & Validation)
+
+### B1: Lag Compensation System
+- [ ] Extend LagCompensator with movement validation
+  - Track: player position history (last 500ms)
+  - Validate: shots against historical positions
+  - Teleport detection: flag suspicious position jumps
+  - Verify: hits accurate within network latency
+  - Test: shooting at 50ms/100ms/200ms latency
+  - Blocks: B3 (replay needs validated data)
+
+### B2: Bandwidth Profiling & Optimization
+- [ ] Create monitoring in SnapshotEncoder
+  - Measure: bytes per player per second
+  - Log: position quantization loss
+  - Optimize: delta encoding for unchanged state
+  - Verify: < 10 KB/s per player at 128 TPS
+  - Test: 10 players, measure total bandwidth
+  - Blocks: (independent)
+
+### B3: Replay Recording System
+- [ ] Create replay/RecordingEngine.js
+  - Record: all network snapshots, inputs, collisions
+  - Store: in-memory circular buffer (60 second window)
+  - Serialize: to file on request
+  - Playback: replay scenario with timestamp
+  - Verify: replay matches live gameplay
+  - Test: record 5 kills, replay, validate accuracy
+  - Blocks: (independent)
+
+### B4: Stress Test Suite (100+ Entities)
+- [ ] Create test/stress-test.js
+  - Spawn: 100 physics objects on map
+  - Measure: server tick time, network bandwidth
+  - Verify: maintains 128 TPS with 100 entities + 10 clients
+  - Test: collision handling with many bodies
+  - Blocks: (independent)
+
+---
+
+## PHASE C: CONTENT & ASSETS (Game Configuration)
+
+### C1: Collider Preset System
+- [ ] Create config/colliders.js
+  - Capsule: radius 0.4, height 1.8 (players)
+  - Box: half-extents configurable (crates, obstacles)
+  - Trimesh: extracted from GLB (schwust.glb)
+  - Sphere: radius configurable (grenades)
+  - Allow: runtime selection per entity
+  - Verify: all preset types work correctly
+  - Blocks: C2, C3
+
+### C2: Map Configuration System
+- [ ] Create config/maps.js
+  - schwust.glb: load trimesh, define spawn points, boundaries
+  - Spawn points: array of [x, y, z] coordinates (4 spawns)
+  - Map bounds: enforce boundary checks
+  - Verify: schwust.glb loads and players can walk
+  - Test: spawn points accessible, no clipping
+  - Blocks: C3
+
+### C3: Game Mode Configuration
+- [ ] Create config/game-modes.js
+  - FFA (Free For All): no teams, pure kills
+  - TDM (Team Deathmatch): 2 teams, respawn enabled
+  - Settings: respawn time, health, damage values
+  - Verify: configuration applies correctly
+  - Test: FFA and TDM mode switching
+  - Blocks: D1 (full game needs game mode)
+
+---
+
+## PHASE D: FULL GAME INTEGRATION (TPS on Schwust)
+
+### D1: Initialize TPS Game Instance
+- [ ] Create apps/tps-game.js (orchestrator app)
+  - Load: schwust.glb as static collision mesh
+  - Spawn: 10 test players at spawn points
+  - Load: all game pattern apps (movement, weapon, health, spawn, score)
+  - Configure: FFA mode, 3 second respawn
+  - Verify: game starts without errors
+  - Blocks: D2, D3, D4
+
+### D2: Player Input Integration
+- [ ] Connect player input to movement controller
+  - Receive: WASD + mouse input from clients
+  - Apply: to player capsule via physics
+  - Verify: movement responds to input correctly
+  - Test: simultaneous input from multiple clients
+  - Blocks: D4
+
+### D3: Combat Validation
+- [ ] Test shooting, hit detection, respawn flow
+  - Scenario: 2 players, player A shoots player B
+  - Verify: B takes damage, dies, respawns
+  - Test: multiple shots, lag compensation accuracy
+  - Test: respawn timer visible to client
+  - Blocks: D4
+
+### D4: Multi-Client Game Session
+- [ ] Full integration test with 10 clients
+  - Scenario: 10 players on schwust.glb, FFA deathmatch
+  - Duration: 5 minute match
+  - Measure: server stability, bandwidth, accuracy
+  - Verify: all players can move, shoot, respawn
+  - Test: scoring works, leaderboard updates
+  - Verify: replay recording captures match
+  - Blocks: D5
+
+### D5: Stress Test Validation
+- [ ] Run stress test suite on live game
+  - Add 100 physics objects to map
+  - Run game with 10 clients + 100 objects
+  - Measure: tick time, bandwidth, accuracy
+  - Verify: 128 TPS maintained
+  - Target: < 50ms latency, < 20 KB/s per player
+  - Blocks: (final validation)
+
+---
+
+## PARALLEL EXECUTION WAVES
+
+### Wave 1 (PARALLEL - Independent Game Apps)
+- A1, A2, A5 (movement, weapon, score - no interdependencies initially)
+- Duration: Implement all 3 apps
+- Blocks: A3, A4
+
+### Wave 2 (PARALLEL after Wave 1)
+- A3 (health - depends on A2 hits), A4 (spawn - depends on player-controller)
+- B1 (lag comp - independent), B2 (bandwidth - independent), B3 (replay - independent), C1 (collider presets - independent)
+- Duration: Extend apps + infrastructure parallel
+- Blocks: B4, D1
+
+### Wave 3 (PARALLEL after Wave 2)
+- C2 (map config), C3 (game modes)
+- B4 (stress test - independent)
+- D1 (initialize game - depends on all apps)
+- Duration: Config + first stress test
+- Blocks: D2, D3, D4
+
+### Wave 4 (SEQUENTIAL after Wave 3)
+- D2, D3, D4 (player input, combat validation, multi-client)
+- Duration: Integrated testing, validation
+- Blocks: D5
+
+### Wave 5 (FINAL after Wave 4)
+- D5 (stress test on live game, final validation)
+- Duration: Performance validation, bug fixes
+- Blocks: (PROJECT COMPLETE)
+
+---
+
+## SUCCESS CRITERIA
+
+### Game Playability
+- ✓ 10 players can spawn on schwust.glb simultaneously
+- ✓ Players move smoothly (128 TPS maintained)
+- ✓ Shooting works with lag compensation
+- ✓ Deaths trigger proper respawn (3 sec timer)
+- ✓ Score updates visible to all players
+- ✓ Game stable for 5+ minute sessions
+
+### Network Reliability
+- ✓ < 10 KB/s bandwidth per player (8 clients = 80 KB/s total)
+- ✓ < 50ms network latency from client action to server response
+- ✓ Lag compensation accurate within ±100ms
+- ✓ No desync issues over 5 minute session
+- ✓ Replay recording matches live gameplay
+
+### Physics Accuracy
+- ✓ Player collision with schwust.glb trimesh works
+- ✓ No clipping through geometry
+- ✓ Jumping and landing accurate
+- ✓ 100 physics objects don't break simulation
+- ✓ 128 TPS maintained even under load
+
+### Code Quality
+- ✓ All files under 200 lines
+- ✓ No duplicate code
+- ✓ No comments (self-documenting)
+- ✓ No mocks/fakes (real physics, real networking)
+- ✓ Ground truth only
+
+### Testing & Validation
+- ✓ All game patterns tested with real physics
+- ✓ 10-client session stress tested
+- ✓ Replay system validates data integrity
+- ✓ Witnessed execution of full 5-minute game
+- ✓ Performance metrics captured and verified
+
+---
+
+## UNKNOWNS & ASSUMPTIONS
+
+1. Player movement speed (6 m/s assumed)
+2. Weapon damage values (25 HP assumed)
+3. Respawn timer (3 seconds assumed)
+4. Spawn point positions on schwust (4 spawns assumed)
+5. Acceptable latency tolerance (±100ms assumed)
+6. Bandwidth target (< 10 KB/s per player assumed)
+
+---
+
+## GATE CONDITIONS
+
+Execute directly in plugin:gm:dev. All must be true before completion:
+- Every game pattern tested independently
+- Multi-client integration tested
+- 100-entity stress test passed
+- 5-minute live game completed
+- Replay system validated
+- All gate conditions from GM philosophy met
+- Witnessed execution of full game
+- Performance metrics within targets
+- No crashes or hangs
+- Bandwidth within budget
+- Physics accurate (no clipping)
