@@ -13,15 +13,6 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 
 ## PHASE D: FULL GAME INTEGRATION (TPS on Schwust)
 
-### D1: Initialize TPS Game Instance
-- [ ] Create apps/tps-game.js (orchestrator app)
-  - Load: schwust.glb as static collision mesh
-  - Spawn: 10 test players at spawn points
-  - Load: all game pattern apps (movement, weapon, health, spawn, score)
-  - Configure: FFA mode, 3 second respawn
-  - Verify: game starts without errors
-  - Blocks: D2, D3, D4
-
 ### D2: Player Input Integration
 - [ ] Connect player input to movement controller
   - Receive: WASD + mouse input from clients
@@ -69,17 +60,12 @@ Build a playable TPS game on schwust.glb map with complete netcode, physics, and
 - B1 ✓, B2 ✓, B3 ✓, B4 ✓ (lag comp, bandwidth, replay, stress test)
 - C1 ✓, C2 ✓, C3 ✓ (colliders, maps, game modes)
 
-### Wave 3 (PARALLEL after Wave 2)
-- C2 (map config), C3 (game modes)
-- B4 (stress test - independent)
-- D1 (initialize game - depends on all apps)
-- Duration: Config + first stress test
-- Blocks: D2, D3, D4
+### Wave 3 (COMPLETE ✓)
+- D1 ✓ (initialize game)
 
-### Wave 4 (SEQUENTIAL after Wave 3)
-- D2, D3, D4 (player input, combat validation, multi-client)
-- Duration: Integrated testing, validation
-- Blocks: D5
+### Wave 4 (IN PROGRESS)
+- D2 (player input), D3 (combat), D4 (multi-client)
+- Remaining integration and testing
 
 ### Wave 5 (FINAL after Wave 4)
 - D5 (stress test on live game, final validation)
