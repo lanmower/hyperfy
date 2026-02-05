@@ -47,3 +47,16 @@ window.addEventListener('error', (e) => {
 window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled promise rejection:', e.reason)
 })
+
+// Debug hooks for REPL access
+window.gameState = { client, canvas, ctx, render }
+window.debug = {
+  client,
+  canvas,
+  render,
+  getConnectedPlayers: () => client?.state?.players || [],
+  getCanvasSize: () => ({ width: canvas.width, height: canvas.height }),
+  isConnected: () => client?.connected || false,
+  getServerUrl: () => client?.serverUrl,
+  sendManualRender: (state) => render(state)
+}
