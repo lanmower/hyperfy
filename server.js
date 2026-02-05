@@ -3,8 +3,9 @@ import { fileURLToPath } from 'node:url'
 import { createServer } from './src/sdk/server.js'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
-const PORT = parseInt(process.env.PORT || '3000', 10)
+const PORT = parseInt(process.env.PORT || '8080', 10)
 
+console.log('[init] Creating server...')
 const server = await createServer({
   port: PORT,
   tickRate: 128,
@@ -15,11 +16,18 @@ const server = await createServer({
     { prefix: '/', dir: join(ROOT, 'client') }
   ]
 })
+console.log('[init] Server created, adding physics trimesh...')
 
+console.log('[init] Adding static trimesh...')
 server.physics.addStaticTrimesh(join(ROOT, 'world', 'schwust.glb'), 0)
+console.log('[init] Static trimesh added, starting server...')
 
 server.on('playerJoin', ({ id }) => console.log(`[+] player ${id}`))
 server.on('playerLeave', ({ id }) => console.log(`[-] player ${id}`))
 
+console.log('[init] Calling server.start()...')
 const { port, tickRate } = await server.start()
 console.log(`[server] http://localhost:${port} @ ${tickRate} TPS`)
+
+// Keep process alive
+setInterval(() => {}, 1000)
