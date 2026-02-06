@@ -1,187 +1,204 @@
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { PhysicsNetworkClient, InputHandler } from '/src/index.client.js'
 
-const canvas = document.getElementById('game')
-const ctx = canvas.getContext('2d')
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x87ceeb)
+scene.fog = new THREE.Fog(0x87ceeb, 80, 200)
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
-}
-resizeCanvas()
-window.addEventListener('resize', resizeCanvas)
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500)
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.setSize(window.innerWidth, window.innerHeight)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+document.body.appendChild(renderer.domElement)
 
+scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+const sun = new THREE.DirectionalLight(0xffffff, 1.0)
+sun.position.set(30, 50, 20)
+sun.castShadow = true
+sun.shadow.mapSize.set(2048, 2048)
+sun.shadow.camera.near = 0.5
+sun.shadow.camera.far = 200
+sun.shadow.camera.left = -80
+sun.shadow.camera.right = 80
+sun.shadow.camera.top = 80
+sun.shadow.camera.bottom = -80
+scene.add(sun)
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({ color: 0x444444 })
+)
+ground.rotation.x = -Math.PI / 2
+ground.receiveShadow = true
+scene.add(ground)
+
+const gltfLoader = new GLTFLoader()
+const playerMeshes = new Map()
+const entityMeshes = new Map()
 const inputHandler = new InputHandler()
+
+const hudInfo = document.getElementById('info')
+const healthFill = document.getElementById('health-fill')
+const healthText = document.getElementById('health-text')
+const clickPrompt = document.getElementById('click-prompt')
+
+let yaw = 0, pitch = 0
+let lastShootTime = 0
+const camTarget = new THREE.Vector3()
+
+function createPlayerMesh(id, isLocal) {
+  const group = new THREE.Group()
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.4, 1.0, 4, 8),
+    new THREE.MeshStandardMaterial({ color: isLocal ? 0x00ff88 : 0xff4444 })
+  )
+  body.position.y = 0.9
+  body.castShadow = true
+  group.add(body)
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 8, 6),
+    new THREE.MeshStandardMaterial({ color: isLocal ? 0x00cc66 : 0xcc3333 })
+  )
+  head.position.y = 1.7
+  head.castShadow = true
+  group.add(head)
+  scene.add(group)
+  return group
+}
+
+function removePlayerMesh(id) {
+  const mesh = playerMeshes.get(id)
+  if (!mesh) return
+  scene.remove(mesh)
+  mesh.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose() })
+  playerMeshes.delete(id)
+}
+
+function loadEntityModel(entityId, entityState) {
+  if (!entityState.model) return
+  const url = entityState.model.startsWith('./') ? '/' + entityState.model.slice(2) : entityState.model
+  gltfLoader.load(url, (gltf) => {
+    const model = gltf.scene
+    model.position.set(...entityState.position)
+    if (entityState.rotation) {
+      model.quaternion.set(entityState.rotation[0], entityState.rotation[1], entityState.rotation[2], entityState.rotation[3])
+    }
+    model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true } })
+    scene.add(model)
+    entityMeshes.set(entityId, model)
+    scene.remove(ground)
+  }, undefined, (err) => console.error('[gltf]', entityId, err))
+}
 
 const client = new PhysicsNetworkClient({
   serverUrl: `ws://${window.location.host}/ws`,
-  onStateUpdate: render,
+  onStateUpdate: updateState,
+  onPlayerJoined: (id) => {
+    if (!playerMeshes.has(id)) playerMeshes.set(id, createPlayerMesh(id, id === client.playerId))
+  },
+  onPlayerLeft: (id) => removePlayerMesh(id),
+  onEntityAdded: (id, state) => loadEntityModel(id, state),
   debug: false
 })
 
-let inputLoopId = null
-let yaw = 0
-let pitch = 0
-let lastShootTime = 0
-const shootCooldown = 100
-
-canvas.addEventListener('click', () => {
-  if (!document.pointerLockElement) canvas.requestPointerLock()
-})
-
-document.addEventListener('pointerlockchange', () => {
-  if (document.pointerLockElement === canvas) {
-    document.addEventListener('mousemove', onMouseMove)
-  } else {
-    document.removeEventListener('mousemove', onMouseMove)
+function updateState(state) {
+  for (const p of state.players) {
+    if (!playerMeshes.has(p.id)) playerMeshes.set(p.id, createPlayerMesh(p.id, p.id === client.playerId))
+    const mesh = playerMeshes.get(p.id)
+    mesh.position.set(p.position[0], p.position[1] - 1.3, p.position[2])
+    if (p.rotation) mesh.quaternion.set(p.rotation[0], p.rotation[1], p.rotation[2], p.rotation[3])
   }
-})
-
-function onMouseMove(e) {
-  yaw -= e.movementX * 0.002
-  pitch -= e.movementY * 0.002
-  pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch))
+  const local = state.players.find(p => p.id === client.playerId)
+  if (local) {
+    const hp = local.health ?? 100
+    healthFill.style.width = hp + '%'
+    healthFill.style.backgroundColor = hp > 60 ? '#0f0' : hp > 30 ? '#ff0' : '#f00'
+    healthText.textContent = hp
+  }
+  hudInfo.textContent = `Players: ${state.players.length} | Tick: ${client.currentTick}`
 }
 
 function getAimDirection() {
-  const cy = Math.cos(yaw), sy = Math.sin(yaw)
-  const cp = Math.cos(pitch), sp = Math.sin(pitch)
-  return [sy * cp, sp, cy * cp]
+  const sy = Math.sin(yaw), cy = Math.cos(yaw)
+  const sp = Math.sin(pitch), cp = Math.cos(pitch)
+  return [-sy * cp, sp, cy * cp]
 }
 
+let inputLoopId = null
 function startInputLoop() {
   if (inputLoopId) return
-  const sendRate = 1000 / 60
   inputLoopId = setInterval(() => {
     if (!client.connected) return
     const input = inputHandler.getInput()
     input.yaw = yaw
     input.pitch = pitch
     client.sendInput(input)
-
-    if (input.shoot && Date.now() - lastShootTime > shootCooldown) {
+    if (input.shoot && Date.now() - lastShootTime > 100) {
       lastShootTime = Date.now()
-      const localPlayer = client.state?.players?.find(p => p.id === client.playerId)
-      if (localPlayer) {
-        const pos = localPlayer.position
-        const origin = [pos[0], pos[1] + 1.5, pos[2]]
-        const direction = getAimDirection()
-        client.sendFire({ origin, direction })
+      const local = client.state?.players?.find(p => p.id === client.playerId)
+      if (local) {
+        const pos = local.position
+        client.sendFire({ origin: [pos[0], pos[1] + 0.5, pos[2]], direction: getAimDirection() })
+        showMuzzleFlash(pos)
       }
     }
-  }, sendRate)
+  }, 1000 / 60)
 }
 
-function stopInputLoop() {
-  if (inputLoopId) {
-    clearInterval(inputLoopId)
-    inputLoopId = null
-  }
+function showMuzzleFlash(pos) {
+  const flash = new THREE.PointLight(0xffaa00, 3, 8)
+  flash.position.set(pos[0], pos[1] + 0.5, pos[2])
+  scene.add(flash)
+  setTimeout(() => scene.remove(flash), 60)
 }
 
-function render(state) {
-  ctx.fillStyle = '#111'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+renderer.domElement.addEventListener('click', () => {
+  if (!document.pointerLockElement) renderer.domElement.requestPointerLock()
+})
 
-  ctx.fillStyle = '#fff'
-  ctx.fillRect(canvas.width / 2 - 2, canvas.height / 2 - 2, 4, 4)
+document.addEventListener('pointerlockchange', () => {
+  const locked = document.pointerLockElement === renderer.domElement
+  clickPrompt.style.display = locked ? 'none' : 'block'
+  if (locked) document.addEventListener('mousemove', onMouseMove)
+  else document.removeEventListener('mousemove', onMouseMove)
+})
 
-  ctx.fillStyle = '#0f0'
-  ctx.font = '14px monospace'
-  let y = 20
-  ctx.fillText(`Connected: ${client.connected}`, 10, y); y += 18
-  ctx.fillText(`Player ID: ${client.playerId || 'none'}`, 10, y); y += 18
-  ctx.fillText(`Players: ${state?.players?.length || 0}`, 10, y); y += 18
-  ctx.fillText(`Entities: ${state?.entities?.length || 0}`, 10, y); y += 25
-
-  const input = inputHandler.getInput()
-  ctx.fillStyle = '#ff0'
-  ctx.fillText('--- Input ---', 10, y); y += 18
-  ctx.fillStyle = '#aaa'
-  ctx.fillText(`W: ${input.forward} A: ${input.left} S: ${input.backward} D: ${input.right}`, 10, y); y += 18
-  ctx.fillText(`Jump: ${input.jump} Shoot: ${input.shoot}`, 10, y); y += 25
-
-  if (state?.players?.length > 0) {
-    ctx.fillStyle = '#0ff'
-    ctx.fillText('--- Players ---', 10, y); y += 18
-    for (const p of state.players) {
-      const isLocal = p.id === client.playerId
-      ctx.fillStyle = isLocal ? '#0f0' : '#888'
-      const pos = p.position || [0, 0, 0]
-      const vel = p.velocity || [0, 0, 0]
-      ctx.fillText(`${isLocal ? '>' : ' '} P${p.id}: pos[${pos[0].toFixed(1)}, ${pos[1].toFixed(1)}, ${pos[2].toFixed(1)}]`, 10, y); y += 16
-      ctx.fillText(`    vel[${vel[0].toFixed(1)}, ${vel[1].toFixed(1)}, ${vel[2].toFixed(1)}] hp:${p.health || 100} grnd:${p.onGround}`, 10, y); y += 18
-    }
-  }
-
-  y += 10
-  if (state?.entities?.length > 0) {
-    ctx.fillStyle = '#ff0'
-    ctx.fillText('--- Entities ---', 10, y); y += 18
-    for (const e of state.entities) {
-      ctx.fillStyle = '#888'
-      ctx.fillText(`${e.id}: ${e.model?.split('/').pop() || 'no model'}`, 10, y); y += 16
-    }
-  }
-
-  renderMinimap(state)
+function onMouseMove(e) {
+  yaw -= e.movementX * 0.002
+  pitch -= e.movementY * 0.002
+  pitch = Math.max(-1.4, Math.min(1.4, pitch))
 }
 
-function renderMinimap(state) {
-  const mapSize = 150
-  const mapX = canvas.width - mapSize - 20
-  const mapY = 20
-  const scale = 2
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
+})
 
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-  ctx.fillRect(mapX, mapY, mapSize, mapSize)
-  ctx.strokeStyle = '#444'
-  ctx.strokeRect(mapX, mapY, mapSize, mapSize)
-
-  const centerX = mapX + mapSize / 2
-  const centerY = mapY + mapSize / 2
-
-  if (state?.players) {
-    for (const p of state.players) {
-      const pos = p.position || [0, 0, 0]
-      const px = centerX + pos[0] * scale
-      const py = centerY - pos[2] * scale
-      const isLocal = p.id === client.playerId
-      ctx.fillStyle = isLocal ? '#0f0' : '#f00'
-      ctx.beginPath()
-      ctx.arc(px, py, isLocal ? 5 : 4, 0, Math.PI * 2)
-      ctx.fill()
-    }
+function animate() {
+  requestAnimationFrame(animate)
+  const local = client.state?.players?.find(p => p.id === client.playerId)
+  if (local) {
+    camTarget.set(local.position[0], local.position[1], local.position[2])
+    const sy = Math.sin(yaw), cy = Math.cos(yaw)
+    const cp = Math.cos(pitch)
+    const dist = 4
+    camera.position.set(
+      camTarget.x - sy * cp * dist,
+      camTarget.y + Math.sin(-pitch) * dist + 1,
+      camTarget.z - cy * cp * dist
+    )
+    camera.lookAt(camTarget)
   }
+  renderer.render(scene, camera)
 }
+animate()
 
 client.connect()
-  .then(() => {
-    console.log('Connected to server')
-    startInputLoop()
-  })
+  .then(() => { console.log('Connected'); startInputLoop() })
   .catch(err => console.error('Connection failed:', err))
 
-// Log errors
-window.addEventListener('error', (e) => {
-  console.error('Window error:', e.error)
-})
-
-window.addEventListener('unhandledrejection', (e) => {
-  console.error('Unhandled promise rejection:', e.reason)
-})
-
-window.gameState = { client, canvas, ctx, render, inputHandler }
-window.debug = {
-  client,
-  canvas,
-  render,
-  inputHandler,
-  getConnectedPlayers: () => client?.state?.players || [],
-  getEntities: () => client?.state?.entities || [],
-  getCanvasSize: () => ({ width: canvas.width, height: canvas.height }),
-  isConnected: () => client?.connected || false,
-  getServerUrl: () => client?.serverUrl,
-  sendManualRender: (state) => render(state),
-  getInput: () => inputHandler.getInput(),
-  sendInput: (input) => client.sendInput(input)
-}
+window.debug = { scene, camera, renderer, client, playerMeshes, entityMeshes, inputHandler }
