@@ -1,4 +1,4 @@
-import { pack, unpack } from 'msgpackr'
+import { pack, unpack } from './msgpack.js'
 
 function toUint8(input) {
   if (input instanceof Uint8Array) return input

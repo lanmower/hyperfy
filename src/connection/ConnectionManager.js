@@ -1,4 +1,4 @@
-import { pack, unpack } from 'msgpackr'
+import { pack, unpack } from '../protocol/msgpack.js'
 import { EventEmitter } from '../protocol/EventEmitter.js'
 
 export class ConnectionManager extends EventEmitter {
