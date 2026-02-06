@@ -7,11 +7,12 @@ export class PlayerManager {
 
   addPlayer(socket, initialState = {}) {
     const playerId = this.nextPlayerId++
+    const pos = initialState.position || [0, 0, 0]
     const player = {
       id: playerId,
       socket,
       state: {
-        position: initialState.position || [0, 0, 0],
+        position: [...pos],
         rotation: initialState.rotation || [0, 0, 0, 1],
         velocity: initialState.velocity || [0, 0, 0],
         angularVelocity: initialState.angularVelocity || [0, 0, 0],

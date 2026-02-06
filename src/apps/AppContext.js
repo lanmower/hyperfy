@@ -37,6 +37,7 @@ export class AppContext {
 
   get physics() {
     const ent = this._entity
+    const runtime = this._runtime
     return {
       setStatic: (v) => { ent.bodyType = v ? 'static' : ent.bodyType },
       setDynamic: (v) => { ent.bodyType = v ? 'dynamic' : ent.bodyType },
@@ -46,7 +47,13 @@ export class AppContext {
       addSphereCollider: (r) => { ent.collider = { type: 'sphere', radius: r } },
       addCapsuleCollider: (r, h) => { ent.collider = { type: 'capsule', radius: r, height: h } },
       addMeshCollider: (m) => { ent.collider = { type: 'mesh', mesh: m } },
-      addTrimeshCollider: () => { ent.collider = { type: 'trimesh', model: ent.model } },
+      addTrimeshCollider: () => {
+        ent.collider = { type: 'trimesh', model: ent.model }
+        if (runtime._physics && ent.model) {
+          const bodyId = runtime._physics.addStaticTrimesh(ent.model, 0)
+          ent._physicsBodyId = bodyId
+        }
+      },
       addForce: (f) => {
         const mass = ent.mass || 1
         ent.velocity[0] += f[0] / mass
@@ -74,7 +81,8 @@ export class AppContext {
       getAll: () => runtime.getPlayers(),
       getNearest: (pos, r) => runtime.getNearestPlayer(pos, r),
       send: (pid, msg) => runtime.sendToPlayer(pid, msg),
-      broadcast: (msg) => runtime.broadcastToPlayers(msg)
+      broadcast: (msg) => runtime.broadcastToPlayers(msg),
+      setPosition: (pid, pos) => runtime.setPlayerPosition(pid, pos)
     }
   }
 

@@ -12,6 +12,7 @@ export class AppRuntime {
     this._players = new Map()
     this._playerManager = config.playerManager || null
     this._physics = config.physics || null
+    this._physicsIntegration = config.physicsIntegration || null
     this._nextEntityId = 1
     this._appDefs = new Map()
   }
@@ -141,6 +142,14 @@ export class AppRuntime {
 
   sendToPlayer(id, msg) {
     if (this._playerManager) this._playerManager.sendToPlayer(id, msg)
+  }
+
+  setPlayerPosition(id, position) {
+    if (this._physicsIntegration) this._physicsIntegration.setPlayerPosition(id, position)
+    if (this._playerManager) {
+      const p = this._playerManager.getPlayer(id)
+      if (p) p.state.position = [...position]
+    }
   }
 
   hotReload(appName, newDef) {
