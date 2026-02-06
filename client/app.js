@@ -17,21 +17,33 @@ const client = new PhysicsNetworkClient({
   onStateUpdate: render
 })
 
-// Simple render function
 function render(state) {
-  // Clear canvas
   ctx.fillStyle = '#222'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  // Draw center point
   ctx.fillStyle = '#fff'
   ctx.fillRect(canvas.width / 2 - 2, canvas.height / 2 - 2, 4, 4)
 
-  // Draw debug info
   ctx.fillStyle = '#0f0'
   ctx.font = '12px monospace'
   ctx.fillText(`Connected: ${client.connected}`, 10, 20)
   ctx.fillText(`Players: ${state?.players?.length || 0}`, 10, 35)
+  ctx.fillText(`Entities: ${state?.entities?.length || 0}`, 10, 50)
+
+  if (state?.entities) {
+    let y = 80
+    ctx.fillStyle = '#ff0'
+    ctx.fillText('--- Entities ---', 10, y)
+    y += 15
+    for (const entity of state.entities) {
+      ctx.fillStyle = '#0ff'
+      ctx.fillText(`${entity.id}: ${entity.model}`, 10, y)
+      y += 15
+      ctx.fillStyle = '#888'
+      ctx.fillText(`  pos: [${entity.position.map(v => v.toFixed(1)).join(', ')}]`, 10, y)
+      y += 15
+    }
+  }
 }
 
 // Connect to server
@@ -48,13 +60,13 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled promise rejection:', e.reason)
 })
 
-// Debug hooks for REPL access
 window.gameState = { client, canvas, ctx, render }
 window.debug = {
   client,
   canvas,
   render,
   getConnectedPlayers: () => client?.state?.players || [],
+  getEntities: () => client?.state?.entities || [],
   getCanvasSize: () => ({ width: canvas.width, height: canvas.height }),
   isConnected: () => client?.connected || false,
   getServerUrl: () => client?.serverUrl,

@@ -50,7 +50,9 @@ export class PhysicsIntegration {
       collider.velocity[1] = -this.config.maxFallSpeed
     }
 
+    collider.position[0] += collider.velocity[0] * deltaTime
     collider.position[1] += collider.velocity[1] * deltaTime
+    collider.position[2] += collider.velocity[2] * deltaTime
 
     if (collider.position[1] <= this.config.groundDist) {
       collider.position[1] = 0
