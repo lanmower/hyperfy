@@ -6,8 +6,8 @@ export function createTickHandler(deps) {
     networkState, playerManager, physicsIntegration,
     lagCompensator, physics, appRuntime, connections
   } = deps
-  const moveSpeed = 6.0
-  const jumpImpulse = 7.0
+  const moveSpeed = 12.0
+  const jumpImpulse = 3.5
   let snapshotSeq = 0
 
   return function onTick(tick, dt) {
@@ -29,8 +29,8 @@ export function createTickHandler(deps) {
           if (flen > 0) { fx /= flen; fz /= flen }
           const yaw = inp.yaw || 0
           const cy = Math.cos(yaw), sy = Math.sin(yaw)
-          vx = (fx * cy + fz * sy) * moveSpeed
-          vz = (fx * -sy + fz * cy) * moveSpeed
+          vx = (fx * cy - fz * sy) * moveSpeed
+          vz = (fx * sy + fz * cy) * moveSpeed
           st.rotation = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
           if (inp.jump && st.onGround) {
             st.velocity[1] = jumpImpulse

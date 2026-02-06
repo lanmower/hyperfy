@@ -5,9 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hyperfy</title>
   <link rel="stylesheet" href="/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.171.0",
+      "three/addons/": "https://esm.sh/three@0.171.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-  <canvas id="game"></canvas>
+  <div id="hud">
+    <div id="crosshair">+</div>
+    <div id="health-bar"><div id="health-fill"></div><span id="health-text">100</span></div>
+    <div id="info"></div>
+    <div id="click-prompt">Click to play</div>
+  </div>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
