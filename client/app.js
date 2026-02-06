@@ -124,7 +124,7 @@ function updateState(state) {
 function getAimDirection() {
   const sy = Math.sin(yaw), cy = Math.cos(yaw)
   const sp = Math.sin(pitch), cp = Math.cos(pitch)
-  return [-sy * cp, sp, cy * cp]
+  return [sy * cp, sp, cy * cp]
 }
 
 let inputLoopId = null

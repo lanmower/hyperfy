@@ -29,7 +29,7 @@ export function createTickHandler(deps) {
           if (flen > 0) { fx /= flen; fz /= flen }
           const yaw = inp.yaw || 0
           const cy = Math.cos(yaw), sy = Math.sin(yaw)
-          vx = (fx * cy - fz * sy) * moveSpeed
+          vx = (fx * cy + fz * sy) * moveSpeed
           vz = (fx * sy + fz * cy) * moveSpeed
           st.rotation = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
           if (inp.jump && st.onGround) {
