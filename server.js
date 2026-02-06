@@ -1,6 +1,7 @@
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from './src/sdk/server.js'
+import worldDef from './apps/world.js'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
 const PORT = parseInt(process.env.PORT || '8080', 10)
@@ -16,11 +17,11 @@ const server = await createServer({
     { prefix: '/', dir: join(ROOT, 'client') }
   ]
 })
-console.log('[init] Server created, adding physics trimesh...')
+console.log('[init] Server created, loading world...')
 
-console.log('[init] Adding static trimesh...')
-server.physics.addStaticTrimesh(join(ROOT, 'world', 'schwust.glb'), 0)
-console.log('[init] Static trimesh added, starting server...')
+console.log('[init] Loading world definition...')
+await server.loadWorld(worldDef)
+console.log('[init] World loaded with', server.getEntityCount(), 'entities')
 
 server.on('playerJoin', ({ id }) => console.log(`[+] player ${id}`))
 server.on('playerLeave', ({ id }) => console.log(`[-] player ${id}`))
