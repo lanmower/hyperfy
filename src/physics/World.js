@@ -8,6 +8,7 @@ export class PhysicsWorld {
     this.gravity = config.gravity || [0, -9.81, 0]
     this.Jolt = null; this.jolt = null; this.physicsSystem = null; this.bodyInterface = null
     this.bodies = new Map(); this.bodyMeta = new Map()
+    this._objFilter = null; this._ovbp = null
   }
   async init() {
     const J = await getJolt()
@@ -18,8 +19,10 @@ export class PhysicsWorld {
     const bpI = new J.BroadPhaseLayerInterfaceTable(NUM_LAYERS, 2)
     bpI.MapObjectToBroadPhaseLayer(LAYER_STATIC, new J.BroadPhaseLayer(0))
     bpI.MapObjectToBroadPhaseLayer(LAYER_DYNAMIC, new J.BroadPhaseLayer(1))
+    const ovbp = new J.ObjectVsBroadPhaseLayerFilterTable(bpI, 2, objFilter, NUM_LAYERS)
     settings.mObjectLayerPairFilter = objFilter; settings.mBroadPhaseLayerInterface = bpI
-    settings.mObjectVsBroadPhaseLayerFilter = new J.ObjectVsBroadPhaseLayerFilterTable(bpI, 2, objFilter, NUM_LAYERS)
+    settings.mObjectVsBroadPhaseLayerFilter = ovbp
+    this._objFilter = objFilter; this._ovbp = ovbp
     this.jolt = new J.JoltInterface(settings); J.destroy(settings)
     this.physicsSystem = this.jolt.GetPhysicsSystem(); this.bodyInterface = this.physicsSystem.GetBodyInterface()
     const [gx, gy, gz] = this.gravity
@@ -64,6 +67,25 @@ export class PhysicsWorld {
     const J = this.Jolt
     return this._addBody(new J.CapsuleShape(halfHeight, radius, null), position, J.EMotionType_Dynamic, LAYER_DYNAMIC, { mass: mass || 80, friction: 0.5, restitution: 0.0, meta: { type: 'dynamic', shape: 'capsule', radius, height: halfHeight * 2 } })
   }
+  addPlayerCapsule(radius, halfHeight, position, mass) {
+    const J = this.Jolt
+    const shape = new J.CapsuleShape(halfHeight, radius)
+    const pos = new J.RVec3(position[0], position[1], position[2])
+    const rot = new J.Quat(0, 0, 0, 1)
+    const cs = new J.BodyCreationSettings(shape, pos, rot, J.EMotionType_Dynamic, LAYER_DYNAMIC)
+    cs.mMassPropertiesOverride.mMass = mass || 80
+    cs.mOverrideMassProperties = J.EOverrideMassProperties_CalculateInertia
+    cs.mFriction = 0.5
+    cs.mRestitution = 0.0
+    cs.mAllowedDOFs = J.EAllowedDOFs_TranslationX | J.EAllowedDOFs_TranslationY | J.EAllowedDOFs_TranslationZ
+    const body = this.bodyInterface.CreateBody(cs)
+    this.bodyInterface.AddBody(body.GetID(), J.EActivation_Activate)
+    J.destroy(cs)
+    const id = body.GetID().GetIndexAndSequenceNumber()
+    this.bodies.set(id, body)
+    this.bodyMeta.set(id, { type: 'player', shape: 'capsule', radius, halfHeight })
+    return id
+  }
   _getBody(bodyId) { return this.bodies.get(bodyId) }
   getBodyPosition(bodyId) {
     const b = this._getBody(bodyId); if (!b) return [0, 0, 0]
@@ -99,28 +121,39 @@ export class PhysicsWorld {
     this.bodyInterface.RemoveBody(b.GetID()); this.bodyInterface.DestroyBody(b.GetID())
     this.bodies.delete(bodyId); this.bodyMeta.delete(bodyId)
   }
-  raycast(origin, direction, maxDistance = 1000) {
-    const len = Math.sqrt(direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2])
-    const dir = [direction[0]/len, direction[1]/len, direction[2]/len]
-    let nearest = null, minDist = maxDistance
-    for (const [id, meta] of this.bodyMeta) {
-      const pos = this.getBodyPosition(id)
-      const rayToPoint = [pos[0] - origin[0], pos[1] - origin[1], pos[2] - origin[2]]
-      const projection = dir[0]*rayToPoint[0] + dir[1]*rayToPoint[1] + dir[2]*rayToPoint[2]
-      if (projection < 0 || projection > maxDistance) continue
-      const closest = [origin[0] + dir[0]*projection, origin[1] + dir[1]*projection, origin[2] + dir[2]*projection]
-      const distX = pos[0]-closest[0], distY = pos[1]-closest[1], distZ = pos[2]-closest[2]
-      const dist = Math.sqrt(distX*distX + distY*distY + distZ*distZ)
-      let hitRadius = 0.5
-      if (meta.shape === 'capsule') {
-        const capsuleRadius = meta.radius || 0.4, capsuleHeight = meta.height || 1.8
-        hitRadius = capsuleRadius + capsuleHeight / 2
-      }
-      if (dist <= hitRadius && projection < minDist) { minDist = projection; nearest = { id, pos, dist, projection } }
+  raycast(origin, direction, maxDistance = 1000, excludeBodyId = null) {
+    if (!this.physicsSystem) return { hit: false, distance: maxDistance, body: null, position: null }
+    const J = this.Jolt
+    const len = Math.sqrt(direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2])
+    const dir = len > 0 ? [direction[0] / len, direction[1] / len, direction[2] / len] : direction
+    const rayOrigin = new J.RVec3(origin[0], origin[1], origin[2])
+    const rayDir = new J.Vec3(dir[0] * maxDistance, dir[1] * maxDistance, dir[2] * maxDistance)
+    const ray = new J.RRayCast(rayOrigin, rayDir)
+    const raySettings = new J.RayCastSettings()
+    const collector = new J.CastRayClosestHitCollisionCollector()
+    const bpFilter = new J.DefaultBroadPhaseLayerFilter(this._ovbp, LAYER_DYNAMIC)
+    const objLayerFilter = new J.DefaultObjectLayerFilter(this._objFilter, LAYER_DYNAMIC)
+    let bodyFilter
+    if (excludeBodyId != null) {
+      const excludeBody = this._getBody(excludeBodyId)
+      bodyFilter = excludeBody ? new J.IgnoreSingleBodyFilter(excludeBody.GetID()) : new J.BodyFilter()
+    } else {
+      bodyFilter = new J.BodyFilter()
     }
-    if (!nearest) return { hit: false, distance: maxDistance, body: null, position: null }
-    const hitPos = [origin[0] + dir[0]*nearest.projection, origin[1] + dir[1]*nearest.projection, origin[2] + dir[2]*nearest.projection]
-    return { hit: true, distance: nearest.projection, body: nearest.id, position: hitPos }
+    const shapeFilter = new J.ShapeFilter()
+    this.physicsSystem.GetNarrowPhaseQuery().CastRay(ray, raySettings, collector, bpFilter, objLayerFilter, bodyFilter, shapeFilter)
+    let result
+    if (collector.HadHit()) {
+      const hit = collector.get_mHit()
+      const dist = hit.mFraction * maxDistance
+      const hitPos = [origin[0] + dir[0] * dist, origin[1] + dir[1] * dist, origin[2] + dir[2] * dist]
+      result = { hit: true, distance: dist, body: null, position: hitPos }
+    } else {
+      result = { hit: false, distance: maxDistance, body: null, position: null }
+    }
+    J.destroy(ray); J.destroy(raySettings); J.destroy(collector)
+    J.destroy(bpFilter); J.destroy(objLayerFilter); J.destroy(bodyFilter); J.destroy(shapeFilter)
+    return result
   }
   destroy() { for (const [id] of this.bodies) this.removeBody(id); if (this.jolt) { this.Jolt.destroy(this.jolt); this.jolt = null } }
 }

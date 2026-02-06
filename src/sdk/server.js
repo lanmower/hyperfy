@@ -35,7 +35,7 @@ export async function createServer(config = {}) {
   const playerManager = new PlayerManager()
   const networkState = new NetworkState()
   const lagCompensator = new LagCompensator()
-  const physicsIntegration = new PhysicsIntegration({ gravity })
+  const physicsIntegration = new PhysicsIntegration({ gravity, physicsWorld: physics })
   const connections = new ConnectionManager({
     heartbeatInterval: config.heartbeatInterval || 1000,
     heartbeatTimeout: config.heartbeatTimeout || 3000
@@ -44,13 +44,14 @@ export async function createServer(config = {}) {
   const inspector = new Inspector()
   const reloadManager = new ReloadManager()
 
-  const appRuntime = new AppRuntime({ gravity, playerManager, physics })
+  const appRuntime = new AppRuntime({ gravity, playerManager, physics, physicsIntegration })
   appRuntime.setPlayerManager(playerManager)
   const appLoader = new AppLoader(appRuntime, { dir: appsDir })
   const binder = new EntityAppBinder(appRuntime, appLoader)
   let wss = null
   let httpServer = null
   let snapshotSeq = 0
+  let worldSpawnPoint = [0, 5, 0]
 
   const handlerState = { fn: null }
   const onTick = (tick, dt) => {
@@ -67,9 +68,11 @@ export async function createServer(config = {}) {
   }))
 
   function onClientConnect(socket) {
-    const playerId = playerManager.addPlayer(socket)
-    networkState.addPlayer(playerId)
+    const sp = [...worldSpawnPoint]
+    const playerId = playerManager.addPlayer(socket, { position: sp })
+    networkState.addPlayer(playerId, { position: sp })
     physicsIntegration.addPlayerCollider(playerId, 0.4)
+    physicsIntegration.setPlayerPosition(playerId, sp)
     const playerState = playerManager.getPlayer(playerId).state
     lagCompensator.recordPlayerPosition(
       playerId, playerState.position, playerState.rotation, playerState.velocity,
@@ -85,6 +88,7 @@ export async function createServer(config = {}) {
     connections.send(playerId, MSG.SNAPSHOT, {
       seq: ++snapshotSeq, ...SnapshotEncoder.encode(snap)
     })
+    appRuntime.fireMessage('game', { type: 'player_join', playerId })
     emitter.emit('playerJoin', { id: playerId })
   }
 
@@ -97,12 +101,19 @@ export async function createServer(config = {}) {
     if (msg.type === MSG.APP_EVENT) {
       if (msg.payload?.entityId) appRuntime.fireInteract(msg.payload.entityId, { id: clientId })
       if (msg.payload?.type === 'fire') {
-        appRuntime.fireMessage('game', { ...msg.payload, shooterId: clientId })
+        const shooter = playerManager.getPlayer(clientId)
+        const pos = shooter?.state?.position || [0, 0, 0]
+        const origin = [pos[0], pos[1] + 0.9, pos[2]]
+        appRuntime.fireMessage('game', { ...msg.payload, shooterId: clientId, origin })
       }
       return
     }
     if (msg.type === MSG.RECONNECT) {
-      _handleReconnect(clientId, msg.payload)
+      const session = sessions.get(msg.payload?.sessionToken)
+      if (!session) { connections.send(clientId, MSG.DISCONNECT_REASON, { code: DISCONNECT_REASONS.INVALID_SESSION }); return }
+      const snap = networkState.getSnapshot(), ents = appRuntime.getSnapshot()
+      connections.send(clientId, MSG.RECONNECT_ACK, { playerId: session.playerId, tick: tickSystem.currentTick, sessionToken: msg.payload.sessionToken })
+      connections.send(clientId, MSG.STATE_RECOVERY, { snapshot: SnapshotEncoder.encode({ tick: snap.tick, timestamp: snap.timestamp, players: snap.players, entities: ents.entities }), tick: tickSystem.currentTick })
       return
     }
     emitter.emit('message', clientId, msg)
@@ -110,35 +121,13 @@ export async function createServer(config = {}) {
 
   connections.on('disconnect', (clientId, reason) => {
     const client = connections.getClient(clientId)
-    if (client?.sessionToken) {
-      const p = playerManager.getPlayer(clientId)
-      if (p) sessions.update(client.sessionToken, { state: p.state })
-    }
-    physicsIntegration.removePlayerCollider(clientId)
-    lagCompensator.clearPlayerHistory(clientId)
-    inspector.removeClient(clientId)
-    playerManager.removePlayer(clientId)
-    networkState.removePlayer(clientId)
+    if (client?.sessionToken) { const p = playerManager.getPlayer(clientId); if (p) sessions.update(client.sessionToken, { state: p.state }) }
+    appRuntime.fireMessage('game', { type: 'player_leave', playerId: clientId })
+    physicsIntegration.removePlayerCollider(clientId); lagCompensator.clearPlayerHistory(clientId); inspector.removeClient(clientId)
+    playerManager.removePlayer(clientId); networkState.removePlayer(clientId)
     connections.broadcast(MSG.PLAYER_LEAVE, { playerId: clientId })
     emitter.emit('playerLeave', { id: clientId, reason })
   })
-
-  function _handleReconnect(clientId, payload) {
-    const session = sessions.get(payload?.sessionToken)
-    if (!session) {
-      connections.send(clientId, MSG.DISCONNECT_REASON, { code: DISCONNECT_REASONS.INVALID_SESSION })
-      return
-    }
-    const snap = networkState.getSnapshot()
-    const ents = appRuntime.getSnapshot()
-    const combined = { tick: snap.tick, timestamp: snap.timestamp, players: snap.players, entities: ents.entities }
-    connections.send(clientId, MSG.RECONNECT_ACK, {
-      playerId: session.playerId, tick: tickSystem.currentTick, sessionToken: payload.sessionToken
-    })
-    connections.send(clientId, MSG.STATE_RECOVERY, {
-      snapshot: SnapshotEncoder.encode(combined), tick: tickSystem.currentTick
-    })
-  }
 
   const reloadHandlers = createReloadHandlers({
     networkState, playerManager, physicsIntegration,
@@ -146,19 +135,15 @@ export async function createServer(config = {}) {
   })
 
   const setupSDKWatchers = () => {
-    const config = [
-      { id: 'tick-handler', path: './src/sdk/TickHandler.js', reload: async () => {
-        const handler = await reloadHandlers.reloadTickHandler()
-        setTickHandler(handler)
-      }},
-      { id: 'physics-integration', path: './src/netcode/PhysicsIntegration.js', reload: reloadHandlers.reloadPhysicsIntegration },
-      { id: 'lag-compensator', path: './src/netcode/LagCompensator.js', reload: reloadHandlers.reloadLagCompensator },
-      { id: 'player-manager', path: './src/netcode/PlayerManager.js', reload: reloadHandlers.reloadPlayerManager },
-      { id: 'network-state', path: './src/netcode/NetworkState.js', reload: reloadHandlers.reloadNetworkState }
+    const reloadTick = async () => { setTickHandler(await reloadHandlers.reloadTickHandler()) }
+    const watchers = [
+      ['tick-handler', './src/sdk/TickHandler.js', reloadTick],
+      ['physics-integration', './src/netcode/PhysicsIntegration.js', reloadHandlers.reloadPhysicsIntegration],
+      ['lag-compensator', './src/netcode/LagCompensator.js', reloadHandlers.reloadLagCompensator],
+      ['player-manager', './src/netcode/PlayerManager.js', reloadHandlers.reloadPlayerManager],
+      ['network-state', './src/netcode/NetworkState.js', reloadHandlers.reloadNetworkState]
     ]
-    for (const { id, path, reload } of config) {
-      reloadManager.addWatcher(id, path, reload)
-    }
+    for (const [id, path, reload] of watchers) reloadManager.addWatcher(id, path, reload)
   }
 
   const api = {
@@ -166,7 +151,11 @@ export async function createServer(config = {}) {
     tickSystem, playerManager, networkState, lagCompensator,
     connections, sessions, inspector, emitter, reloadManager,
     on: emitter.on.bind(emitter), off: emitter.off.bind(emitter),
-    async loadWorld(worldDef) { await appLoader.loadAll(); return binder.loadWorld(worldDef) },
+    async loadWorld(worldDef) {
+      if (worldDef.spawnPoint) worldSpawnPoint = [...worldDef.spawnPoint]
+      await appLoader.loadAll()
+      return binder.loadWorld(worldDef)
+    },
     async start() {
       await appLoader.loadAll()
       await new Promise((resolve, reject) => {
@@ -187,7 +176,7 @@ export async function createServer(config = {}) {
     },
     stop() {
       tickSystem.stop(); appLoader.stopWatching(); reloadManager.stopAllWatchers()
-      connections.destroy(); sessions.destroy()
+      connections.destroy(); sessions.destroyAll()
       if (wss) wss.close(); if (httpServer) httpServer.close(); physics.destroy()
     },
     send(id, type, p) { return connections.send(id, type, p) },

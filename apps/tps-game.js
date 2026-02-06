@@ -1,49 +1,48 @@
-import { getMap, getSpawnPoint } from '../config/maps.js'
+import { getMap } from '../config/maps.js'
 import { getGameMode } from '../config/game-modes.js'
 
 export default {
   server: {
     setup(ctx) {
-      const mapName = 'schwust'
-      const modeName = 'ffa'
-      const map = getMap(mapName)
-      const mode = getGameMode(modeName)
-
-      ctx.state.map = mapName
-      ctx.state.mode = modeName
+      const map = getMap('schwust')
+      const mode = getGameMode('ffa')
+      ctx.state.map = 'schwust'
+      ctx.state.mode = 'ffa'
       ctx.state.config = mode
       ctx.state.spawnPoints = map.spawnPoints
-      ctx.state.playerHealth = new Map()
       ctx.state.playerStats = new Map()
       ctx.state.respawning = new Map()
       ctx.state.started = Date.now()
       ctx.state.gameTime = 0
-
-      ctx.world.spawn('map', { app: 'environment', model: map.model, position: [0, 0, 0] })
     },
 
     update(ctx, dt) {
       ctx.state.gameTime = (Date.now() - ctx.state.started) / 1000
       const now = Date.now()
       for (const [pid, data] of ctx.state.respawning) {
-        if (now >= data.respawnAt) {
-          const sp = ctx.state.spawnPoints[Math.floor(Math.random() * ctx.state.spawnPoints.length)]
-          const player = ctx.players.getAll().find(p => p.id === pid)
-          if (player && player.state) {
-            player.state.health = ctx.state.config.health
-            player.state.position = [...sp]
-          }
-          ctx.players.send(pid, { type: 'respawn', position: sp, health: ctx.state.config.health })
-          ctx.state.respawning.delete(pid)
+        if (now < data.respawnAt) continue
+        const sp = ctx.state.spawnPoints[Math.floor(Math.random() * ctx.state.spawnPoints.length)]
+        const player = ctx.players.getAll().find(p => p.id === pid)
+        if (player && player.state) {
+          player.state.health = ctx.state.config.health
+          player.state.velocity = [0, 0, 0]
+          ctx.players.setPosition(pid, sp)
         }
+        ctx.players.send(pid, { type: 'respawn', position: sp, health: ctx.state.config.health })
+        ctx.state.respawning.delete(pid)
       }
     },
 
     onMessage(ctx, msg) {
       if (!msg) return
       if (msg.type === 'player_join') {
-        ctx.state.playerHealth.set(msg.playerId, ctx.state.config.health)
+        const p = ctx.players.getAll().find(pl => pl.id === msg.playerId)
+        if (p && p.state) p.state.health = ctx.state.config.health
         ctx.state.playerStats.set(msg.playerId, { kills: 0, deaths: 0, damage: 0 })
+      }
+      if (msg.type === 'player_leave') {
+        ctx.state.playerStats.delete(msg.playerId)
+        ctx.state.respawning.delete(msg.playerId)
       }
       if (msg.type === 'fire') {
         handleFire(ctx, msg)
@@ -55,7 +54,7 @@ export default {
     render(ctx) {
       return {
         position: ctx.entity.position,
-        custom: { game: ctx.state.map, mode: ctx.state.mode, time: ctx.state.gameTime.toFixed(1) }
+        custom: { game: ctx.state.map, mode: ctx.state.mode, time: ctx.state.gameTime?.toFixed(1) || '0' }
       }
     }
   }
@@ -90,12 +89,17 @@ function handleFire(ctx, msg) {
     if (newHp <= 0) {
       const shooterStats = ctx.state.playerStats.get(shooterId) || { kills: 0, deaths: 0, damage: 0 }
       shooterStats.kills++
+      shooterStats.damage += damage
       ctx.state.playerStats.set(shooterId, shooterStats)
       const targetStats = ctx.state.playerStats.get(target.id) || { kills: 0, deaths: 0, damage: 0 }
       targetStats.deaths++
       ctx.state.playerStats.set(target.id, targetStats)
       ctx.state.respawning.set(target.id, { respawnAt: Date.now() + ctx.state.config.respawnTime * 1000, killer: shooterId })
       ctx.network.broadcast({ type: 'death', victim: target.id, killer: shooterId })
+    } else {
+      const shooterStats = ctx.state.playerStats.get(shooterId) || { kills: 0, deaths: 0, damage: 0 }
+      shooterStats.damage += damage
+      ctx.state.playerStats.set(shooterId, shooterStats)
     }
     break
   }

@@ -20,10 +20,18 @@ export function createTickHandler(deps) {
         const last = inputs[inputs.length - 1]
         const inp = last.data
         if (inp) {
-          if (inp.forward) vz += moveSpeed
-          if (inp.backward) vz -= moveSpeed
-          if (inp.left) vx -= moveSpeed
-          if (inp.right) vx += moveSpeed
+          let fx = 0, fz = 0
+          if (inp.forward) fz += 1
+          if (inp.backward) fz -= 1
+          if (inp.left) fx -= 1
+          if (inp.right) fx += 1
+          const flen = Math.sqrt(fx * fx + fz * fz)
+          if (flen > 0) { fx /= flen; fz /= flen }
+          const yaw = inp.yaw || 0
+          const cy = Math.cos(yaw), sy = Math.sin(yaw)
+          vx = (fx * cy + fz * sy) * moveSpeed
+          vz = (fx * -sy + fz * cy) * moveSpeed
+          st.rotation = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]
           if (inp.jump && st.onGround) {
             st.velocity[1] = jumpImpulse
             st.onGround = false

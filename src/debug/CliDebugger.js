@@ -17,38 +17,38 @@ export class CliDebugger {
   }
 
   spawn(entity, position) {
-    const msg = `${this.prefix} SPAWN ${entity.padEnd(15)} @ ${this._formatVec3(position)}`
+    const msg = `${this.prefix} SPAWN ${String(entity).padEnd(15)} @ ${this._formatVec3(position)}`
     console.log(`${this._timestamp()} ${msg}`)
     this.history.push(msg)
   }
 
   collision(a, b, position) {
-    const msg = `${this.prefix} COLLISION ${a.padEnd(8)} <-> ${b.padEnd(8)} @ ${this._formatVec3(position)}`
+    const msg = `${this.prefix} COLLISION ${String(a).padEnd(8)} <-> ${String(b).padEnd(8)} @ ${this._formatVec3(position)}`
     console.log(`${this._timestamp()} ${msg}`)
     this.history.push(msg)
   }
 
   hit(shooter, target, damage) {
-    const msg = `${this.prefix} HIT ${shooter.padEnd(10)} -> ${target.padEnd(10)} [${damage}hp]`
+    const msg = `${this.prefix} HIT ${String(shooter).padEnd(10)} -> ${String(target).padEnd(10)} [${damage}hp]`
     console.log(`${this._timestamp()} ${msg}`)
     this.history.push(msg)
   }
 
   death(entity, damage) {
-    const msg = `${this.prefix} DEATH ${entity.padEnd(15)} from ${damage}hp`
+    const msg = `${this.prefix} DEATH ${String(entity).padEnd(15)} from ${damage}hp`
     console.log(`${this._timestamp()} ${msg}`)
     this.history.push(msg)
   }
 
   respawn(entity, position) {
-    const msg = `${this.prefix} RESPAWN ${entity.padEnd(10)} @ ${this._formatVec3(position)}`
+    const msg = `${this.prefix} RESPAWN ${String(entity).padEnd(10)} @ ${this._formatVec3(position)}`
     console.log(`${this._timestamp()} ${msg}`)
     this.history.push(msg)
   }
 
   state(entity, key, value) {
     const v = typeof value === 'object' ? JSON.stringify(value) : String(value)
-    const msg = `${this.prefix} STATE ${entity.padEnd(15)} ${key}=${v}`
+    const msg = `${this.prefix} STATE ${String(entity).padEnd(15)} ${key}=${v}`
     console.log(`${this._timestamp()} ${msg}`)
   }
 
@@ -60,7 +60,7 @@ export class CliDebugger {
 
   physics(body, pos, vel, health) {
     const speed = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2]).toFixed(1)
-    const msg = `${this.prefix} PHY ${body.padEnd(10)} pos=${this._formatVec3(pos)} vel=${speed}m/s hp=${health}`
+    const msg = `${this.prefix} PHY ${String(body).padEnd(10)} pos=${this._formatVec3(pos)} vel=${speed}m/s hp=${health}`
     console.log(`${this._timestamp()} ${msg}`)
   }
 

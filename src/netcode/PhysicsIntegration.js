@@ -3,132 +3,136 @@ export class PhysicsIntegration {
     this.physicsWorld = config.physicsWorld || null
     this.config = {
       gravity: config.gravity || [0, -9.81, 0],
-      groundDist: config.groundDist || 0.1,
-      teleportThreshold: config.teleportThreshold || 1.0,
-      maxFallSpeed: config.maxFallSpeed || 50,
+      capsuleRadius: config.capsuleRadius || 0.4,
+      capsuleHalfHeight: config.capsuleHalfHeight || 0.9,
+      playerMass: config.playerMass || 80,
+      groundCheckDist: config.groundCheckDist || 0.15,
       ...config
     }
-    this.playerColliders = new Map()
+    this.playerBodies = new Map()
   }
 
-  addPlayerCollider(playerId, radius = 0.5) {
-    this.playerColliders.set(playerId, {
-      id: playerId,
+  setPhysicsWorld(world) {
+    this.physicsWorld = world
+  }
+
+  addPlayerCollider(playerId, radius = 0.4) {
+    if (!this.physicsWorld) {
+      this.playerBodies.set(playerId, { id: playerId, bodyId: null, onGround: true })
+      return
+    }
+    const bodyId = this.physicsWorld.addPlayerCapsule(
       radius,
-      position: [0, 0, 0],
-      velocity: [0, 0, 0],
-      onGround: true
-    })
+      this.config.capsuleHalfHeight,
+      [0, 5, 0],
+      this.config.playerMass
+    )
+    this.playerBodies.set(playerId, { id: playerId, bodyId, onGround: true })
   }
 
   removePlayerCollider(playerId) {
-    this.playerColliders.delete(playerId)
+    const data = this.playerBodies.get(playerId)
+    if (data?.bodyId && this.physicsWorld) {
+      this.physicsWorld.removeBody(data.bodyId)
+    }
+    this.playerBodies.delete(playerId)
   }
 
   updatePlayerPhysics(playerId, state, deltaTime) {
-    const collider = this.playerColliders.get(playerId)
-    if (!collider) return state
-
-    const prevPos = [...collider.position]
-    collider.position = [...state.position]
-    collider.velocity = [...state.velocity]
-
-    const distance = Math.hypot(
-      prevPos[0] - collider.position[0],
-      prevPos[1] - collider.position[1],
-      prevPos[2] - collider.position[2]
-    )
-
-    if (distance > this.config.teleportThreshold) {
-      collider.velocity = [0, 0, 0]
-      state.velocity = [0, 0, 0]
+    const data = this.playerBodies.get(playerId)
+    if (!data || !data.bodyId || !this.physicsWorld) {
+      return this._fallbackPhysics(playerId, state, deltaTime)
     }
-
-    collider.velocity[1] += this.config.gravity[1] * deltaTime
-
-    if (Math.abs(collider.velocity[1]) > this.config.maxFallSpeed) {
-      collider.velocity[1] = -this.config.maxFallSpeed
+    const bodyId = data.bodyId
+    const currentPos = this.physicsWorld.getBodyPosition(bodyId)
+    const currentVel = this.physicsWorld.getBodyVelocity(bodyId)
+    const newVel = [state.velocity[0], currentVel[1], state.velocity[2]]
+    if (state.velocity[1] > 0 && data.onGround) {
+      newVel[1] = state.velocity[1]
     }
-
-    collider.position[0] += collider.velocity[0] * deltaTime
-    collider.position[1] += collider.velocity[1] * deltaTime
-    collider.position[2] += collider.velocity[2] * deltaTime
-
-    if (collider.position[1] <= this.config.groundDist && collider.velocity[1] <= 0) {
-      collider.position[1] = 0
-      collider.velocity[1] = 0
-      collider.onGround = true
-    } else {
-      collider.onGround = collider.position[1] <= this.config.groundDist
-    }
-
-    state.position = [...collider.position]
-    state.velocity = [...collider.velocity]
-    state.onGround = collider.onGround
-
+    this.physicsWorld.setBodyVelocity(bodyId, newVel)
+    const pos = this.physicsWorld.getBodyPosition(bodyId)
+    const vel = this.physicsWorld.getBodyVelocity(bodyId)
+    data.onGround = this._checkGround(bodyId, pos)
+    state.position = pos
+    state.velocity = vel
+    state.onGround = data.onGround
     return state
   }
 
-  checkGroundCollision(position) {
-    return position[1] <= this.config.groundDist
+  _checkGround(bodyId, position) {
+    if (!this.physicsWorld) return false
+    const rayOrigin = [position[0], position[1] - this.config.capsuleHalfHeight, position[2]]
+    const checkDist = this.config.capsuleRadius + this.config.groundCheckDist
+    const rayResult = this.physicsWorld.raycast(rayOrigin, [0, -1, 0], checkDist, bodyId)
+    return rayResult.hit && rayResult.distance < checkDist
+  }
+
+  _fallbackPhysics(playerId, state, deltaTime) {
+    state.velocity[1] += this.config.gravity[1] * deltaTime
+    state.position[0] += state.velocity[0] * deltaTime
+    state.position[1] += state.velocity[1] * deltaTime
+    state.position[2] += state.velocity[2] * deltaTime
+    if (state.position[1] <= 0) {
+      state.position[1] = 0
+      state.velocity[1] = 0
+      state.onGround = true
+    } else {
+      state.onGround = false
+    }
+    return state
+  }
+
+  setPlayerPosition(playerId, position) {
+    const data = this.playerBodies.get(playerId)
+    if (data?.bodyId && this.physicsWorld) {
+      this.physicsWorld.setBodyPosition(data.bodyId, position)
+    }
+  }
+
+  getPlayerPosition(playerId) {
+    const data = this.playerBodies.get(playerId)
+    if (data?.bodyId && this.physicsWorld) {
+      return this.physicsWorld.getBodyPosition(data.bodyId)
+    }
+    return [0, 0, 0]
   }
 
   checkCollisionWithOthers(playerId, allPlayers) {
-    const collider = this.playerColliders.get(playerId)
-    if (!collider) return []
-
+    const data = this.playerBodies.get(playerId)
+    if (!data) return []
+    const pos = data.bodyId && this.physicsWorld
+      ? this.physicsWorld.getBodyPosition(data.bodyId)
+      : [0, 0, 0]
     const collisions = []
-
     for (const other of allPlayers) {
       if (other.id === playerId) continue
-
-      const dx = other.position[0] - collider.position[0]
-      const dy = other.position[1] - collider.position[1]
-      const dz = other.position[2] - collider.position[2]
-
+      const otherPos = other.state?.position || other.position
+      if (!otherPos) continue
+      const dx = otherPos[0] - pos[0]
+      const dy = otherPos[1] - pos[1]
+      const dz = otherPos[2] - pos[2]
       const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
-      const minDistance = collider.radius + 0.5
-
-      if (distance < minDistance) {
-        collisions.push({
-          playerId: other.id,
-          distance,
-          normal: [dx / distance, dy / distance, dz / distance]
-        })
+      const minDist = this.config.capsuleRadius * 2
+      if (distance < minDist && distance > 0) {
+        collisions.push({ playerId: other.id, distance, normal: [dx / distance, dy / distance, dz / distance] })
       }
     }
-
     return collisions
   }
 
   raycast(origin, direction, maxDistance) {
-    if (!this.physicsWorld) {
-      return { hit: false, distance: maxDistance }
-    }
-
+    if (!this.physicsWorld) return { hit: false, distance: maxDistance }
     return this.physicsWorld.raycast(origin, direction, maxDistance)
   }
 
   validateMovement(playerId, newPosition, oldPosition) {
-    const maxStepHeight = 0.5
-
-    const heightDiff = newPosition[1] - oldPosition[1]
-    if (heightDiff > maxStepHeight && !this.isJump(newPosition, oldPosition)) {
-      return { valid: false, reason: 'step_too_high' }
-    }
-
     const distance = Math.hypot(
       newPosition[0] - oldPosition[0],
       newPosition[1] - oldPosition[1],
       newPosition[2] - oldPosition[2]
     )
-
-    const maxDistance = 2.0
-
-    if (distance > maxDistance) {
-      return { valid: false, reason: 'move_too_far', distance }
-    }
-
+    if (distance > 2.0) return { valid: false, reason: 'move_too_far', distance }
     return { valid: true }
   }
 
@@ -139,8 +143,6 @@ export class PhysicsIntegration {
   getSlopeAngle(position) {
     const rayResult = this.raycast(position, [0, -1, 0], 2.0)
     if (!rayResult.hit) return 0
-
-    const normal = [0, 1, 0]
-    return Math.acos(Math.max(0, Math.min(1, normal[1])))
+    return 0
   }
 }
