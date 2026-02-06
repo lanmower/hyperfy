@@ -86,6 +86,12 @@ export class PhysicsNetworkClient {
     this.ws.send(pack(msg))
   }
 
+  sendFire(data) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    const msg = { type: MSG.APP_EVENT, payload: { type: 'fire', shooterId: this.playerId, ...data } }
+    this.ws.send(pack(msg))
+  }
+
   onMessage(data) {
     try {
       const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data
