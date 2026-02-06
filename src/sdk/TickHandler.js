@@ -41,7 +41,7 @@ export function createTickHandler(deps) {
       networkState.updatePlayer(player.id, {
         position: st.position, rotation: st.rotation,
         velocity: st.velocity, onGround: st.onGround,
-        inputSequence: player.inputSequence
+        health: st.health, inputSequence: player.inputSequence
       })
     }
     physics.step(dt)

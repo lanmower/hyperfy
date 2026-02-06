@@ -54,12 +54,12 @@ export class PhysicsIntegration {
     collider.position[1] += collider.velocity[1] * deltaTime
     collider.position[2] += collider.velocity[2] * deltaTime
 
-    if (collider.position[1] <= this.config.groundDist) {
+    if (collider.position[1] <= this.config.groundDist && collider.velocity[1] <= 0) {
       collider.position[1] = 0
       collider.velocity[1] = 0
       collider.onGround = true
     } else {
-      collider.onGround = false
+      collider.onGround = collider.position[1] <= this.config.groundDist
     }
 
     state.position = [...collider.position]

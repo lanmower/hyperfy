@@ -96,6 +96,9 @@ export async function createServer(config = {}) {
     }
     if (msg.type === MSG.APP_EVENT) {
       if (msg.payload?.entityId) appRuntime.fireInteract(msg.payload.entityId, { id: clientId })
+      if (msg.payload?.type === 'fire') {
+        appRuntime.fireMessage('game', { ...msg.payload, shooterId: clientId })
+      }
       return
     }
     if (msg.type === MSG.RECONNECT) {
