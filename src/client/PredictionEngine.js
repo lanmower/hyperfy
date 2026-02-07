@@ -57,7 +57,7 @@ export class PredictionEngine {
       }
 
       if (input.jump && state.onGround) {
-        state.velocity[1] = 5.0
+        state.velocity[1] = 3.5
         state.onGround = false
       }
     }
