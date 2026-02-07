@@ -13,6 +13,7 @@ export class AppLoader {
     this._dir = config.dir || './apps'
     this._watchers = new Map()
     this._loaded = new Map()
+    this._onReloadCallback = null
   }
 
   async loadAll() {
@@ -35,7 +36,7 @@ export class AppLoader {
       const appDef = await this._evaluate(source, filePath)
       if (!appDef) return null
       this._runtime.registerApp(name, appDef)
-      this._loaded.set(name, { filePath, source })
+      this._loaded.set(name, { filePath, source, clientCode: this._extractClientCode(source) })
       return appDef
     } catch (e) {
       console.error(`[AppLoader] failed to load ${name}:`, e.message)
@@ -93,6 +94,9 @@ export class AppLoader {
     const appDef = await this.loadApp(name)
     if (appDef) {
       this._runtime.hotReload(name, appDef)
+      if (this._onReloadCallback) {
+        this._onReloadCallback(name, this._loaded.get(name)?.clientCode)
+      }
       console.log(`[AppLoader] hot reloaded ${name}`)
     }
   }
@@ -106,6 +110,22 @@ export class AppLoader {
 
   getLoaded() {
     return Array.from(this._loaded.keys())
+  }
+
+  getClientModules() {
+    const modules = {}
+    for (const [name, data] of this._loaded) {
+      if (data.clientCode) modules[name] = data.clientCode
+    }
+    return modules
+  }
+
+  getClientModule(name) {
+    return this._loaded.get(name)?.clientCode || null
+  }
+
+  _extractClientCode(source) {
+    return source
   }
 
   async loadFromString(name, source) {
