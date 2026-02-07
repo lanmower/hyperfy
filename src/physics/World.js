@@ -75,7 +75,7 @@ export class PhysicsWorld {
     const cs = new J.BodyCreationSettings(shape, pos, rot, J.EMotionType_Dynamic, LAYER_DYNAMIC)
     cs.mMassPropertiesOverride.mMass = mass || 80
     cs.mOverrideMassProperties = J.EOverrideMassProperties_CalculateInertia
-    cs.mFriction = 0.5
+    cs.mFriction = 0.0
     cs.mRestitution = 0.0
     cs.mAllowedDOFs = J.EAllowedDOFs_TranslationX | J.EAllowedDOFs_TranslationY | J.EAllowedDOFs_TranslationZ
     const body = this.bodyInterface.CreateBody(cs)
