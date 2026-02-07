@@ -7,7 +7,6 @@ export class PhysicsIntegration {
       capsuleHalfHeight: config.capsuleHalfHeight || 0.9,
       playerMass: config.playerMass || 80,
       groundCheckDist: config.groundCheckDist || 0.15,
-      extraGravity: config.extraGravity || -35,
       ...config
     }
     this.playerBodies = new Map()
@@ -51,10 +50,6 @@ export class PhysicsIntegration {
     if (state.velocity[1] > 0 && data.onGround) {
       newVel[1] = state.velocity[1]
     }
-    if (!data.onGround) {
-      newVel[1] += this.config.extraGravity * deltaTime
-    }
-    this.physicsWorld.activateBody(bodyId)
     this.physicsWorld.setBodyVelocity(bodyId, newVel)
     const pos = this.physicsWorld.getBodyPosition(bodyId)
     const vel = this.physicsWorld.getBodyVelocity(bodyId)
