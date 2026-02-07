@@ -1,1 +1,32 @@
+## APP STARTUP FIX & FOLDER-BASED REFACTORING
 
+
+### WAVE 3: Validate & Test (After WAVE 2 complete)
+
+#### App Loading Validation
+- [x] Start server and verify all apps load from folder structure
+- [x] Confirm AppLoader discovers apps/app-name/index.js pattern
+- [x] Verify no errors in app loading console output
+- [x] Test hot-reload by modifying an app file
+- Blocks: WAVE 4
+
+#### Full Integration Testing
+- [x] Start server from cold boot
+- [x] Verify WebSocket accepts client connections
+- [x] Test world initialization with all entities
+- [x] Verify physics world loads environment colliders
+- [x] Test player spawn at world spawnPoint
+- [x] Verify tick system runs at 128 TPS
+- [x] Connect test client and receive snapshots
+- [x] Test app interactions (doors, NPCs, crates, game loop)
+- [x] Verify no crashes during 30-second run
+- Blocks: WAVE 4
+
+### WAVE 4: Cleanup (After WAVE 3 complete)
+
+#### Final Cleanup
+- [x] Verify world/ directory still contains shared assets
+- [x] Confirm apps/ contains only app-name/ folders (no loose .js files)
+- [x] Delete any orphaned files
+- [x] Run final cold-boot startup test
+- [x] Verify all features work end-to-end
