@@ -32,7 +32,9 @@ export const MSG = {
   RECONNECT: 0x60,
   RECONNECT_ACK: 0x61,
   STATE_RECOVERY: 0x62,
-  DISCONNECT_REASON: 0x63
+  DISCONNECT_REASON: 0x63,
+
+  HOT_RELOAD: 0x70
 }
 
 const nameMap = new Map()

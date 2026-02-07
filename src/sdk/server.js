@@ -130,6 +130,9 @@ export async function createServer(config = {}) {
     const reloadTick = async () => { setTickHandler(await reloadHandlers.reloadTickHandler()) }
     const w = [['tick-handler', './src/sdk/TickHandler.js', reloadTick], ['physics-integration', './src/netcode/PhysicsIntegration.js', reloadHandlers.reloadPhysicsIntegration], ['lag-compensator', './src/netcode/LagCompensator.js', reloadHandlers.reloadLagCompensator], ['player-manager', './src/netcode/PlayerManager.js', reloadHandlers.reloadPlayerManager], ['network-state', './src/netcode/NetworkState.js', reloadHandlers.reloadNetworkState]]
     for (const [id, path, reload] of w) reloadManager.addWatcher(id, path, reload)
+    const clientReload = () => { connections.broadcast(MSG.HOT_RELOAD, { timestamp: Date.now() }) }
+    const clientFiles = [['client-app', './client/app.js'], ['client-input', './src/client/InputHandler.js'], ['client-network', './src/client/PhysicsNetworkClient.js'], ['client-prediction', './src/client/PredictionEngine.js'], ['client-reconciliation', './src/client/ReconciliationEngine.js'], ['client-index', './src/index.client.js']]
+    for (const [id, path] of clientFiles) reloadManager.addWatcher(id, path, clientReload)
   }
 
   const api = {
