@@ -1,7 +1,1 @@
-## Player Physics - CharacterVirtual Migration
 
-- [ ] Verify slope handling in live game - player walks up ramps without launching
-- [ ] Verify stair stepping works in live game
-- [ ] Verify floor sticking on downslopes in live game
-- [ ] Verify jump still works correctly in live game
-- [ ] Verify hot-reload preserves player CharacterVirtual state in live game
