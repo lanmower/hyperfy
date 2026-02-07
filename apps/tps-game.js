@@ -3,16 +3,13 @@ export default {
     setup(ctx) {
       ctx.state.map = 'schwust'
       ctx.state.mode = 'ffa'
-      ctx.state.config = {
-        respawnTime: 3,
-        health: 100,
-        damagePerHit: 25
-      }
-      ctx.state.spawnPoints = [[0, 5, 0], [20, 5, -20], [-20, 5, 20], [0, 5, -30]]
+      ctx.state.config = { respawnTime: 3, health: 100, damagePerHit: 25 }
+      ctx.state.spawnPoints = findSpawnPoints(ctx)
       ctx.state.playerStats = new Map()
       ctx.state.respawning = new Map()
       ctx.state.started = Date.now()
       ctx.state.gameTime = 0
+      console.log(`[tps-game] ${ctx.state.spawnPoints.length} spawn points validated`)
     },
 
     update(ctx, dt) {
@@ -57,6 +54,18 @@ export default {
       }
     }
   }
+}
+
+function findSpawnPoints(ctx) {
+  const valid = []
+  for (let x = -55; x <= 40; x += 12) {
+    for (let z = -85; z <= 30; z += 12) {
+      const hit = ctx.raycast([x, 20, z], [0, -1, 0], 30)
+      if (hit.hit && hit.position[1] > -3) valid.push([x, hit.position[1] + 2, z])
+    }
+  }
+  if (valid.length < 4) valid.push([0, 5, 0], [-35, 3, -65], [20, 5, -20], [-20, 5, 20])
+  return valid
 }
 
 function handleFire(ctx, msg) {
