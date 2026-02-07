@@ -6,7 +6,6 @@ export class PhysicsIntegration {
       capsuleRadius: config.capsuleRadius || 0.4,
       capsuleHalfHeight: config.capsuleHalfHeight || 0.9,
       playerMass: config.playerMass || 80,
-      groundCheckDist: config.groundCheckDist || 0.15,
       ...config
     }
     this.playerBodies = new Map()
@@ -18,54 +17,49 @@ export class PhysicsIntegration {
 
   addPlayerCollider(playerId, radius = 0.4) {
     if (!this.physicsWorld) {
-      this.playerBodies.set(playerId, { id: playerId, bodyId: null, onGround: true })
+      this.playerBodies.set(playerId, { id: playerId, charId: null, onGround: true })
       return
     }
-    const bodyId = this.physicsWorld.addPlayerCapsule(
+    const charId = this.physicsWorld.addPlayerCharacter(
       radius,
       this.config.capsuleHalfHeight,
       [0, 5, 0],
       this.config.playerMass
     )
-    this.playerBodies.set(playerId, { id: playerId, bodyId, onGround: true })
+    this.playerBodies.set(playerId, { id: playerId, charId, onGround: true })
   }
 
   removePlayerCollider(playerId) {
     const data = this.playerBodies.get(playerId)
-    if (data?.bodyId && this.physicsWorld) {
-      this.physicsWorld.removeBody(data.bodyId)
+    if (data?.charId && this.physicsWorld) {
+      this.physicsWorld.removeCharacter(data.charId)
     }
     this.playerBodies.delete(playerId)
   }
 
   updatePlayerPhysics(playerId, state, deltaTime) {
     const data = this.playerBodies.get(playerId)
-    if (!data || !data.bodyId || !this.physicsWorld) {
+    if (!data || !data.charId || !this.physicsWorld) {
       return this._fallbackPhysics(playerId, state, deltaTime)
     }
-    const bodyId = data.bodyId
-    const currentPos = this.physicsWorld.getBodyPosition(bodyId)
-    const currentVel = this.physicsWorld.getBodyVelocity(bodyId)
-    const newVel = [state.velocity[0], currentVel[1], state.velocity[2]]
-    if (state.velocity[1] > 0 && data.onGround) {
-      newVel[1] = state.velocity[1]
+    const charId = data.charId
+    const currentVel = this.physicsWorld.getCharacterVelocity(charId)
+    const onGround = this.physicsWorld.getCharacterGroundState(charId)
+    let vy
+    if (onGround) {
+      vy = state.velocity[1] > 0 ? state.velocity[1] : 0
+    } else {
+      vy = currentVel[1] + this.config.gravity[1] * deltaTime
     }
-    this.physicsWorld.setBodyVelocity(bodyId, newVel)
-    const pos = this.physicsWorld.getBodyPosition(bodyId)
-    const vel = this.physicsWorld.getBodyVelocity(bodyId)
-    data.onGround = this._checkGround(bodyId, pos)
+    this.physicsWorld.setCharacterVelocity(charId, [state.velocity[0], vy, state.velocity[2]])
+    this.physicsWorld.updateCharacter(charId, deltaTime)
+    const pos = this.physicsWorld.getCharacterPosition(charId)
+    const vel = this.physicsWorld.getCharacterVelocity(charId)
+    data.onGround = this.physicsWorld.getCharacterGroundState(charId)
     state.position = pos
     state.velocity = vel
     state.onGround = data.onGround
     return state
-  }
-
-  _checkGround(bodyId, position) {
-    if (!this.physicsWorld) return false
-    const rayOrigin = [position[0], position[1] - this.config.capsuleHalfHeight, position[2]]
-    const checkDist = this.config.capsuleRadius + this.config.groundCheckDist
-    const rayResult = this.physicsWorld.raycast(rayOrigin, [0, -1, 0], checkDist, bodyId)
-    return rayResult.hit && rayResult.distance < checkDist
   }
 
   _fallbackPhysics(playerId, state, deltaTime) {
@@ -85,15 +79,15 @@ export class PhysicsIntegration {
 
   setPlayerPosition(playerId, position) {
     const data = this.playerBodies.get(playerId)
-    if (data?.bodyId && this.physicsWorld) {
-      this.physicsWorld.setBodyPosition(data.bodyId, position)
+    if (data?.charId && this.physicsWorld) {
+      this.physicsWorld.setCharacterPosition(data.charId, position)
     }
   }
 
   getPlayerPosition(playerId) {
     const data = this.playerBodies.get(playerId)
-    if (data?.bodyId && this.physicsWorld) {
-      return this.physicsWorld.getBodyPosition(data.bodyId)
+    if (data?.charId && this.physicsWorld) {
+      return this.physicsWorld.getCharacterPosition(data.charId)
     }
     return [0, 0, 0]
   }
@@ -101,8 +95,8 @@ export class PhysicsIntegration {
   checkCollisionWithOthers(playerId, allPlayers) {
     const data = this.playerBodies.get(playerId)
     if (!data) return []
-    const pos = data.bodyId && this.physicsWorld
-      ? this.physicsWorld.getBodyPosition(data.bodyId)
+    const pos = data.charId && this.physicsWorld
+      ? this.physicsWorld.getCharacterPosition(data.charId)
       : [0, 0, 0]
     const collisions = []
     for (const other of allPlayers) {
@@ -134,15 +128,5 @@ export class PhysicsIntegration {
     )
     if (distance > 2.0) return { valid: false, reason: 'move_too_far', distance }
     return { valid: true }
-  }
-
-  isJump(newPos, oldPos) {
-    return newPos[1] > oldPos[1] && Math.abs(oldPos[1]) < 0.1
-  }
-
-  getSlopeAngle(position) {
-    const rayResult = this.raycast(position, [0, -1, 0], 2.0)
-    if (!rayResult.hit) return 0
-    return 0
   }
 }
