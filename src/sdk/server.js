@@ -1,4 +1,6 @@
 import { createServer as createHttpServer } from 'node:http'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { WebSocketServer as WSServer } from 'ws'
 import { MSG, DISCONNECT_REASONS } from '../protocol/MessageTypes.js'
 import { ConnectionManager } from '../connection/ConnectionManager.js'
@@ -22,11 +24,38 @@ import { createStaticHandler } from './StaticHandler.js'
 import { WebSocketTransport } from '../transport/WebSocketTransport.js'
 import { WebTransportServer } from '../transport/WebTransportServer.js'
 
+export async function boot(overrides = {}) {
+  const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
+  const worldMod = await import(join(ROOT, 'apps/world.js') + `?t=${Date.now()}`)
+  const worldDef = worldMod.default || worldMod
+  const config = {
+    port: parseInt(process.env.PORT || String(worldDef.port || 8080), 10),
+    tickRate: worldDef.tickRate || 128,
+    appsDir: join(ROOT, 'apps'),
+    gravity: worldDef.gravity,
+    movement: worldDef.movement,
+    staticDirs: [
+      { prefix: '/src/', dir: join(ROOT, 'src') },
+      { prefix: '/world/', dir: join(ROOT, 'world') },
+      { prefix: '/', dir: join(ROOT, 'client') }
+    ],
+    ...overrides
+  }
+  const server = await createServer(config)
+  await server.loadWorld(worldDef)
+  server.on('playerJoin', ({ id }) => console.log(`[+] player ${id}`))
+  server.on('playerLeave', ({ id }) => console.log(`[-] player ${id}`))
+  const info = await server.start()
+  console.log(`[server] http://localhost:${info.port} @ ${info.tickRate} TPS`)
+  return server
+}
+
 export async function createServer(config = {}) {
   const port = config.port || 8080
   const tickRate = config.tickRate || 128
   const appsDir = config.appsDir || './apps'
   const gravity = config.gravity || [0, -9.81, 0]
+  const movement = config.movement || {}
   const staticDirs = config.staticDirs || []
 
   const physics = new PhysicsWorld({ gravity })
@@ -59,7 +88,7 @@ export async function createServer(config = {}) {
 
   setTickHandler(createTickHandler({
     networkState, playerManager, physicsIntegration,
-    lagCompensator, physics, appRuntime, connections
+    lagCompensator, physics, appRuntime, connections, movement
   }))
 
   function onClientConnect(transport) {

@@ -123,6 +123,12 @@ export class PhysicsNetworkClient {
       } else if (type === MSG.HOT_RELOAD) {
         this.callbacks.onHotReload?.(payload)
       } else if (type === MSG.WORLD_DEF) {
+        if (payload.movement && this.predictionEngine) {
+          this.predictionEngine.setMovement(payload.movement)
+        }
+        if (payload.gravity && this.predictionEngine) {
+          this.predictionEngine.setGravity(payload.gravity)
+        }
         this.callbacks.onWorldDef?.(payload)
       } else if (type === MSG.APP_MODULE) {
         this.callbacks.onAppModule?.(payload)
