@@ -1,4 +1,4 @@
-import { readdir, readFile, watch } from 'node:fs/promises'
+import { readdir, readFile, watch, access } from 'node:fs/promises'
 import { join, basename, extname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -16,27 +16,42 @@ export class AppLoader {
     this._onReloadCallback = null
   }
 
+  async _resolvePath(name) {
+    const flat = join(this._dir, `${name}.js`)
+    try { await access(flat); return flat } catch {}
+    const folder = join(this._dir, name, 'index.js')
+    try { await access(folder); return folder } catch {}
+    return null
+  }
+
   async loadAll() {
-    const files = await readdir(this._dir).catch(() => [])
+    const entries = await readdir(this._dir, { withFileTypes: true }).catch(() => [])
     const results = []
-    for (const file of files) {
-      if (!file.endsWith('.js')) continue
-      const name = basename(file, extname(file))
-      const loaded = await this.loadApp(name)
-      if (loaded) results.push(name)
+    for (const entry of entries) {
+      let name = null
+      if (entry.isFile() && entry.name.endsWith('.js')) {
+        name = basename(entry.name, extname(entry.name))
+      } else if (entry.isDirectory()) {
+        try { await access(join(this._dir, entry.name, 'index.js')); name = entry.name } catch {}
+      }
+      if (name) {
+        const loaded = await this.loadApp(name)
+        if (loaded) results.push(name)
+      }
     }
     return results
   }
 
   async loadApp(name) {
-    const filePath = join(this._dir, `${name}.js`)
+    const filePath = await this._resolvePath(name)
+    if (!filePath) return null
     try {
       const source = await readFile(filePath, 'utf-8')
       if (!this._validate(source, name)) return null
       const appDef = await this._evaluate(source, filePath)
       if (!appDef) return null
       this._runtime.registerApp(name, appDef)
-      this._loaded.set(name, { filePath, source, clientCode: this._extractClientCode(source) })
+      this._loaded.set(name, { filePath, source, clientCode: source })
       return appDef
     } catch (e) {
       console.error(`[AppLoader] failed to load ${name}:`, e.message)
@@ -69,13 +84,16 @@ export class AppLoader {
   async watchAll() {
     try {
       const ac = new AbortController()
-      const watcher = watch(this._dir, { signal: ac.signal })
+      const watcher = watch(this._dir, { recursive: true, signal: ac.signal })
       this._watchers.set('__dir__', ac)
       ;(async () => {
         try {
           for await (const event of watcher) {
             if (!event.filename || !event.filename.endsWith('.js')) continue
-            const name = basename(event.filename, extname(event.filename))
+            const parts = event.filename.replace(/\\/g, '/').split('/')
+            const name = parts.length > 1
+              ? parts[0]
+              : basename(event.filename, extname(event.filename))
             await this._onFileChange(name)
           }
         } catch (e) {
@@ -122,10 +140,6 @@ export class AppLoader {
 
   getClientModule(name) {
     return this._loaded.get(name)?.clientCode || null
-  }
-
-  _extractClientCode(source) {
-    return source
   }
 
   async loadFromString(name, source) {
