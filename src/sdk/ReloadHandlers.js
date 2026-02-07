@@ -11,10 +11,10 @@ export function createReloadHandlers(deps) {
   }
 
   const reloadPhysicsIntegration = async () => {
-    const oldColliders = new Map(physicsIntegration.playerColliders)
+    const oldBodies = new Map(physicsIntegration.playerBodies)
     const { PhysicsIntegration: NewPhysicsIntegration } = await import('../netcode/PhysicsIntegration.js?' + Date.now())
-    const newIntegration = new NewPhysicsIntegration({ gravity: physicsIntegration.config.gravity })
-    newIntegration.playerColliders = oldColliders
+    const newIntegration = new NewPhysicsIntegration({ gravity: physicsIntegration.config.gravity, physicsWorld: physics })
+    newIntegration.playerBodies = oldBodies
     Object.assign(physicsIntegration, newIntegration)
   }
 
