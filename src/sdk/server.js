@@ -1,6 +1,6 @@
 import { createServer as createHttpServer } from 'node:http'
-import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, dirname, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { WebSocketServer as WSServer } from 'ws'
 import { MSG, DISCONNECT_REASONS } from '../protocol/MessageTypes.js'
 import { ConnectionManager } from '../connection/ConnectionManager.js'
@@ -26,7 +26,9 @@ import { WebTransportServer } from '../transport/WebTransportServer.js'
 
 export async function boot(overrides = {}) {
   const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
-  const worldMod = await import(join(ROOT, 'apps/world.js') + `?t=${Date.now()}`)
+  const worldPath = resolve(ROOT, 'apps/world/index.js')
+  const worldUrl = pathToFileURL(worldPath).href + `?t=${Date.now()}`
+  const worldMod = await import(worldUrl)
   const worldDef = worldMod.default || worldMod
   const config = {
     port: parseInt(process.env.PORT || String(worldDef.port || 8080), 10),
