@@ -2,20 +2,12 @@ import { AppContext } from './AppContext.js'
 import { mulQuat, rotVec } from '../math.js'
 
 export class AppRuntime {
-  constructor(config = {}) {
-    this.entities = new Map()
-    this.apps = new Map()
-    this.contexts = new Map()
-    this.gravity = config.gravity || [0, -9.81, 0]
-    this.currentTick = 0
-    this.deltaTime = 0
-    this.elapsed = 0
-    this._playerManager = config.playerManager || null
-    this._physics = config.physics || null
-    this._physicsIntegration = config.physicsIntegration || null
-    this._nextEntityId = 1
-    this._appDefs = new Map()
-    this._timers = new Map()
+  constructor(c = {}) {
+    this.entities = new Map(); this.apps = new Map(); this.contexts = new Map()
+    this.gravity = c.gravity || [0, -9.81, 0]
+    this.currentTick = 0; this.deltaTime = 0; this.elapsed = 0
+    this._playerManager = c.playerManager || null; this._physics = c.physics || null; this._physicsIntegration = c.physicsIntegration || null
+    this._nextEntityId = 1; this._appDefs = new Map(); this._timers = new Map()
   }
 
   registerApp(name, appDef) { this._appDefs.set(name, appDef) }
@@ -54,6 +46,15 @@ export class AppRuntime {
   }
 
   attachApp(entityId, appName) { this._attachApp(entityId, appName) }
+
+  spawnWithApp(id, cfg = {}, app) { return this.spawnEntity(id, { ...cfg, app }) }
+  attachAppToEntity(eid, app, cfg = {}) {
+    const e = this.getEntity(eid); if (!e) return false; e._config = cfg; this._attachApp(eid, app); return true
+  }
+  reattachAppToEntity(eid, app) { this.detachApp(eid); this._attachApp(eid, app) }
+  getEntityWithApp(eid) {
+    const e = this.entities.get(eid); return { entity: e, appName: e?._appName, hasApp: !!e?._appName }
+  }
 
   detachApp(entityId) {
     const appDef = this.apps.get(entityId), ctx = this.contexts.get(entityId)
@@ -113,19 +114,17 @@ export class AppRuntime {
     return { tick: this.currentTick, timestamp: Date.now(), entities }
   }
 
-  queryEntities(filter) { return filter ? Array.from(this.entities.values()).filter(filter) : Array.from(this.entities.values()) }
+  queryEntities(f) { return f ? Array.from(this.entities.values()).filter(f) : Array.from(this.entities.values()) }
   getEntity(id) { return this.entities.get(id) || null }
-
-  fireEvent(entityId, eventName, ...args) {
-    const appDef = this.apps.get(entityId), ctx = this.contexts.get(entityId)
-    if (!appDef || !ctx) return
-    const sd = appDef.server || appDef
-    if (sd[eventName]) this._safeCall(sd, eventName, [ctx, ...args], `${eventName}(${entityId})`)
+  fireEvent(eid, en, ...a) {
+    const ad = this.apps.get(eid), c = this.contexts.get(eid)
+    if (!ad || !c) return
+    const s = ad.server || ad
+    if (s[en]) this._safeCall(s, en, [c, ...a], `${en}(${eid})`)
   }
-
-  addTimer(eid, delay, fn, repeat) {
-    if (!this._timers.has(eid)) this._timers.set(eid, [])
-    this._timers.get(eid).push({ remaining: delay, fn, repeat, interval: delay })
+  addTimer(e, d, fn, r) {
+    if (!this._timers.has(e)) this._timers.set(e, [])
+    this._timers.get(e).push({ remaining: d, fn, repeat: r, interval: d })
   }
   clearTimers(eid) { this._timers.delete(eid) }
   _tickTimers(dt) {
@@ -152,41 +151,40 @@ export class AppRuntime {
     }
   }
   _colR(c) { return !c ? 0 : c.type === 'sphere' ? (c.radius||1) : c.type === 'capsule' ? Math.max(c.radius||0.5,(c.height||1)/2) : c.type === 'box' ? Math.max(...(c.size||c.halfExtents||[1,1,1])) : 1 }
-  fireInteract(eid, player) { this.fireEvent(eid, 'onInteract', player) }
-  fireMessage(eid, msg) { this.fireEvent(eid, 'onMessage', msg) }
+  fireInteract(eid, p) { this.fireEvent(eid, 'onInteract', p) }
+  fireMessage(eid, m) { this.fireEvent(eid, 'onMessage', m) }
   setPlayerManager(pm) { this._playerManager = pm }
   getPlayers() { return this._playerManager ? this._playerManager.getConnectedPlayers() : [] }
-  getNearestPlayer(pos, radius) {
-    let nearest = null, minDist = radius * radius
+  getNearestPlayer(pos, r) {
+    let n = null, md = r * r
     for (const p of this.getPlayers()) {
       const pp = p.state?.position; if (!pp) continue
       const d = (pp[0]-pos[0])**2 + (pp[1]-pos[1])**2 + (pp[2]-pos[2])**2
-      if (d < minDist) { minDist = d; nearest = p }
+      if (d < md) { md = d; n = p }
     }
-    return nearest
+    return n
   }
-  broadcastToPlayers(msg) { this._playerManager?.broadcast(msg) }
-  sendToPlayer(id, msg) { this._playerManager?.sendToPlayer(id, msg) }
-  setPlayerPosition(id, pos) {
-    this._physicsIntegration?.setPlayerPosition(id, pos)
-    if (this._playerManager) { const p = this._playerManager.getPlayer(id); if (p) p.state.position = [...pos] }
+  broadcastToPlayers(m) { this._playerManager?.broadcast(m) }
+  sendToPlayer(id, m) { this._playerManager?.sendToPlayer(id, m) }
+  setPlayerPosition(id, p) {
+    this._physicsIntegration?.setPlayerPosition(id, p)
+    if (this._playerManager) { const pl = this._playerManager.getPlayer(id); if (pl) pl.state.position = [...p] }
   }
 
-  hotReload(appName, newDef) {
-    this._appDefs.set(appName, newDef)
+  hotReload(n, d) {
+    this._appDefs.set(n, d)
     for (const [eid, ent] of this.entities) {
-      if (ent._appName !== appName) continue
-      const old = this.apps.get(eid), oldCtx = this.contexts.get(eid)
-      if (old && oldCtx) this._safeCall(old.server || old, 'teardown', [oldCtx], 'teardown')
+      if (ent._appName !== n) continue
+      const o = this.apps.get(eid), oc = this.contexts.get(eid)
+      if (o && oc) this._safeCall(o.server || o, 'teardown', [oc], 'teardown')
       this.clearTimers(eid)
       const ctx = new AppContext(ent, this)
-      this.contexts.set(eid, ctx); this.apps.set(eid, newDef)
-      this._safeCall(newDef.server || newDef, 'setup', [ctx], `hotReload(${appName})`)
+      this.contexts.set(eid, ctx); this.apps.set(eid, d)
+      this._safeCall(d.server || d, 'setup', [ctx], `hotReload(${n})`)
     }
   }
-
-  _safeCall(obj, method, args, label) {
-    if (!obj?.[method]) return
-    try { obj[method](...args) } catch (e) { console.error(`[AppRuntime] ${label}:`, e.message) }
+  _safeCall(o, m, a, l) {
+    if (!o?.[m]) return
+    try { o[m](...a) } catch (e) { console.error(`[AppRuntime] ${l}:`, e.message) }
   }
 }
