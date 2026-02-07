@@ -38,6 +38,7 @@ scene.add(ground)
 const gltfLoader = new GLTFLoader()
 const playerMeshes = new Map()
 const entityMeshes = new Map()
+const appModules = new Map()
 const inputHandler = new InputHandler()
 
 const hudInfo = document.getElementById('info')
@@ -86,6 +87,18 @@ function removePlayerMesh(id) {
   playerMeshes.delete(id)
 }
 
+function evaluateAppModule(code) {
+  try {
+    const stripped = code.replace(/^import\s+.*$/gm, '')
+    const wrapped = stripped.replace(/export\s+default\s+/, 'return ')
+    const fn = new Function(wrapped)
+    return fn()
+  } catch (e) {
+    console.error('[app-eval]', e.message)
+    return null
+  }
+}
+
 function loadEntityModel(entityId, entityState) {
   if (!entityState.model) return
   const url = entityState.model.startsWith('./') ? '/' + entityState.model.slice(2) : entityState.model
@@ -102,6 +115,26 @@ function loadEntityModel(entityId, entityState) {
   }, undefined, (err) => console.error('[gltf]', entityId, err))
 }
 
+function onWorldDef(worldDef) {
+  console.log('[client] received world definition:', worldDef)
+  if (worldDef.entities) {
+    for (const ent of worldDef.entities) {
+      if (ent.model && !entityMeshes.has(ent.id)) {
+        loadEntityModel(ent.id, ent)
+      }
+    }
+  }
+}
+
+function onAppModule(data) {
+  const { app, code } = data
+  console.log('[client] received app module:', app)
+  const appDef = evaluateAppModule(code)
+  if (appDef && appDef.client) {
+    appModules.set(app, appDef.client)
+  }
+}
+
 const client = new PhysicsNetworkClient({
   serverUrl: `ws://${window.location.host}/ws`,
   onStateUpdate: updateState,
@@ -110,6 +143,9 @@ const client = new PhysicsNetworkClient({
   },
   onPlayerLeft: (id) => removePlayerMesh(id),
   onEntityAdded: (id, state) => loadEntityModel(id, state),
+  onWorldDef: onWorldDef,
+  onAppModule: onAppModule,
+  onAssetUpdate: (data) => console.log('[client] asset update:', data),
   onHotReload: () => {
     sessionStorage.setItem('cam', JSON.stringify({ yaw, pitch, zoomIndex }))
     location.reload()
@@ -252,4 +288,4 @@ client.connect()
   .then(() => { console.log('Connected'); startInputLoop() })
   .catch(err => console.error('Connection failed:', err))
 
-window.debug = { scene, camera, renderer, client, playerMeshes, entityMeshes, inputHandler }
+window.debug = { scene, camera, renderer, client, playerMeshes, entityMeshes, appModules, inputHandler }

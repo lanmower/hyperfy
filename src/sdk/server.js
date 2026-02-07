@@ -47,8 +47,11 @@ export async function createServer(config = {}) {
   appRuntime.setPlayerManager(playerManager)
   const appLoader = new AppLoader(appRuntime, { dir: appsDir })
   const binder = new EntityAppBinder(appRuntime, appLoader)
+  appLoader._onReloadCallback = (name, code) => {
+    connections.broadcast(MSG.APP_MODULE, { app: name, code })
+  }
   let wss = null, httpServer = null, wtServer = null, snapshotSeq = 0
-  let worldSpawnPoint = [0, 5, 0]
+  let worldSpawnPoint = [0, 5, 0], currentWorldDef = null
 
   const handlerState = { fn: null }
   const onTick = (tick, dt) => { if (handlerState.fn) handlerState.fn(tick, dt) }
@@ -76,6 +79,13 @@ export async function createServer(config = {}) {
       playerId, tick: tickSystem.currentTick,
       sessionToken: client.sessionToken, tickRate
     })
+    if (currentWorldDef) {
+      connections.send(playerId, MSG.WORLD_DEF, currentWorldDef)
+    }
+    const clientModules = appLoader.getClientModules()
+    for (const [appName, code] of Object.entries(clientModules)) {
+      connections.send(playerId, MSG.APP_MODULE, { app: appName, code })
+    }
     const snap = appRuntime.getSnapshot()
     connections.send(playerId, MSG.SNAPSHOT, {
       seq: ++snapshotSeq, ...SnapshotEncoder.encode(snap)
@@ -141,6 +151,7 @@ export async function createServer(config = {}) {
     connections, sessions, inspector, emitter, reloadManager,
     on: emitter.on.bind(emitter), off: emitter.off.bind(emitter),
     async loadWorld(worldDef) {
+      currentWorldDef = worldDef
       if (worldDef.spawnPoint) worldSpawnPoint = [...worldDef.spawnPoint]
       await appLoader.loadAll()
       return binder.loadWorld(worldDef)

@@ -31,7 +31,10 @@ export class PhysicsNetworkClient {
       onEntityRemoved: config.onEntityRemoved || (() => {}),
       onSnapshot: config.onSnapshot || (() => {}),
       onRender: config.onRender || (() => {}),
-      onStateUpdate: config.onStateUpdate || (() => {})
+      onStateUpdate: config.onStateUpdate || (() => {}),
+      onWorldDef: config.onWorldDef || (() => {}),
+      onAppModule: config.onAppModule || (() => {}),
+      onAssetUpdate: config.onAssetUpdate || (() => {})
     }
   }
 
@@ -119,6 +122,12 @@ export class PhysicsNetworkClient {
         this.onSnapshot(payload)
       } else if (type === MSG.HOT_RELOAD) {
         this.callbacks.onHotReload?.(payload)
+      } else if (type === MSG.WORLD_DEF) {
+        this.callbacks.onWorldDef?.(payload)
+      } else if (type === MSG.APP_MODULE) {
+        this.callbacks.onAppModule?.(payload)
+      } else if (type === MSG.ASSET_UPDATE) {
+        this.callbacks.onAssetUpdate?.(payload)
       }
     } catch (e) {
       console.error('[PhysicsNetworkClient] Failed to parse message:', e)

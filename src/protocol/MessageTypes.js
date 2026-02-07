@@ -34,7 +34,10 @@ export const MSG = {
   STATE_RECOVERY: 0x62,
   DISCONNECT_REASON: 0x63,
 
-  HOT_RELOAD: 0x70
+  HOT_RELOAD: 0x70,
+  WORLD_DEF: 0x71,
+  APP_MODULE: 0x72,
+  ASSET_UPDATE: 0x73
 }
 
 const nameMap = new Map()
