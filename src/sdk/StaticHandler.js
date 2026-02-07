@@ -16,7 +16,12 @@ export function createStaticHandler(dirs) {
       const relative = url === prefix ? '/index.html' : url.slice(prefix.length)
       const fp = join(dir, relative)
       if (existsSync(fp)) {
-        res.writeHead(200, { 'Content-Type': MIME_TYPES[extname(fp)] || 'application/octet-stream' })
+        const ext = extname(fp)
+        const headers = { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' }
+        if (ext === '.js' || ext === '.html' || ext === '.css') {
+          headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        }
+        res.writeHead(200, headers)
         res.end(readFileSync(fp))
         return
       }

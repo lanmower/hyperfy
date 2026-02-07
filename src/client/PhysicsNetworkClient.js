@@ -117,6 +117,8 @@ export class PhysicsNetworkClient {
         this.callbacks.onPlayerLeft(payload.playerId)
       } else if (type === MSG.STATE_CORRECTION) {
         this.onSnapshot(payload)
+      } else if (type === MSG.HOT_RELOAD) {
+        this.callbacks.onHotReload?.(payload)
       }
     } catch (e) {
       console.error('[PhysicsNetworkClient] Failed to parse message:', e)

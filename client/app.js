@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { PhysicsNetworkClient, InputHandler } from '/src/index.client.js'
+import { PhysicsNetworkClient, InputHandler, MSG } from '/src/index.client.js'
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x87ceeb)
@@ -45,7 +45,8 @@ const healthFill = document.getElementById('health-fill')
 const healthText = document.getElementById('health-text')
 const clickPrompt = document.getElementById('click-prompt')
 
-let yaw = 0, pitch = 0
+const savedCam = JSON.parse(sessionStorage.getItem('cam') || 'null')
+let yaw = savedCam?.yaw || 0, pitch = savedCam?.pitch || 0
 let lastShootTime = 0
 const camTarget = new THREE.Vector3()
 const camRaycaster = new THREE.Raycaster()
@@ -54,7 +55,8 @@ const camDesired = new THREE.Vector3()
 const shoulderOffset = 0.6
 const headHeight = 0.4
 const zoomStages = [0, 1.5, 3, 5, 8]
-let zoomIndex = 2
+let zoomIndex = savedCam?.zoomIndex ?? 2
+if (savedCam) sessionStorage.removeItem('cam')
 
 function createPlayerMesh(id, isLocal) {
   const group = new THREE.Group()
@@ -108,6 +110,10 @@ const client = new PhysicsNetworkClient({
   },
   onPlayerLeft: (id) => removePlayerMesh(id),
   onEntityAdded: (id, state) => loadEntityModel(id, state),
+  onHotReload: () => {
+    sessionStorage.setItem('cam', JSON.stringify({ yaw, pitch, zoomIndex }))
+    location.reload()
+  },
   debug: false
 })
 
