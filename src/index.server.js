@@ -1,5 +1,8 @@
 export { PhysicsWorld } from './physics/World.js'
 
+export { AppRuntime } from './apps/AppRuntime.js'
+export { SceneBuilder } from './apps/SceneBuilder.js'
+
 export { TickSystem } from './netcode/TickSystem.js'
 export { NetworkState } from './netcode/NetworkState.js'
 export { SnapshotEncoder } from './netcode/SnapshotEncoder.js'
