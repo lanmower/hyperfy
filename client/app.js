@@ -206,26 +206,19 @@ function animate() {
     const localMesh = playerMeshes.get(client.playerId)
     if (localMesh) localMesh.visible = dist > 0.5
 
+    const sy = Math.sin(yaw), cy = Math.cos(yaw)
+    const sp = Math.sin(pitch), cp = Math.cos(pitch)
+    const fwdX = sy * cp, fwdY = sp, fwdZ = cy * cp
+    const rightX = -cy, rightZ = sy
+
     if (dist < 0.01) {
-      const sy = Math.sin(yaw), cy = Math.cos(yaw)
-      const sp = Math.sin(pitch), cp = Math.cos(pitch)
       camera.position.copy(camTarget)
-      camera.position.x += sy * cp * 0.01
-      camera.position.y += sp * 0.01
-      camera.position.z += cy * cp * 0.01
-      camera.lookAt(
-        camTarget.x + sy * cp,
-        camTarget.y + sp,
-        camTarget.z + cy * cp
-      )
+      camera.lookAt(camTarget.x + fwdX, camTarget.y + fwdY, camTarget.z + fwdZ)
     } else {
-      const sy = Math.sin(yaw), cy = Math.cos(yaw)
-      const sp = Math.sin(pitch), cp = Math.cos(pitch)
-      const rightX = -cy, rightZ = sy
       camDesired.set(
-        camTarget.x - sy * cp * dist + rightX * shoulderOffset,
-        camTarget.y - sp * dist,
-        camTarget.z - cy * cp * dist + rightZ * shoulderOffset
+        camTarget.x - fwdX * dist + rightX * shoulderOffset,
+        camTarget.y - fwdY * dist + 0.2,
+        camTarget.z - fwdZ * dist + rightZ * shoulderOffset
       )
       camDir.subVectors(camDesired, camTarget).normalize()
       const fullDist = camTarget.distanceTo(camDesired)
@@ -244,7 +237,11 @@ function animate() {
         camTarget.y + camDir.y * clippedDist,
         camTarget.z + camDir.z * clippedDist
       )
-      camera.lookAt(camTarget)
+      camera.lookAt(
+        camera.position.x + fwdX * 100,
+        camera.position.y + fwdY * 100,
+        camera.position.z + fwdZ * 100
+      )
     }
   }
   renderer.render(scene, camera)
