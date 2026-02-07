@@ -1,17 +1,10 @@
 ## Player Physics - CharacterVirtual Migration
 
-- [ ] Replace dynamic body player capsule with Jolt CharacterVirtual (blocks: slope-handling, wall-sliding, stair-stepping)
-- [ ] Implement CharacterVirtual creation in World.js with proper settings (mMass, mMaxSlopeAngle, mSupportingVolume, mShape)
-- [ ] Implement ExtendedUpdate call with StickToFloor and WalkStairs settings
-- [ ] Update PhysicsIntegration.js to use CharacterVirtual API instead of setBodyVelocity on dynamic body
-- [ ] Update TickHandler.js velocity handling to use CharacterVirtual SetLinearVelocity with proper ground/air separation
-- [ ] Verify slope handling - player walks up ramps without launching
-- [ ] Verify stair stepping works
-- [ ] Verify floor sticking on downslopes
-- [ ] Verify jump still works correctly
-- [ ] Verify ground detection uses CharacterVirtual GetGroundState instead of raycast
-- [ ] Update ReloadHandlers.js to preserve CharacterVirtual instances across hot-reload
-- [ ] Verify hot-reload preserves player CharacterVirtual state
+- [ ] Verify slope handling in live game - player walks up ramps without launching
+- [ ] Verify stair stepping works in live game
+- [ ] Verify floor sticking on downslopes in live game
+- [ ] Verify jump still works correctly in live game
+- [ ] Verify hot-reload preserves player CharacterVirtual state in live game
 
 ## WebTransport Integration
 
