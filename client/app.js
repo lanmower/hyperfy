@@ -170,10 +170,18 @@ function updateState(state) {
   hudInfo.textContent = `Players: ${state.players.length} | Tick: ${client.currentTick}`
 }
 
-function getAimDirection() {
+function getAimDirection(playerPos) {
   const sy = Math.sin(yaw), cy = Math.cos(yaw)
   const sp = Math.sin(pitch), cp = Math.cos(pitch)
-  return [sy * cp, sp, cy * cp]
+  const fwdX = sy * cp, fwdY = sp, fwdZ = cy * cp
+  if (!playerPos || zoomStages[zoomIndex] < 0.01) return [fwdX, fwdY, fwdZ]
+  const tx = camera.position.x + fwdX * 100
+  const ty = camera.position.y + fwdY * 100
+  const tz = camera.position.z + fwdZ * 100
+  const ox = playerPos[0], oy = playerPos[1] + 0.9, oz = playerPos[2]
+  const dx = tx - ox, dy = ty - oy, dz = tz - oz
+  const len = Math.sqrt(dx * dx + dy * dy + dz * dz)
+  return len > 0.001 ? [dx / len, dy / len, dz / len] : [fwdX, fwdY, fwdZ]
 }
 
 let inputLoopId = null
@@ -190,7 +198,7 @@ function startInputLoop() {
       const local = client.state?.players?.find(p => p.id === client.playerId)
       if (local) {
         const pos = local.position
-        client.sendFire({ origin: [pos[0], pos[1] + 0.5, pos[2]], direction: getAimDirection() })
+        client.sendFire({ origin: [pos[0], pos[1] + 0.9, pos[2]], direction: getAimDirection(pos) })
         showMuzzleFlash(pos)
       }
     }
