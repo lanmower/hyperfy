@@ -9,6 +9,7 @@ export class PredictionEngine {
     this.lastServerState = null
     this.inputHistory = []
     this.gravity = [0, -9.81, 0]
+    this.fallMultiplier = 4
     this.reconciliationEngine = new ReconciliationEngine()
   }
 
@@ -57,12 +58,14 @@ export class PredictionEngine {
       }
 
       if (input.jump && state.onGround) {
-        state.velocity[1] = 5
+        state.velocity[1] = 4.43
         state.onGround = false
       }
     }
 
-    state.velocity[1] -= this.gravity[1] * dt
+    const falling = state.velocity[1] <= 0
+    const gravScale = falling ? this.fallMultiplier : 1
+    state.velocity[1] += this.gravity[1] * gravScale * dt
     state.position[1] += state.velocity[1] * dt
 
     if (state.position[1] < 0) {
