@@ -49,13 +49,18 @@ export class EntityAppBinder {
       this._runtime.gravity = [...worldDef.gravity]
     }
     for (const entDef of worldDef.entities || []) {
-      const entity = this.spawn(entDef.id || null, {
+      const spawnConfig = {
         model: entDef.model,
         position: entDef.position,
         rotation: entDef.rotation,
         scale: entDef.scale,
-        app: entDef.app
-      })
+        app: entDef.app,
+        config: entDef.config || null
+      }
+      if (entDef.model && !entDef.app) {
+        spawnConfig.autoTrimesh = true
+      }
+      const entity = this.spawn(entDef.id || null, spawnConfig)
       results.push(entity)
     }
     return results

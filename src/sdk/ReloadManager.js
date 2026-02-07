@@ -8,23 +8,22 @@ export class ReloadManager {
     this._reloadState = new Map()
     this._debounceTimers = new Map()
     this._failureCounters = new Map()
+    this._validators = new Map()
     this._MAX_FAILURES = 3
     this._MAX_BACKOFF = 400
   }
 
-  addWatcher(moduleId, filePath, onReload) {
+  addWatcher(moduleId, filePath, onReload, validator) {
     const absPath = resolve(filePath)
     if (this._watchers.has(moduleId)) return
-
     this._reloadState.set(moduleId, { inProgress: false, lastSuccess: null, failureCount: 0 })
     this._failureCounters.set(moduleId, 0)
-
+    if (validator) this._validators.set(moduleId, validator)
     const startWatch = async () => {
       try {
         const ac = new AbortController()
         this._watchers.set(moduleId, ac)
         const watcher = watch(absPath, { signal: ac.signal })
-
         ;(async () => {
           try {
             for await (const event of watcher) {
@@ -40,7 +39,6 @@ export class ReloadManager {
         console.error(`[ReloadManager] failed to start watcher for ${moduleId}:`, e.message)
       }
     }
-
     startWatch()
   }
 
@@ -48,10 +46,11 @@ export class ReloadManager {
     if (this._debounceTimers.has(moduleId)) {
       clearTimeout(this._debounceTimers.get(moduleId))
     }
+    this._failureCounters.set(moduleId, 0)
     const timer = setTimeout(() => {
       fn()
       this._debounceTimers.delete(moduleId)
-    }, 500)
+    }, 100)
     this._debounceTimers.set(moduleId, timer)
   }
 
@@ -59,16 +58,28 @@ export class ReloadManager {
     const state = this._reloadState.get(moduleId)
     if (!state) return
     if (state.inProgress) return
-
     state.inProgress = true
     const failureCount = this._failureCounters.get(moduleId) || 0
-
     if (failureCount >= this._MAX_FAILURES) {
       console.error(`[ReloadManager] ${moduleId} exceeded max failures, stopping auto-reload`)
       state.inProgress = false
       return
     }
-
+    const validator = this._validators.get(moduleId)
+    if (validator) {
+      try {
+        const valid = await validator()
+        if (!valid) {
+          console.warn(`[ReloadManager] ${moduleId} failed pre-reload validation, skipping`)
+          state.inProgress = false
+          return
+        }
+      } catch (e) {
+        console.warn(`[ReloadManager] ${moduleId} validation error, skipping:`, e.message)
+        state.inProgress = false
+        return
+      }
+    }
     try {
       await onReload()
       this._failureCounters.set(moduleId, 0)
@@ -77,10 +88,8 @@ export class ReloadManager {
     } catch (e) {
       const newFailureCount = failureCount + 1
       this._failureCounters.set(moduleId, newFailureCount)
-
       const backoff = Math.min(100 * Math.pow(2, failureCount - 1), this._MAX_BACKOFF)
       console.error(`[ReloadManager] reload failed for ${moduleId} (${newFailureCount}/${this._MAX_FAILURES}):`, e.message)
-
       if (newFailureCount < this._MAX_FAILURES) {
         console.log(`[ReloadManager] retrying ${moduleId} in ${backoff}ms`)
         await new Promise(resolve => setTimeout(resolve, backoff))
@@ -91,7 +100,6 @@ export class ReloadManager {
         console.error(`[ReloadManager] ${moduleId} gave up after ${newFailureCount} failures`)
       }
     }
-
     state.inProgress = false
   }
 
@@ -103,33 +111,16 @@ export class ReloadManager {
   }
 
   stopAllWatchers() {
-    for (const ac of this._watchers.values()) {
-      ac.abort()
-    }
+    for (const ac of this._watchers.values()) ac.abort()
     this._watchers.clear()
-    for (const timer of this._debounceTimers.values()) {
-      clearTimeout(timer)
-    }
+    for (const timer of this._debounceTimers.values()) clearTimeout(timer)
     this._debounceTimers.clear()
   }
 
-  cacheModule(moduleId, module) {
-    this._moduleCache.set(moduleId, module)
-  }
-
-  getModule(moduleId) {
-    return this._moduleCache.get(moduleId)
-  }
-
-  getState(moduleId) {
-    return this._reloadState.get(moduleId)
-  }
-
+  cacheModule(moduleId, module) { this._moduleCache.set(moduleId, module) }
+  getModule(moduleId) { return this._moduleCache.get(moduleId) }
+  getState(moduleId) { return this._reloadState.get(moduleId) }
   getStats() {
-    return {
-      watchers: this._watchers.size,
-      modules: this._moduleCache.size,
-      failures: Object.fromEntries(this._failureCounters)
-    }
+    return { watchers: this._watchers.size, modules: this._moduleCache.size, failures: Object.fromEntries(this._failureCounters) }
   }
 }

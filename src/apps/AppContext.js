@@ -43,9 +43,28 @@ export class AppContext {
       setDynamic: (v) => { ent.bodyType = v ? 'dynamic' : ent.bodyType },
       setKinematic: (v) => { ent.bodyType = v ? 'kinematic' : ent.bodyType },
       setMass: (v) => { ent.mass = v },
-      addBoxCollider: (s) => { ent.collider = { type: 'box', size: s } },
-      addSphereCollider: (r) => { ent.collider = { type: 'sphere', radius: r } },
-      addCapsuleCollider: (r, h) => { ent.collider = { type: 'capsule', radius: r, height: h } },
+      addBoxCollider: (s) => {
+        ent.collider = { type: 'box', size: s }
+        if (runtime._physics) {
+          const he = Array.isArray(s) ? s : [s, s, s]
+          const mt = ent.bodyType === 'dynamic' ? 'dynamic' : ent.bodyType === 'kinematic' ? 'kinematic' : 'static'
+          ent._physicsBodyId = runtime._physics.addBody('box', he, ent.position, mt, { rotation: ent.rotation, mass: ent.mass })
+        }
+      },
+      addSphereCollider: (r) => {
+        ent.collider = { type: 'sphere', radius: r }
+        if (runtime._physics) {
+          const mt = ent.bodyType === 'dynamic' ? 'dynamic' : ent.bodyType === 'kinematic' ? 'kinematic' : 'static'
+          ent._physicsBodyId = runtime._physics.addBody('sphere', r, ent.position, mt, { rotation: ent.rotation, mass: ent.mass })
+        }
+      },
+      addCapsuleCollider: (r, h) => {
+        ent.collider = { type: 'capsule', radius: r, height: h }
+        if (runtime._physics) {
+          const mt = ent.bodyType === 'dynamic' ? 'dynamic' : ent.bodyType === 'kinematic' ? 'kinematic' : 'static'
+          ent._physicsBodyId = runtime._physics.addBody('capsule', [r, h / 2], ent.position, mt, { rotation: ent.rotation, mass: ent.mass })
+        }
+      },
       addMeshCollider: (m) => { ent.collider = { type: 'mesh', mesh: m } },
       addTrimeshCollider: () => {
         ent.collider = { type: 'trimesh', model: ent.model }
@@ -88,12 +107,17 @@ export class AppContext {
 
   get time() {
     const runtime = this._runtime
+    const entityId = this._entity.id
     return {
       get tick() { return runtime.currentTick },
       get deltaTime() { return runtime.deltaTime },
-      get elapsed() { return runtime.elapsed }
+      get elapsed() { return runtime.elapsed },
+      after: (seconds, fn) => runtime.addTimer(entityId, seconds, fn, false),
+      every: (seconds, fn) => runtime.addTimer(entityId, seconds, fn, true)
     }
   }
+
+  get config() { return this._entity._config || {} }
 
   get state() { return this._state }
   set state(v) { Object.assign(this._state, v) }
