@@ -123,5 +123,10 @@ export function createTickHandler(deps) {
     connections.broadcast(MSG.SNAPSHOT, {
       seq: snapshotSeq, ...SnapshotEncoder.encode(combined)
     })
+    try {
+      appRuntime._drainReloadQueue()
+    } catch (e) {
+      console.error('[TickHandler] reload queue error:', e.message)
+    }
   }
 }

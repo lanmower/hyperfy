@@ -10,6 +10,7 @@ export class AppRuntime {
     this._playerManager = c.playerManager || null; this._physics = c.physics || null; this._physicsIntegration = c.physicsIntegration || null
     this._connections = c.connections || null
     this._nextEntityId = 1; this._appDefs = new Map(); this._timers = new Map()
+    this._reloadQueue = []; this._reloadInProgress = false; this._reloadCallbacks = []
   }
 
   registerApp(name, appDef) { this._appDefs.set(name, appDef) }
@@ -185,7 +186,40 @@ export class AppRuntime {
     if (this._playerManager) { const pl = this._playerManager.getPlayer(id); if (pl) pl.state.position = [...p] }
   }
 
-  hotReload(n, d) {
+  queueReload(n, d, cb) {
+    this._reloadQueue.push({ name: n, def: d, callback: cb })
+  }
+
+  _drainReloadQueue() {
+    if (this._reloadInProgress || this._reloadQueue.length === 0) return
+    this._reloadInProgress = true
+    try {
+      while (this._reloadQueue.length > 0) {
+        const { name: n, def: d, callback: cb } = this._reloadQueue.shift()
+        try {
+          this._executeHotReload(n, d)
+          if (this._connections) {
+            for (const client of this._connections.clients.values()) {
+              client.lastHeartbeat = Date.now()
+            }
+          }
+          if (cb) {
+            try {
+              cb(n, d)
+            } catch (e) {
+              console.error(`[AppRuntime] reload callback error:`, e.message)
+            }
+          }
+        } catch (e) {
+          console.error(`[AppRuntime] hotReload(${n}) error:`, e.message)
+        }
+      }
+    } finally {
+      this._reloadInProgress = false
+    }
+  }
+
+  _executeHotReload(n, d) {
     this._appDefs.set(n, d)
     for (const [eid, ent] of this.entities) {
       if (ent._appName !== n) continue
@@ -196,6 +230,10 @@ export class AppRuntime {
       this.contexts.set(eid, ctx); this.apps.set(eid, d)
       this._safeCall(d.server || d, 'setup', [ctx], `hotReload(${n})`)
     }
+  }
+
+  hotReload(n, d) {
+    this._executeHotReload(n, d)
   }
   _safeCall(o, m, a, l) {
     if (!o?.[m]) return
