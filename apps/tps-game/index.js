@@ -17,7 +17,7 @@ export default {
       const now = Date.now()
       for (const [pid, data] of ctx.state.respawning) {
         if (now < data.respawnAt) continue
-        const sp = ctx.state.spawnPoints[Math.floor(Math.random() * ctx.state.spawnPoints.length)]
+        const sp = getAvailableSpawnPoint(ctx, ctx.state.spawnPoints)
         const player = ctx.players.getAll().find(p => p.id === pid)
         if (player && player.state) {
           player.state.health = ctx.state.config.health
@@ -66,6 +66,19 @@ function findSpawnPoints(ctx) {
   }
   if (valid.length < 4) valid.push([0, 5, 0], [-35, 3, -65], [20, 5, -20], [-20, 5, 20])
   return valid
+}
+
+function getAvailableSpawnPoint(ctx, spawnPoints) {
+  const MIN_SAFE_DISTANCE = 6
+  const activePlayers = ctx.players.getAll().filter(p => p.state && !ctx.state.respawning.has(p.id))
+  const safePoints = spawnPoints.filter(sp => {
+    return activePlayers.every(player => {
+      const dist = Math.hypot(sp[0] - player.state.position[0], sp[1] - player.state.position[1], sp[2] - player.state.position[2])
+      return dist >= MIN_SAFE_DISTANCE
+    })
+  })
+  const availablePoints = safePoints.length > 0 ? safePoints : spawnPoints
+  return availablePoints[Math.floor(Math.random() * availablePoints.length)]
 }
 
 function handleFire(ctx, msg) {
