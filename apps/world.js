@@ -6,7 +6,7 @@ export default {
     maxSpeed: 8.0,
     groundAccel: 10.0,
     airAccel: 1.0,
-    friction: 6.0,
+    friction: 7.2,
     stopSpeed: 2.0,
     jumpImpulse: 4.5
   },

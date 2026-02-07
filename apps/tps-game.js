@@ -72,6 +72,8 @@ function handleFire(ctx, msg) {
 
   for (const target of players) {
     if (!target.state || target.id === shooterId) continue
+    if (ctx.state.respawning.has(target.id)) continue
+    if ((target.state.health ?? ctx.state.config.health) <= 0) continue
     const tp = target.state.position
     const toTarget = [tp[0] - origin[0], tp[1] + 0.9 - origin[1], tp[2] - origin[2]]
     const dot = toTarget[0] * direction[0] + toTarget[1] * direction[1] + toTarget[2] * direction[2]
@@ -80,7 +82,7 @@ function handleFire(ctx, msg) {
     const dist = Math.hypot(proj[0] - tp[0], proj[1] - (tp[1] + 0.9), proj[2] - tp[2])
     if (dist > 0.6) continue
 
-    const hp = target.state.health || ctx.state.config.health
+    const hp = target.state.health ?? ctx.state.config.health
     const newHp = Math.max(0, hp - damage)
     target.state.health = newHp
 

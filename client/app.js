@@ -53,7 +53,7 @@ const camTarget = new THREE.Vector3()
 const camRaycaster = new THREE.Raycaster()
 const camDir = new THREE.Vector3()
 const camDesired = new THREE.Vector3()
-const shoulderOffset = 0.6
+const shoulderOffset = 0.35
 const headHeight = 0.4
 const zoomStages = [0, 1.5, 3, 5, 8]
 let zoomIndex = savedCam?.zoomIndex ?? 2
@@ -175,9 +175,12 @@ function getAimDirection(playerPos) {
   const sp = Math.sin(pitch), cp = Math.cos(pitch)
   const fwdX = sy * cp, fwdY = sp, fwdZ = cy * cp
   if (!playerPos || zoomStages[zoomIndex] < 0.01) return [fwdX, fwdY, fwdZ]
-  const tx = camera.position.x + fwdX * 100
-  const ty = camera.position.y + fwdY * 100
-  const tz = camera.position.z + fwdZ * 100
+  const dist = zoomStages[zoomIndex]
+  const rightX = -cy, rightZ = sy
+  const cpx = playerPos[0] - fwdX * dist + rightX * shoulderOffset
+  const cpy = playerPos[1] + headHeight - fwdY * dist + 0.2
+  const cpz = playerPos[2] - fwdZ * dist + rightZ * shoulderOffset
+  const tx = cpx + fwdX * 200, ty = cpy + fwdY * 200, tz = cpz + fwdZ * 200
   const ox = playerPos[0], oy = playerPos[1] + 0.9, oz = playerPos[2]
   const dx = tx - ox, dy = ty - oy, dz = tz - oz
   const len = Math.sqrt(dx * dx + dy * dy + dz * dz)
