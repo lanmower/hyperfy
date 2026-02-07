@@ -13,8 +13,8 @@ export function createTickHandler(deps) {
   const friction = m.friction || 6.0
   const stopSpeed = m.stopSpeed || 2.0
   const jumpImpulse = m.jumpImpulse || 4.5
-  const collisionRestitution = m.collisionRestitution || 0.7
-  const collisionDamping = m.collisionDamping || 0.5
+  const collisionRestitution = m.collisionRestitution || 0.2
+  const collisionDamping = m.collisionDamping || 0.25
   let snapshotSeq = 0
 
   return function onTick(tick, dt) {
