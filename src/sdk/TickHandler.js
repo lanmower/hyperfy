@@ -7,7 +7,7 @@ export function createTickHandler(deps) {
     lagCompensator, physics, appRuntime, connections
   } = deps
   const moveSpeed = 12.0
-  const jumpImpulse = 7.0
+  const jumpImpulse = 4.43
   let snapshotSeq = 0
 
   return function onTick(tick, dt) {
