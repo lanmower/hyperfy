@@ -13,6 +13,8 @@ export function createTickHandler(deps) {
   const friction = m.friction || 6.0
   const stopSpeed = m.stopSpeed || 2.0
   const jumpImpulse = m.jumpImpulse || 4.5
+  const collisionRestitution = m.collisionRestitution || 0.7
+  const collisionDamping = m.collisionDamping || 0.5
   let snapshotSeq = 0
 
   return function onTick(tick, dt) {
@@ -90,6 +92,24 @@ export function createTickHandler(deps) {
         velocity: st.velocity, onGround: st.onGround,
         health: st.health, inputSequence: player.inputSequence
       })
+    }
+    const players = playerManager.getConnectedPlayers()
+    for (const player of players) {
+      const collisions = physicsIntegration.checkCollisionWithOthers(player.id, players)
+      for (const collision of collisions) {
+        const other = playerManager.getPlayer(collision.playerId)
+        if (!other) continue
+        const dx = collision.normal[0], dy = collision.normal[1], dz = collision.normal[2]
+        const relVx = other.state.velocity[0] - player.state.velocity[0]
+        const relVz = other.state.velocity[2] - player.state.velocity[2]
+        const relDotNorm = relVx * dx + relVz * dz
+        if (relDotNorm >= 0) continue
+        const impulse = (1 + collisionRestitution) * relDotNorm * 0.5
+        player.state.velocity[0] -= impulse * dx * collisionDamping
+        player.state.velocity[2] -= impulse * dz * collisionDamping
+        other.state.velocity[0] += impulse * dx * collisionDamping
+        other.state.velocity[2] += impulse * dz * collisionDamping
+      }
     }
     physics.step(dt)
     appRuntime.tick(tick, dt)

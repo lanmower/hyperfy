@@ -8,10 +8,12 @@ export default {
     airAccel: 1.0,
     friction: 7.2,
     stopSpeed: 2.0,
-    jumpImpulse: 4.5
+    jumpImpulse: 4.5,
+    collisionRestitution: 0.7,
+    collisionDamping: 0.5
   },
   entities: [
-    { id: 'environment', model: './world/schwust.glb', position: [0, 0, 0] },
+    { id: 'environment', model: './world/schwust.glb', position: [0, 0, 0], app: 'environment' },
     { id: 'game', position: [0, 0, 0], app: 'tps-game' }
   ],
   playerModel: './world/kaira.glb',

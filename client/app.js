@@ -153,6 +153,15 @@ const client = new PhysicsNetworkClient({
   onWorldDef: onWorldDef,
   onAppModule: onAppModule,
   onAssetUpdate: (data) => console.log('[client] asset update:', data),
+  onAppEvent: (msg) => {
+    if (msg.type === 'death') {
+      console.log(`[client] Player ${msg.victim} died to ${msg.killer}`)
+    } else if (msg.type === 'respawn') {
+      console.log(`[client] Player respawned at`, msg.position)
+    } else if (msg.type === 'hit') {
+      console.log(`[client] Hit: ${msg.shooter} -> ${msg.target} (${msg.damage} dmg, hp now ${msg.health})`)
+    }
+  },
   onHotReload: () => {
     sessionStorage.setItem('cam', JSON.stringify({ yaw, pitch, zoomIndex }))
     location.reload()
