@@ -63,28 +63,66 @@ export class PhysicsWorld {
     const shape = new J.MeshShapeSettings(triangles).Create().Get()
     return this._addBody(shape, [0, 0, 0], J.EMotionType_Static, LAYER_STATIC, { meta: { type: 'static', shape: 'trimesh', mesh: mesh.name, triangles: mesh.triangleCount } })
   }
-  addDynamicCapsule(radius, halfHeight, position, mass) {
+  addPlayerCharacter(radius, halfHeight, position, mass) {
     const J = this.Jolt
-    return this._addBody(new J.CapsuleShape(halfHeight, radius, null), position, J.EMotionType_Dynamic, LAYER_DYNAMIC, { mass: mass || 80, friction: 0.5, restitution: 0.0, meta: { type: 'dynamic', shape: 'capsule', radius, height: halfHeight * 2 } })
-  }
-  addPlayerCapsule(radius, halfHeight, position, mass) {
-    const J = this.Jolt
-    const shape = new J.CapsuleShape(halfHeight, radius)
+    const cvs = new J.CharacterVirtualSettings()
+    cvs.mMass = mass || 80
+    cvs.mMaxSlopeAngle = 0.7854
+    cvs.mShape = new J.CapsuleShape(halfHeight, radius)
+    cvs.mBackFaceMode = J.EBackFaceMode_CollideWithBackFaces
+    cvs.mCharacterPadding = 0.02
+    cvs.mPenetrationRecoverySpeed = 1.0
+    cvs.mPredictiveContactDistance = 0.1
+    cvs.mSupportingVolume = new J.Plane(J.Vec3.prototype.sAxisY(), -radius)
     const pos = new J.RVec3(position[0], position[1], position[2])
-    const rot = new J.Quat(0, 0, 0, 1)
-    const cs = new J.BodyCreationSettings(shape, pos, rot, J.EMotionType_Dynamic, LAYER_DYNAMIC)
-    cs.mMassPropertiesOverride.mMass = mass || 80
-    cs.mOverrideMassProperties = J.EOverrideMassProperties_CalculateInertia
-    cs.mFriction = 0.0
-    cs.mRestitution = 0.0
-    cs.mAllowedDOFs = J.EAllowedDOFs_TranslationX | J.EAllowedDOFs_TranslationY | J.EAllowedDOFs_TranslationZ
-    const body = this.bodyInterface.CreateBody(cs)
-    this.bodyInterface.AddBody(body.GetID(), J.EActivation_Activate)
-    J.destroy(cs)
-    const id = body.GetID().GetIndexAndSequenceNumber()
-    this.bodies.set(id, body)
-    this.bodyMeta.set(id, { type: 'player', shape: 'capsule', radius, halfHeight })
+    const ch = new J.CharacterVirtual(cvs, pos, J.Quat.prototype.sIdentity(), this.physicsSystem)
+    J.destroy(cvs)
+    if (!this._charFilters) {
+      this._charFilters = {
+        bp: new J.DefaultBroadPhaseLayerFilter(this.jolt.GetObjectVsBroadPhaseLayerFilter(), LAYER_DYNAMIC),
+        ol: new J.DefaultObjectLayerFilter(this.jolt.GetObjectLayerPairFilter(), LAYER_DYNAMIC),
+        body: new J.BodyFilter(),
+        shape: new J.ShapeFilter()
+      }
+      this._charUpdateSettings = new J.ExtendedUpdateSettings()
+      this._charUpdateSettings.mStickToFloorStepDown = new J.Vec3(0, -0.5, 0)
+      this._charUpdateSettings.mWalkStairsStepUp = new J.Vec3(0, 0.4, 0)
+      this._charGravity = new J.Vec3(this.gravity[0], this.gravity[1], this.gravity[2])
+    }
+    const id = this._nextCharId = (this._nextCharId || 0) + 1
+    if (!this.characters) this.characters = new Map()
+    this.characters.set(id, ch)
     return id
+  }
+  updateCharacter(charId, dt) {
+    const ch = this.characters?.get(charId)
+    if (!ch) return
+    const f = this._charFilters
+    ch.ExtendedUpdate(dt, this._charGravity, this._charUpdateSettings, f.bp, f.ol, f.body, f.shape, this.jolt.GetTempAllocator())
+  }
+  getCharacterPosition(charId) {
+    const ch = this.characters?.get(charId); if (!ch) return [0, 0, 0]
+    const p = ch.GetPosition(); return [p.GetX(), p.GetY(), p.GetZ()]
+  }
+  getCharacterVelocity(charId) {
+    const ch = this.characters?.get(charId); if (!ch) return [0, 0, 0]
+    const v = ch.GetLinearVelocity(); return [v.GetX(), v.GetY(), v.GetZ()]
+  }
+  setCharacterVelocity(charId, velocity) {
+    const ch = this.characters?.get(charId); if (!ch) return
+    ch.SetLinearVelocity(new this.Jolt.Vec3(velocity[0], velocity[1], velocity[2]))
+  }
+  setCharacterPosition(charId, position) {
+    const ch = this.characters?.get(charId); if (!ch) return
+    ch.SetPosition(new this.Jolt.RVec3(position[0], position[1], position[2]))
+  }
+  getCharacterGroundState(charId) {
+    const ch = this.characters?.get(charId); if (!ch) return false
+    return ch.GetGroundState() === this.Jolt.EGroundState_OnGround
+  }
+  removeCharacter(charId) {
+    if (!this.characters) return
+    this.characters.delete(charId)
   }
   _getBody(bodyId) { return this.bodies.get(bodyId) }
   getBodyPosition(bodyId) {

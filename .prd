@@ -1,0 +1,45 @@
+## Player Physics - CharacterVirtual Migration
+
+- [ ] Replace dynamic body player capsule with Jolt CharacterVirtual (blocks: slope-handling, wall-sliding, stair-stepping)
+- [ ] Implement CharacterVirtual creation in World.js with proper settings (mMass, mMaxSlopeAngle, mSupportingVolume, mShape)
+- [ ] Implement ExtendedUpdate call with StickToFloor and WalkStairs settings
+- [ ] Update PhysicsIntegration.js to use CharacterVirtual API instead of setBodyVelocity on dynamic body
+- [ ] Update TickHandler.js velocity handling to use CharacterVirtual SetLinearVelocity with proper ground/air separation
+- [ ] Verify slope handling - player walks up ramps without launching
+- [ ] Verify stair stepping works
+- [ ] Verify floor sticking on downslopes
+- [ ] Verify jump still works correctly
+- [ ] Verify ground detection uses CharacterVirtual GetGroundState instead of raycast
+- [ ] Update ReloadHandlers.js to preserve CharacterVirtual instances across hot-reload
+- [ ] Verify hot-reload preserves player CharacterVirtual state
+
+## WebTransport Integration
+
+- [ ] Install @fails-components/webtransport
+- [ ] Add WebTransport server alongside existing WebSocket server
+- [ ] Classify 28 message types as reliable (stream) vs unreliable (datagram)
+- [ ] Abstract ConnectionManager transport layer to support both WebSocket and WebTransport
+- [ ] Client auto-detects WebTransport support and falls back to WebSocket
+- [ ] Verify snapshots sent as unreliable datagrams
+- [ ] Verify control messages sent as reliable streams
+- [ ] Verify dual-protocol works simultaneously
+
+## Hot Reload Improvements
+
+- [ ] Replace Object.assign reload pattern with prototype-chain-aware swap
+- [ ] Add reload lock that pauses tick during swap
+- [ ] Add message queue during reload window
+- [ ] Add pre-reload module shape validation
+- [ ] Add rollback on failed reload
+- [ ] Reduce debounce from 500ms to 100ms
+- [ ] Auto-reset failure counter on successful reload
+
+## App DX Improvements
+
+- [ ] Wire onCollision callback - AppRuntime.fireCollision exists but nothing invokes it
+- [ ] Make box/sphere/capsule colliders create actual Jolt bodies (currently only trimesh does)
+- [ ] Add app config/options from world definition entities
+- [ ] Add ctx.time.after(seconds, fn) and ctx.time.every(seconds, fn) with auto-cleanup
+- [ ] Add math utilities (vec3, quat helpers)
+- [ ] Add ctx.entity.lookAt, ctx.entity.distanceTo
+- [ ] Auto-trimesh convention - entity with model and no app gets static trimesh
