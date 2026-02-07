@@ -11,7 +11,7 @@ export default {
     jumpImpulse: 4.5
   },
   entities: [
-    { id: 'environment', model: './apps/tps-game/schwust.glb', position: [0, 0, 0] },
+    { id: 'environment', model: './world/schwust.glb', position: [0, 0, 0] },
     { id: 'game', position: [0, 0, 0], app: 'tps-game' }
   ],
   playerModel: './world/kaira.glb',
