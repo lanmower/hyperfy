@@ -29,6 +29,9 @@ export class AppContext {
       set velocity(v) { ent.velocity = v },
       get custom() { return ent.custom },
       set custom(v) { ent.custom = v },
+      get parent() { return ent.parent },
+      get children() { return [...ent.children] },
+      get worldTransform() { return runtime.getWorldTransform(ent.id) },
       destroy: () => runtime.destroyEntity(ent.id)
     }
   }
@@ -88,6 +91,9 @@ export class AppContext {
     return {
       spawn: (id, cfg) => runtime.spawnEntity(id, cfg),
       destroy: (id) => runtime.destroyEntity(id),
+      attach: (eid, app) => runtime.attachApp(eid, app),
+      detach: (eid) => runtime.detachApp(eid),
+      reparent: (eid, parentId) => runtime.reparent(eid, parentId),
       query: (filter) => runtime.queryEntities(filter),
       getEntity: (id) => runtime.getEntity(id),
       get gravity() { return runtime.gravity }
