@@ -1,5 +1,6 @@
 import { AppContext } from './AppContext.js'
 import { mulQuat, rotVec } from '../math.js'
+import { MSG } from '../protocol/MessageTypes.js'
 
 export class AppRuntime {
   constructor(c = {}) {
@@ -7,6 +8,7 @@ export class AppRuntime {
     this.gravity = c.gravity || [0, -9.81, 0]
     this.currentTick = 0; this.deltaTime = 0; this.elapsed = 0
     this._playerManager = c.playerManager || null; this._physics = c.physics || null; this._physicsIntegration = c.physicsIntegration || null
+    this._connections = c.connections || null
     this._nextEntityId = 1; this._appDefs = new Map(); this._timers = new Map()
   }
 
@@ -164,8 +166,20 @@ export class AppRuntime {
     }
     return n
   }
-  broadcastToPlayers(m) { this._playerManager?.broadcast(m) }
-  sendToPlayer(id, m) { this._playerManager?.sendToPlayer(id, m) }
+  broadcastToPlayers(m) {
+    if (this._connections) {
+      this._connections.broadcast(MSG.APP_EVENT, m)
+    } else if (this._playerManager) {
+      this._playerManager.broadcast(m)
+    }
+  }
+  sendToPlayer(id, m) {
+    if (this._connections) {
+      this._connections.send(id, MSG.APP_EVENT, m)
+    } else if (this._playerManager) {
+      this._playerManager.sendToPlayer(id, m)
+    }
+  }
   setPlayerPosition(id, p) {
     this._physicsIntegration?.setPlayerPosition(id, p)
     if (this._playerManager) { const pl = this._playerManager.getPlayer(id); if (pl) pl.state.position = [...p] }

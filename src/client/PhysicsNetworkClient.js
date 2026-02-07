@@ -27,7 +27,8 @@ export class PhysicsNetworkClient {
       onStateUpdate: config.onStateUpdate || (() => {}),
       onWorldDef: config.onWorldDef || (() => {}),
       onAppModule: config.onAppModule || (() => {}),
-      onAssetUpdate: config.onAssetUpdate || (() => {})
+      onAssetUpdate: config.onAssetUpdate || (() => {}),
+      onAppEvent: config.onAppEvent || (() => {})
     }
   }
 
@@ -101,6 +102,8 @@ export class PhysicsNetworkClient {
       if (payload.movement) this.prediction.setMovement(payload.movement)
       if (payload.gravity) this.prediction.setGravity(payload.gravity)
       this.callbacks.onWorldDef?.(payload)
+    } else if (type === MSG.APP_EVENT) {
+      this.callbacks.onAppEvent?.(payload)
     } else if (type === MSG.HOT_RELOAD || type === MSG.APP_MODULE || type === MSG.ASSET_UPDATE) {
       const cb = { [MSG.HOT_RELOAD]: 'onHotReload', [MSG.APP_MODULE]: 'onAppModule', [MSG.ASSET_UPDATE]: 'onAssetUpdate' }[type]
       this.callbacks[cb]?.(payload)

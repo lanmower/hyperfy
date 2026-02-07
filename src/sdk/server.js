@@ -73,7 +73,7 @@ export async function createServer(config = {}) {
   const inspector = new Inspector()
   const reloadManager = new ReloadManager()
 
-  const appRuntime = new AppRuntime({ gravity, playerManager, physics, physicsIntegration })
+  const appRuntime = new AppRuntime({ gravity, playerManager, physics, physicsIntegration, connections })
   appRuntime.setPlayerManager(playerManager)
   const appLoader = new AppLoader(appRuntime, { dir: appsDir })
   const binder = new EntityAppBinder(appRuntime, appLoader)
