@@ -111,11 +111,11 @@ export class AppLoader {
     console.log(`[AppLoader] reloading ${name}`)
     const appDef = await this.loadApp(name)
     if (appDef) {
-      this._runtime.hotReload(name, appDef)
-      if (this._onReloadCallback) {
-        this._onReloadCallback(name, this._loaded.get(name)?.clientCode)
-      }
-      console.log(`[AppLoader] hot reloaded ${name}`)
+      const cb = this._onReloadCallback ? (n, d) => {
+        this._onReloadCallback(n, this._loaded.get(n)?.clientCode)
+      } : null
+      this._runtime.queueReload(name, appDef, cb)
+      console.log(`[AppLoader] queued hot reload ${name}`)
     }
   }
 
