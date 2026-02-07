@@ -5,7 +5,7 @@ export class PhysicsIntegration {
       gravity: config.gravity || [0, -9.81, 0],
       capsuleRadius: config.capsuleRadius || 0.4,
       capsuleHalfHeight: config.capsuleHalfHeight || 0.9,
-      playerMass: config.playerMass || 80,
+      playerMass: config.playerMass || 160,
       ...config
     }
     this.playerBodies = new Map()
