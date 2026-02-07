@@ -1,15 +1,14 @@
-import { getMap } from '../config/maps.js'
-import { getGameMode } from '../config/game-modes.js'
-
 export default {
   server: {
     setup(ctx) {
-      const map = getMap('schwust')
-      const mode = getGameMode('ffa')
       ctx.state.map = 'schwust'
       ctx.state.mode = 'ffa'
-      ctx.state.config = mode
-      ctx.state.spawnPoints = map.spawnPoints
+      ctx.state.config = {
+        respawnTime: 3,
+        health: 100,
+        damagePerHit: 25
+      }
+      ctx.state.spawnPoints = [[0, 5, 0], [20, 5, -20], [-20, 5, 20], [0, 5, -30]]
       ctx.state.playerStats = new Map()
       ctx.state.respawning = new Map()
       ctx.state.started = Date.now()
