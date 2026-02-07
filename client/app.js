@@ -53,8 +53,15 @@ const camTarget = new THREE.Vector3()
 const camRaycaster = new THREE.Raycaster()
 const camDir = new THREE.Vector3()
 const camDesired = new THREE.Vector3()
+const camLookTarget = new THREE.Vector3()
+const aimRaycaster = new THREE.Raycaster()
+const aimDir = new THREE.Vector3()
 const shoulderOffset = 0.35
 const headHeight = 0.4
+const camFollowSpeed = 12.0
+const camSnapSpeed = 30.0
+let lastFrameTime = performance.now()
+let camInitialized = false
 const zoomStages = [0, 1.5, 3, 5, 8]
 let zoomIndex = savedCam?.zoomIndex ?? 2
 if (savedCam) sessionStorage.removeItem('cam')
@@ -246,6 +253,9 @@ window.addEventListener('resize', () => {
 
 function animate() {
   requestAnimationFrame(animate)
+  const now = performance.now()
+  const frameDt = Math.min((now - lastFrameTime) / 1000, 0.1)
+  lastFrameTime = now
   const local = client.state?.players?.find(p => p.id === client.playerId)
   if (local) {
     const dist = zoomStages[zoomIndex]
@@ -279,16 +289,43 @@ function animate() {
         if (hit.distance < clippedDist) clippedDist = hit.distance - 0.2
       }
       if (clippedDist < 0.3) clippedDist = 0.3
-      camera.position.set(
+      camDesired.set(
         camTarget.x + camDir.x * clippedDist,
         camTarget.y + camDir.y * clippedDist,
         camTarget.z + camDir.z * clippedDist
       )
-      camera.lookAt(
-        camera.position.x + fwdX * 100,
-        camera.position.y + fwdY * 100,
-        camera.position.z + fwdZ * 100
-      )
+      if (!camInitialized) {
+        camera.position.copy(camDesired)
+        camInitialized = true
+      } else {
+        const closer = clippedDist < camera.position.distanceTo(camTarget)
+        const speed = closer ? camSnapSpeed : camFollowSpeed
+        const lerpFactor = 1.0 - Math.exp(-speed * frameDt)
+        camera.position.lerp(camDesired, lerpFactor)
+      }
+      aimDir.set(fwdX, fwdY, fwdZ)
+      aimRaycaster.set(camera.position, aimDir)
+      aimRaycaster.far = 500
+      aimRaycaster.near = 0.5
+      const aimHits = aimRaycaster.intersectObjects(scene.children, true)
+      let aimPoint = null
+      for (const ah of aimHits) {
+        if (ah.object === localMesh || localMesh?.children?.includes(ah.object)) continue
+        aimPoint = ah.point
+        break
+      }
+      if (aimPoint) {
+        if (!camLookTarget.lengthSq()) camLookTarget.copy(aimPoint)
+        const lookLerp = 1.0 - Math.exp(-camFollowSpeed * frameDt)
+        camLookTarget.lerp(aimPoint, lookLerp)
+      } else {
+        camLookTarget.set(
+          camera.position.x + fwdX * 200,
+          camera.position.y + fwdY * 200,
+          camera.position.z + fwdZ * 200
+        )
+      }
+      camera.lookAt(camLookTarget)
     }
   }
   renderer.render(scene, camera)
