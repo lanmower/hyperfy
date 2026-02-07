@@ -58,8 +58,8 @@ export default {
 
 function findSpawnPoints(ctx) {
   const valid = []
-  for (let x = -55; x <= 40; x += 12) {
-    for (let z = -85; z <= 30; z += 12) {
+  for (let x = -31; x <= 17; x += 12) {
+    for (let z = -61; z <= -1; z += 12) {
       const hit = ctx.raycast([x, 20, z], [0, -1, 0], 30)
       if (hit.hit && hit.position[1] > -3) valid.push([x, hit.position[1] + 2, z])
     }
