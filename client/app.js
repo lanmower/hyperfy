@@ -48,6 +48,13 @@ const clickPrompt = document.getElementById('click-prompt')
 let yaw = 0, pitch = 0
 let lastShootTime = 0
 const camTarget = new THREE.Vector3()
+const camRaycaster = new THREE.Raycaster()
+const camDir = new THREE.Vector3()
+const camDesired = new THREE.Vector3()
+const shoulderOffset = 0.6
+const headHeight = 0.4
+const zoomStages = [0, 1.5, 3, 5, 8]
+let zoomIndex = 2
 
 function createPlayerMesh(id, isLocal) {
   const group = new THREE.Group()
@@ -172,6 +179,12 @@ function onMouseMove(e) {
   pitch = Math.max(-1.4, Math.min(1.4, pitch))
 }
 
+renderer.domElement.addEventListener('wheel', (e) => {
+  if (e.deltaY > 0) zoomIndex = Math.min(zoomIndex + 1, zoomStages.length - 1)
+  else zoomIndex = Math.max(zoomIndex - 1, 0)
+  e.preventDefault()
+}, { passive: false })
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
@@ -182,16 +195,51 @@ function animate() {
   requestAnimationFrame(animate)
   const local = client.state?.players?.find(p => p.id === client.playerId)
   if (local) {
-    camTarget.set(local.position[0], local.position[1], local.position[2])
-    const sy = Math.sin(yaw), cy = Math.cos(yaw)
-    const cp = Math.cos(pitch)
-    const dist = 4
-    camera.position.set(
-      camTarget.x - sy * cp * dist,
-      camTarget.y + Math.sin(-pitch) * dist + 1,
-      camTarget.z - cy * cp * dist
-    )
-    camera.lookAt(camTarget)
+    const dist = zoomStages[zoomIndex]
+    camTarget.set(local.position[0], local.position[1] + headHeight, local.position[2])
+    const localMesh = playerMeshes.get(client.playerId)
+    if (localMesh) localMesh.visible = dist > 0.5
+
+    if (dist < 0.01) {
+      const sy = Math.sin(yaw), cy = Math.cos(yaw)
+      const sp = Math.sin(pitch), cp = Math.cos(pitch)
+      camera.position.copy(camTarget)
+      camera.position.x += sy * cp * 0.01
+      camera.position.y += sp * 0.01
+      camera.position.z += cy * cp * 0.01
+      camera.lookAt(
+        camTarget.x + sy * cp,
+        camTarget.y + sp,
+        camTarget.z + cy * cp
+      )
+    } else {
+      const sy = Math.sin(yaw), cy = Math.cos(yaw)
+      const sp = Math.sin(pitch), cp = Math.cos(pitch)
+      const rightX = -cy, rightZ = sy
+      camDesired.set(
+        camTarget.x - sy * cp * dist + rightX * shoulderOffset,
+        camTarget.y - sp * dist,
+        camTarget.z - cy * cp * dist + rightZ * shoulderOffset
+      )
+      camDir.subVectors(camDesired, camTarget).normalize()
+      const fullDist = camTarget.distanceTo(camDesired)
+      camRaycaster.set(camTarget, camDir)
+      camRaycaster.far = fullDist
+      camRaycaster.near = 0
+      const hits = camRaycaster.intersectObjects(scene.children, true)
+      let clippedDist = fullDist
+      for (const hit of hits) {
+        if (hit.object === localMesh || localMesh?.children?.includes(hit.object)) continue
+        if (hit.distance < clippedDist) clippedDist = hit.distance - 0.2
+      }
+      if (clippedDist < 0.3) clippedDist = 0.3
+      camera.position.set(
+        camTarget.x + camDir.x * clippedDist,
+        camTarget.y + camDir.y * clippedDist,
+        camTarget.z + camDir.z * clippedDist
+      )
+      camera.lookAt(camTarget)
+    }
   }
   renderer.render(scene, camera)
 }
