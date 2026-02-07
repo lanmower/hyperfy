@@ -1,4 +1,4 @@
-import { MSG } from '../protocol/MessageTypes.js'
+import { MSG, isUnreliable } from '../protocol/MessageTypes.js'
 import { Codec } from '../protocol/Codec.js'
 import { SequenceTracker } from '../protocol/SequenceTracker.js'
 import { QualityMonitor } from '../connection/QualityMonitor.js'
@@ -9,6 +9,7 @@ import { Emitter } from '../utils/Emitter.js'
 
 export function createClient(config = {}) {
   const serverUrl = config.serverUrl || 'ws://localhost:8080'
+  const wtUrl = config.webTransportUrl || null
   const emitter = new Emitter()
   const codec = new Codec()
   const tracker = new SequenceTracker()
@@ -16,18 +17,22 @@ export function createClient(config = {}) {
   const stateInspector = new StateInspector()
 
   const state = {
-    ws: null, playerId: null, sessionToken: null, tick: 0,
+    ws: null, wt: null, transportType: 'websocket',
+    playerId: null, sessionToken: null, tick: 0,
     entities: new Map(), players: new Map(),
     connected: false, reconnecting: false, reconnectAttempts: 0,
     reconnectTimer: null, heartbeatTimer: null
   }
 
+  function _sendRaw(data) {
+    if (state.ws && state.ws.readyState === 1) { state.ws.send(data); return true }
+    return false
+  }
+
   function send(type, payload) {
-    if (!state.ws || state.ws.readyState !== 1) return false
     const frame = codec.encode(type, payload)
     quality.recordBytesOut(frame.length)
-    state.ws.send(frame)
-    return true
+    return _sendRaw(frame)
   }
 
   const onMessage = createMessageRouter({
@@ -61,6 +66,7 @@ export function createClient(config = {}) {
         const WS = config.WebSocket || (typeof WebSocket !== 'undefined' ? WebSocket : null)
         if (!WS) return reject(new Error('No WebSocket available'))
         state.ws = new WS(serverUrl)
+        state.transportType = 'websocket'
         if (state.ws.binaryType !== undefined) state.ws.binaryType = 'arraybuffer'
         const onOpen = () => { state.connected = true; _startHeartbeats(); resolve() }
         const onClose = () => {
@@ -90,6 +96,7 @@ export function createClient(config = {}) {
     get players() { return state.players },
     get isConnected() { return state.connected },
     get sessionToken() { return state.sessionToken },
+    get transportType() { return state.transportType },
     codec, tracker, quality, stateInspector, reporter,
     on: emitter.on.bind(emitter),
     off: emitter.off.bind(emitter),
@@ -109,7 +116,8 @@ export function createClient(config = {}) {
     getStats() {
       return {
         quality: quality.getStats(), codec: codec.getStats(),
-        sequence: tracker.getStats(), stateSync: stateInspector.getStats()
+        sequence: tracker.getStats(), stateSync: stateInspector.getStats(),
+        transport: state.transportType
       }
     },
     getEntity(id) { return state.entities.get(id) || null },

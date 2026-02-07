@@ -19,6 +19,8 @@ import { EventEmitter } from '../protocol/EventEmitter.js'
 import { ReloadManager } from './ReloadManager.js'
 import { createReloadHandlers } from './ReloadHandlers.js'
 import { createStaticHandler } from './StaticHandler.js'
+import { WebSocketTransport } from '../transport/WebSocketTransport.js'
+import { WebTransportServer } from '../transport/WebTransportServer.js'
 
 export async function createServer(config = {}) {
   const port = config.port || 8080
@@ -36,10 +38,7 @@ export async function createServer(config = {}) {
   const networkState = new NetworkState()
   const lagCompensator = new LagCompensator()
   const physicsIntegration = new PhysicsIntegration({ gravity, physicsWorld: physics })
-  const connections = new ConnectionManager({
-    heartbeatInterval: config.heartbeatInterval || 1000,
-    heartbeatTimeout: config.heartbeatTimeout || 3000
-  })
+  const connections = new ConnectionManager({ heartbeatInterval: config.heartbeatInterval || 1000, heartbeatTimeout: config.heartbeatTimeout || 3000 })
   const sessions = new SessionStore({ ttl: config.sessionTTL || 30000 })
   const inspector = new Inspector()
   const reloadManager = new ReloadManager()
@@ -48,28 +47,21 @@ export async function createServer(config = {}) {
   appRuntime.setPlayerManager(playerManager)
   const appLoader = new AppLoader(appRuntime, { dir: appsDir })
   const binder = new EntityAppBinder(appRuntime, appLoader)
-  let wss = null
-  let httpServer = null
-  let snapshotSeq = 0
+  let wss = null, httpServer = null, wtServer = null, snapshotSeq = 0
   let worldSpawnPoint = [0, 5, 0]
 
   const handlerState = { fn: null }
-  const onTick = (tick, dt) => {
-    if (handlerState.fn) handlerState.fn(tick, dt)
-  }
-
-  const setTickHandler = (fn) => {
-    handlerState.fn = fn
-  }
+  const onTick = (tick, dt) => { if (handlerState.fn) handlerState.fn(tick, dt) }
+  const setTickHandler = (fn) => { handlerState.fn = fn }
 
   setTickHandler(createTickHandler({
     networkState, playerManager, physicsIntegration,
     lagCompensator, physics, appRuntime, connections
   }))
 
-  function onClientConnect(socket) {
+  function onClientConnect(transport) {
     const sp = [...worldSpawnPoint]
-    const playerId = playerManager.addPlayer(socket, { position: sp })
+    const playerId = playerManager.addPlayer(transport, { position: sp })
     networkState.addPlayer(playerId, { position: sp })
     physicsIntegration.addPlayerCollider(playerId, 0.4)
     physicsIntegration.setPlayerPosition(playerId, sp)
@@ -78,7 +70,7 @@ export async function createServer(config = {}) {
       playerId, playerState.position, playerState.rotation, playerState.velocity,
       tickSystem.currentTick
     )
-    const client = connections.addClient(playerId, socket)
+    const client = connections.addClient(playerId, transport)
     client.sessionToken = sessions.create(playerId, playerManager.getPlayer(playerId).state)
     connections.send(playerId, MSG.HANDSHAKE_ACK, {
       playerId, tick: tickSystem.currentTick,
@@ -136,14 +128,8 @@ export async function createServer(config = {}) {
 
   const setupSDKWatchers = () => {
     const reloadTick = async () => { setTickHandler(await reloadHandlers.reloadTickHandler()) }
-    const watchers = [
-      ['tick-handler', './src/sdk/TickHandler.js', reloadTick],
-      ['physics-integration', './src/netcode/PhysicsIntegration.js', reloadHandlers.reloadPhysicsIntegration],
-      ['lag-compensator', './src/netcode/LagCompensator.js', reloadHandlers.reloadLagCompensator],
-      ['player-manager', './src/netcode/PlayerManager.js', reloadHandlers.reloadPlayerManager],
-      ['network-state', './src/netcode/NetworkState.js', reloadHandlers.reloadNetworkState]
-    ]
-    for (const [id, path, reload] of watchers) reloadManager.addWatcher(id, path, reload)
+    const w = [['tick-handler', './src/sdk/TickHandler.js', reloadTick], ['physics-integration', './src/netcode/PhysicsIntegration.js', reloadHandlers.reloadPhysicsIntegration], ['lag-compensator', './src/netcode/LagCompensator.js', reloadHandlers.reloadLagCompensator], ['player-manager', './src/netcode/PlayerManager.js', reloadHandlers.reloadPlayerManager], ['network-state', './src/netcode/NetworkState.js', reloadHandlers.reloadNetworkState]]
+    for (const [id, path, reload] of w) reloadManager.addWatcher(id, path, reload)
   }
 
   const api = {
@@ -169,7 +155,15 @@ export async function createServer(config = {}) {
           wss.on('error', reject)
         }
       })
-      wss.on('connection', onClientConnect)
+      wss.on('connection', (socket) => {
+        onClientConnect(new WebSocketTransport(socket))
+      })
+      if (config.webTransport) {
+        const wtp = config.webTransport.port || 4433
+        wtServer = new WebTransportServer({ port: wtp, cert: config.webTransport.cert, key: config.webTransport.key })
+        wtServer.on('session', onClientConnect)
+        if (await wtServer.start()) console.log(`[server] WebTransport on port ${wtp}`)
+      }
       tickSystem.onTick(onTick); tickSystem.start(); appLoader.watchAll()
       setupSDKWatchers()
       return { port, tickRate }
@@ -177,6 +171,7 @@ export async function createServer(config = {}) {
     stop() {
       tickSystem.stop(); appLoader.stopWatching(); reloadManager.stopAllWatchers()
       connections.destroy(); sessions.destroyAll()
+      if (wtServer) wtServer.stop()
       if (wss) wss.close(); if (httpServer) httpServer.close(); physics.destroy()
     },
     send(id, type, p) { return connections.send(id, type, p) },
@@ -184,10 +179,7 @@ export async function createServer(config = {}) {
     getPlayerCount() { return playerManager.getPlayerCount() },
     getEntityCount() { return binder.getEntityCount() },
     getSnapshot() { return appRuntime.getSnapshot() },
-    reloadTickHandler: async () => {
-      const handler = await reloadHandlers.reloadTickHandler()
-      setTickHandler(handler)
-    },
+    reloadTickHandler: async () => { setTickHandler(await reloadHandlers.reloadTickHandler()) },
     getReloadStats() { return reloadManager.getStats() },
     getAllStats() {
       return { connections: connections.getAllStats(), inspector: inspector.getAllClients(connections),

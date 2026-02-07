@@ -42,6 +42,14 @@ export function msgName(id) {
   return nameMap.get(id) || `UNKNOWN(0x${id.toString(16)})`
 }
 
+export const UNRELIABLE_MSGS = new Set([
+  0x03, 0x04, 0x10, 0x11, 0x12, 0x13, 0x22, 0x43, 0x44
+])
+
+export function isUnreliable(type) {
+  return UNRELIABLE_MSGS.has(type)
+}
+
 export const DISCONNECT_REASONS = {
   NORMAL: 0,
   TIMEOUT: 1,
