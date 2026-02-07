@@ -75,8 +75,8 @@ export class PhysicsWorld {
     const cs = new J.BodyCreationSettings(shape, pos, rot, J.EMotionType_Dynamic, LAYER_DYNAMIC)
     cs.mMassPropertiesOverride.mMass = mass || 80
     cs.mOverrideMassProperties = J.EOverrideMassProperties_CalculateInertia
-    cs.mFriction = 0.2
-    cs.mRestitution = 0
+    cs.mFriction = 0.5
+    cs.mRestitution = 0.0
     cs.mAllowedDOFs = J.EAllowedDOFs_TranslationX | J.EAllowedDOFs_TranslationY | J.EAllowedDOFs_TranslationZ
     const body = this.bodyInterface.CreateBody(cs)
     this.bodyInterface.AddBody(body.GetID(), J.EActivation_Activate)
@@ -103,13 +103,8 @@ export class PhysicsWorld {
     const b = this._getBody(bodyId); if (!b) return
     this.bodyInterface.SetPosition(b.GetID(), new this.Jolt.RVec3(position[0], position[1], position[2]), this.Jolt.EActivation_Activate)
   }
-  activateBody(bodyId) {
-    const b = this._getBody(bodyId); if (!b) return
-    this.bodyInterface.ActivateBody(b.GetID())
-  }
   setBodyVelocity(bodyId, velocity) {
     const b = this._getBody(bodyId); if (!b) return
-    this.bodyInterface.ActivateBody(b.GetID())
     this.bodyInterface.SetLinearVelocity(b.GetID(), new this.Jolt.Vec3(velocity[0], velocity[1], velocity[2]))
   }
   addForce(bodyId, force) {
