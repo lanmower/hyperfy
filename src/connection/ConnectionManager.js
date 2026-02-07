@@ -1,4 +1,5 @@
 import { pack, unpack } from '../protocol/msgpack.js'
+import { isUnreliable } from '../protocol/MessageTypes.js'
 import { EventEmitter } from '../protocol/EventEmitter.js'
 
 export class ConnectionManager extends EventEmitter {
@@ -10,31 +11,32 @@ export class ConnectionManager extends EventEmitter {
     this.timers = new Map()
   }
 
-  addClient(clientId, socket) {
+  addClient(clientId, transport) {
     const client = {
       id: clientId,
-      socket,
+      transport,
       lastHeartbeat: Date.now(),
-      sessionToken: null
+      sessionToken: null,
+      transportType: transport.type || 'websocket'
     }
 
-    socket.on('message', (data) => {
+    transport.on('message', (data) => {
       try {
         client.lastHeartbeat = Date.now()
         const msg = unpack(data)
         this.emit('message', clientId, msg)
       } catch (err) {
-        console.error(`[connection] message decode error for ${clientId}:`, err.message)
+        console.error(`[connection] decode error for ${clientId}:`, err.message)
       }
     })
 
-    socket.on('close', () => {
+    transport.on('close', () => {
       this.removeClient(clientId)
       this.emit('disconnect', clientId, 'closed')
     })
 
-    socket.on('error', (err) => {
-      console.error(`[connection] socket error for ${clientId}:`, err.message)
+    transport.on('error', (err) => {
+      console.error(`[connection] transport error for ${clientId}:`, err.message)
       this.removeClient(clientId)
       this.emit('disconnect', clientId, 'error')
     })
@@ -64,8 +66,8 @@ export class ConnectionManager extends EventEmitter {
   removeClient(clientId) {
     const client = this.clients.get(clientId)
     if (!client) return
-    if (client.socket && client.socket.readyState === 1) {
-      client.socket.close()
+    if (client.transport && client.transport.isOpen) {
+      client.transport.close()
     }
     this.clients.delete(clientId)
     const timer = this.timers.get(`hb-${clientId}`)
@@ -79,11 +81,11 @@ export class ConnectionManager extends EventEmitter {
 
   send(clientId, type, payload = {}) {
     const client = this.clients.get(clientId)
-    if (!client || client.socket.readyState !== 1) return false
+    if (!client || !client.transport.isOpen) return false
     try {
-      const msg = { type, payload }
-      client.socket.send(pack(msg))
-      return true
+      const data = pack({ type, payload })
+      if (isUnreliable(type)) return client.transport.sendUnreliable(data)
+      return client.transport.send(data)
     } catch (err) {
       console.error(`[connection] send error to ${clientId}:`, err.message)
       return false
@@ -91,17 +93,17 @@ export class ConnectionManager extends EventEmitter {
   }
 
   broadcast(type, payload = {}) {
-    const msg = { type, payload }
-    const data = pack(msg)
+    const data = pack({ type, payload })
+    const unreliable = isUnreliable(type)
     let count = 0
     for (const client of this.clients.values()) {
-      if (client.socket.readyState === 1) {
-        try {
-          client.socket.send(data)
-          count++
-        } catch (err) {
-          console.error(`[connection] broadcast error to ${client.id}:`, err.message)
-        }
+      if (!client.transport.isOpen) continue
+      try {
+        if (unreliable) client.transport.sendUnreliable(data)
+        else client.transport.send(data)
+        count++
+      } catch (err) {
+        console.error(`[connection] broadcast error to ${client.id}:`, err.message)
       }
     }
     return count
@@ -112,6 +114,7 @@ export class ConnectionManager extends EventEmitter {
       activeConnections: this.clients.size,
       clients: Array.from(this.clients.entries()).map(([id, c]) => ({
         id,
+        transport: c.transportType,
         sessionToken: c.sessionToken ? '***' : null
       }))
     }

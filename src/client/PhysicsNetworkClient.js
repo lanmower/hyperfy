@@ -12,6 +12,7 @@ export class PhysicsNetworkClient {
       ...config
     }
     this.ws = null
+    this.transportType = 'websocket'
     this.playerId = null
     this.connected = false
     this.predictionEngine = null
