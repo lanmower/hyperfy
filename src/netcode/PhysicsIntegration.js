@@ -3,7 +3,6 @@ export class PhysicsIntegration {
     this.physicsWorld = config.physicsWorld || null
     this.config = {
       gravity: config.gravity || [0, -9.81, 0],
-      fallMultiplier: config.fallMultiplier || 4,
       capsuleRadius: config.capsuleRadius || 0.4,
       capsuleHalfHeight: config.capsuleHalfHeight || 0.9,
       playerMass: config.playerMass || 80,
@@ -50,9 +49,7 @@ export class PhysicsIntegration {
     if (onGround) {
       vy = state.velocity[1] > 0 ? state.velocity[1] : 0
     } else {
-      const falling = currentVel[1] <= 0
-      const gravScale = falling ? this.config.fallMultiplier : 1
-      vy = currentVel[1] + this.config.gravity[1] * gravScale * deltaTime
+      vy = currentVel[1] + this.config.gravity[1] * deltaTime
     }
     this.physicsWorld.setCharacterVelocity(charId, [state.velocity[0], vy, state.velocity[2]])
     this.physicsWorld.updateCharacter(charId, deltaTime)
@@ -66,9 +63,7 @@ export class PhysicsIntegration {
   }
 
   _fallbackPhysics(playerId, state, deltaTime) {
-    const falling = state.velocity[1] <= 0
-    const gravScale = falling ? this.config.fallMultiplier : 1
-    state.velocity[1] += this.config.gravity[1] * gravScale * deltaTime
+    state.velocity[1] += this.config.gravity[1] * deltaTime
     state.position[0] += state.velocity[0] * deltaTime
     state.position[1] += state.velocity[1] * deltaTime
     state.position[2] += state.velocity[2] * deltaTime
