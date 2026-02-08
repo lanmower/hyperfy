@@ -7,14 +7,39 @@ export default {
       ctx.state.spawnPoints = findSpawnPoints(ctx)
       ctx.state.playerStats = new Map()
       ctx.state.respawning = new Map()
+      ctx.state.buffs = new Map()
       ctx.state.started = Date.now()
       ctx.state.gameTime = 0
+
+      ctx.bus.on('powerup.collected', (event) => {
+        const d = event.data
+        ctx.state.buffs.set(d.playerId, {
+          expiresAt: Date.now() + d.duration * 1000,
+          speed: d.speedMultiplier,
+          fireRate: d.fireRateMultiplier,
+          damage: d.damageMultiplier
+        })
+        ctx.players.send(d.playerId, {
+          type: 'buff_applied',
+          duration: d.duration,
+          speed: d.speedMultiplier,
+          fireRate: d.fireRateMultiplier,
+          damage: d.damageMultiplier
+        })
+      })
+
       console.log(`[tps-game] ${ctx.state.spawnPoints.length} spawn points validated`)
     },
 
     update(ctx, dt) {
       ctx.state.gameTime = (Date.now() - ctx.state.started) / 1000
       const now = Date.now()
+      for (const [pid, buff] of ctx.state.buffs) {
+        if (now >= buff.expiresAt) {
+          ctx.state.buffs.delete(pid)
+          ctx.players.send(pid, { type: 'buff_expired' })
+        }
+      }
       for (const [pid, data] of ctx.state.respawning) {
         if (now < data.respawnAt) continue
         const sp = getAvailableSpawnPoint(ctx, ctx.state.spawnPoints)
@@ -41,6 +66,11 @@ export default {
         ctx.state.respawning.delete(msg.playerId)
       }
       if (msg.type === 'fire') {
+        ctx.bus.emit('combat.fire', {
+          shooterId: msg.shooterId,
+          origin: msg.origin,
+          direction: msg.direction
+        })
         handleFire(ctx, msg)
       }
     }
@@ -96,7 +126,9 @@ function handleFire(ctx, msg) {
 
   const players = ctx.players.getAll()
   const range = 1000
-  const damage = ctx.state.config.damagePerHit
+  const buff = ctx.state.buffs.get(shooterId)
+  const damageMultiplier = buff ? buff.damage : 1
+  const damage = Math.round(ctx.state.config.damagePerHit * damageMultiplier)
 
   for (const target of players) {
     if (!target.state || target.id === shooterId) continue
