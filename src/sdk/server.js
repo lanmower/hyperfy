@@ -38,6 +38,7 @@ export async function boot(overrides = {}) {
     staticDirs: [
       { prefix: '/src/', dir: join(ROOT, 'src') },
       { prefix: '/world/', dir: join(ROOT, 'world') },
+      { prefix: '/node_modules/', dir: join(ROOT, 'node_modules') },
       { prefix: '/', dir: join(ROOT, 'client') }
     ],
     ...overrides
@@ -166,6 +167,7 @@ export async function createServer(config = {}) {
     const clientReload = () => { connections.broadcast(MSG.HOT_RELOAD, { timestamp: Date.now() }) }
     const clientFiles = [
       ['client-app', './client/app.js'],
+      ['client-camera', './client/camera.js'],
       ['client-input', './src/client/InputHandler.js'],
       ['client-network', './src/client/PhysicsNetworkClient.js'],
       ['client-prediction', './src/client/PredictionEngine.js'],
