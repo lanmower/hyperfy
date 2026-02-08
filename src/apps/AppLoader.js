@@ -54,7 +54,7 @@ export class AppLoader {
       this._loaded.set(name, { filePath, source, clientCode: source })
       return appDef
     } catch (e) {
-      console.error(`[AppLoader] failed to load ${name}:`, e.message)
+      console.error(`[AppLoader] failed to load "${name}": ${e.message}\n  file: ${filePath}\n  stack: ${e.stack?.split('\n').slice(1, 3).join('\n  ') || 'none'}`)
       return null
     }
   }
@@ -76,7 +76,7 @@ export class AppLoader {
       const mod = await import(url)
       return mod.default || mod
     } catch (e) {
-      console.error(`[AppLoader] eval error:`, e.message)
+      console.error(`[AppLoader] syntax/eval error in "${filePath}": ${e.message}\n  ${e.stack?.split('\n').slice(1, 3).join('\n  ') || ''}`)
       return null
     }
   }

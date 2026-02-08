@@ -9,18 +9,16 @@
   {
     "imports": {
       "three": "https://esm.sh/three@0.171.0",
-      "three/addons/": "https://esm.sh/three@0.171.0/examples/jsm/"
+      "three/addons/": "https://esm.sh/three@0.171.0/examples/jsm/",
+      "webjsx": "/node_modules/webjsx/dist/index.js",
+      "webjsx/jsx-runtime": "/node_modules/webjsx/dist/jsx-runtime.js"
     }
   }
   </script>
 </head>
 <body>
-  <div id="hud">
-    <div id="crosshair">+</div>
-    <div id="health-bar"><div id="health-fill"></div><span id="health-text">100</span></div>
-    <div id="info"></div>
-    <div id="click-prompt">Click to play</div>
-  </div>
+  <div id="ui-root"></div>
+  <div id="click-prompt">Click to play</div>
   <script type="module" src="/app.js"></script>
 </body>
 </html>

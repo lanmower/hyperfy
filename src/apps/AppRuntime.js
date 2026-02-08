@@ -188,5 +188,5 @@ export class AppRuntime {
   relevantEntities(position, radius) { if (!this._stageLoader) return Array.from(this.entities.keys()); return this._stageLoader.getRelevantEntities(position, radius) }
 
   _log(type, data, meta = {}) { if (this._eventLog) this._eventLog.record(type, data, { ...meta, tick: this.currentTick }) }
-  _safeCall(o, m, a, l) { if (!o?.[m]) return; try { o[m](...a) } catch (e) { console.error(`[AppRuntime] ${l}:`, e.message) } }
+  _safeCall(o, m, a, l) { if (!o?.[m]) return; try { o[m](...a) } catch (e) { console.error(`[AppRuntime] ${l}: ${e.message}\n  ${e.stack?.split('\n').slice(1, 3).join('\n  ') || ''}`) } }
 }

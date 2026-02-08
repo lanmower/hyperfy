@@ -1,5 +1,4 @@
-import { ClientPredictionNetwork } from './ClientPredictionNetwork.js'
-import { ClientReconciliationNetwork } from './ClientReconciliationNetwork.js'
+import { PredictionEngine } from './PredictionEngine.js'
 import { pack, unpack } from '../protocol/msgpack.js'
 import { MSG } from '../protocol/MessageTypes.js'
 
@@ -9,8 +8,9 @@ export class PhysicsNetworkClient {
     this.ws = null
     this.playerId = null
     this.connected = false
-    this.prediction = new ClientPredictionNetwork(config)
-    this.reconciliation = new ClientReconciliationNetwork(config)
+    this._predEngine = null
+    this._playerStates = new Map()
+    this._entityStates = new Map()
     this.lastSnapshotTick = 0
     this.currentTick = 0
     this.state = { players: [], entities: [] }
@@ -48,7 +48,6 @@ export class PhysicsNetworkClient {
   _onOpen(resolve) {
     this.connected = true
     this._startHeartbeat()
-    if (this.config.debug) console.log('[PhysicsNetworkClient] Connected')
     this.callbacks.onConnect()
     resolve()
   }
@@ -56,18 +55,14 @@ export class PhysicsNetworkClient {
   _onClose() {
     this.connected = false
     this._stopHeartbeat()
-    if (this.config.debug) console.log('[PhysicsNetworkClient] Disconnected')
     this.callbacks.onDisconnect()
   }
 
-  _onError(error, reject) {
-    if (this.config.debug) console.error('[PhysicsNetworkClient] Error:', error)
-    reject(error)
-  }
+  _onError(error, reject) { reject(error) }
 
   sendInput(input) {
     if (!this._isOpen()) return
-    if (this.config.predictionEnabled && this.prediction.isPredictionEnabled()) this.prediction.addInput(input)
+    if (this.config.predictionEnabled && this._predEngine) this._predEngine.addInput(input)
     this.ws.send(pack({ type: MSG.INPUT, payload: { input } }))
   }
 
@@ -76,31 +71,30 @@ export class PhysicsNetworkClient {
     this.ws.send(pack({ type: MSG.APP_EVENT, payload: { type: 'fire', shooterId: this.playerId, ...data } }))
   }
 
-  _isOpen() {
-    return this.ws && this.ws.readyState === WebSocket.OPEN
-  }
+  _isOpen() { return this.ws && this.ws.readyState === WebSocket.OPEN }
 
   onMessage(data) {
     try {
       const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data
       const msg = unpack(bytes)
       this._handleMessage(msg.type, msg.payload || {})
-    } catch (e) { console.error('[PhysicsNetworkClient] Parse error:', e) }
+    } catch (e) { console.error('[client] parse error:', e) }
   }
 
   _handleMessage(type, payload) {
     if (type === MSG.HANDSHAKE_ACK) {
       this.playerId = payload.playerId
       this.currentTick = payload.tick
-      this.prediction.initPrediction(this.playerId, this.config.tickRate)
+      this._predEngine = new PredictionEngine(this.config.tickRate)
+      this._predEngine.init(this.playerId)
     } else if (type === MSG.SNAPSHOT || type === MSG.STATE_CORRECTION) {
-      this.onSnapshot(payload)
+      this._onSnapshot(payload)
     } else if (type === MSG.PLAYER_LEAVE) {
-      this.reconciliation.removePlayerState(payload.playerId)
+      this._playerStates.delete(payload.playerId)
       this.callbacks.onPlayerLeft(payload.playerId)
     } else if (type === MSG.WORLD_DEF) {
-      if (payload.movement) this.prediction.setMovement(payload.movement)
-      if (payload.gravity) this.prediction.setGravity(payload.gravity)
+      if (payload.movement && this._predEngine) this._predEngine.setMovement(payload.movement)
+      if (payload.gravity && this._predEngine) this._predEngine.setGravity(payload.gravity)
       this.callbacks.onWorldDef?.(payload)
     } else if (type === MSG.APP_EVENT) {
       this.callbacks.onAppEvent?.(payload)
@@ -110,37 +104,31 @@ export class PhysicsNetworkClient {
     }
   }
 
-  onSnapshot(data) {
+  _onSnapshot(data) {
     this.lastSnapshotTick = this.currentTick = data.tick || 0
-    this._processPlayers(data.players || [])
-    this._processEntities(data.entities || [])
-    this.state.players = Array.from(this.reconciliation.getAllPlayerStates().values())
-    this.state.entities = Array.from(this.reconciliation.getAllEntityStates().values())
+    for (const p of data.players || []) {
+      const { playerId, state } = this._parsePlayer(p)
+      if (!this._playerStates.has(playerId)) this.callbacks.onPlayerJoined(playerId, state)
+      this._playerStates.set(playerId, state)
+      if (playerId === this.playerId && this.config.predictionEnabled && this._predEngine) {
+        this._predEngine.onServerSnapshot({ players: [state] }, this.currentTick)
+      }
+    }
+    for (const e of data.entities || []) {
+      const { entityId, state } = this._parseEntity(e)
+      if (!this._entityStates.has(entityId)) this.callbacks.onEntityAdded(entityId, state)
+      this._entityStates.set(entityId, state)
+    }
+    this.state.players = Array.from(this._playerStates.values())
+    this.state.entities = Array.from(this._entityStates.values())
     this.callbacks.onSnapshot(data)
     this.callbacks.onStateUpdate(this.state)
-    this.render()
-  }
-
-  _processPlayers(players) {
-    for (const p of players) {
-      const { playerId, state } = this._parsePlayer(p)
-      if (!this.reconciliation.hasPlayerState(playerId)) this.callbacks.onPlayerJoined(playerId, state)
-      this.reconciliation.updatePlayerState(playerId, state)
-      if (playerId === this.playerId && this.config.predictionEnabled) this.prediction.onServerSnapshot({ players: [state] }, this.currentTick)
-    }
+    this._render()
   }
 
   _parsePlayer(p) {
     if (Array.isArray(p)) return { playerId: p[0], state: { id: p[0], position: [p[1], p[2], p[3]], rotation: [p[4], p[5], p[6], p[7]], velocity: [p[8], p[9], p[10]], onGround: p[11] === 1, health: p[12], inputSequence: p[13] } }
-    return { playerId: p.id || p.i, state: { id: p.id || p.i, position: p.position || [p.p?.x || 0, p.p?.y || 0, p.p?.z || 0], rotation: p.rotation || [p.r?.x || 0, p.r?.y || 0, p.r?.z || 0, p.r?.w || 1], velocity: p.velocity || [p.v?.x || 0, p.v?.y || 0, p.v?.z || 0], onGround: p.onGround ?? (p.g === 1), health: p.health ?? p.h ?? 100 } }
-  }
-
-  _processEntities(entities) {
-    for (const e of entities) {
-      const { entityId, state } = this._parseEntity(e)
-      if (!this.reconciliation.hasEntityState(entityId)) this.callbacks.onEntityAdded(entityId, state)
-      this.reconciliation.updateEntityState(entityId, state)
-    }
+    return { playerId: p.id || p.i, state: { id: p.id || p.i, position: p.position || [0, 0, 0], rotation: p.rotation || [0, 0, 0, 1], velocity: p.velocity || [0, 0, 0], onGround: p.onGround ?? false, health: p.health ?? 100 } }
   }
 
   _parseEntity(e) {
@@ -148,22 +136,22 @@ export class PhysicsNetworkClient {
     return { entityId: e.id, state: { id: e.id, model: e.model, position: e.position || [0, 0, 0], rotation: e.rotation || [0, 0, 0, 1], bodyType: e.bodyType || 'static', custom: e.custom || null } }
   }
 
-  render() {
+  _render() {
     const displayStates = new Map()
-    for (const [playerId, serverState] of this.reconciliation.getAllPlayerStates()) {
-      displayStates.set(playerId, playerId === this.playerId && this.config.predictionEnabled ? this.prediction.getDisplayState(this.currentTick, 0) : serverState)
+    for (const [playerId, serverState] of this._playerStates) {
+      displayStates.set(playerId, playerId === this.playerId && this.config.predictionEnabled && this._predEngine ? this._predEngine.getDisplayState(this.currentTick, 0) : serverState)
     }
     this.callbacks.onRender(displayStates)
   }
 
   getLocalState() {
-    return this.config.predictionEnabled ? this.prediction.getLocalState() : this.reconciliation.getPlayerState(this.playerId)
+    return this.config.predictionEnabled && this._predEngine ? this._predEngine.localState : this._playerStates.get(this.playerId)
   }
 
-  getRemoteState(playerId) { return this.reconciliation.getPlayerState(playerId) }
-  getAllStates() { return this.reconciliation.getAllPlayerStates() }
-  getEntity(entityId) { return this.reconciliation.getEntityState(entityId) }
-  getAllEntities() { return this.reconciliation.getAllEntityStates() }
+  getRemoteState(playerId) { return this._playerStates.get(playerId) }
+  getAllStates() { return new Map(this._playerStates) }
+  getEntity(entityId) { return this._entityStates.get(entityId) }
+  getAllEntities() { return new Map(this._entityStates) }
 
   disconnect() {
     this._stopHeartbeat()

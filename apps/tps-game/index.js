@@ -48,9 +48,16 @@ export default {
 
   client: {
     render(ctx) {
+      const h = ctx.h
+      const s = ctx.state || {}
+      const ui = h ? h('div', { class: 'game-info' },
+        h('span', null, s.mode || 'ffa'),
+        h('span', null, s.time || '0')
+      ) : null
       return {
         position: ctx.entity.position,
-        custom: { game: ctx.state.map, mode: ctx.state.mode, time: ctx.state.gameTime?.toFixed(1) || '0' }
+        custom: { game: s.map, mode: s.mode, time: s.gameTime?.toFixed(1) || '0' },
+        ui
       }
     }
   }

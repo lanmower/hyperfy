@@ -1,11 +1,12 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { PhysicsNetworkClient, InputHandler, MSG } from '/src/index.client.js'
+import { createElement, applyDiff } from 'webjsx'
+import { createCameraController } from './camera.js'
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x87ceeb)
 scene.fog = new THREE.Fog(0x87ceeb, 80, 200)
-
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500)
 const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -21,16 +22,11 @@ sun.castShadow = true
 sun.shadow.mapSize.set(2048, 2048)
 sun.shadow.camera.near = 0.5
 sun.shadow.camera.far = 200
-sun.shadow.camera.left = -80
-sun.shadow.camera.right = 80
-sun.shadow.camera.top = 80
-sun.shadow.camera.bottom = -80
+const sc = sun.shadow.camera
+sc.left = -80; sc.right = 80; sc.top = 80; sc.bottom = -80
 scene.add(sun)
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ color: 0x444444 })
-)
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x444444 }))
 ground.rotation.x = -Math.PI / 2
 ground.receiveShadow = true
 scene.add(ground)
@@ -39,49 +35,22 @@ const gltfLoader = new GLTFLoader()
 const playerMeshes = new Map()
 const entityMeshes = new Map()
 const appModules = new Map()
+const entityAppMap = new Map()
 const inputHandler = new InputHandler()
-
-const hudInfo = document.getElementById('info')
-const healthFill = document.getElementById('health-fill')
-const healthText = document.getElementById('health-text')
+const uiRoot = document.getElementById('ui-root')
 const clickPrompt = document.getElementById('click-prompt')
-
-const savedCam = JSON.parse(sessionStorage.getItem('cam') || 'null')
-let yaw = savedCam?.yaw || 0, pitch = savedCam?.pitch || 0
+const cam = createCameraController(camera, scene)
+cam.restore(JSON.parse(sessionStorage.getItem('cam') || 'null'))
+sessionStorage.removeItem('cam')
 let lastShootTime = 0
-const camTarget = new THREE.Vector3()
-const camRaycaster = new THREE.Raycaster()
-const camDir = new THREE.Vector3()
-const camDesired = new THREE.Vector3()
-const camLookTarget = new THREE.Vector3()
-const aimRaycaster = new THREE.Raycaster()
-const aimDir = new THREE.Vector3()
-const shoulderOffset = 0.35
-const headHeight = 0.4
-const camFollowSpeed = 12.0
-const camSnapSpeed = 30.0
 let lastFrameTime = performance.now()
-let camInitialized = false
-const zoomStages = [0, 1.5, 3, 5, 8]
-let zoomIndex = savedCam?.zoomIndex ?? 2
-if (savedCam) sessionStorage.removeItem('cam')
 
 function createPlayerMesh(id, isLocal) {
   const group = new THREE.Group()
-  const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.4, 1.0, 4, 8),
-    new THREE.MeshStandardMaterial({ color: isLocal ? 0x00ff88 : 0xff4444 })
-  )
-  body.position.y = 0.9
-  body.castShadow = true
-  group.add(body)
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 8, 6),
-    new THREE.MeshStandardMaterial({ color: isLocal ? 0x00cc66 : 0xcc3333 })
-  )
-  head.position.y = 1.7
-  head.castShadow = true
-  group.add(head)
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.0, 4, 8), new THREE.MeshStandardMaterial({ color: isLocal ? 0x00ff88 : 0xff4444 }))
+  body.position.y = 0.9; body.castShadow = true; group.add(body)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), new THREE.MeshStandardMaterial({ color: isLocal ? 0x00cc66 : 0xcc3333 }))
+  head.position.y = 1.7; head.castShadow = true; group.add(head)
   scene.add(group)
   return group
 }
@@ -98,12 +67,8 @@ function evaluateAppModule(code) {
   try {
     const stripped = code.replace(/^import\s+.*$/gm, '')
     const wrapped = stripped.replace(/export\s+default\s+/, 'return ')
-    const fn = new Function(wrapped)
-    return fn()
-  } catch (e) {
-    console.error('[app-eval]', e.message)
-    return null
-  }
+    return new Function(wrapped)()
+  } catch (e) { console.error('[app-eval]', e.message); return null }
 }
 
 function loadEntityModel(entityId, entityState) {
@@ -112,9 +77,7 @@ function loadEntityModel(entityId, entityState) {
   gltfLoader.load(url, (gltf) => {
     const model = gltf.scene
     model.position.set(...entityState.position)
-    if (entityState.rotation) {
-      model.quaternion.set(entityState.rotation[0], entityState.rotation[1], entityState.rotation[2], entityState.rotation[3])
-    }
+    if (entityState.rotation) model.quaternion.set(...entityState.rotation)
     model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true } })
     scene.add(model)
     entityMeshes.set(entityId, model)
@@ -122,86 +85,53 @@ function loadEntityModel(entityId, entityState) {
   }, undefined, (err) => console.error('[gltf]', entityId, err))
 }
 
-function onWorldDef(worldDef) {
-  console.log('[client] received world definition:', worldDef)
-  if (worldDef.entities) {
-    for (const ent of worldDef.entities) {
-      if (ent.model && !entityMeshes.has(ent.id)) {
-        loadEntityModel(ent.id, ent)
-      }
-    }
+function renderAppUI(state) {
+  const uiFragments = []
+  for (const entity of state.entities) {
+    const appName = entityAppMap.get(entity.id)
+    if (!appName) continue
+    const appClient = appModules.get(appName)
+    if (!appClient?.render) continue
+    try {
+      const result = appClient.render({ entity, state: entity.custom || {}, h: createElement })
+      if (result?.ui) uiFragments.push({ id: entity.id, ui: result.ui })
+    } catch (e) { console.error('[ui]', entity.id, e.message) }
   }
-}
-
-function onAppModule(data) {
-  const { app, code } = data
-  console.log('[client] received app module:', app)
-  const appDef = evaluateAppModule(code)
-  if (appDef && appDef.client) {
-    appModules.set(app, appDef.client)
-  }
+  const local = state.players.find(p => p.id === client.playerId)
+  const hp = local?.health ?? 100
+  const hudVdom = createElement('div', { id: 'hud' },
+    createElement('div', { id: 'crosshair' }, '+'),
+    createElement('div', { id: 'health-bar' },
+      createElement('div', { id: 'health-fill', style: `width:${hp}%;background:${hp > 60 ? '#0f0' : hp > 30 ? '#ff0' : '#f00'}` }),
+      createElement('span', { id: 'health-text' }, String(hp))
+    ),
+    createElement('div', { id: 'info' }, `Players: ${state.players.length} | Tick: ${client.currentTick}`),
+    ...uiFragments.map(f => createElement('div', { 'data-app': f.id }, f.ui))
+  )
+  try { applyDiff(uiRoot, hudVdom) } catch (e) { console.error('[ui] diff:', e.message) }
 }
 
 const client = new PhysicsNetworkClient({
   serverUrl: `ws://${window.location.host}/ws`,
-  onStateUpdate: updateState,
-  onPlayerJoined: (id) => {
-    if (!playerMeshes.has(id)) playerMeshes.set(id, createPlayerMesh(id, id === client.playerId))
+  onStateUpdate: (state) => {
+    for (const p of state.players) {
+      if (!playerMeshes.has(p.id)) playerMeshes.set(p.id, createPlayerMesh(p.id, p.id === client.playerId))
+      const mesh = playerMeshes.get(p.id)
+      mesh.position.set(p.position[0], p.position[1] - 1.3, p.position[2])
+      if (p.rotation) mesh.quaternion.set(...p.rotation)
+    }
+    renderAppUI(state)
   },
+  onPlayerJoined: (id) => { if (!playerMeshes.has(id)) playerMeshes.set(id, createPlayerMesh(id, id === client.playerId)) },
   onPlayerLeft: (id) => removePlayerMesh(id),
   onEntityAdded: (id, state) => loadEntityModel(id, state),
-  onWorldDef: onWorldDef,
-  onAppModule: onAppModule,
-  onAssetUpdate: (data) => console.log('[client] asset update:', data),
-  onAppEvent: (msg) => {
-    if (msg.type === 'death') {
-      console.log(`[client] Player ${msg.victim} died to ${msg.killer}`)
-    } else if (msg.type === 'respawn') {
-      console.log(`[client] Player respawned at`, msg.position)
-    } else if (msg.type === 'hit') {
-      console.log(`[client] Hit: ${msg.shooter} -> ${msg.target} (${msg.damage} dmg, hp now ${msg.health})`)
-    }
-  },
-  onHotReload: () => {
-    sessionStorage.setItem('cam', JSON.stringify({ yaw, pitch, zoomIndex }))
-    location.reload()
-  },
+  onWorldDef: (wd) => { if (wd.entities) for (const e of wd.entities) { if (e.app) entityAppMap.set(e.id, e.app); if (e.model && !entityMeshes.has(e.id)) loadEntityModel(e.id, e) } },
+  onAppModule: (d) => { const a = evaluateAppModule(d.code); if (a?.client) appModules.set(d.app, a.client) },
+  onAssetUpdate: () => {},
+  onAppEvent: () => {},
+  onHotReload: () => { sessionStorage.setItem('cam', JSON.stringify(cam.save())); location.reload() },
   debug: false
 })
-
-function updateState(state) {
-  for (const p of state.players) {
-    if (!playerMeshes.has(p.id)) playerMeshes.set(p.id, createPlayerMesh(p.id, p.id === client.playerId))
-    const mesh = playerMeshes.get(p.id)
-    mesh.position.set(p.position[0], p.position[1] - 1.3, p.position[2])
-    if (p.rotation) mesh.quaternion.set(p.rotation[0], p.rotation[1], p.rotation[2], p.rotation[3])
-  }
-  const local = state.players.find(p => p.id === client.playerId)
-  if (local) {
-    const hp = local.health ?? 100
-    healthFill.style.width = hp + '%'
-    healthFill.style.backgroundColor = hp > 60 ? '#0f0' : hp > 30 ? '#ff0' : '#f00'
-    healthText.textContent = hp
-  }
-  hudInfo.textContent = `Players: ${state.players.length} | Tick: ${client.currentTick}`
-}
-
-function getAimDirection(playerPos) {
-  const sy = Math.sin(yaw), cy = Math.cos(yaw)
-  const sp = Math.sin(pitch), cp = Math.cos(pitch)
-  const fwdX = sy * cp, fwdY = sp, fwdZ = cy * cp
-  if (!playerPos || zoomStages[zoomIndex] < 0.01) return [fwdX, fwdY, fwdZ]
-  const dist = zoomStages[zoomIndex]
-  const rightX = -cy, rightZ = sy
-  const cpx = playerPos[0] - fwdX * dist + rightX * shoulderOffset
-  const cpy = playerPos[1] + headHeight - fwdY * dist + 0.2
-  const cpz = playerPos[2] - fwdZ * dist + rightZ * shoulderOffset
-  const tx = cpx + fwdX * 200, ty = cpy + fwdY * 200, tz = cpz + fwdZ * 200
-  const ox = playerPos[0], oy = playerPos[1] + 0.9, oz = playerPos[2]
-  const dx = tx - ox, dy = ty - oy, dz = tz - oz
-  const len = Math.sqrt(dx * dx + dy * dy + dz * dz)
-  return len > 0.001 ? [dx / len, dy / len, dz / len] : [fwdX, fwdY, fwdZ]
-}
 
 let inputLoopId = null
 function startInputLoop() {
@@ -209,56 +139,32 @@ function startInputLoop() {
   inputLoopId = setInterval(() => {
     if (!client.connected) return
     const input = inputHandler.getInput()
-    input.yaw = yaw
-    input.pitch = pitch
+    input.yaw = cam.yaw; input.pitch = cam.pitch
     client.sendInput(input)
     if (input.shoot && Date.now() - lastShootTime > 100) {
       lastShootTime = Date.now()
       const local = client.state?.players?.find(p => p.id === client.playerId)
       if (local) {
         const pos = local.position
-        client.sendFire({ origin: [pos[0], pos[1] + 0.9, pos[2]], direction: getAimDirection(pos) })
-        showMuzzleFlash(pos)
+        client.sendFire({ origin: [pos[0], pos[1] + 0.9, pos[2]], direction: cam.getAimDirection(pos) })
+        const flash = new THREE.PointLight(0xffaa00, 3, 8)
+        flash.position.set(pos[0], pos[1] + 0.5, pos[2])
+        scene.add(flash)
+        setTimeout(() => scene.remove(flash), 60)
       }
     }
   }, 1000 / 60)
 }
 
-function showMuzzleFlash(pos) {
-  const flash = new THREE.PointLight(0xffaa00, 3, 8)
-  flash.position.set(pos[0], pos[1] + 0.5, pos[2])
-  scene.add(flash)
-  setTimeout(() => scene.remove(flash), 60)
-}
-
-renderer.domElement.addEventListener('click', () => {
-  if (!document.pointerLockElement) renderer.domElement.requestPointerLock()
-})
-
+renderer.domElement.addEventListener('click', () => { if (!document.pointerLockElement) renderer.domElement.requestPointerLock() })
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement
   clickPrompt.style.display = locked ? 'none' : 'block'
-  if (locked) document.addEventListener('mousemove', onMouseMove)
-  else document.removeEventListener('mousemove', onMouseMove)
+  if (locked) document.addEventListener('mousemove', cam.onMouseMove)
+  else document.removeEventListener('mousemove', cam.onMouseMove)
 })
-
-function onMouseMove(e) {
-  yaw -= e.movementX * 0.002
-  pitch -= e.movementY * 0.002
-  pitch = Math.max(-1.4, Math.min(1.4, pitch))
-}
-
-renderer.domElement.addEventListener('wheel', (e) => {
-  if (e.deltaY > 0) zoomIndex = Math.min(zoomIndex + 1, zoomStages.length - 1)
-  else zoomIndex = Math.max(zoomIndex - 1, 0)
-  e.preventDefault()
-}, { passive: false })
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth, window.innerHeight)
-})
+renderer.domElement.addEventListener('wheel', cam.onWheel, { passive: false })
+window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight) })
 
 function animate() {
   requestAnimationFrame(animate)
@@ -266,83 +172,10 @@ function animate() {
   const frameDt = Math.min((now - lastFrameTime) / 1000, 0.1)
   lastFrameTime = now
   const local = client.state?.players?.find(p => p.id === client.playerId)
-  if (local) {
-    const dist = zoomStages[zoomIndex]
-    camTarget.set(local.position[0], local.position[1] + headHeight, local.position[2])
-    const localMesh = playerMeshes.get(client.playerId)
-    if (localMesh) localMesh.visible = dist > 0.5
-
-    const sy = Math.sin(yaw), cy = Math.cos(yaw)
-    const sp = Math.sin(pitch), cp = Math.cos(pitch)
-    const fwdX = sy * cp, fwdY = sp, fwdZ = cy * cp
-    const rightX = -cy, rightZ = sy
-
-    if (dist < 0.01) {
-      camera.position.copy(camTarget)
-      camera.lookAt(camTarget.x + fwdX, camTarget.y + fwdY, camTarget.z + fwdZ)
-    } else {
-      camDesired.set(
-        camTarget.x - fwdX * dist + rightX * shoulderOffset,
-        camTarget.y - fwdY * dist + 0.2,
-        camTarget.z - fwdZ * dist + rightZ * shoulderOffset
-      )
-      camDir.subVectors(camDesired, camTarget).normalize()
-      const fullDist = camTarget.distanceTo(camDesired)
-      camRaycaster.set(camTarget, camDir)
-      camRaycaster.far = fullDist
-      camRaycaster.near = 0
-      const hits = camRaycaster.intersectObjects(scene.children, true)
-      let clippedDist = fullDist
-      for (const hit of hits) {
-        if (hit.object === localMesh || localMesh?.children?.includes(hit.object)) continue
-        if (hit.distance < clippedDist) clippedDist = hit.distance - 0.2
-      }
-      if (clippedDist < 0.3) clippedDist = 0.3
-      camDesired.set(
-        camTarget.x + camDir.x * clippedDist,
-        camTarget.y + camDir.y * clippedDist,
-        camTarget.z + camDir.z * clippedDist
-      )
-      if (!camInitialized) {
-        camera.position.copy(camDesired)
-        camInitialized = true
-      } else {
-        const closer = clippedDist < camera.position.distanceTo(camTarget)
-        const speed = closer ? camSnapSpeed : camFollowSpeed
-        const lerpFactor = 1.0 - Math.exp(-speed * frameDt)
-        camera.position.lerp(camDesired, lerpFactor)
-      }
-      aimDir.set(fwdX, fwdY, fwdZ)
-      aimRaycaster.set(camera.position, aimDir)
-      aimRaycaster.far = 500
-      aimRaycaster.near = 0.5
-      const aimHits = aimRaycaster.intersectObjects(scene.children, true)
-      let aimPoint = null
-      for (const ah of aimHits) {
-        if (ah.object === localMesh || localMesh?.children?.includes(ah.object)) continue
-        aimPoint = ah.point
-        break
-      }
-      if (aimPoint) {
-        if (!camLookTarget.lengthSq()) camLookTarget.copy(aimPoint)
-        const lookLerp = 1.0 - Math.exp(-camFollowSpeed * frameDt)
-        camLookTarget.lerp(aimPoint, lookLerp)
-      } else {
-        camLookTarget.set(
-          camera.position.x + fwdX * 200,
-          camera.position.y + fwdY * 200,
-          camera.position.z + fwdZ * 200
-        )
-      }
-      camera.lookAt(camLookTarget)
-    }
-  }
+  cam.update(local, playerMeshes.get(client.playerId), frameDt)
   renderer.render(scene, camera)
 }
 animate()
 
-client.connect()
-  .then(() => { console.log('Connected'); startInputLoop() })
-  .catch(err => console.error('Connection failed:', err))
-
+client.connect().then(() => { console.log('Connected'); startInputLoop() }).catch(err => console.error('Connection failed:', err))
 window.debug = { scene, camera, renderer, client, playerMeshes, entityMeshes, appModules, inputHandler }

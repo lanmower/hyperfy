@@ -1,4 +1,5 @@
 import { ReconciliationEngine } from './ReconciliationEngine.js'
+import { applyMovement, DEFAULT_MOVEMENT } from '../shared/movement.js'
 
 export class PredictionEngine {
   constructor(tickRate = 128) {
@@ -9,21 +10,11 @@ export class PredictionEngine {
     this.lastServerState = null
     this.inputHistory = []
     this.reconciliationEngine = new ReconciliationEngine()
-    this.movement = {
-      maxSpeed: 8.0, groundAccel: 10.0, airAccel: 1.0,
-      friction: 6.0, stopSpeed: 2.0, jumpImpulse: 4.5
-    }
+    this.movement = { ...DEFAULT_MOVEMENT }
     this.gravityY = -9.81
   }
 
-  setMovement(m) {
-    if (m.maxSpeed != null) this.movement.maxSpeed = m.maxSpeed
-    if (m.groundAccel != null) this.movement.groundAccel = m.groundAccel
-    if (m.airAccel != null) this.movement.airAccel = m.airAccel
-    if (m.friction != null) this.movement.friction = m.friction
-    if (m.stopSpeed != null) this.movement.stopSpeed = m.stopSpeed
-    if (m.jumpImpulse != null) this.movement.jumpImpulse = m.jumpImpulse
-  }
+  setMovement(m) { Object.assign(this.movement, m) }
 
   setGravity(g) { if (g && g[1] != null) this.gravityY = g[1] }
 
@@ -55,67 +46,11 @@ export class PredictionEngine {
   predict(input) {
     const dt = this.tickDuration / 1000
     const state = this.localState
-    const { maxSpeed, groundAccel, airAccel, friction, stopSpeed, jumpImpulse } = this.movement
-    let vx = state.velocity[0], vz = state.velocity[2]
-    let wishX = 0, wishZ = 0, wishSpeed = 0, jumped = false
-
-    if (input) {
-      let fx = 0, fz = 0
-      if (input.forward) fz += 1
-      if (input.backward) fz -= 1
-      if (input.left) fx -= 1
-      if (input.right) fx += 1
-      const flen = Math.sqrt(fx * fx + fz * fz)
-      if (flen > 0) { fx /= flen; fz /= flen }
-      const yaw = input.yaw || 0
-      const cy = Math.cos(yaw), sy = Math.sin(yaw)
-      wishX = fz * sy - fx * cy
-      wishZ = fx * sy + fz * cy
-      wishSpeed = flen > 0 ? maxSpeed : 0
-      if (input.jump && state.onGround) {
-        state.velocity[1] = jumpImpulse
-        state.onGround = false
-        jumped = true
-      }
-    }
-
-    if (state.onGround && !jumped) {
-      const speed = Math.sqrt(vx * vx + vz * vz)
-      if (speed > 0.1) {
-        const control = speed < stopSpeed ? stopSpeed : speed
-        const drop = control * friction * dt
-        let newSpeed = speed - drop
-        if (newSpeed < 0) newSpeed = 0
-        const scale = newSpeed / speed
-        vx *= scale; vz *= scale
-      } else { vx = 0; vz = 0 }
-      if (wishSpeed > 0) {
-        const cur = vx * wishX + vz * wishZ
-        let add = wishSpeed - cur
-        if (add > 0) {
-          let as = groundAccel * wishSpeed * dt
-          if (as > add) as = add
-          vx += as * wishX; vz += as * wishZ
-        }
-      }
-    } else {
-      if (wishSpeed > 0) {
-        const cur = vx * wishX + vz * wishZ
-        let add = wishSpeed - cur
-        if (add > 0) {
-          let as = airAccel * wishSpeed * dt
-          if (as > add) as = add
-          vx += as * wishX; vz += as * wishZ
-        }
-      }
-    }
-
-    state.velocity[0] = vx; state.velocity[2] = vz
+    applyMovement(state, input, this.movement, dt)
     state.velocity[1] += this.gravityY * dt
     state.position[0] += state.velocity[0] * dt
     state.position[1] += state.velocity[1] * dt
     state.position[2] += state.velocity[2] * dt
-
     if (state.position[1] < 0) {
       state.position[1] = 0
       state.velocity[1] = 0

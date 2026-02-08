@@ -2,7 +2,6 @@ import { MSG, isUnreliable } from '../protocol/MessageTypes.js'
 import { Codec } from '../protocol/Codec.js'
 import { SequenceTracker } from '../protocol/SequenceTracker.js'
 import { QualityMonitor } from '../connection/QualityMonitor.js'
-import { ClientReporter } from '../debug/ClientReporter.js'
 import { StateInspector } from '../debug/StateInspector.js'
 import { createMessageRouter } from './ClientMessageHandler.js'
 import { EventEmitter } from '../protocol/EventEmitter.js'
@@ -87,8 +86,6 @@ export function createClient(config = {}) {
     })
   }
 
-  const reporter = new ClientReporter((type, payload) => send(type, payload))
-
   const api = {
     get playerId() { return state.playerId },
     get tick() { return state.tick },
@@ -97,20 +94,18 @@ export function createClient(config = {}) {
     get isConnected() { return state.connected },
     get sessionToken() { return state.sessionToken },
     get transportType() { return state.transportType },
-    codec, tracker, quality, stateInspector, reporter,
+    codec, tracker, quality, stateInspector,
     on: emitter.on.bind(emitter),
     off: emitter.off.bind(emitter),
     connect() { return _connect() },
     connectNode(WS) { config.WebSocket = WS; return _connect() },
     sendInput(input) { send(MSG.INPUT, { input }) },
     interact(entityId) { send(MSG.APP_EVENT, { entityId }) },
-    reportState(s) { reporter.reportState(s) },
-    startReporting() { reporter.start() },
     disconnect() {
       state.reconnecting = true
       if (state.reconnectTimer) clearTimeout(state.reconnectTimer)
       if (state.heartbeatTimer) clearInterval(state.heartbeatTimer)
-      reporter.stop(); state.connected = false
+      state.connected = false
       if (state.ws) state.ws.close()
     },
     getStats() {
