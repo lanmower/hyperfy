@@ -5,7 +5,7 @@ export function createTickHandler(deps) {
   const {
     networkState, playerManager, physicsIntegration,
     lagCompensator, physics, appRuntime, connections,
-    movement: m = {}
+    movement: m = {}, stageLoader, eventLog
   } = deps
   const maxSpeed = m.maxSpeed || 8.0
   const groundAccel = m.groundAccel || 10.0
@@ -114,15 +114,19 @@ export function createTickHandler(deps) {
     physics.step(dt)
     appRuntime.tick(tick, dt)
     const playerSnap = networkState.getSnapshot()
-    const entitySnap = appRuntime.getSnapshot()
-    const combined = {
-      tick: playerSnap.tick, timestamp: playerSnap.timestamp,
-      players: playerSnap.players, entities: entitySnap.entities
-    }
     snapshotSeq++
-    connections.broadcast(MSG.SNAPSHOT, {
-      seq: snapshotSeq, ...SnapshotEncoder.encode(combined)
-    })
+    if (stageLoader && stageLoader.getActiveStage()) {
+      for (const player of players) {
+        const pos = player.state.position
+        const entitySnap = appRuntime.getSnapshotForPlayer(pos, stageLoader.getActiveStage().spatial.relevanceRadius)
+        const combined = { tick: playerSnap.tick, timestamp: playerSnap.timestamp, players: playerSnap.players, entities: entitySnap.entities }
+        connections.send(player.id, MSG.SNAPSHOT, { seq: snapshotSeq, ...SnapshotEncoder.encode(combined) })
+      }
+    } else {
+      const entitySnap = appRuntime.getSnapshot()
+      const combined = { tick: playerSnap.tick, timestamp: playerSnap.timestamp, players: playerSnap.players, entities: entitySnap.entities }
+      connections.broadcast(MSG.SNAPSHOT, { seq: snapshotSeq, ...SnapshotEncoder.encode(combined) })
+    }
     try {
       appRuntime._drainReloadQueue()
     } catch (e) {

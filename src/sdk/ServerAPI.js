@@ -7,14 +7,13 @@ import { WebSocketTransport } from '../transport/WebSocketTransport.js'
 import { WebTransportServer } from '../transport/WebTransportServer.js'
 
 export function createServerAPI(ctx) {
-  const { config, port, tickRate, staticDirs, appLoader, binder, appRuntime, physics } = ctx
-  const { tickSystem, playerManager, networkState, lagCompensator, connections, sessions, inspector, emitter, reloadManager } = ctx
+  const { config, port, tickRate, staticDirs, appLoader, appRuntime, physics, stageLoader } = ctx
+  const { tickSystem, playerManager, networkState, lagCompensator, connections, sessions, inspector, emitter, reloadManager, eventBus, eventLog, storage } = ctx
 
   return {
     physics,
     runtime: appRuntime,
     loader: appLoader,
-    binder,
     tickSystem,
     playerManager,
     networkState,
@@ -24,14 +23,20 @@ export function createServerAPI(ctx) {
     inspector,
     emitter,
     reloadManager,
+    eventBus,
+    eventLog,
+    storage,
     on: emitter.on.bind(emitter),
     off: emitter.off.bind(emitter),
+
+    stageLoader,
 
     async loadWorld(worldDef) {
       ctx.currentWorldDef = worldDef
       if (worldDef.spawnPoint) ctx.worldSpawnPoint = [...worldDef.spawnPoint]
       await appLoader.loadAll()
-      return binder.loadWorld(worldDef)
+      const stage = stageLoader.loadFromDefinition('main', worldDef)
+      return { entities: new Map(), apps: new Map(), count: stage.entityCount }
     },
 
     async start() {
@@ -80,7 +85,7 @@ export function createServerAPI(ctx) {
     },
 
     getEntityCount() {
-      return binder.getEntityCount()
+      return appRuntime.entities.size
     },
 
     getSnapshot() {

@@ -5,12 +5,12 @@ import { QualityMonitor } from '../connection/QualityMonitor.js'
 import { ClientReporter } from '../debug/ClientReporter.js'
 import { StateInspector } from '../debug/StateInspector.js'
 import { createMessageRouter } from './ClientMessageHandler.js'
-import { Emitter } from '../utils/Emitter.js'
+import { EventEmitter } from '../protocol/EventEmitter.js'
 
 export function createClient(config = {}) {
   const serverUrl = config.serverUrl || 'ws://localhost:8080'
   const wtUrl = config.webTransportUrl || null
-  const emitter = new Emitter()
+  const emitter = new EventEmitter()
   const codec = new Codec()
   const tracker = new SequenceTracker()
   const quality = new QualityMonitor()

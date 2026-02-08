@@ -12,9 +12,12 @@ import { PhysicsIntegration } from '../netcode/PhysicsIntegration.js'
 import { PhysicsWorld } from '../physics/World.js'
 import { AppRuntime } from '../apps/AppRuntime.js'
 import { AppLoader } from '../apps/AppLoader.js'
-import { EntityAppBinder } from '../apps/EntityAppBinder.js'
+import { StageLoader } from '../stage/StageLoader.js'
 import { createTickHandler } from './TickHandler.js'
 import { EventEmitter } from '../protocol/EventEmitter.js'
+import { EventBus } from '../apps/EventBus.js'
+import { EventLog } from '../netcode/EventLog.js'
+import { FSAdapter } from '../storage/FSAdapter.js'
 import { ReloadManager } from './ReloadManager.js'
 import { createReloadHandlers } from './ReloadHandlers.js'
 import { createServerAPI } from './ServerAPI.js'
@@ -56,10 +59,14 @@ export async function createServer(config = {}) {
   const movement = config.movement || {}
   const staticDirs = config.staticDirs || []
 
+  const storageDir = config.storageDir || './data'
   const physics = new PhysicsWorld({ gravity })
   await physics.init()
 
   const emitter = new EventEmitter()
+  const eventBus = new EventBus()
+  const eventLog = new EventLog()
+  const storage = new FSAdapter(storageDir)
   const tickSystem = new TickSystem(tickRate)
   const playerManager = new PlayerManager()
   const networkState = new NetworkState()
@@ -73,10 +80,11 @@ export async function createServer(config = {}) {
   const inspector = new Inspector()
   const reloadManager = new ReloadManager()
 
-  const appRuntime = new AppRuntime({ gravity, playerManager, physics, physicsIntegration, connections })
+  const appRuntime = new AppRuntime({ gravity, playerManager, physics, physicsIntegration, connections, eventBus, eventLog, storage })
   appRuntime.setPlayerManager(playerManager)
   const appLoader = new AppLoader(appRuntime, { dir: appsDir })
-  const binder = new EntityAppBinder(appRuntime, appLoader)
+  const stageLoader = new StageLoader(appRuntime)
+  appRuntime.setStageLoader(stageLoader)
 
   appLoader._onReloadCallback = (name, code) => {
     connections.broadcast(MSG.APP_MODULE, { app: name, code })
@@ -101,9 +109,12 @@ export async function createServer(config = {}) {
     sessions,
     inspector,
     reloadManager,
+    eventBus,
+    eventLog,
+    storage,
     appRuntime,
     appLoader,
-    binder,
+    stageLoader,
     currentWorldDef: null,
     worldSpawnPoint: [0, 5, 0],
     snapshotSeq: 0,
@@ -134,7 +145,9 @@ export async function createServer(config = {}) {
     physics,
     appRuntime,
     connections,
-    movement
+    movement,
+    stageLoader,
+    eventLog
   }))
 
   const { onClientConnect } = createConnectionHandlers(ctx)

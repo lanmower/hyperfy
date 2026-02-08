@@ -37,7 +37,8 @@ export const MSG = {
   HOT_RELOAD: 0x70,
   WORLD_DEF: 0x71,
   APP_MODULE: 0x72,
-  ASSET_UPDATE: 0x73
+  ASSET_UPDATE: 0x73,
+  BUS_EVENT: 0x74
 }
 
 const nameMap = new Map()
