@@ -6,7 +6,6 @@ export class ClientReporter {
   }
 
   reportState(state) {
-    // State reporting for debug
   }
 
   start() {

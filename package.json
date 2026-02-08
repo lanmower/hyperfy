@@ -3,9 +3,12 @@
   "version": "0.16.0",
   "type": "module",
   "main": "src/index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
+    "d3-octree": "^1.1.0",
     "jolt-physics": "^0.29.0",
-    "msgpackr": "^1.11.0",
     "ws": "^8.18.0"
   },
   "optionalDependencies": {

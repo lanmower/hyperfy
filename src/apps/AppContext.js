@@ -1,4 +1,3 @@
-import { EventEmitter } from '../protocol/EventEmitter.js'
 import { CliDebugger } from '../debug/CliDebugger.js'
 import { ColliderFitter } from '../physics/ColliderFitter.js'
 
@@ -6,11 +5,11 @@ export class AppContext {
   constructor(entity, runtime) {
     this._entity = entity
     this._runtime = runtime
-    this._events = new EventEmitter()
     this._state = entity._appState || {}
     entity._appState = this._state
     this._entityProxy = this._buildEntityProxy()
     this._debugger = new CliDebugger(`[${entity.id}]`)
+    this._busScope = runtime._eventBus ? runtime._eventBus.scope(entity.id) : null
   }
 
   _buildEntityProxy() {
@@ -96,6 +95,7 @@ export class AppContext {
       reparent: (eid, parentId) => runtime.reparent(eid, parentId),
       query: (filter) => runtime.queryEntities(filter),
       getEntity: (id) => runtime.getEntity(id),
+      nearby: (pos, radius) => runtime.nearbyEntities(pos, radius),
       get gravity() { return runtime.gravity }
     }
   }
@@ -128,21 +128,28 @@ export class AppContext {
   get state() { return this._state }
   set state(v) { Object.assign(this._state, v) }
 
-  get events() {
-    const ev = this._events
-    return {
-      emit: (n, d) => ev.emit(n, d),
-      on: (n, fn) => ev.on(n, fn),
-      off: (n, fn) => ev.off(n, fn),
-      once: (n, fn) => ev.once(n, fn)
-    }
-  }
-
   get network() {
     const runtime = this._runtime
     return {
       broadcast: (msg) => runtime.broadcastToPlayers(msg),
       sendTo: (id, msg) => runtime.sendToPlayer(id, msg)
+    }
+  }
+
+  get bus() { return this._busScope }
+
+  get storage() {
+    const runtime = this._runtime
+    const entity = this._entity
+    const ns = entity._appName || entity.id
+    if (!runtime._storage) return null
+    const adapter = runtime._storage
+    return {
+      get: (key) => adapter.get(`${ns}/${key}`),
+      set: (key, value) => adapter.set(`${ns}/${key}`, value),
+      delete: (key) => adapter.delete(`${ns}/${key}`),
+      list: (prefix = '') => adapter.list(`${ns}/${prefix}`),
+      has: (key) => adapter.has(`${ns}/${key}`)
     }
   }
 
