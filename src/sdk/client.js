@@ -1,6 +1,5 @@
-import { MSG, isUnreliable } from '../protocol/MessageTypes.js'
-import { Codec } from '../protocol/Codec.js'
-import { SequenceTracker } from '../protocol/SequenceTracker.js'
+import { MSG } from '../protocol/MessageTypes.js'
+import { pack } from '../protocol/msgpack.js'
 import { QualityMonitor } from '../connection/QualityMonitor.js'
 import { StateInspector } from '../debug/StateInspector.js'
 import { createMessageRouter } from './ClientMessageHandler.js'
@@ -8,15 +7,12 @@ import { EventEmitter } from '../protocol/EventEmitter.js'
 
 export function createClient(config = {}) {
   const serverUrl = config.serverUrl || 'ws://localhost:8080'
-  const wtUrl = config.webTransportUrl || null
   const emitter = new EventEmitter()
-  const codec = new Codec()
-  const tracker = new SequenceTracker()
   const quality = new QualityMonitor()
   const stateInspector = new StateInspector()
 
   const state = {
-    ws: null, wt: null, transportType: 'websocket',
+    ws: null, transportType: 'websocket',
     playerId: null, sessionToken: null, tick: 0,
     entities: new Map(), players: new Map(),
     connected: false, reconnecting: false, reconnectAttempts: 0,
@@ -29,13 +25,13 @@ export function createClient(config = {}) {
   }
 
   function send(type, payload) {
-    const frame = codec.encode(type, payload)
+    const frame = pack({ type, payload })
     quality.recordBytesOut(frame.length)
     return _sendRaw(frame)
   }
 
   const onMessage = createMessageRouter({
-    emitter, quality, tracker, stateInspector, codec, send,
+    emitter, quality, stateInspector, send,
     getState: (k) => state[k],
     setState: (k, v) => { state[k] = v }
   })
@@ -94,7 +90,7 @@ export function createClient(config = {}) {
     get isConnected() { return state.connected },
     get sessionToken() { return state.sessionToken },
     get transportType() { return state.transportType },
-    codec, tracker, quality, stateInspector,
+    quality, stateInspector,
     on: emitter.on.bind(emitter),
     off: emitter.off.bind(emitter),
     connect() { return _connect() },
@@ -110,8 +106,7 @@ export function createClient(config = {}) {
     },
     getStats() {
       return {
-        quality: quality.getStats(), codec: codec.getStats(),
-        sequence: tracker.getStats(), stateSync: stateInspector.getStats(),
+        quality: quality.getStats(), stateSync: stateInspector.getStats(),
         transport: state.transportType
       }
     },

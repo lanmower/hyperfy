@@ -1,13 +1,13 @@
 import { MSG } from '../protocol/MessageTypes.js'
 import { SnapshotEncoder } from '../netcode/SnapshotEncoder.js'
+import { unpack } from '../protocol/msgpack.js'
 
 export function createMessageRouter(deps) {
-  const { emitter, quality, tracker, stateInspector, send, getState, setState } = deps
+  const { emitter, quality, stateInspector, send, getState, setState } = deps
 
   function handleSnapshot(data) {
     try {
-      const decoded = typeof data === 'object' && data.players
-        ? data : SnapshotEncoder.decode(data)
+      const decoded = SnapshotEncoder.decode(data)
       if (decoded.tick) {
         stateInspector.recordSnapshotDelay(Date.now() - (decoded.timestamp || 0))
         setState('tick', decoded.tick)
@@ -21,12 +21,12 @@ export function createMessageRouter(deps) {
   }
 
   return function onMessage(raw) {
-    const buf = raw instanceof ArrayBuffer ? new Uint8Array(raw) : raw
-    const msg = deps.codec.decode(buf)
-    if (!msg) return
+    const buf = raw instanceof ArrayBuffer ? new Uint8Array(raw) : (raw instanceof Uint8Array ? raw : new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength))
+    let msg
+    try { msg = unpack(buf) } catch (e) { return }
+    if (!msg || typeof msg !== 'object') return
     const byteLen = buf.length || buf.byteLength || 0
     quality.recordBytesIn(byteLen)
-    tracker.track(msg.seq)
 
     if (msg.type === MSG.HEARTBEAT) {
       send(MSG.HEARTBEAT_ACK, { ts: msg.payload?.ts })
