@@ -14,7 +14,8 @@ export default {
   },
   entities: [
     { id: 'environment', model: './world/schwust.glb', position: [0, 0, 0], app: 'environment' },
-    { id: 'game', position: [0, 0, 0], app: 'tps-game' }
+    { id: 'game', position: [0, 0, 0], app: 'tps-game' },
+    { id: 'power-crates', position: [0, 0, 0], app: 'power-crate' }
   ],
   playerModel: './world/kaira.glb',
   spawnPoint: [-35, 3, -65]
